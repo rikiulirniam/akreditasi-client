@@ -1,9 +1,32 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,200..800;1,200..800&display=swap');
 @import 'tailwindcss';
 
 @source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
 @source '../../storage/framework/views/*.php';
 
 @theme {
-    --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
+    --font-sans: 'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
         'Segoe UI Symbol', 'Noto Color Emoji';
+
+    /* Custom Color Palette */
+    --color-primary: #012650;
+    --color-secondary: #FFCC03;
+    --color-additional: #01568D;
+    --color-white: #FFFFFF;
+    --color-black: #000000;
+    --color-white-bone: #CACACA;
+    --color-white-form: #D9D9D9;
+    --color-gray-form: #8093A7;
+}
+
+:root {
+    --font-sans: 'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif;
+    --primary: #012650;
+    --secondary: #FFCC03;
+    --additional: #01568D;
+    --white: #FFFFFF;
+    --black: #000000;
+    --white-bone: #CACACA;
+    --white-form: #D9D9D9;
+    --gray-form: #8093A7;
 }
