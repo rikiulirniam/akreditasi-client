@@ -201,10 +201,11 @@
                     type="email" 
                     name="email" 
                     id="createEmailInput" 
-                    placeholder="contohsaja@gmail.com" 
+                    placeholder="nama@polines.ac.id" 
                     required 
                     class="w-full px-4 py-2.5 rounded-[10px] bg-white-form border-none text-sm font-medium text-gray-900 focus:ring-2 focus:ring-primary/20 focus:outline-none placeholder:text-gray-500"
                 >
+                <p class="text-[11px] text-gray-500 mt-1">Hanya email institusi (*.polines.ac.id).</p>
             </div>
 
             <!-- Field 4: Password -->
@@ -367,10 +368,11 @@
                     type="email" 
                     name="email" 
                     id="editEmailInput" 
-                    placeholder="contohsaja@gmail.com" 
+                    placeholder="nama@polines.ac.id" 
                     required 
                     class="w-full px-4 py-2.5 rounded-[10px] bg-white-form border-none text-sm font-medium text-gray-900 focus:ring-2 focus:ring-primary/20 focus:outline-none placeholder:text-gray-500"
                 >
+                <p class="text-[11px] text-gray-500 mt-1">Hanya email institusi (*.polines.ac.id).</p>
             </div>
 
             <!-- Field 4: Perbarui Password (Matching Label in Image 3) -->

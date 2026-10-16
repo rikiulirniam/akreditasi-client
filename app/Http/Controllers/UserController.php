@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Services\AkademikService;
+use Closure;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -68,7 +69,17 @@ class UserController extends Controller
     {
         $validated = $request->validate([
             'nama' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'email', 'max:255'],
+            'email' => [
+                'required',
+                'email',
+                'max:255',
+                function (string $attribute, mixed $value, Closure $fail): void {
+                    $domain = strtolower((string) substr(strrchr((string) $value, '@'), 1));
+                    if ($domain !== 'polines.ac.id' && ! str_ends_with($domain, '.polines.ac.id')) {
+                        $fail('Hanya email dengan domain *.polines.ac.id yang diizinkan.');
+                    }
+                },
+            ],
             'password' => ['required', 'string', 'min:6', 'confirmed'],
             'role' => ['required', 'string', 'max:100'],
         ], [
@@ -124,7 +135,17 @@ class UserController extends Controller
     {
         $validated = $request->validate([
             'nama' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'email', 'max:255'],
+            'email' => [
+                'required',
+                'email',
+                'max:255',
+                function (string $attribute, mixed $value, Closure $fail): void {
+                    $domain = strtolower((string) substr(strrchr((string) $value, '@'), 1));
+                    if ($domain !== 'polines.ac.id' && ! str_ends_with($domain, '.polines.ac.id')) {
+                        $fail('Hanya email dengan domain *.polines.ac.id yang diizinkan.');
+                    }
+                },
+            ],
             'password' => ['nullable', 'string', 'min:6', 'confirmed'],
             'role' => ['required', 'string', 'max:100'],
         ], [
