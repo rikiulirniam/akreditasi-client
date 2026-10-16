@@ -350,4 +350,14 @@ class AkademikService
     {
         return $this->post('auth/refresh', [], $token);
     }
+
+    public function loginWithGoogle(array $googleData): Response
+    {
+        return $this->http()->post($this->buildUrl('auth/google'), [
+            'google_id' => (string) ($googleData['google_id'] ?? $googleData['id'] ?? ''),
+            'email' => (string) ($googleData['email'] ?? ''),
+            'name' => (string) ($googleData['name'] ?? ''),
+            'avatar' => isset($googleData['avatar']) ? (string) $googleData['avatar'] : null,
+        ]);
+    }
 }

@@ -6,6 +6,7 @@ use App\Services\AkademikService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
+use Laravel\Socialite\Facades\Socialite;
 
 class AuthController extends Controller
 {
@@ -90,6 +91,98 @@ class AuthController extends Controller
                     'type' => 'error',
                     'title' => 'Koneksi Terputus',
                     'message' => 'Tidak dapat terhubung ke server akademik. Silakan coba lagi nanti.',
+                ]);
+        }
+    }
+
+    /**
+     * Redirect the user to the Google authentication page.
+     */
+    public function redirectToGoogle(): RedirectResponse
+    {
+        return Socialite::driver('google')
+            ->with(['hd' => 'polines.ac.id'])
+            ->redirect();
+    }
+
+    /**
+     * Obtain the user information from Google and authenticate.
+     */
+    public function handleGoogleCallback(Request $request): RedirectResponse
+    {
+        try {
+            $googleUser = Socialite::driver('google')->user();
+
+            $email = strtolower((string) $googleUser->getEmail());
+            $domain = (string) substr(strrchr($email, '@'), 1);
+
+            // Validasi domain email harus *.polines.ac.id atau polines.ac.id
+            if ($domain !== 'polines.ac.id' && ! str_ends_with($domain, '.polines.ac.id')) {
+                return redirect()->route('login')
+                    ->withErrors(['email' => 'Hanya email dengan domain *.polines.ac.id yang diizinkan masuk.'])
+                    ->with('toast', [
+                        'type' => 'error',
+                        'title' => 'Domain Email Ditolak',
+                        'message' => 'Silakan gunakan email resmi Polines (*.polines.ac.id).',
+                    ]);
+            }
+
+            $response = $this->akademikService->loginWithGoogle([
+                'google_id' => $googleUser->getId(),
+                'email' => $email,
+                'name' => $googleUser->getName(),
+                'avatar' => $googleUser->getAvatar(),
+            ]);
+
+            $body = $response->json();
+
+            if ($response->successful() && ($body['success'] ?? false) === true) {
+                $userData = $body['data']['user'] ?? [];
+                $authData = $body['data']['authorization'] ?? [];
+                $accessToken = $authData['access_token'] ?? null;
+
+                $permissions = [];
+                if ($accessToken && str_contains($accessToken, '.')) {
+                    $parts = explode('.', $accessToken);
+                    if (isset($parts[1])) {
+                        $jwtPayload = json_decode(base64_decode(strtr($parts[1], '-_', '+/')), true);
+                        if (is_array($jwtPayload) && isset($jwtPayload['permissions']) && is_array($jwtPayload['permissions'])) {
+                            $permissions = $jwtPayload['permissions'];
+                        }
+                    }
+                }
+
+                $request->session()->regenerate();
+                $request->session()->put([
+                    'access_token' => $accessToken,
+                    'token_type' => $authData['token_type'] ?? 'Bearer',
+                    'user' => $userData,
+                    'permissions' => $permissions,
+                ]);
+
+                return redirect()->intended(route('dashboard'))->with('toast', [
+                    'type' => 'success',
+                    'title' => 'Login Berhasil',
+                    'message' => $body['message'] ?? 'Selamat datang kembali!',
+                ]);
+            }
+
+            $errorMessage = $body['message'] ?? 'Gagal login menggunakan akun Google.';
+
+            return redirect()->route('login')
+                ->withErrors(['email' => $errorMessage])
+                ->with('toast', [
+                    'type' => 'error',
+                    'title' => 'Login Gagal',
+                    'message' => $errorMessage,
+                ]);
+        } catch (\Throwable $e) {
+            return redirect()->route('login')
+                ->withErrors(['email' => 'Gagal autentikasi dengan Google.'])
+                ->with('toast', [
+                    'type' => 'error',
+                    'title' => 'Autentikasi Gagal',
+                    'message' => 'Terjadi kesalahan saat menghubungkan ke akun Google. Silakan coba lagi.',
                 ]);
         }
     }
