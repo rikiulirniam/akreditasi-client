@@ -85,6 +85,36 @@ class AkademikService
 
     /*
     |==========================================================================
+    | MODUL: USER MANAGEMENT (/api/users/*)
+    |==========================================================================
+    */
+
+    public function getUserList(array $query = [], ?string $token = null): Response
+    {
+        return $this->get('users', $query, $token);
+    }
+
+    public function getUserById(int|string $userId, ?string $token = null): Response
+    {
+        return $this->get("users/{$userId}", [], $token);
+    }
+
+    public function createUser(array $userData, ?string $token = null): Response
+    {
+        return $this->post('users', $userData, $token);
+    }
+
+    public function updateUser(int|string $userId, array $userData, ?string $token = null): Response
+    {
+        return $this->put("users/{$userId}", $userData, $token);
+    }
+
+    public function deleteUser(int|string $userId, ?string $token = null): Response
+    {
+        return $this->delete("users/{$userId}", [], $token);
+    }
+    /*
+    |==========================================================================
     | MODUL: ROLE MANAGEMENT (/api/roles/*)
     |==========================================================================
     */
