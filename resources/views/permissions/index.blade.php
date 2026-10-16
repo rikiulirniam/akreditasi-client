@@ -138,15 +138,6 @@
     aria-labelledby="moduleModalTitle"
 >
     <div class="perm-modal-card relative bg-white rounded-3xl p-6 sm:p-8 max-w-[550px] w-full shadow-2xl text-left transform scale-95 transition-all duration-200 max-h-[92vh] overflow-y-auto">
-        <div class="mb-5">
-            <h3 id="moduleModalTitle" class="text-2xl font-black text-primary tracking-tight">
-                Tambah Hak Akses Modul
-            </h3>
-            <p id="moduleModalSubtitle" class="text-xs text-gray-form mt-1">
-                Ketik nama modul, lalu pilih aksi CRUD atau tambahkan aksi kustom secara massal.
-            </p>
-        </div>
-
         <form id="permissionModuleForm" method="POST" action="{{ route('permissions.store') }}" class="space-y-4">
             @csrf
             <input type="hidden" name="_method" id="moduleFormMethod" value="POST">
@@ -483,8 +474,6 @@
 
                 form.action = `/permissions/module/${encodeURIComponent(mod)}`;
                 methodInput.value = 'PUT';
-                if (titleEl) titleEl.textContent = `Ubah Hak Akses Modul`;
-                if (subtitleEl) subtitleEl.textContent = `Perbarui nama modul dan kelola daftar aksi untuk modul '${mod}'.`;
                 
                 moduleInput.value = mod;
                 moduleInput.readOnly = false;
