@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Http;
 class AkademikService
 {
     protected string $baseUrl;
+
     protected ?string $token = null;
 
     public function __construct(?string $baseUrl = null, ?string $token = null)
@@ -131,6 +132,25 @@ class AkademikService
     public function getPermissionById(int|string $permissionId, ?string $token = null): Response
     {
         return $this->get("permissions/{$permissionId}", [], $token);
+    }
+
+    public function createPermission(array $permissionData, ?string $token = null): Response
+    {
+        if (! isset($permissionData['guard_name'])) {
+            $permissionData['guard_name'] = 'api';
+        }
+
+        return $this->post('permissions', $permissionData, $token);
+    }
+
+    public function updatePermission(int|string $permissionId, array $permissionData, ?string $token = null): Response
+    {
+        return $this->put("permissions/{$permissionId}", $permissionData, $token);
+    }
+
+    public function deletePermission(int|string $permissionId, ?string $token = null): Response
+    {
+        return $this->delete("permissions/{$permissionId}", [], $token);
     }
 
     /*
