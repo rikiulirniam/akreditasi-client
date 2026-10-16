@@ -1,148 +1,116 @@
-<!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" class="h-full">
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="csrf-token" content="{{ csrf_token() }}">
+@extends('layouts.app')
 
-    <title>Dashboard - Portal Akreditasi</title>
+@section('title', 'Dashboard')
 
-    <!-- Scripts and Styles -->
-    @vite(['resources/css/app.css', 'resources/js/app.js'])
-</head>
-<body class="h-full font-sans antialiased bg-[#F8FAFC] text-black flex flex-col min-h-screen">
+@section('content')
+<div class="space-y-6">
     
-    <!-- Top Navigation Bar -->
-    <header class="sticky top-0 z-30 w-full bg-white/95 backdrop-blur-md border-b border-[#EAEAEA] shadow-xs">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-18 flex items-center justify-between">
-            
-            <!-- Brand Logo -->
-            <div class="flex items-center gap-3.5">
-                <div class="w-10 h-10 rounded-xl bg-primary flex items-center justify-center p-2 shadow-xs shrink-0">
-                    <img src="{{ asset('images/cap-icon.png') }}" alt="Logo Portal" class="w-6 h-auto">
-                </div>
-                <div>
-                    <span class="block text-base font-bold tracking-tight text-primary leading-tight">Portal Akreditasi</span>
-                    <span class="block text-[11px] text-gray-form uppercase tracking-wider font-medium">Sistem Penjaminan Mutu</span>
-                </div>
-            </div>
-
-            <!-- User Menu & Logout -->
-            <div class="flex items-center gap-3 sm:gap-4">
-                <!-- User Profile Pill -->
-                <div class="flex items-center gap-3 pl-3 pr-2 py-1.5 rounded-full bg-gray-50 border border-gray-200/80">
-                    <div class="hidden sm:block text-right">
-                        <span class="block text-xs font-bold text-primary leading-tight">
-                            {{ $user['nama'] ?? 'Pengguna' }}
-                        </span>
-                        <span class="block text-[10px] font-semibold text-additional">
-                            {{ $user['role'] ?? 'DOSEN' }}
-                        </span>
-                    </div>
-                    <div class="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-xs">
-                        {{ strtoupper(substr($user['nama'] ?? 'U', 0, 1)) }}
-                    </div>
-                </div>
-
-                <!-- Logout Form -->
-                <form method="POST" action="{{ route('logout') }}" class="inline">
-                    @csrf
-                    <button 
-                        type="submit" 
-                        class="p-2 sm:px-3 sm:py-2 rounded-lg text-xs font-semibold text-rose-600 hover:bg-rose-50 border border-transparent hover:border-rose-200 transition cursor-pointer flex items-center gap-1.5"
-                        title="Keluar dari akun"
-                    >
-                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15M12 9l-3 3m0 0l3 3m-3-3h12.75" />
-                        </svg>
-                        <span class="hidden sm:inline">Keluar</span>
-                    </button>
-                </form>
-            </div>
+    <!-- Welcome Hero Banner -->
+    <div class="relative overflow-hidden rounded-3xl bg-primary p-6 sm:p-10 text-white shadow-lg">
+        <div class="relative z-10 max-w-2xl">
+            <span class="inline-block py-1 px-3 rounded-full bg-secondary/20 text-secondary text-xs font-bold tracking-wide uppercase mb-3">
+                Sistem Penjaminan Mutu & Portal Akreditasi
+            </span>
+            <h2 class="text-2xl sm:text-3xl font-extrabold tracking-tight mb-2">
+                Selamat Datang, {{ $user['nama'] ?? 'Pengguna' }}!
+            </h2>
+            <p class="text-white/80 text-xs sm:text-sm leading-relaxed">
+                Anda masuk sebagai <strong class="text-secondary">{{ $user['role'] ?? 'Dosen' }}</strong>. Pantau dan kelola instrumen akreditasi, data borang, serta dokumen penilaian mutu secara terintegrasi.
+            </p>
         </div>
-    </header>
 
-    <!-- Main Content Area -->
-    <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-10">
+        <!-- Decorative Background Glows -->
+        <div class="absolute -right-16 -top-16 w-64 h-64 rounded-full bg-additional/30 blur-2xl pointer-events-none"></div>
+        <div class="absolute right-12 -bottom-16 w-72 h-72 rounded-full bg-secondary/15 blur-3xl pointer-events-none"></div>
+    </div>
+
+    <!-- Quick Stats Cards Grid -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
         
-        <!-- Welcome Hero Banner -->
-        <div class="relative overflow-hidden rounded-3xl bg-primary p-6 sm:p-10 text-white shadow-xl mb-8">
-            <div class="relative z-10 max-w-2xl">
-                <span class="inline-block py-1 px-3 rounded-full bg-secondary/20 text-secondary text-xs font-bold tracking-wide uppercase mb-3">
-                    Portal Akreditasi Aktif
-                </span>
-                <h1 class="text-2xl sm:text-4xl font-extrabold tracking-tight mb-2">
-                    Selamat Datang, {{ $user['nama'] ?? 'Pengguna' }}!
-                </h1>
-                <p class="text-white/80 text-sm sm:text-base leading-relaxed">
-                    Anda telah berhasil masuk ke Sistem Penjaminan Mutu & Portal Akreditasi.
-                </p>
-            </div>
-
-            <!-- Subtle Decorative Circles in Background -->
-            <div class="absolute -right-16 -top-16 w-64 h-64 rounded-full bg-additional/20 blur-2xl pointer-events-none"></div>
-            <div class="absolute right-20 -bottom-20 w-80 h-80 rounded-full bg-secondary/10 blur-3xl pointer-events-none"></div>
-        </div>
-
-        <!-- User Information Cards -->
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-            
-            <!-- Card 1: Profil Akun -->
-            <div class="p-6 rounded-2xl bg-white border border-[#EAEAEA] shadow-xs">
-                <div class="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center mb-4">
+        <!-- Stat Card 1 -->
+        <div class="p-5 rounded-2xl bg-white border border-[#EAEAEA] shadow-xs hover:shadow-md transition">
+            <div class="flex items-center justify-between mb-3">
+                <span class="text-xs font-bold text-gray-form uppercase tracking-wider">Instrumen</span>
+                <div class="w-9 h-9 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
                     <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" />
                     </svg>
                 </div>
-                <h3 class="text-xs font-bold text-gray-form uppercase tracking-wider mb-1">Nama Lengkap</h3>
-                <p class="text-base font-extrabold text-primary">{{ $user['nama'] ?? '-' }}</p>
-                <p class="text-xs text-[#5A6E85] mt-1">{{ $user['email'] ?? '-' }}</p>
             </div>
-
-            <!-- Card 2: Role Pengguna -->
-            <div class="p-6 rounded-2xl bg-white border border-[#EAEAEA] shadow-xs">
-                <div class="w-10 h-10 rounded-xl bg-additional/10 text-additional flex items-center justify-center mb-4">
-                    <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z" />
-                    </svg>
-                </div>
-                <h3 class="text-xs font-bold text-gray-form uppercase tracking-wider mb-1">Peran Akses</h3>
-                <div class="flex items-center gap-2 mt-1">
-                    <span class="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-bold bg-additional/10 text-additional">
-                        {{ $user['role'] ?? 'DOSEN' }}
-                    </span>
-                    <span class="text-xs text-emerald-600 font-semibold flex items-center gap-1">
-                        <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                        Aktif
-                    </span>
-                </div>
-            </div>
-
-            <!-- Card 3: Status Sesi -->
-            <div class="p-6 rounded-2xl bg-white border border-[#EAEAEA] shadow-xs">
-                <div class="w-10 h-10 rounded-xl bg-secondary/20 text-[#B38F00] flex items-center justify-center mb-4">
-                    <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
-                    </svg>
-                </div>
-                <h3 class="text-xs font-bold text-gray-form uppercase tracking-wider mb-1">Autentikasi</h3>
-                <p class="text-base font-extrabold text-primary">Token JWT Terhubung</p>
-                <p class="text-xs text-gray-form mt-1">Terhubung ke API Akademik</p>
-            </div>
-
+            <p class="text-2xl font-extrabold text-primary">9 Kriteria</p>
+            <p class="text-xs text-[#5A6E85] mt-1">Standar Akreditasi BAN-PT</p>
         </div>
 
-    </main>
-
-    <!-- Footer -->
-    <footer class="border-t border-[#EAEAEA] bg-white py-6 mt-auto">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between text-xs text-gray-form gap-2">
-            <p>&copy; {{ date('Y') }} Portal Akreditasi. Sistem Penjaminan Mutu.</p>
-            <p>Terhubung ke Layanan Akademik</p>
+        <!-- Stat Card 2 -->
+        <div class="p-5 rounded-2xl bg-white border border-[#EAEAEA] shadow-xs hover:shadow-md transition">
+            <div class="flex items-center justify-between mb-3">
+                <span class="text-xs font-bold text-gray-form uppercase tracking-wider">Borang Dokumen</span>
+                <div class="w-9 h-9 rounded-xl bg-additional/10 text-additional flex items-center justify-center">
+                    <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
+                    </svg>
+                </div>
+            </div>
+            <p class="text-2xl font-extrabold text-primary">78%</p>
+            <p class="text-xs text-emerald-600 font-semibold mt-1 flex items-center gap-1">
+                <span>↑</span> Dokumen Terverifikasi
+            </p>
         </div>
-    </footer>
 
-    <!-- Reusable Toast Notification Component -->
-    <x-toast />
-</body>
-</html>
+        <!-- Stat Card 3 -->
+        <div class="p-5 rounded-2xl bg-white border border-[#EAEAEA] shadow-xs hover:shadow-md transition">
+            <div class="flex items-center justify-between mb-3">
+                <span class="text-xs font-bold text-gray-form uppercase tracking-wider">Status Mutu</span>
+                <div class="w-9 h-9 rounded-xl bg-secondary/20 text-[#B38F00] flex items-center justify-center">
+                    <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.84.61l-4.725-2.885a.563.563 0 00-.586 0L6.982 20.54a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.182-.557l-4.204-3.602a.563.563 0 01.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z" />
+                    </svg>
+                </div>
+            </div>
+            <p class="text-2xl font-extrabold text-primary">Baik Sekali</p>
+            <p class="text-xs text-[#5A6E85] mt-1">Skor Evaluasi Terakhir</p>
+        </div>
+
+        <!-- Stat Card 4 -->
+        <div class="p-5 rounded-2xl bg-white border border-[#EAEAEA] shadow-xs hover:shadow-md transition">
+            <div class="flex items-center justify-between mb-3">
+                <span class="text-xs font-bold text-gray-form uppercase tracking-wider">Koneksi API</span>
+                <div class="w-9 h-9 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
+                    <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                </div>
+            </div>
+            <p class="text-2xl font-extrabold text-primary">Aktif</p>
+            <p class="text-xs text-gray-form mt-1">Layanan Akademik Online</p>
+        </div>
+
+    </div>
+
+    <!-- User Information Detail Section -->
+    <div class="bg-white rounded-3xl border border-[#EAEAEA] p-6 sm:p-8 shadow-xs">
+        <h3 class="text-base font-extrabold text-primary tracking-tight mb-4 flex items-center gap-2">
+            <svg class="w-5 h-5 text-additional" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
+            </svg>
+            Informasi Akun Anda
+        </h3>
+
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2">
+            <div class="p-4 rounded-2xl bg-gray-50 border border-gray-100">
+                <p class="text-xs text-gray-form uppercase tracking-wider font-semibold">Nama Lengkap</p>
+                <p class="text-sm font-bold text-primary mt-1">{{ $user['nama'] ?? 'Kuwat' }}</p>
+            </div>
+            <div class="p-4 rounded-2xl bg-gray-50 border border-gray-100">
+                <p class="text-xs text-gray-form uppercase tracking-wider font-semibold">Email Terdaftar</p>
+                <p class="text-sm font-bold text-primary mt-1">{{ $user['email'] ?? '-' }}</p>
+            </div>
+            <div class="p-4 rounded-2xl bg-gray-50 border border-gray-100">
+                <p class="text-xs text-gray-form uppercase tracking-wider font-semibold">Peran / Jabatan</p>
+                <p class="text-sm font-bold text-additional mt-1">{{ $user['role'] ?? 'Kaprodi' }}</p>
+            </div>
+        </div>
+    </div>
+
+</div>
+@endsection
