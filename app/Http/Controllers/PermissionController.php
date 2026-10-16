@@ -15,17 +15,7 @@ class PermissionController extends Controller
 
     public function index(Request $request): View|RedirectResponse
     {
-        $response = $this->akademikService->getPermissionList(['per_page' => 1000]);
-
-        if ($response->status() === 401) {
-            return redirect()->route('login')->with('toast', [
-                'type' => 'warning',
-                'title' => 'Sesi Berakhir',
-                'message' => 'Sesi Anda telah kedaluwarsa. Silakan login kembali.',
-            ]);
-        }
-
-        $allPermissions = $response->json('data') ?? [];
+        $allPermissions = $this->akademikService->getAllPermissions();
         $grouped = [];
 
         foreach ($allPermissions as $perm) {
@@ -130,7 +120,8 @@ class PermissionController extends Controller
 
             foreach ($actions as $action) {
                 $permName = "{$module}.{$action}";
-                $response = $this->akademikService->createPermission([
+                $response = $this->akademikService->clearPermissionsCache();
+                $this->akademikService->createPermission([
                     'name' => $permName,
                     'guard_name' => $guardName,
                 ]);
@@ -169,7 +160,8 @@ class PermissionController extends Controller
                 'guard_name' => $guardName,
             ];
 
-            $response = $this->akademikService->createPermission($payload);
+            $response = $this->akademikService->clearPermissionsCache();
+            $this->akademikService->createPermission($payload);
             $body = $response->json();
 
             if ($response->successful() && ($body['success'] ?? false)) {
@@ -207,7 +199,8 @@ class PermissionController extends Controller
             'guard_name' => $validated['guard_name'] ?: 'api',
         ];
 
-        $response = $this->akademikService->updatePermission($id, $payload);
+        $response = $this->akademikService->clearPermissionsCache();
+        $this->akademikService->updatePermission($id, $payload);
         $body = $response->json();
 
         if ($response->successful() && ($body['success'] ?? false)) {
@@ -249,8 +242,7 @@ class PermissionController extends Controller
         $guardName = $validated['guard_name'] ?: 'api';
         $targetActions = array_unique(array_filter(array_map('strtolower', array_map('trim', $validated['actions']))));
 
-        $resp = $this->akademikService->getPermissionList(['per_page' => 1000]);
-        $allPermissions = $resp->json('data') ?? [];
+        $allPermissions = $this->akademikService->getAllPermissions();
 
         $existing = [];
         foreach ($allPermissions as $p) {
@@ -268,12 +260,14 @@ class PermissionController extends Controller
         foreach ($existing as $act => $perm) {
             if (in_array($act, $targetActions, true)) {
                 if ($newModule !== $oldModule) {
+                    $this->akademikService->clearPermissionsCache();
                     $this->akademikService->updatePermission($perm['id'], [
                         'name' => "{$newModule}.{$act}",
                         'guard_name' => $guardName,
                     ]);
                 }
             } else {
+                $this->akademikService->clearPermissionsCache();
                 $this->akademikService->deletePermission($perm['id']);
             }
         }
@@ -281,6 +275,7 @@ class PermissionController extends Controller
         // 2. Newly added actions
         foreach ($targetActions as $act) {
             if (! isset($existing[$act])) {
+                $this->akademikService->clearPermissionsCache();
                 $this->akademikService->createPermission([
                     'name' => "{$newModule}.{$act}",
                     'guard_name' => $guardName,
@@ -298,8 +293,7 @@ class PermissionController extends Controller
     public function destroyModule(string $module): RedirectResponse
     {
         $targetModule = strtolower(trim($module));
-        $resp = $this->akademikService->getPermissionList(['per_page' => 1000]);
-        $allPermissions = $resp->json('data') ?? [];
+        $allPermissions = $this->akademikService->getAllPermissions();
 
         $deletedCount = 0;
         foreach ($allPermissions as $p) {
@@ -308,7 +302,8 @@ class PermissionController extends Controller
             $mod = count($parts) === 2 ? strtolower(trim($parts[0])) : 'general';
 
             if ($mod === $targetModule) {
-                $delResp = $this->akademikService->deletePermission($p['id']);
+                $delResp = $this->akademikService->clearPermissionsCache();
+                $this->akademikService->deletePermission($p['id']);
                 if ($delResp->successful()) {
                     $deletedCount++;
                 }
@@ -324,7 +319,8 @@ class PermissionController extends Controller
 
     public function destroy(int|string $id): RedirectResponse
     {
-        $response = $this->akademikService->deletePermission($id);
+        $response = $this->akademikService->clearPermissionsCache();
+        $this->akademikService->deletePermission($id);
         $body = $response->json();
 
         if ($response->successful() && ($body['success'] ?? false)) {
