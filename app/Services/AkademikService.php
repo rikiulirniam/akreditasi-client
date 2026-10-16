@@ -269,9 +269,49 @@ class AkademikService
         return $this->get('prodi', $query, $token);
     }
 
+    public function getProdiById(int|string $id, ?string $token = null): Response
+    {
+        return $this->get("prodi/{$id}", [], $token);
+    }
+
+    public function createProdi(array $data, ?string $token = null): Response
+    {
+        return $this->post('prodi', $data, $token);
+    }
+
+    public function updateProdi(int|string $id, array $data, ?string $token = null): Response
+    {
+        return $this->put("prodi/{$id}", $data, $token);
+    }
+
+    public function deleteProdi(int|string $id, ?string $token = null): Response
+    {
+        return $this->delete("prodi/{$id}", [], $token);
+    }
+
     public function getUppsList(array $query = [], ?string $token = null): Response
     {
         return $this->get('upps', $query, $token);
+    }
+
+    public function getUppsById(int|string $id, ?string $token = null): Response
+    {
+        return $this->get("upps/{$id}", [], $token);
+    }
+
+    public function createUpps(array $data, ?string $token = null): Response
+    {
+        return $this->post('upps', $data, $token);
+    }
+
+    public function updateUpps(int|string $id, array $data, ?string $token = null): Response
+    {
+        return $this->put("upps/{$id}", $data, $token);
+    }
+
+    public function deleteUpps(int|string $id, ?string $token = null): Response
+    {
+        return $this->delete("upps/{$id}", [], $token);
     }
 
     /*
