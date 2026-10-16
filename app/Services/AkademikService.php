@@ -239,6 +239,43 @@ class AkademikService
 
     /*
     |==========================================================================
+    | MODUL: PERGURUAN TINGGI (/api/perguruan-tinggi/*)
+    |==========================================================================
+    */
+
+    public function getPerguruanTinggiList(array $query = [], ?string $token = null): Response
+    {
+        return $this->get('perguruan-tinggi', $query, $token);
+    }
+
+    public function getPerguruanTinggiById(int|string $id, ?string $token = null): Response
+    {
+        return $this->get("perguruan-tinggi/{$id}", [], $token);
+    }
+
+    public function updatePerguruanTinggi(int|string $id, array $data, ?string $token = null): Response
+    {
+        return $this->put("perguruan-tinggi/{$id}", $data, $token);
+    }
+
+    /*
+    |==========================================================================
+    | MODUL: PRODI & UPPS (/api/prodi, /api/upps)
+    |==========================================================================
+    */
+
+    public function getProdiList(array $query = [], ?string $token = null): Response
+    {
+        return $this->get('prodi', $query, $token);
+    }
+
+    public function getUppsList(array $query = [], ?string $token = null): Response
+    {
+        return $this->get('upps', $query, $token);
+    }
+
+    /*
+    |==========================================================================
     | MODUL: AUTENTIKASI PENGGUNA (/api/auth/*)
     |==========================================================================
     */
