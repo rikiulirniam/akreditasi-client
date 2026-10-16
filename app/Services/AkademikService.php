@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Http;
 class AkademikService
 {
     protected string $baseUrl;
+
     protected ?string $token = null;
 
     public function __construct(?string $baseUrl = null, ?string $token = null)
@@ -84,6 +85,36 @@ class AkademikService
 
     /*
     |==========================================================================
+    | MODUL: USER MANAGEMENT (/api/users/*)
+    |==========================================================================
+    */
+
+    public function getUserList(array $query = [], ?string $token = null): Response
+    {
+        return $this->get('users', $query, $token);
+    }
+
+    public function getUserById(int|string $userId, ?string $token = null): Response
+    {
+        return $this->get("users/{$userId}", [], $token);
+    }
+
+    public function createUser(array $userData, ?string $token = null): Response
+    {
+        return $this->post('users', $userData, $token);
+    }
+
+    public function updateUser(int|string $userId, array $userData, ?string $token = null): Response
+    {
+        return $this->put("users/{$userId}", $userData, $token);
+    }
+
+    public function deleteUser(int|string $userId, ?string $token = null): Response
+    {
+        return $this->delete("users/{$userId}", [], $token);
+    }
+    /*
+    |==========================================================================
     | MODUL: ROLE MANAGEMENT (/api/roles/*)
     |==========================================================================
     */
@@ -128,9 +159,82 @@ class AkademikService
         return $this->get('permissions', $query, $token);
     }
 
+    /**
+     * @return array<int, array<string, mixed>>
+     */
+    public function getAllPermissions(?string $token = null, bool $fresh = false): array
+    {
+        $resolvedToken = $token ?? $this->token ?? (string) session('access_token');
+        $cacheKey = 'akademik_all_permissions_'.md5($resolvedToken);
+
+        if (! $fresh && cache()->has($cacheKey)) {
+            $cached = cache()->get($cacheKey);
+            if (! empty($cached) && is_array($cached)) {
+                return $cached;
+            }
+        }
+
+        $all = [];
+        $page = 1;
+
+        do {
+            $response = $this->getPermissionList(['page' => $page], $resolvedToken);
+            if (! $response->successful()) {
+                if (cache()->has($cacheKey)) {
+                    return cache()->get($cacheKey);
+                }
+                break;
+            }
+
+            $data = $response->json('data') ?? [];
+            if (empty($data)) {
+                break;
+            }
+
+            $all = array_merge($all, $data);
+
+            $pagination = $response->json('pagination');
+            $lastPage = $pagination['last_page'] ?? $page;
+            $page++;
+        } while ($page <= $lastPage);
+
+        if (! empty($all)) {
+            cache()->put($cacheKey, $all, now()->addMinutes(15));
+        } elseif (cache()->has($cacheKey)) {
+            return cache()->get($cacheKey);
+        }
+
+        return $all;
+    }
+
+    public function clearPermissionsCache(?string $token = null): void
+    {
+        $resolvedToken = $token ?? $this->token ?? (string) session('access_token');
+        cache()->forget('akademik_all_permissions_'.md5($resolvedToken));
+    }
+
     public function getPermissionById(int|string $permissionId, ?string $token = null): Response
     {
         return $this->get("permissions/{$permissionId}", [], $token);
+    }
+
+    public function createPermission(array $permissionData, ?string $token = null): Response
+    {
+        if (! isset($permissionData['guard_name'])) {
+            $permissionData['guard_name'] = 'api';
+        }
+
+        return $this->post('permissions', $permissionData, $token);
+    }
+
+    public function updatePermission(int|string $permissionId, array $permissionData, ?string $token = null): Response
+    {
+        return $this->put("permissions/{$permissionId}", $permissionData, $token);
+    }
+
+    public function deletePermission(int|string $permissionId, ?string $token = null): Response
+    {
+        return $this->delete("permissions/{$permissionId}", [], $token);
     }
 
     /*

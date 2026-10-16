@@ -29,7 +29,7 @@
         }
     </style>
 </head>
-<body class="h-full font-sans antialiased bg-[#F8FAFC] text-black">
+<body class="h-full font-sans antialiased text-black overflow-hidden">
     @php
         $currentUser = $user ?? session('user') ?? [
             'nama' => 'Kuwat',
@@ -38,16 +38,16 @@
         ];
     @endphp
 
-    <div class="min-h-screen flex">
+    <div class="flex h-screen w-full overflow-hidden bg-white">
         
         <!-- Sidebar Component -->
         <x-sidebar />
 
         <!-- Main Content Wrapper -->
-        <div class="flex-1 flex flex-col min-w-0 min-h-screen">
+        <div class="flex-1 flex flex-col min-w-0 h-full overflow-hidden">
             
             <!-- Topbar -->
-            <header class="sticky top-0 z-30 h-20 bg-white border-b border-[#EAEAEA] px-4 sm:px-6 lg:px-8 flex items-center justify-between shadow-xs">
+            <header class="shrink-0 h-20 bg-white border-b border-[#EAEAEA] px-4 sm:px-6 lg:px-8 flex items-center justify-between shadow-xs z-30">
                 
                 <!-- Left: Sidebar Toggle & Page Title -->
                 <div class="flex items-center gap-3 sm:gap-4">
@@ -156,7 +156,7 @@
             </header>
 
             <!-- Main Page Content -->
-            <main class="flex-1 p-4 sm:p-6 lg:p-8">
+            <main class="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 pb-12">
                 {{ $slot ?? '' }}
                 @yield('content')
             </main>
@@ -165,6 +165,9 @@
 
     <!-- Reusable Toast Notification Component -->
     <x-toast />
+
+    <!-- Reusable Confirmation Delete Modal Component -->
+    <x-confirm-delete />
 
     <!-- Sidebar & Dropdown Interactive Scripts -->
     <script>

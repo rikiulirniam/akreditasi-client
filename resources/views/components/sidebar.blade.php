@@ -6,7 +6,7 @@
 
 <aside 
     id="sidebar" 
-    class="fixed lg:sticky top-0 left-0 z-40 h-screen bg-primary flex flex-col transition-all duration-300 w-64 -translate-x-full lg:translate-x-0 shrink-0 shadow-xl overflow-hidden select-none"
+    class="fixed lg:static inset-y-0 left-0 z-40 h-full bg-primary flex flex-col transition-all duration-300 w-64 -translate-x-full lg:translate-x-0 shrink-0 shadow-xl overflow-hidden select-none"
 >
     <div 
         class="relative h-36 sm:h-40 p-4 sm:p-5 flex items-center gap-3.5 bg-cover bg-center overflow-hidden shrink-0" 
@@ -45,7 +45,7 @@
 
                 <!-- Pengguna -->
                 @php
-                    $isUserMgmtActive = request()->routeIs('roles.*') || request()->routeIs('permissions.*');
+                    $isUserMgmtActive = request()->routeIs('users.*') || request()->routeIs('roles.*') || request()->routeIs('permissions.*');
                 @endphp
                 <div>
                     <button 
@@ -65,12 +65,18 @@
                         </svg>
                     </button>
 
-                    <div id="submenu-akun" class="submenu-container {{ $isUserMgmtActive ? '' : 'hidden' }} pl-11 pr-2 py-1 space-y-1">
-                        <a href="{{ route('roles.index') }}" class="block py-1.5 px-3 rounded-lg text-xs {{ request()->routeIs('roles.*') ? 'bg-white/20 text-white font-semibold' : 'text-white/70 hover:text-white hover:bg-white/10' }} transition">
-                            Peran
+                    <div id="submenu-akun" class="submenu-container {{ $isUserMgmtActive ? '' : 'hidden' }} pl-10 pr-2 pt-1 pb-1 space-y-1.5">
+                        <a href="{{ route('users.index') }}" class="flex items-center gap-2.5 py-2.5 px-3.5 rounded-xl text-sm font-semibold transition-all duration-150 {{ request()->routeIs('users.*') ? 'bg-white/20 text-white shadow-xs font-bold' : 'text-white/80 hover:text-white hover:bg-white/10' }}">
+                            <span class="w-1.5 h-1.5 rounded-full {{ request()->routeIs('users.*') ? 'bg-secondary' : 'bg-white/40' }} shrink-0"></span>
+                            <span>Manajemen Pengguna</span>
                         </a>
-                        <a href="{{ route('permissions.index') }}" class="block py-1.5 px-3 rounded-lg text-xs {{ request()->routeIs('permissions.*') ? 'bg-white/20 text-white font-semibold' : 'text-white/70 hover:text-white hover:bg-white/10' }} transition">
-                            Hak Akses
+                        <a href="{{ route('roles.index') }}" class="flex items-center gap-2.5 py-2.5 px-3.5 rounded-xl text-sm font-semibold transition-all duration-150 {{ request()->routeIs('roles.*') ? 'bg-white/20 text-white shadow-xs font-bold' : 'text-white/80 hover:text-white hover:bg-white/10' }}">
+                            <span class="w-1.5 h-1.5 rounded-full {{ request()->routeIs('roles.*') ? 'bg-secondary' : 'bg-white/40' }} shrink-0"></span>
+                            <span>Peran</span>
+                        </a>
+                        <a href="{{ route('permissions.index') }}" class="flex items-center gap-2.5 py-2.5 px-3.5 rounded-xl text-sm font-semibold transition-all duration-150 {{ request()->routeIs('permissions.*') ? 'bg-white/20 text-white shadow-xs font-bold' : 'text-white/80 hover:text-white hover:bg-white/10' }}">
+                            <span class="w-1.5 h-1.5 rounded-full {{ request()->routeIs('permissions.*') ? 'bg-secondary' : 'bg-white/40' }} shrink-0"></span>
+                            <span>Hak Akses</span>
                         </a>
                     </div>
                 </div>
@@ -94,15 +100,18 @@
                         </svg>
                     </button>
 
-                    <div id="submenu-3" class="submenu-container hidden pl-11 pr-2 py-1 space-y-1">
-                        <a href="#" class="block py-1.5 px-3 rounded-lg text-xs font-normal text-white/70 hover:text-white hover:bg-white/10 transition">
-                            Submenu 3.1
+                    <div id="submenu-3" class="submenu-container hidden pl-10 pr-2 pt-1 pb-1 space-y-1.5">
+                        <a href="#" class="flex items-center gap-2.5 py-2.5 px-3.5 rounded-xl text-sm font-medium text-white/80 hover:text-white hover:bg-white/10 transition">
+                            <span class="w-1.5 h-1.5 rounded-full bg-white/40 shrink-0"></span>
+                            <span>Submenu 3.1</span>
                         </a>
-                        <a href="#" class="block py-1.5 px-3 rounded-lg text-xs font-normal text-white/70 hover:text-white hover:bg-white/10 transition">
-                            Submenu 3.2
+                        <a href="#" class="flex items-center gap-2.5 py-2.5 px-3.5 rounded-xl text-sm font-medium text-white/80 hover:text-white hover:bg-white/10 transition">
+                            <span class="w-1.5 h-1.5 rounded-full bg-white/40 shrink-0"></span>
+                            <span>Submenu 3.2</span>
                         </a>
-                        <a href="#" class="block py-1.5 px-3 rounded-lg text-xs font-normal text-white/70 hover:text-white hover:bg-white/10 transition">
-                            Submenu 3.3
+                        <a href="#" class="flex items-center gap-2.5 py-2.5 px-3.5 rounded-xl text-sm font-medium text-white/80 hover:text-white hover:bg-white/10 transition">
+                            <span class="w-1.5 h-1.5 rounded-full bg-white/40 shrink-0"></span>
+                            <span>Submenu 3.3</span>
                         </a>
                     </div>
                 </div>
@@ -126,12 +135,14 @@
                         </svg>
                     </button>
 
-                    <div id="submenu-4" class="submenu-container hidden pl-11 pr-2 py-1 space-y-1">
-                        <a href="#" class="block py-1.5 px-3 rounded-lg text-xs font-normal text-white/70 hover:text-white hover:bg-white/10 transition">
-                            Submenu 4.1
+                    <div id="submenu-4" class="submenu-container hidden pl-10 pr-2 pt-1 pb-1 space-y-1.5">
+                        <a href="#" class="flex items-center gap-2.5 py-2.5 px-3.5 rounded-xl text-sm font-medium text-white/80 hover:text-white hover:bg-white/10 transition">
+                            <span class="w-1.5 h-1.5 rounded-full bg-white/40 shrink-0"></span>
+                            <span>Submenu 4.1</span>
                         </a>
-                        <a href="#" class="block py-1.5 px-3 rounded-lg text-xs font-normal text-white/70 hover:text-white hover:bg-white/10 transition">
-                            Submenu 4.2
+                        <a href="#" class="flex items-center gap-2.5 py-2.5 px-3.5 rounded-xl text-sm font-medium text-white/80 hover:text-white hover:bg-white/10 transition">
+                            <span class="w-1.5 h-1.5 rounded-full bg-white/40 shrink-0"></span>
+                            <span>Submenu 4.2</span>
                         </a>
                     </div>
                 </div>
