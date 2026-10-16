@@ -70,17 +70,7 @@
                         <label for="email" class="block text-sm font-semibold text-primary mb-1.5">
                             Email
                         </label>
-                        <input 
-                            id="email" 
-                            type="text" 
-                            name="email" 
-                            value="{{ old('email') }}" 
-                            required 
-                            autofocus 
-                            autocomplete="username"
-                            placeholder="example@gmail.com"
-                            class="w-full px-4 py-3 rounded-lg border border-[#D9D9D9] bg-white text-black placeholder:text-[#8093A7] text-sm focus:outline-none focus:border-additional focus:ring-1 focus:ring-additional transition duration-150"
-                        >
+                        <x-input id="email" type="text" name="email" value="{{ old('email') }}" required autofocus autocomplete="username" placeholder="example@gmail.com" />
                     </div>
 
                     <!-- Password Field -->
@@ -89,15 +79,7 @@
                             Password
                         </label>
                         <div class="relative">
-                            <input 
-                                id="password" 
-                                type="password" 
-                                name="password" 
-                                required 
-                                autocomplete="current-password"
-                                placeholder="**********"
-                                class="w-full px-4 py-3 pr-11 rounded-lg border border-[#D9D9D9] bg-white text-black placeholder:text-[#8093A7] text-sm focus:outline-none focus:border-additional focus:ring-1 focus:ring-additional transition duration-150"
-                            >
+                            <x-input id="password" type="password" name="password" required autocomplete="current-password" placeholder="**********" class="pr-11" />
                             <button 
                                 type="button" 
                                 id="togglePasswordBtn"
@@ -115,12 +97,7 @@
                     <!-- Remember Me & Forgot Password -->
                     <div class="flex items-center justify-between pt-0.5">
                         <label class="flex items-center gap-2 cursor-pointer select-none">
-                            <input 
-                                type="checkbox" 
-                                name="remember" 
-                                id="remember"
-                                class="w-4 h-4 rounded border-[#D9D9D9] text-primary focus:ring-additional/30 cursor-pointer accent-primary"
-                            >
+                            <x-checkbox name="remember" id="remember" />
                             <span class="text-xs font-semibold text-primary">
                                 Ingat Saya
                             </span>
