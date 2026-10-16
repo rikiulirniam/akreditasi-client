@@ -60,24 +60,7 @@
 
             <!-- Middle: Form Container (Ditengah / centered) -->
             <div class="w-full max-w-[420px] my-auto py-6">
-
-                <!-- Session / Errors Alert -->
-                @if (session('status'))
-                    <div class="mb-5 p-3.5 rounded-lg bg-green-50 border border-green-200 text-xs text-green-700">
-                        {{ session('status') }}
-                    </div>
-                @endif
-
-                @if ($errors->any())
-                    <div class="mb-5 p-3.5 rounded-lg bg-red-50 border border-red-200 text-xs text-red-700">
-                        <ul class="list-disc list-inside space-y-1">
-                            @foreach ($errors->all() as $error)
-                                <li>{{ $error }}</li>
-                            @endforeach
-                        </ul>
-                    </div>
-                @endif
-
+                
                 <!-- Login Form -->
                 <form method="POST" action="{{ route('login') }}" class="space-y-5">
                     @csrf
@@ -301,5 +284,7 @@
             });
         });
     </script>
+    <!-- Reusable Toast Notification Component -->
+    <x-toast />
 </body>
 </html>

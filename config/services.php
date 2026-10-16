@@ -35,4 +35,8 @@ return [
         ],
     ],
 
+    'akademik' => [
+        'base_url' => env('AKADEMIK_API_URL', 'https://akademik.fayra.my.id/api'),
+    ],
+
 ];
