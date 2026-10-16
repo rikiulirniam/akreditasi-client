@@ -45,12 +45,25 @@ class AuthController extends Controller
             if ($response->successful() && ($body['success'] ?? false) === true) {
                 $userData = $body['data']['user'] ?? [];
                 $authData = $body['data']['authorization'] ?? [];
+                $accessToken = $authData['access_token'] ?? null;
+
+                $permissions = [];
+                if ($accessToken && str_contains($accessToken, '.')) {
+                    $parts = explode('.', $accessToken);
+                    if (isset($parts[1])) {
+                        $jwtPayload = json_decode(base64_decode(strtr($parts[1], '-_', '+/')), true);
+                        if (is_array($jwtPayload) && isset($jwtPayload['permissions']) && is_array($jwtPayload['permissions'])) {
+                            $permissions = $jwtPayload['permissions'];
+                        }
+                    }
+                }
 
                 $request->session()->regenerate();
                 $request->session()->put([
-                    'access_token' => $authData['access_token'] ?? null,
+                    'access_token' => $accessToken,
                     'token_type' => $authData['token_type'] ?? 'Bearer',
                     'user' => $userData,
+                    'permissions' => $permissions,
                 ]);
 
                 return redirect()->intended(route('dashboard'))->with('toast', [
@@ -86,6 +99,16 @@ class AuthController extends Controller
      */
     public function logout(Request $request): RedirectResponse
     {
+        $token = (string) $request->session()->get('access_token');
+
+        if (! empty($token)) {
+            try {
+                $this->akademikService->logoutAuth($token);
+            } catch (\Throwable $e) {
+                // Tetap lanjutkan logout lokal meskipun API server tidak merespons
+            }
+        }
+
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 

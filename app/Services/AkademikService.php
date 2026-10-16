@@ -2,31 +2,143 @@
 
 namespace App\Services;
 
+use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Http;
 
 class AkademikService
 {
     protected string $baseUrl;
+    protected ?string $token = null;
 
-    public function __construct(?string $baseUrl = null)
+    public function __construct(?string $baseUrl = null, ?string $token = null)
     {
         $this->baseUrl = rtrim($baseUrl ?? (string) config('services.akademik.base_url', 'https://akademik.fayra.my.id/api'), '/');
+        $this->token = $token;
     }
 
-    /**
-     * Get the base URL of the Akademik API.
-     */
+    public function withToken(?string $token = null): static
+    {
+        $clone = clone $this;
+        $clone->token = $token ?? (string) session('access_token');
+
+        return $clone;
+    }
+
     public function getBaseUrl(): string
     {
         return $this->baseUrl;
     }
 
-    /**
-     * Send login request to Akademik API.
-     *
-     * @param  string|array<string, mixed>  $emailOrCredentials
-     */
+    protected function http(?string $token = null): PendingRequest
+    {
+        $resolvedToken = $token ?? $this->token ?? (string) session('access_token');
+
+        $client = Http::acceptJson()
+            ->asJson()
+            ->timeout(20);
+
+        if (! empty($resolvedToken)) {
+            $client = $client->withToken($resolvedToken);
+        }
+
+        return $client;
+    }
+
+    protected function buildUrl(string $endpoint): string
+    {
+        $trimmed = ltrim($endpoint, '/');
+
+        if (str_starts_with($trimmed, 'api/')) {
+            $trimmed = substr($trimmed, 4);
+        }
+
+        return "{$this->baseUrl}/{$trimmed}";
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Generic HTTP Request Helpers
+    |--------------------------------------------------------------------------
+    */
+
+    public function get(string $endpoint, array $query = [], ?string $token = null): Response
+    {
+        return $this->http($token)->get($this->buildUrl($endpoint), $query);
+    }
+
+    public function post(string $endpoint, array $data = [], ?string $token = null): Response
+    {
+        return $this->http($token)->post($this->buildUrl($endpoint), $data);
+    }
+
+    public function put(string $endpoint, array $data = [], ?string $token = null): Response
+    {
+        return $this->http($token)->put($this->buildUrl($endpoint), $data);
+    }
+
+    public function delete(string $endpoint, array $data = [], ?string $token = null): Response
+    {
+        return $this->http($token)->delete($this->buildUrl($endpoint), $data);
+    }
+
+    /*
+    |==========================================================================
+    | MODUL: ROLE MANAGEMENT (/api/roles/*)
+    |==========================================================================
+    */
+
+    public function getRoleList(array $query = [], ?string $token = null): Response
+    {
+        return $this->get('roles', $query, $token);
+    }
+
+    public function getRoleById(int|string $roleId, ?string $token = null): Response
+    {
+        return $this->get("roles/{$roleId}", [], $token);
+    }
+
+    public function createRole(array $roleData, ?string $token = null): Response
+    {
+        if (! isset($roleData['guard_name'])) {
+            $roleData['guard_name'] = 'api';
+        }
+
+        return $this->post('roles', $roleData, $token);
+    }
+
+    public function updateRole(int|string $roleId, array $roleData, ?string $token = null): Response
+    {
+        return $this->put("roles/{$roleId}", $roleData, $token);
+    }
+
+    public function deleteRole(int|string $roleId, ?string $token = null): Response
+    {
+        return $this->delete("roles/{$roleId}", [], $token);
+    }
+
+    /*
+    |==========================================================================
+    | MODUL: PERMISSIONS (/api/permissions/*)
+    |==========================================================================
+    */
+
+    public function getPermissionList(array $query = [], ?string $token = null): Response
+    {
+        return $this->get('permissions', $query, $token);
+    }
+
+    public function getPermissionById(int|string $permissionId, ?string $token = null): Response
+    {
+        return $this->get("permissions/{$permissionId}", [], $token);
+    }
+
+    /*
+    |==========================================================================
+    | MODUL: AUTENTIKASI PENGGUNA (/api/auth/*)
+    |==========================================================================
+    */
+
     public function login(string|array $emailOrCredentials, ?string $password = null): Response
     {
         if (is_array($emailOrCredentials)) {
@@ -37,12 +149,24 @@ class AkademikService
             $password = (string) $password;
         }
 
-        return Http::acceptJson()
-            ->asJson()
-            ->timeout(15)
-            ->post("{$this->baseUrl}/auth/login", [
-                'email' => $email,
-                'password' => $password,
-            ]);
+        return $this->http()->post($this->buildUrl('auth/login'), [
+            'email' => $email,
+            'password' => $password,
+        ]);
+    }
+
+    public function getAuthProfile(?string $token = null): Response
+    {
+        return $this->get('auth/me', [], $token);
+    }
+
+    public function logoutAuth(?string $token = null): Response
+    {
+        return $this->post('auth/logout', [], $token);
+    }
+
+    public function refreshAuthToken(?string $token = null): Response
+    {
+        return $this->post('auth/refresh', [], $token);
     }
 }
