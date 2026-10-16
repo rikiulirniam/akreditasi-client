@@ -4,25 +4,6 @@
 
 @section('content')
 <div class="space-y-6">
-    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-            <h2 class="text-2xl font-black text-primary tracking-tight">Manajemen Hak Akses</h2>
-            <p class="text-sm text-gray-form mt-1">Kelola modul hak akses sistem secara terstruktur dengan aksi CRUD massal dan kustom.</p>
-        </div>
-        <div>
-            <button 
-                type="button" 
-                id="openCreatePermissionBtn"
-                class="inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-primary text-white text-sm font-bold shadow-sm hover:bg-additional transition cursor-pointer"
-            >
-                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-                </svg>
-                Tambah Hak Akses
-            </button>
-        </div>
-    </div>
-
     <div class="space-y-4">
         <div class="flex items-center justify-between gap-3">
             <div class="relative flex-1 max-w-sm">
@@ -38,6 +19,16 @@
                     class="pl-10 text-xs"
                 />
             </div>
+            <button 
+                type="button" 
+                id="openCreatePermissionBtn"
+                class="inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-primary text-white text-sm font-bold shadow-sm hover:bg-additional transition cursor-pointer"
+            >
+                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                </svg>
+                Tambah Hak Akses
+            </button>
         </div>
 
         <x-table>
