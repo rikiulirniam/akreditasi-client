@@ -29,7 +29,7 @@
             
             <nav class="space-y-3" aria-label="Menu Utama">
                 
-                <!-- Dashboard (Active Box) -->
+                <!-- Dashboard -->
                 <div>
                     <a 
                         href="{{ route('dashboard') }}" 
@@ -43,34 +43,34 @@
                     </a>
                 </div>
 
-                <!-- Manajemen Akun -->
+                <!-- Pengguna -->
+                @php
+                    $isUserMgmtActive = request()->routeIs('roles.*') || request()->routeIs('permissions.*');
+                @endphp
                 <div>
                     <button 
                         type="button" 
-                        class="sidebar-link submenu-toggle-btn w-full flex items-center justify-between gap-3.5 px-3.5 py-3 rounded-2xl text-sm font-medium text-white/80 hover:bg-white/10 hover:text-white transition-all duration-150 group cursor-pointer"
+                        class="sidebar-link submenu-toggle-btn w-full flex items-center justify-between gap-3.5 px-3.5 py-3 rounded-2xl text-sm font-medium {{ $isUserMgmtActive ? 'bg-white/15 text-white' : 'text-white/80 hover:bg-white/10 hover:text-white' }} transition-all duration-150 group cursor-pointer"
                         data-target="submenu-akun"
-                        title="Manajemen Akun"
+                        title="Pengguna"
                     >
                         <div class="flex items-center gap-3.5 min-w-0">
                             <svg class="w-6 h-6 shrink-0 fill-current text-white/90" viewBox="0 0 24 24">
                                 <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
                             </svg>
-                            <span class="sidebar-text truncate">Manajemen Akun</span>
+                            <span class="sidebar-text truncate">Pengguna</span>
                         </div>
-                        <svg class="submenu-chevron sidebar-chevron w-4 h-4 text-white/60 group-hover:text-white transition-transform duration-200" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                        <svg class="submenu-chevron sidebar-chevron w-4 h-4 text-white/60 group-hover:text-white transition-transform duration-200 {{ $isUserMgmtActive ? 'rotate-180' : '' }}" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
                         </svg>
                     </button>
 
-                    <div id="submenu-akun" class="submenu-container hidden pl-11 pr-2 py-1 space-y-1">
-                        <a href="#" class="block py-1.5 px-3 rounded-lg text-xs font-normal text-white/70 hover:text-white hover:bg-white/10 transition">
-                            Daftar Pengguna
+                    <div id="submenu-akun" class="submenu-container {{ $isUserMgmtActive ? '' : 'hidden' }} pl-11 pr-2 py-1 space-y-1">
+                        <a href="{{ route('roles.index') }}" class="block py-1.5 px-3 rounded-lg text-xs {{ request()->routeIs('roles.*') ? 'bg-white/20 text-white font-semibold' : 'text-white/70 hover:text-white hover:bg-white/10' }} transition">
+                            Peran
                         </a>
-                        <a href="#" class="block py-1.5 px-3 rounded-lg text-xs font-normal text-white/70 hover:text-white hover:bg-white/10 transition">
-                            Role & Hak Akses
-                        </a>
-                        <a href="#" class="block py-1.5 px-3 rounded-lg text-xs font-normal text-white/70 hover:text-white hover:bg-white/10 transition">
-                            Log Aktivitas
+                        <a href="{{ route('permissions.index') }}" class="block py-1.5 px-3 rounded-lg text-xs {{ request()->routeIs('permissions.*') ? 'bg-white/20 text-white font-semibold' : 'text-white/70 hover:text-white hover:bg-white/10' }} transition">
+                            Hak Akses
                         </a>
                     </div>
                 </div>
