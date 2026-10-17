@@ -1,11 +1,15 @@
 <?php
 
+use App\Http\Controllers\AngkatanController;
+use App\Http\Controllers\AngkatanKelasController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\KelasController;
 use App\Http\Controllers\PerguruanTinggiController;
 use App\Http\Controllers\PermissionController;
 use App\Http\Controllers\ProdiController;
 use App\Http\Controllers\RoleController;
+use App\Http\Controllers\TahunAkademikController;
 use App\Http\Controllers\UppsController;
 use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
@@ -39,4 +43,10 @@ Route::middleware('auth.akademik')->group(function () {
     Route::put('/permissions/module/{module}', [PermissionController::class, 'updateModule'])->name('permissions.update-module');
     Route::delete('/permissions/module/{module}', [PermissionController::class, 'destroyModule'])->name('permissions.destroy-module');
     Route::resource('permissions', PermissionController::class)->except(['show']);
+    Route::resource('angkatan', AngkatanController::class);
+    Route::resource('angkatan-kelas', AngkatanKelasController::class)->only(['store', 'update', 'destroy']);
+
+    Route::resource('kelas', KelasController::class);
+    Route::resource('tahun-akademik', TahunAkademikController::class);
+
 });

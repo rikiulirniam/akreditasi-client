@@ -360,4 +360,125 @@ class AkademikService
             'avatar' => isset($googleData['avatar']) ? (string) $googleData['avatar'] : null,
         ]);
     }
+    /*
+        |==========================================================================
+        | MODUL: KEMAHASISWAAN - ANGKATAN (/api/angkatan/*)
+        |==========================================================================
+        */
+
+    public function getAngkatanList(array $query = [], ?string $token = null): Response
+    {
+        return $this->get('angkatan', $query, $token);
+    }
+
+    public function getAngkatanById(int|string $id, ?string $token = null): Response
+    {
+        return $this->get("angkatan/{$id}", [], $token);
+    }
+
+    public function createAngkatan(array $data, ?string $token = null): Response
+    {
+        return $this->post('angkatan', $data, $token);
+    }
+
+    public function updateAngkatan(int|string $id, array $data, ?string $token = null): Response
+    {
+        return $this->put("angkatan/{$id}", $data, $token);
+    }
+
+    public function deleteAngkatan(int|string $id, ?string $token = null): Response
+    {
+        return $this->delete("angkatan/{$id}", [], $token);
+    }
+
+    /*
+    |==========================================================================
+    | MODUL: KEMAHASISWAAN - KELAS (/api/kelas/*)
+    |==========================================================================
+    */
+
+    public function getKelasList(array $query = [], ?string $token = null): Response
+    {
+        return $this->get('kelas', $query, $token);
+    }
+
+    public function getKelasById(int|string $id, ?string $token = null): Response
+    {
+        return $this->get("kelas/{$id}", [], $token);
+    }
+
+    public function createKelas(array $data, ?string $token = null): Response
+    {
+        return $this->post('kelas', $data, $token);
+    }
+
+    public function updateKelas(int|string $id, array $data, ?string $token = null): Response
+    {
+        return $this->put("kelas/{$id}", $data, $token);
+    }
+
+    public function deleteKelas(int|string $id, ?string $token = null): Response
+    {
+        return $this->delete("kelas/{$id}", [], $token);
+    }
+    /*
+        |==========================================================================
+        | MODUL: PERGURUAN TINGGI - TAHUN AKADEMIK (/api/tahun-akademik/*)
+        |==========================================================================
+        */
+
+    public function getTahunAkademikList(array $query = [], ?string $token = null): Response
+    {
+        return $this->get('tahun-akademik', $query, $token);
+    }
+
+    public function getTahunAkademikById(int|string $id, ?string $token = null): Response
+    {
+        return $this->get("tahun-akademik/{$id}", [], $token);
+    }
+
+    public function createTahunAkademik(array $data, ?string $token = null): Response
+    {
+        return $this->post('tahun-akademik', $data, $token);
+    }
+
+    public function updateTahunAkademik(int|string $id, array $data, ?string $token = null): Response
+    {
+        return $this->put("tahun-akademik/{$id}", $data, $token);
+    }
+
+    public function deleteTahunAkademik(int|string $id, ?string $token = null): Response
+    {
+        return $this->delete("tahun-akademik/{$id}", [], $token);
+    }
+    /*
+        |==========================================================================
+        | MODUL: KEMAHASISWAAN - ANGKATAN KELAS (/api/angkatan-kelas/*)
+        |==========================================================================
+        */
+
+    public function getAngkatanKelasList(array $query = [], ?string $token = null): Response
+    {
+        return $this->get('angkatan-kelas', $query, $token);
+    }
+
+    public function getAngkatanKelasById(int|string $id, ?string $token = null): Response
+    {
+        return $this->get("angkatan-kelas/{$id}", [], $token);
+    }
+
+    public function createAngkatanKelas(array $data, ?string $token = null): Response
+    {
+        return $this->post('angkatan-kelas', $data, $token);
+    }
+
+    public function updateAngkatanKelas(int|string $id, array $data, ?string $token = null): Response
+    {
+        return $this->put("angkatan-kelas/{$id}", $data, $token);
+    }
+
+    public function deleteAngkatanKelas(int|string $id, ?string $token = null): Response
+    {
+        return $this->delete("angkatan-kelas/{$id}", [], $token);
+    }
 }

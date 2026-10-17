@@ -115,12 +115,6 @@
                                 class="w-1.5 h-1.5 rounded-full {{ (request()->routeIs('prodi.*') || request()->routeIs('program-studi.*')) ? 'bg-secondary' : 'bg-white/40' }} shrink-0"></span>
                             <span>Program Studi</span>
                         </a>
-                        <a href="{{ Route::has('upps.index') ? route('upps.index') : '#' }}"
-                            class="flex items-center gap-2.5 py-2.5 px-3.5 rounded-xl text-sm font-semibold transition-all duration-150 {{ request()->routeIs('upps.*') ? 'bg-white/20 text-white shadow-xs font-bold' : 'text-white/80 hover:text-white hover:bg-white/10' }}">
-                            <span
-                                class="w-1.5 h-1.5 rounded-full {{ request()->routeIs('upps.*') ? 'bg-secondary' : 'bg-white/40' }} shrink-0"></span>
-                            <span>UPPS</span>
-                        </a>
                         <a href="{{ Route::has('tahun-akademik.index') ? route('tahun-akademik.index') : '#' }}"
                             class="flex items-center gap-2.5 py-2.5 px-3.5 rounded-xl text-sm font-semibold transition-all duration-150 {{ request()->routeIs('tahun-akademik.*') ? 'bg-white/20 text-white shadow-xs font-bold' : 'text-white/80 hover:text-white hover:bg-white/10' }}">
                             <span
@@ -130,33 +124,41 @@
                     </div>
                 </div>
 
-                <!-- Menu 4 -->
+                <!-- Kemahasiswaan -->
+                @php
+                    $isKemahasiswaanActive = request()->routeIs('angkatan.*') || request()->routeIs('kelas.*');
+                @endphp
                 <div>
                     <button type="button"
-                        class="sidebar-link submenu-toggle-btn w-full flex items-center justify-between gap-3.5 px-3.5 py-3 rounded-2xl text-sm font-medium text-white/80 hover:bg-white/10 hover:text-white transition-all duration-150 group cursor-pointer"
-                        data-target="submenu-4" title="Menu 4">
+                        class="sidebar-link submenu-toggle-btn w-full flex items-center justify-between gap-3.5 px-3.5 py-3 rounded-2xl text-sm font-medium {{ $isKemahasiswaanActive ? 'bg-white/15 text-white' : 'text-white/80 hover:bg-white/10 hover:text-white' }} transition-all duration-150 group cursor-pointer"
+                        data-target="submenu-kemahasiswaan" title="Kemahasiswaan">
                         <div class="flex items-center gap-3.5 min-w-0">
-                            <svg class="w-6 h-6 shrink-0 fill-current text-white/90" viewBox="0 0 24 24">
-                                <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z" />
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+                                stroke="currentColor" class="w-6 h-6 shrink-0 text-white/90">
+                                <path stroke-linecap="round" stroke-linejoin="round"
+                                    d="M4.26 10.147a60.438 60.438 0 0 0-.491 6.347A48.62 48.62 0 0 1 12 20.904a48.62 48.62 0 0 1 8.232-4.41 60.46 60.46 0 0 0-.491-6.347m-15.482 0a50.636 50.636 0 0 0-2.658-.813A59.906 59.906 0 0 1 12 3.493a59.903 59.903 0 0 1 10.399 5.84c-.896.248-1.783.52-2.658.814m-15.482 0A50.717 50.717 0 0 1 12 13.489a50.702 50.702 0 0 1 7.74-3.342M6.75 15a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5Zm0 0v-3.675A55.378 55.378 0 0 1 12 8.443m-5.25 6.557q0-.36.03-.715" />
                             </svg>
-                            <span class="sidebar-text truncate">Menu 4</span>
+                            <span class="sidebar-text truncate">Kemahasiswaan</span>
                         </div>
-                        <svg class="submenu-chevron sidebar-chevron w-4 h-4 text-white/60 group-hover:text-white transition-transform duration-200"
+                        <svg class="submenu-chevron sidebar-chevron w-4 h-4 text-white/60 group-hover:text-white transition-transform duration-200 {{ $isKemahasiswaanActive ? 'rotate-180' : '' }}"
                             fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
                         </svg>
                     </button>
 
-                    <div id="submenu-4" class="submenu-container hidden pl-10 pr-2 pt-1 pb-1 space-y-1.5">
-                        <a href="#"
-                            class="flex items-center gap-2.5 py-2.5 px-3.5 rounded-xl text-sm font-medium text-white/80 hover:text-white hover:bg-white/10 transition">
-                            <span class="w-1.5 h-1.5 rounded-full bg-white/40 shrink-0"></span>
-                            <span>Submenu 4.1</span>
+                    <div id="submenu-kemahasiswaan"
+                        class="submenu-container {{ $isKemahasiswaanActive ? '' : 'hidden' }} pl-10 pr-2 pt-1 pb-1 space-y-1.5">
+                        <a href="{{ route('angkatan.index') }}"
+                            class="flex items-center gap-2.5 py-2.5 px-3.5 rounded-xl text-sm font-semibold transition-all duration-150 {{ request()->routeIs('angkatan.*') ? 'bg-white/20 text-white shadow-xs font-bold' : 'text-white/80 hover:text-white hover:bg-white/10' }}">
+                            <span
+                                class="w-1.5 h-1.5 rounded-full {{ request()->routeIs('angkatan.*') ? 'bg-secondary' : 'bg-white/40' }} shrink-0"></span>
+                            <span>Angkatan</span>
                         </a>
-                        <a href="#"
-                            class="flex items-center gap-2.5 py-2.5 px-3.5 rounded-xl text-sm font-medium text-white/80 hover:text-white hover:bg-white/10 transition">
-                            <span class="w-1.5 h-1.5 rounded-full bg-white/40 shrink-0"></span>
-                            <span>Submenu 4.2</span>
+                        <a href="{{ route('kelas.index') }}"
+                            class="flex items-center gap-2.5 py-2.5 px-3.5 rounded-xl text-sm font-semibold transition-all duration-150 {{ request()->routeIs('kelas.*') ? 'bg-white/20 text-white shadow-xs font-bold' : 'text-white/80 hover:text-white hover:bg-white/10' }}">
+                            <span
+                                class="w-1.5 h-1.5 rounded-full {{ request()->routeIs('kelas.*') ? 'bg-secondary' : 'bg-white/40' }} shrink-0"></span>
+                            <span>Kelas</span>
                         </a>
                     </div>
                 </div>
