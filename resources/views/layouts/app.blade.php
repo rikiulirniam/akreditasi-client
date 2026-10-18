@@ -47,7 +47,7 @@
         <div class="flex-1 flex flex-col min-w-0 h-full overflow-hidden">
             
             <!-- Topbar -->
-            <header class="shrink-0 h-20 bg-white border-b border-[#EAEAEA] px-4 sm:px-6 lg:px-8 flex items-center justify-between shadow-xs z-30">
+            <header class="shrink-0 min-h-24 bg-white px-4 sm:px-6 lg:px-[54px] py-3.5 flex items-center justify-between z-30">
                 
                 <!-- Left: Sidebar Toggle & Page Title -->
                 <div class="flex items-center gap-3 sm:gap-4">
@@ -58,27 +58,34 @@
                         class="lg:hidden p-2 rounded-xl text-primary hover:bg-gray-100 transition cursor-pointer" 
                         aria-label="Buka Menu"
                     >
-                        <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
                         </svg>
                     </button>
 
-                    <!-- Desktop Collapse Button in Topbar -->
+                    <!-- Desktop Collapse Button in Topbar (styled as navy hamburger matching screenshot) -->
                     <button 
                         type="button" 
                         id="topbarSidebarToggleBtn" 
-                        class="hidden lg:flex p-2 rounded-xl text-primary hover:bg-gray-100 transition cursor-pointer" 
+                        class="hidden lg:flex p-1.5 -ml-1 text-primary hover:text-additional transition cursor-pointer" 
                         aria-label="Toggle Sidebar"
                     >
-                        <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <svg class="w-8 h-8 stroke-[2.5]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
                         </svg>
                     </button>
 
-                    <!-- Page Title -->
-                    <h1 class="text-lg sm:text-2xl font-extrabold text-primary tracking-tight">
-                        @yield('title', $title ?? 'Dashboard')
-                    </h1>
+                    <!-- Page Title & Subtitle -->
+                    <div>
+                        <h1 class="text-2xl sm:text-3xl lg:text-[44px] font-extrabold text-black tracking-tight leading-none">
+                            @yield('title', $title ?? 'Dashboard')
+                        </h1>
+                        @hasSection('subtitle')
+                            <p class="text-sm sm:text-base lg:text-[20px] font-semibold text-black mt-1">
+                                @yield('subtitle')
+                            </p>
+                        @endif
+                    </div>
                 </div>
 
                 <!-- Right: Profile Pill (Matches User Attached Image) -->
@@ -106,8 +113,8 @@
                             <span class="block font-bold text-xs sm:text-sm text-black tracking-tight">
                                 Halo, {{ explode(' ', $currentUser['nama'] ?? 'Kuwat')[0] }}
                             </span>
-                            <span class="block text-[11px] sm:text-xs text-black/80 font-medium capitalize">
-                                {{ strtolower($currentUser['role'] ?? 'Kaprodi') }}
+                            <span class="block text-[11px] sm:text-xs text-black/80 font-medium">
+                                {{ ucfirst(strtolower($currentUser['role'] ?? 'Kaprodi')) }}
                             </span>
                         </div>
 
@@ -156,7 +163,7 @@
             </header>
 
             <!-- Main Page Content -->
-            <main class="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 pb-12">
+            <main class="flex-1 overflow-y-auto px-4 sm:px-6 lg:px-[54px] py-4 pb-12">
                 {{ $slot ?? '' }}
                 @yield('content')
             </main>
@@ -184,16 +191,15 @@
             let isCollapsed = localStorage.getItem('sidebar_collapsed') === 'true';
 
             function applySidebarState() {
-                if (!sidebar) return;
                 if (isCollapsed) {
-                    sidebar.classList.remove('w-64');
+                    sidebar.classList.remove('w-[350px]', 'w-64');
                     sidebar.classList.add('w-20', 'is-collapsed');
                     sidebarTexts.forEach(el => el.classList.add('hidden'));
                     sidebarChevrons.forEach(el => el.classList.add('hidden'));
                     submenuContainers.forEach(el => el.classList.add('hidden'));
                 } else {
                     sidebar.classList.remove('w-20', 'is-collapsed');
-                    sidebar.classList.add('w-64');
+                    sidebar.classList.add('w-[350px]');
                     sidebarTexts.forEach(el => el.classList.remove('hidden'));
                     sidebarChevrons.forEach(el => el.classList.remove('hidden'));
                 }

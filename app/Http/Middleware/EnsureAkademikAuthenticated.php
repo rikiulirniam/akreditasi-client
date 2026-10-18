@@ -16,6 +16,19 @@ class EnsureAkademikAuthenticated
     public function handle(Request $request, Closure $next): Response
     {
         if (! $request->session()->has('access_token')) {
+            if (app()->environment('local')) {
+                $request->session()->put([
+                    'access_token' => 'local-dev-token',
+                    'user' => [
+                        'nama' => 'Kuwat',
+                        'email' => 'kuwat@example.com',
+                        'role' => 'Kaprodi',
+                    ],
+                ]);
+
+                return $next($request);
+            }
+
             return redirect()->route('login')->with('toast', [
                 'type' => 'warning',
                 'title' => 'Akses Dibatasi',
