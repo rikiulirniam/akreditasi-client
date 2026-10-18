@@ -183,6 +183,14 @@
 
             let isCollapsed = localStorage.getItem('sidebar_collapsed') === 'true';
 
+            // Track open submenus so they remain open when expanded
+            const openSubmenus = new Set();
+            submenuContainers.forEach(container => {
+                if (container.getAttribute('data-is-active') === 'true' || !container.classList.contains('hidden')) {
+                    openSubmenus.add(container.id);
+                }
+            });
+
             function applySidebarState() {
                 if (!sidebar) return;
                 if (isCollapsed) {
@@ -196,6 +204,23 @@
                     sidebar.classList.add('w-64');
                     sidebarTexts.forEach(el => el.classList.remove('hidden'));
                     sidebarChevrons.forEach(el => el.classList.remove('hidden'));
+
+                    // Restore open submenu state when expanded
+                    submenuContainers.forEach(container => {
+                        const targetId = container.id;
+                        const btn = document.querySelector(`.submenu-toggle-btn[data-target="${targetId}"]`);
+                        const chevron = btn ? btn.querySelector('.submenu-chevron') : null;
+                        const shouldBeOpen = openSubmenus.has(targetId) || container.getAttribute('data-is-active') === 'true';
+
+                        if (shouldBeOpen) {
+                            container.classList.remove('hidden');
+                            if (chevron) chevron.classList.add('rotate-180');
+                            openSubmenus.add(targetId);
+                        } else {
+                            container.classList.add('hidden');
+                            if (chevron) chevron.classList.remove('rotate-180');
+                        }
+                    });
                 }
             }
 
@@ -230,27 +255,44 @@
             if (mobileToggleBtn) mobileToggleBtn.addEventListener('click', openMobileSidebar);
             if (backdrop) backdrop.addEventListener('click', closeMobileSidebar);
 
+            window.addEventListener('resize', function () {
+                if (window.innerWidth >= 1024) {
+                    applySidebarState();
+                } else {
+                    if (sidebar) {
+                        sidebar.classList.remove('w-20', 'is-collapsed');
+                        sidebar.classList.add('w-64');
+                    }
+                    sidebarTexts.forEach(el => el.classList.remove('hidden'));
+                    sidebarChevrons.forEach(el => el.classList.remove('hidden'));
+                }
+            });
+
             // Submenu Accordion Logic
             const submenuButtons = document.querySelectorAll('.submenu-toggle-btn');
             submenuButtons.forEach(btn => {
                 btn.addEventListener('click', function () {
-                    // If collapsed, expand first so submenu is visible
-                    if (isCollapsed) {
-                        toggleDesktopSidebar();
-                    }
-
                     const targetId = this.getAttribute('data-target');
                     const targetSubmenu = document.getElementById(targetId);
                     const chevron = this.querySelector('.submenu-chevron');
+
+                    // If collapsed, expand first and ensure this submenu is opened
+                    if (isCollapsed) {
+                        openSubmenus.add(targetId);
+                        toggleDesktopSidebar();
+                        return;
+                    }
 
                     if (targetSubmenu) {
                         const isHidden = targetSubmenu.classList.contains('hidden');
                         if (isHidden) {
                             targetSubmenu.classList.remove('hidden');
                             if (chevron) chevron.classList.add('rotate-180');
+                            openSubmenus.add(targetId);
                         } else {
                             targetSubmenu.classList.add('hidden');
                             if (chevron) chevron.classList.remove('rotate-180');
+                            openSubmenus.delete(targetId);
                         }
                     }
                 });

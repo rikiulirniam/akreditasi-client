@@ -57,6 +57,7 @@
                     </button>
 
                     <div id="submenu-akun"
+                        data-is-active="{{ $isUserMgmtActive ? "true" : "false" }}"
                         class="submenu-container {{ $isUserMgmtActive ? '' : 'hidden' }} pl-10 pr-2 pt-1 pb-1 space-y-1.5">
                         <a href="{{ route('users.index') }}"
                             class="flex items-center gap-2.5 py-2.5 px-3.5 rounded-xl text-sm font-semibold transition-all duration-150 {{ request()->routeIs('users.*') ? 'bg-white/20 text-white shadow-xs font-bold' : 'text-white/80 hover:text-white hover:bg-white/10' }}">
@@ -102,6 +103,7 @@
                     </button>
 
                     <div id="submenu-pt"
+                        data-is-active="{{ $isPtActive ? "true" : "false" }}"
                         class="submenu-container {{ $isPtActive ? '' : 'hidden' }} pl-10 pr-2 pt-1 pb-1 space-y-1.5">
                         <a href="{{ Route::has('perguruan-tinggi.index') ? route('perguruan-tinggi.index') : '#' }}"
                             class="flex items-center gap-2.5 py-2.5 px-3.5 rounded-xl text-sm font-semibold transition-all duration-150 {{ request()->routeIs('perguruan-tinggi.*') ? 'bg-white/20 text-white shadow-xs font-bold' : 'text-white/80 hover:text-white hover:bg-white/10' }}">
@@ -147,6 +149,7 @@
                     </button>
 
                     <div id="submenu-kemahasiswaan"
+                        data-is-active="{{ $isKemahasiswaanActive ? "true" : "false" }}"
                         class="submenu-container {{ $isKemahasiswaanActive ? '' : 'hidden' }} pl-10 pr-2 pt-1 pb-1 space-y-1.5">
                         <a href="{{ route('angkatan.index') }}"
                             class="flex items-center gap-2.5 py-2.5 px-3.5 rounded-xl text-sm font-semibold transition-all duration-150 {{ request()->routeIs('angkatan.*') ? 'bg-white/20 text-white shadow-xs font-bold' : 'text-white/80 hover:text-white hover:bg-white/10' }}">
