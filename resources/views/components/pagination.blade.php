@@ -66,7 +66,6 @@
 
     @if($lastPage > 1)
         <div class="flex items-center gap-1.5">
-            {{-- Previous Page Link --}}
             @if($currentPage > 1)
                 <a 
                     href="{{ $buildUrl($currentPage - 1) }}" 
@@ -85,7 +84,6 @@
                 </span>
             @endif
 
-            {{-- First page if far --}}
             @if($startPage > 1)
                 <a href="{{ $buildUrl(1) }}" class="px-1.5 py-0.5 font-medium text-gray-700 hover:text-primary transition">1</a>
                 @if($startPage > 2)
@@ -93,10 +91,9 @@
                 @endif
             @endif
 
-            {{-- Numbered Page Links --}}
             @for($p = $startPage; $p <= $endPage; $p++)
                 @if($p === $currentPage)
-                    <span class="w-6 h-6 rounded-full bg-primary text-white flex items-center justify-center font-bold text-xs shadow-xs">
+                    <span class="w-6 h-6 rounded-full bg-[#01568D] text-white flex items-center justify-center font-bold text-xs shadow-xs">
                         {{ $p }}
                     </span>
                 @else
@@ -106,7 +103,6 @@
                 @endif
             @endfor
 
-            {{-- Last page if far --}}
             @if($endPage < $lastPage)
                 @if($endPage < $lastPage - 1)
                     <span class="px-1 text-gray-400">...</span>
@@ -114,7 +110,6 @@
                 <a href="{{ $buildUrl($lastPage) }}" class="px-1.5 py-0.5 font-medium text-gray-700 hover:text-primary transition">{{ $lastPage }}</a>
             @endif
 
-            {{-- Next Page Link --}}
             @if($currentPage < $lastPage)
                 <a 
                     href="{{ $buildUrl($currentPage + 1) }}" 

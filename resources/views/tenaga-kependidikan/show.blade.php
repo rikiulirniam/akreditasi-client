@@ -3,7 +3,7 @@
 @section('title')
     <span class="inline-flex items-center gap-2.5 sm:gap-3.5 flex-wrap">
         <a href="{{ route('tenaga-pendidikan.index') }}" class="hover:text-additional transition text-black">
-            Tenaga Pendidikan
+            Tenaga Kependidikan
         </a>
         <svg class="w-5 h-5 sm:w-7 sm:h-7 stroke-[3] text-black shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" />

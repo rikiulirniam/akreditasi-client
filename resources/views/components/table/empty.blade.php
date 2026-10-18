@@ -5,10 +5,10 @@
 ])
 
 <tr>
-    <td colspan="{{ $colspan }}" class="py-12 px-6 border-y border-x border-white-bone rounded-2xl text-center text-gray-400 bg-white">
-        <p class="text-sm font-semibold text-gray-600">{{ $message }}</p>
+    <td colspan="{{ $colspan }}" class="py-12 px-6 border border-[#D5D5D5] rounded-[12px] text-center bg-[#F3F3F3] text-gray-600">
+        <p class="text-base font-bold text-gray-800">{{ $message }}</p>
         @if($submessage)
-            <p class="text-xs text-gray-400 mt-1">{{ $submessage }}</p>
+            <p class="text-sm text-gray-500 mt-1">{{ $submessage }}</p>
         @endif
     </td>
 </tr>

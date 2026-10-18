@@ -6,7 +6,7 @@
 @section('content')
 <div class="space-y-6">
     <!-- Toolbar: Search, Filter, & Tambah Tendik -->
-    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         
         <!-- Left: Search & Filter Form -->
         <form method="GET" action="{{ route('tenaga-kependidikan.index') }}" id="searchFilterForm" class="flex flex-wrap items-center gap-3 flex-1">
@@ -25,12 +25,12 @@
                     name="cari" 
                     value="{{ $search }}" 
                     placeholder="Cari nama"
-                    class="w-full h-[36px] bg-[#D9D9D9] border-2 border-primary rounded-[10px] pl-4 pr-10 text-sm font-medium text-black placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-primary/20 transition"
+                    class="box-border w-full h-10 bg-white-form border border-white-bone rounded-[8px] pl-10 pr-10 text-xs font-medium text-black placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary/20 transition"
                     autocomplete="off"
                 >
                 <button 
                     type="submit" 
-                    class="absolute inset-y-0 right-0 pr-3 flex items-center text-primary cursor-pointer hover:scale-110 transition-transform" 
+                    class="absolute inset-y-0 right-0 pr-3 flex items-center text-primary cursor-pointer hover:text-additional transition-colors" 
                     aria-label="Cari"
                 >
                     <svg class="w-4 h-4 stroke-[2.5]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -44,12 +44,12 @@
                 <button 
                     type="button" 
                     id="filterDropdownToggle"
-                    class="flex items-center justify-between h-[36px] bg-[#D9D9D9] border-2 border-primary rounded-[10px] pl-3.5 pr-1 text-sm font-bold text-black cursor-pointer hover:brightness-95 active:scale-[0.99] transition shadow-xs select-none"
+                    class="box-border flex items-center justify-between h-10 bg-white-form border border-white-bone rounded-[8px] pl-4 pr-1 text-xs font-semibold text-gray-900 cursor-pointer hover:brightness-95 active:scale-[0.99] transition select-none"
                     aria-expanded="false"
                     aria-haspopup="true"
                 >
-                    <span class="mr-3 font-semibold text-sm">Filter</span>
-                    <span class="w-7 h-7 rounded-[6px] bg-secondary flex items-center justify-center text-primary shrink-0 shadow-xs">
+                    <span class="mr-2 font-semibold text-sm">Filter</span>
+                    <span class="w-7 h-7 rounded-lg bg-secondary flex items-center justify-center text-primary shrink-0 shadow-xs">
                         <svg id="filterChevronIcon" class="w-4 h-4 stroke-[3] transition-transform duration-200" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
                         </svg>
@@ -144,7 +144,7 @@
             <button 
                 type="button" 
                 id="openCreateModalBtn"
-                class="inline-flex items-center gap-2 h-[35px] px-3.5 bg-[#075B91] hover:bg-primary text-white text-[13px] font-bold rounded-[9px] shadow-xs transition active:scale-[0.98] cursor-pointer"
+                class="inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-primary text-white text-sm font-bold shadow-sm hover:bg-additional transition cursor-pointer"
             >
                 <span class="w-4 h-4 rounded-full border-[1.5px] border-white flex items-center justify-center text-white shrink-0">
                     <svg class="w-3 h-3 stroke-[3]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -156,70 +156,44 @@
         </div>
     </div>
 
-    <!-- Table Section (Matches Screenshot Visual Design) -->
-    <!-- Table Section (Matches Screenshot Visual Design) -->
-    <div class="w-full overflow-x-auto">
-        <table class="w-full border-separate border-spacing-y-2.5 text-left">
-            <thead>
-                <tr class="text-black font-semibold text-sm">
-                    <th class="py-3 px-5 bg-[#D9D9D9] first:rounded-l-[13px] last:rounded-r-[13px] font-bold text-black text-[15px] sm:text-[16px] w-16">
-                        No
-                    </th>
-                    <th class="py-3 px-5 bg-[#D9D9D9] first:rounded-l-[13px] last:rounded-r-[13px] font-bold text-black text-[15px] sm:text-[16px] min-w-[200px]">
-                        Nama
-                    </th>
-                    <th class="py-3 px-5 bg-[#D9D9D9] first:rounded-l-[13px] last:rounded-r-[13px] font-bold text-black text-[15px] sm:text-[16px] min-w-[180px]">
-                        NIP
-                    </th>
-                    <th class="py-3 px-5 bg-[#D9D9D9] first:rounded-l-[13px] last:rounded-r-[13px] font-bold text-black text-[15px] sm:text-[16px] min-w-[180px]">
-                        Jabatan
-                    </th>
-                    <th class="py-3 px-5 bg-[#D9D9D9] first:rounded-l-[13px] last:rounded-r-[13px] font-bold text-black text-[15px] sm:text-[16px] min-w-[180px]">
-                        Kualifikasi
-                    </th>
-                    <th class="py-3 px-5 bg-[#D9D9D9] first:rounded-l-[13px] last:rounded-r-[13px] font-bold text-black text-[15px] sm:text-[16px] w-32 text-right">
-                        Action
-                    </th>
-                </tr>
-            </thead>
-            <tbody class="text-black">
-                @forelse($tenagaKependidikan as $index => $item)
-                    @php
-                        $rowNumber = $index + 1 + (($tenagaKependidikan->currentPage() - 1) * $tenagaKependidikan->perPage());
-                    @endphp
-                    <tr class="bg-[#CCCCCC] hover:bg-[#C2C2C2] transition-colors duration-150 group">
-                        <!-- No -->
-                        <td class="py-3.5 px-5 border-y border-[#CACACA] first:border-l first:rounded-l-[13px] last:border-r last:rounded-r-[13px] font-medium text-[15px] sm:text-[16px] text-black">
-                            {{ $rowNumber }}.
-                        </td>
+    <x-table>
+        <x-slot:header>
+            <x-table.th class="w-16">No</x-table.th>
+            <x-table.th>Nama</x-table.th>
+            <x-table.th>NIP</x-table.th>
+            <x-table.th>Jabatan</x-table.th>
+            <x-table.th>Kualifikasi</x-table.th>
+            <x-table.th class="w-28 text-right">Action</x-table.th>
+        </x-slot:header>
 
-                        <!-- Nama -->
-                        <td class="py-3.5 px-5 border-y border-[#CACACA] first:border-l first:rounded-l-[13px] last:border-r last:rounded-r-[13px] font-medium text-[15px] sm:text-[16px] text-black">
-                            {{ $item->nama }}
-                        </td>
-
-                        <!-- NIP -->
-                        <td class="py-3.5 px-5 border-y border-[#CACACA] first:border-l first:rounded-l-[13px] last:border-r last:rounded-r-[13px] font-medium text-[15px] sm:text-[16px] text-black font-mono">
-                            {{ $item->nip }}
-                        </td>
-
-                        <!-- Jabatan -->
-                        <td class="py-3.5 px-5 border-y border-[#CACACA] first:border-l first:rounded-l-[13px] last:border-r last:rounded-r-[13px] font-medium text-[15px] sm:text-[16px] text-black">
-                            {{ $item->jabatan }}
-                        </td>
-
-                        <!-- Kualifikasi -->
-                        <td class="py-3.5 px-5 border-y border-[#CACACA] first:border-l first:rounded-l-[13px] last:border-r last:rounded-r-[13px] font-medium text-[15px] sm:text-[16px] text-black">
-                            {{ $item->kualifikasi }}
-                        </td>
-
-                        <!-- Action Icons (3 Icons: Edit, Hapus, Detail) -->
-                        <td class="py-3.5 px-5 border-y border-[#CACACA] first:border-l first:rounded-l-[13px] last:border-r last:rounded-r-[13px] text-right">
-                            <div class="flex items-center justify-end gap-3.5">
+        @forelse($tenagaKependidikan as $index => $item)
+            @php
+                $rowNumber = $index + 1 + (($tenagaKependidikan->currentPage() - 1) * $tenagaKependidikan->perPage());
+            @endphp
+            <x-table.row class="tendik-row">
+                <x-table.cell class="text-gray-500 font-medium w-16">
+                    {{ $rowNumber }}.
+                </x-table.cell>
+                <x-table.cell>
+                    <span class="text-sm font-medium text-gray-700">
+                        {{ $item->nama }}
+                    </span>
+                </x-table.cell>
+                <x-table.cell>
+                    <span class="text-sm font-medium text-gray-700">{{ $item->nip }}</span>
+                </x-table.cell>
+                <x-table.cell class="text-sm font-medium text-gray-700">
+                    {{ $item->jabatan }}
+                </x-table.cell>
+                <x-table.cell class="text-sm font-medium text-gray-700">
+                    {{ $item->kualifikasi }}
+                </x-table.cell>
+                <x-table.cell class="w-32">
+                    <div class="flex items-center justify-end gap-3">
                                 <!-- Edit Icon (Yellow #FFC400) -->
                                 <button 
                                     type="button" 
-                                    class="edit-tendik-btn text-[#FFC400] hover:text-amber-500 transition-transform hover:scale-115 cursor-pointer"
+                                    class="edit-tendik-btn text-[#F59E0B] hover:text-[#D97706] transition p-1 cursor-pointer"
                                     data-id="{{ $item->id }}"
                                     data-nama="{{ $item->nama }}"
                                     data-nip="{{ $item->nip }}"
@@ -229,128 +203,40 @@
                                     title="Edit Tenaga Kependidikan"
                                     aria-label="Edit {{ $item->nama }}"
                                 >
-                                    <x-icon.edit class="w-5 h-5 stroke-[2]" />
+                                    <x-icon.edit class="w-5 h-5" />
                                 </button>
 
                                 <!-- Delete Icon (Red #C92D23) -->
                                 <button 
                                     type="button" 
-                                    class="delete-tendik-btn text-[#C92D23] hover:text-rose-700 transition-transform hover:scale-115 cursor-pointer"
+                                    class="delete-tendik-btn text-[#DC2626] hover:text-[#B91C1C] transition p-1 cursor-pointer"
                                     data-id="{{ $item->id }}"
                                     data-nama="{{ $item->nama }}"
                                     data-action="{{ route('tenaga-kependidikan.destroy', $item) }}"
                                     title="Hapus Tenaga Kependidikan"
                                     aria-label="Hapus {{ $item->nama }}"
                                 >
-                                    <x-icon.delete class="w-5 h-5 stroke-[2]" />
+                                    <x-icon.delete class="w-5 h-5" />
                                 </button>
 
                                 <!-- Detail Icon (Navy / Blue #012650) -->
                                 <a 
                                     href="{{ route('tenaga-pendidikan.show', $item) }}"
-                                    class="text-[#012650] hover:text-[#01568D] transition-transform hover:scale-115 cursor-pointer flex items-center justify-center"
-                                    title="Detail Tenaga Pendidikan"
+                                    class="text-primary hover:text-additional transition p-1 cursor-pointer flex items-center justify-center"
+                                    title="Detail Tenaga Kependidikan"
                                     aria-label="Detail {{ $item->nama }}"
                                 >
-                                    <x-icon.detail class="w-5 h-5 stroke-[2]" />
+                                    <x-icon.detail class="w-5 h-5" />
                                 </a>
-                            </div>
-                        </td>
-                    </tr>
-                @empty
-                    <tr>
-                        <td colspan="6" class="py-12 px-6 text-center bg-[#D9D9D9] rounded-[13px] border border-[#CACACA] text-gray-600">
-                            <div class="flex flex-col items-center justify-center gap-2">
-                                <svg class="w-10 h-10 text-gray-400 stroke-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z" />
-                                </svg>
-                                <span class="font-bold text-sm text-gray-800">Tidak ada data Tenaga Kependidikan ditemukan</span>
-                                <span class="text-xs text-gray-500">Coba ubah kata kunci pencarian atau reset filter.</span>
-                            </div>
-                        </td>
-                    </tr>
-                @endforelse
-            </tbody>
-        </table>
-    </div>
+                    </div>
+                </x-table.cell>
+            </x-table.row>
+        @empty
+            <x-table.empty colspan="6" message="Belum ada data tenaga kependidikan" submessage="Coba ubah kata kunci pencarian atau reset filter." />
+        @endforelse
+    </x-table>
 
-    <!-- Footer: Counter & Pagination (Matches Screenshot Layout) -->
-    @php
-        $from = $tenagaKependidikan->firstItem() ?? 0;
-        $to = $tenagaKependidikan->lastItem() ?? 0;
-        $total = $tenagaKependidikan->total();
-        $fromFormatted = sprintf('%02d', $from);
-        $toFormatted = sprintf('%02d', $to);
-        $lastPage = $tenagaKependidikan->lastPage();
-        $currentPage = $tenagaKependidikan->currentPage();
-    @endphp
-    <div class="flex flex-col sm:flex-row items-center justify-between gap-4 pt-3 text-xs sm:text-sm font-semibold text-black select-none">
-        <!-- Left: Counter Text (e.g. "Menampilkan 01–08 Data dari 39") -->
-        <div>
-            @if($total > 0)
-                <span>Menampilkan {{ $fromFormatted }}–{{ $toFormatted }} Data dari {{ $total }}</span>
-            @else
-                <span>Menampilkan 00 Data dari 0</span>
-            @endif
-        </div>
-
-        <!-- Right: Pagination -->
-        <div class="flex items-center gap-1.5 text-primary font-bold">
-            {{-- Previous Page Chevron --}}
-            @if($currentPage > 1)
-                <a 
-                    href="{{ $tenagaKependidikan->previousPageUrl() }}" 
-                    class="p-1 text-primary hover:text-additional transition flex items-center justify-center"
-                    aria-label="Halaman Sebelumnya"
-                >
-                    <svg class="w-4 h-4 stroke-[3]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
-                    </svg>
-                </a>
-            @else
-                <span class="p-1 text-gray-300 cursor-not-allowed flex items-center justify-center">
-                    <svg class="w-4 h-4 stroke-[3]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
-                    </svg>
-                </span>
-            @endif
-
-            {{-- Page Numbers (Active in blue circle, others links) --}}
-            @for($p = 1; $p <= $lastPage; $p++)
-                @if($p === $currentPage)
-                    <span class="w-6 h-6 rounded-full bg-[#01568D] text-white flex items-center justify-center font-bold text-xs shadow-xs">
-                        {{ $p }}
-                    </span>
-                @else
-                    <a 
-                        href="{{ $tenagaKependidikan->url($p) }}" 
-                        class="w-6 h-6 rounded-full hover:bg-gray-200 text-black flex items-center justify-center font-semibold text-xs transition"
-                    >
-                        {{ $p }}
-                    </a>
-                @endif
-            @endfor
-
-            {{-- Next Page Chevron --}}
-            @if($currentPage < $lastPage)
-                <a 
-                    href="{{ $tenagaKependidikan->nextPageUrl() }}" 
-                    class="p-1 text-primary hover:text-additional transition flex items-center justify-center"
-                    aria-label="Halaman Selanjutnya"
-                >
-                    <svg class="w-4 h-4 stroke-[3]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
-                    </svg>
-                </a>
-            @else
-                <span class="p-1 text-gray-300 cursor-not-allowed flex items-center justify-center">
-                    <svg class="w-4 h-4 stroke-[3]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
-                    </svg>
-                </span>
-            @endif
-        </div>
-    </div>
+    <x-pagination :paginator="$tenagaKependidikan" />
 </div>
 
 <!-- ========================================== -->
