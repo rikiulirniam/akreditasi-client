@@ -28,6 +28,20 @@ class TenagaKependidikanTest extends TestCase
         $response->assertSee('Bambang Triyono, S.E.');
     }
 
+    public function test_tendik_detail_links_to_api_certifications(): void
+    {
+        $item = TenagaKependidikan::where('nip', '197805122003121001')->firstOrFail();
+
+        $response = $this->get(route('tenaga-pendidikan.show', $item));
+
+        $response->assertOk()
+            ->assertSee(route('sertifikasi.index', [
+                'tipe_pemilik' => 'tendik',
+                'search' => $item->nip,
+            ]))
+            ->assertSee('Lihat Sertifikasi API');
+    }
+
     public function test_can_search_by_name(): void
     {
         $response = $this->get(route('tenaga-kependidikan.index', ['cari' => 'Bambang']));

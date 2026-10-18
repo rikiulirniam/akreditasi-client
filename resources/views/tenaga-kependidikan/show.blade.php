@@ -158,6 +158,13 @@
                 Sertifikasi
             </h3>
 
+            <a
+                href="{{ route('sertifikasi.index', ['tipe_pemilik' => 'tendik', 'search' => $tenagaKependidikan->nip]) }}"
+                class="inline-flex items-center gap-2 h-[35px] px-3.5 bg-[#00649B] hover:bg-[#00517d] text-white text-[13px] font-bold rounded-[9px] shadow-xs transition active:scale-[0.98]"
+            >
+                Lihat Sertifikasi API
+            </a>
+
             <!-- Tombol Tambah Sertifikasi -->
             <button 
                 type="button" 
