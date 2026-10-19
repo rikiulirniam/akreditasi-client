@@ -5,6 +5,7 @@ use App\Http\Controllers\AngkatanKelasController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\KelasController;
+use App\Http\Controllers\KurikulumController;
 use App\Http\Controllers\MahasiswaController;
 use App\Http\Controllers\PerguruanTinggiController;
 use App\Http\Controllers\PermissionController;
@@ -51,5 +52,8 @@ Route::middleware('auth.akademik')->group(function () {
     Route::resource('kelas', KelasController::class);
     Route::resource('mahasiswa', MahasiswaController::class);
     Route::resource('tahun-akademik', TahunAkademikController::class);
+
+    Route::resource('kurikulum', KurikulumController::class);
+    Route::put('kurikulum/{kurikulum}/cpl-mata-kuliah', [KurikulumController::class, 'updateMataKuliahCpl'])->name('kurikulum.update-mk-cpl');
 
 });
