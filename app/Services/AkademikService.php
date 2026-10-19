@@ -65,22 +65,88 @@ class AkademikService
 
     public function get(string $endpoint, array $query = [], ?string $token = null): Response
     {
-        return $this->http($token)->get($this->buildUrl($endpoint), $query);
+        return $this->sendRequest('get', $endpoint, $query, $token);
     }
 
     public function post(string $endpoint, array $data = [], ?string $token = null): Response
     {
-        return $this->http($token)->post($this->buildUrl($endpoint), $data);
+        return $this->sendRequest('post', $endpoint, $data, $token);
     }
 
     public function put(string $endpoint, array $data = [], ?string $token = null): Response
     {
-        return $this->http($token)->put($this->buildUrl($endpoint), $data);
+        return $this->sendRequest('put', $endpoint, $data, $token);
     }
 
     public function delete(string $endpoint, array $data = [], ?string $token = null): Response
     {
-        return $this->http($token)->delete($this->buildUrl($endpoint), $data);
+        return $this->sendRequest('delete', $endpoint, $data, $token);
+    }
+
+    protected function sendRequest(string $method, string $endpoint, array $params = [], ?string $token = null): Response
+    {
+        $resolvedToken = $token ?? $this->token ?? (string) session('access_token');
+        $url = $this->buildUrl($endpoint);
+
+        $client = $this->http($resolvedToken);
+        $response = match (strtolower($method)) {
+            'post' => $client->post($url, $params),
+            'put' => $client->put($url, $params),
+            'delete' => $client->delete($url, $params),
+            default => $client->get($url, $params),
+        };
+
+        // Jika respons 401 dan bukan endpoint auth, coba auto-refresh token 1x
+        $isAuthEndpoint = str_starts_with(ltrim($endpoint, '/'), 'auth/');
+        if ($response->status() === 401 && ! $isAuthEndpoint && ! empty($resolvedToken)) {
+            try {
+                $refreshResponse = $this->refreshAuthToken($resolvedToken);
+                $body = $refreshResponse->json();
+
+                if ($refreshResponse->successful() && ($body['success'] ?? false) === true) {
+                    $authData = $body['data']['authorization'] ?? [];
+                    $newAccessToken = $authData['access_token'] ?? null;
+
+                    if ($newAccessToken) {
+                        if (session()->isStarted()) {
+                            $expiresAt = null;
+                            if (str_contains($newAccessToken, '.')) {
+                                $parts = explode('.', $newAccessToken);
+                                if (isset($parts[1])) {
+                                    $jwtPayload = json_decode(base64_decode(strtr($parts[1], '-_', '+/')), true);
+                                    if (is_array($jwtPayload) && isset($jwtPayload['exp'])) {
+                                        $expiresAt = (int) $jwtPayload['exp'];
+                                    }
+                                }
+                            }
+                            if (! $expiresAt && isset($authData['expires_in'])) {
+                                $expiresAt = time() + (int) $authData['expires_in'];
+                            }
+
+                            session()->put([
+                                'access_token' => $newAccessToken,
+                                'token_type' => $authData['token_type'] ?? 'Bearer',
+                                'token_expires_at' => $expiresAt,
+                            ]);
+                        }
+
+                        // Retry request dengan token baru
+                        $retryClient = $this->http($newAccessToken);
+
+                        return match (strtolower($method)) {
+                            'post' => $retryClient->post($url, $params),
+                            'put' => $retryClient->put($url, $params),
+                            'delete' => $retryClient->delete($url, $params),
+                            default => $retryClient->get($url, $params),
+                        };
+                    }
+                }
+            } catch (\Throwable $e) {
+                // Abaikan kesalahan refresh dan kembalikan respons 401 asli
+            }
+        }
+
+        return $response;
     }
 
     /*

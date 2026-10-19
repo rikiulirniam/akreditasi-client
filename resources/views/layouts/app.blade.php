@@ -36,6 +36,16 @@
             'email' => 'kuwat@example.com',
             'role' => 'Kaprodi',
         ];
+        $tokenExpiresAt = session('token_expires_at');
+        if (! $tokenExpiresAt && session()->has('access_token')) {
+            $parts = explode('.', (string) session('access_token'));
+            if (isset($parts[1])) {
+                $payload = json_decode(base64_decode(strtr($parts[1], '-_', '+/')), true);
+                if (isset($payload['exp'])) {
+                    $tokenExpiresAt = (int) $payload['exp'];
+                }
+            }
+        }
     @endphp
 
     <div class="flex h-screen w-full overflow-hidden bg-white">
@@ -340,6 +350,56 @@
                     closeMobileSidebar();
                 }
             });
+
+            // Auto-refresh JWT token proactively before expiration
+            let tokenExpiresAt = {{ (int) ($tokenExpiresAt ?? 0) }};
+            const refreshTokenUrl = "{{ route('auth.refresh-token') }}";
+            const csrfMetaToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+
+            if (tokenExpiresAt > 0 && csrfMetaToken) {
+                let tokenRefreshTimer = null;
+
+                function scheduleTokenRefresh() {
+                    if (tokenRefreshTimer) {
+                        clearTimeout(tokenRefreshTimer);
+                    }
+
+                    const nowSeconds = Math.floor(Date.now() / 1000);
+                    const leadSeconds = 300;
+                    const secondsLeft = tokenExpiresAt - nowSeconds - leadSeconds;
+
+                    const delayMs = Math.max(3000, secondsLeft * 1000);
+
+                    tokenRefreshTimer = setTimeout(async function () {
+                        try {
+                            const res = await fetch(refreshTokenUrl, {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'X-CSRF-TOKEN': csrfMetaToken,
+                                    'Accept': 'application/json',
+                                    'X-Requested-With': 'XMLHttpRequest'
+                                }
+                            });
+
+                            if (res.ok) {
+                                const data = await res.json();
+                                if (data.success && data.expires_at) {
+                                    tokenExpiresAt = data.expires_at;
+                                    scheduleTokenRefresh();
+                                }
+                            } else if (res.status === 401) {
+                                window.location.href = "{{ route('login') }}";
+                            }
+                        } catch (e) {
+                            // Coba kembali dalam 30 detik jika ada gangguan jaringan
+                            tokenRefreshTimer = setTimeout(scheduleTokenRefresh, 30000);
+                        }
+                    }, delayMs);
+                }
+
+                scheduleTokenRefresh();
+            }
         });
     </script>
 </body>
