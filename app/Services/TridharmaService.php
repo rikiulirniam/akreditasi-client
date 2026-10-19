@@ -76,8 +76,12 @@ class TridharmaService
     }
 
     /** @param array<string, int|string|null> $payload */
-    public function createSertifikasi(array $payload, ?UploadedFile $evidenceFile = null): Response
+    public function createSertifikasi(array $payload, ?UploadedFile $evidenceFile = null, bool $asMultipart = false): Response
     {
+        if ($evidenceFile === null && ! $asMultipart) {
+            return $this->http()->post($this->url('sertifikasi'), $payload);
+        }
+
         $request = Http::acceptJson()->timeout(30);
         $token = $this->token ?? (string) session('access_token');
         if ($token !== '') {
@@ -110,6 +114,11 @@ class TridharmaService
         return $this->http()->get($this->url("sertifikasi/{$id}"));
     }
 
+    public function getSertifikasiById(int|string $id): Response
+    {
+        return $this->getSertifikasi($id);
+    }
+
     /** @param array<string, int|string|null> $payload */
     public function updateSertifikasi(int|string $id, array $payload): Response
     {
@@ -119,67 +128,5 @@ class TridharmaService
     public function deleteSertifikasi(int|string $id): Response
     {
         return $this->http()->delete($this->url("sertifikasi/{$id}"));
-    }
-}
-<?php
-
-namespace App\Services;
-
-use Illuminate\Http\Client\PendingRequest;
-use Illuminate\Http\Client\Response;
-use Illuminate\Support\Facades\Http;
-
-class TridharmaService
-{
-    protected string $baseUrl;
-
-    public function __construct(?string $baseUrl = null)
-    {
-        $this->baseUrl = rtrim($baseUrl ?? (string) config('services.tridharma.base_url'), '/');
-    }
-
-    protected function http(): PendingRequest
-    {
-        $client = Http::acceptJson()
-            ->asJson()
-            ->timeout(20);
-
-        $token = (string) session('access_token');
-
-        if ($token !== '') {
-            $client = $client->withToken($token);
-        }
-
-        return $client;
-    }
-
-    protected function buildUrl(string $endpoint): string
-    {
-        return $this->baseUrl.'/'.ltrim($endpoint, '/');
-    }
-
-    public function getSertifikasiList(array $query = []): Response
-    {
-        return $this->http()->get($this->buildUrl('sertifikasi'), $query);
-    }
-
-    public function getSertifikasiById(int|string $id): Response
-    {
-        return $this->http()->get($this->buildUrl("sertifikasi/{$id}"));
-    }
-
-    public function createSertifikasi(array $data): Response
-    {
-        return $this->http()->post($this->buildUrl('sertifikasi'), $data);
-    }
-
-    public function updateSertifikasi(int|string $id, array $data): Response
-    {
-        return $this->http()->put($this->buildUrl("sertifikasi/{$id}"), $data);
-    }
-
-    public function deleteSertifikasi(int|string $id): Response
-    {
-        return $this->http()->delete($this->buildUrl("sertifikasi/{$id}"));
     }
 }
