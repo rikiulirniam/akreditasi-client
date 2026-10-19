@@ -16,7 +16,9 @@ class EnsureAkademikAuthenticated
     public function handle(Request $request, Closure $next): Response
     {
         if (! $request->session()->has('access_token')) {
-            if (app()->environment('local')) {
+            $isApiBackedTendikRoute = $request->routeIs('tenaga-kependidikan.*', 'tenaga-pendidikan.*');
+
+            if (app()->environment('local') && ! $isApiBackedTendikRoute) {
                 $request->session()->put([
                     'access_token' => 'local-dev-token',
                     'user' => [

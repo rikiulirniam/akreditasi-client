@@ -110,17 +110,125 @@
         window.openConfirmDeleteModal = openModal;
         window.closeConfirmDeleteModal = closeModal;
 
+        let activeDeleteRow = null;
+
         // Auto attach listener for any button with data-confirm-delete
         document.addEventListener('click', function (e) {
             const btn = e.target.closest('[data-confirm-delete]');
             if (!btn) return;
 
             e.preventDefault();
+            activeDeleteRow = btn.closest('tr');
             const action = btn.getAttribute('data-action') || btn.getAttribute('href') || (btn.form ? btn.form.action : '#');
             const title = btn.getAttribute('data-title') || 'Hapus Data?';
             const message = btn.getAttribute('data-message') || 'Apakah Anda yakin ingin menghapus data ini? Tindakan ini bersifat permanen dan data tidak dapat dikembalikan.';
 
             openModal({ action, title, message });
         });
+
+        if (form) {
+            form.addEventListener('submit', function (e) {
+                if (!activeDeleteRow) return; // proceed with default form submit if not from a table row
+                e.preventDefault();
+
+                const targetRow = activeDeleteRow;
+                const actionUrl = form.action;
+                const csrfToken = form.querySelector('input[name="_token"]')?.value 
+                    || document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') 
+                    || '';
+
+                closeModal();
+
+                // 1. Initial fade-out state
+                targetRow.style.transition = 'opacity 0.25s ease, transform 0.25s ease';
+                targetRow.style.opacity = '0.35';
+                targetRow.style.pointerEvents = 'none';
+
+                fetch(actionUrl, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRF-TOKEN': csrfToken,
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    body: JSON.stringify({ _method: 'DELETE' })
+                })
+                .then(async response => {
+                    let data = {};
+                    try { data = await response.json(); } catch (err) {}
+
+                    if (!response.ok || (data.success !== undefined && data.success === false)) {
+                        throw new Error(data.message || 'Gagal menghapus data.');
+                    }
+
+                    // 2. Animate row height collapsing so rows below it smoothly slide upwards!
+                    targetRow.style.opacity = '0';
+                    targetRow.style.transform = 'translateY(-6px)';
+
+                    const cells = targetRow.querySelectorAll('td');
+                    cells.forEach(td => {
+                        td.style.transition = 'all 0.35s cubic-bezier(0.4, 0, 0.2, 1)';
+                        td.style.paddingTop = '0px';
+                        td.style.paddingBottom = '0px';
+                        td.style.borderTopWidth = '0px';
+                        td.style.borderBottomWidth = '0px';
+                        td.style.height = '0px';
+                        td.style.lineHeight = '0px';
+                        td.style.fontSize = '0px';
+                        td.style.boxShadow = 'none';
+                        Array.from(td.children).forEach(child => {
+                            child.style.transition = 'all 0.35s cubic-bezier(0.4, 0, 0.2, 1)';
+                            child.style.maxHeight = '0px';
+                            child.style.opacity = '0';
+                            child.style.overflow = 'hidden';
+                            child.style.margin = '0px';
+                            child.style.padding = '0px';
+                        });
+                    });
+
+                    setTimeout(() => {
+                        const table = targetRow.closest('table');
+                        targetRow.remove();
+
+                        // Re-number remaining rows in the table if there is a number column
+                        if (table) {
+                            const remainingRows = table.querySelectorAll('tbody tr:not(.empty-state-row)');
+                            remainingRows.forEach((r, idx) => {
+                                const firstCell = r.querySelector('td:first-child');
+                                if (firstCell && /^\s*\d+\.?\s*$/.test(firstCell.textContent)) {
+                                    firstCell.textContent = (idx + 1);
+                                }
+                            });
+                        }
+
+                        if (window.showToast) {
+                            window.showToast({
+                                type: 'success',
+                                title: 'Berhasil Dihapus',
+                                message: data.message || 'Data berhasil dihapus.'
+                            });
+                        }
+                        activeDeleteRow = null;
+                    }, 360);
+                })
+                .catch(error => {
+                    targetRow.style.opacity = '1';
+                    targetRow.style.transform = 'none';
+                    targetRow.style.pointerEvents = 'auto';
+
+                    if (window.showToast) {
+                        window.showToast({
+                            type: 'error',
+                            title: 'Gagal Menghapus',
+                            message: error.message || 'Gagal menghapus data.'
+                        });
+                    } else {
+                        alert(error.message || 'Gagal menghapus data.');
+                    }
+                    activeDeleteRow = null;
+                });
+            });
+        }
     })();
 </script>
