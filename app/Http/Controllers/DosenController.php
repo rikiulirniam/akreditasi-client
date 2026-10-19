@@ -192,103 +192,46 @@ class DosenController extends Controller
         $rawResponse = $response->json();
         $dosenData = $rawResponse['data'] ?? [];
 
-        // Fallback to mockup data if API returned empty / not found
-        if (! $response->successful() && empty($dosenData)) {
-            $dosenData = [
-                'id' => $id,
-                'nama_dosen' => 'Dr. Budi Santoso, M. Kom.',
-                'nidn' => '0015088501',
-                'status_dosen' => 'Aktif',
-                'email' => 'Budisantoso@gmail.com',
-                'sertifikasi' => 'https://drive.google.com',
-                'nama_jabatan' => 'Lektor Kepala',
-                'jurusan' => 'Teknik Elektro',
-                'prodi' => 'D4 - Teknologi Rekayasa Komputer',
-            ];
-        }
-
         // Normalize lecturer profile
-        $rawJabatan = $dosenData['jabatan'] ?? ($dosenData['nama_jabatan'] ?? null);
+        $rawJabatan = $dosenData['jabatan_akademik'] ?? ($dosenData['jabatan'] ?? ($dosenData['nama_jabatan'] ?? null));
         $rawJurusan = $dosenData['jurusan'] ?? ($dosenData['bidang_keahlian'] ?? ($dosenData['bidang'] ?? null));
         $rawProdi = $dosenData['prodi'] ?? ($dosenData['program_studi'] ?? null);
-        $rawEmail = $dosenData['email'] ?? null;
-        $rawStatus = $dosenData['status_dosen'] ?? ($dosenData['status'] ?? null);
         $rawSertifikasi = $dosenData['sertifikasi'] ?? null;
         $rawNama = $dosenData['nama_dosen'] ?? ($dosenData['nama'] ?? ($dosenData['name'] ?? null));
-        $rawNidn = $dosenData['nidn'] ?? null;
 
         $dosen = [
-            'id' => is_scalar($dosenData['id'] ?? null) ? $dosenData['id'] : $id,
+            'id' => is_scalar($dosenData['id_dosen'] ?? ($dosenData['id'] ?? null)) ? ($dosenData['id_dosen'] ?? $dosenData['id']) : $id,
             'nama_dosen' => $this->extractString($rawNama, 'Dr. Budi Santoso, M. Kom.'),
-            'nidn' => $this->extractString($rawNidn, '0015088501'),
+            'nidn' => $this->extractString($dosenData['nidn'] ?? null, '0015088501'),
             'jabatan' => $this->extractString($rawJabatan, 'Lektor Kepala'),
-            'jurusan' => $this->extractString($rawJurusan, 'Teknik Elektro'),
-            'prodi' => $this->extractString($rawProdi, 'D4 - Teknologi Rekayasa Komputer'),
-            'email' => $this->extractString($rawEmail, 'Budisantoso@gmail.com'),
-            'status_dosen' => $this->extractString($rawStatus, 'Aktif'),
+            'jurusan' => ! empty($rawJurusan) ? $this->extractString($rawJurusan, 'Teknik Elektro') : 'Teknik Elektro',
+            'prodi' => 'D4 - Teknologi Rekayasa Komputer',
+            'email' => $this->extractString($dosenData['email'] ?? null, 'Budisantoso@gmail.com'),
+            'status_dosen' => $this->extractString($dosenData['status_dosen'] ?? ($dosenData['status'] ?? null), 'Aktif'),
             'sertifikasi' => is_string($rawSertifikasi) && trim($rawSertifikasi) !== '' ? trim($rawSertifikasi) : (is_array($rawSertifikasi) ? $this->extractString($rawSertifikasi, '') : null),
         ];
 
-        // Penelitian (Research) list
-        $rawPenelitian = ! empty($dosenData['penelitian']) && is_array($dosenData['penelitian'])
+        // Penelitian list — API key: penelitian
+        $rawPenelitian = isset($dosenData['penelitian']) && is_array($dosenData['penelitian'])
             ? $dosenData['penelitian']
-            : [
+            : (array_key_exists('penelitian', $dosenData) ? [] : [
                 [
-                    'judul' => 'Sistem Prediksi Harga Komoditas Pangan Jawa Tengah dengan LSTM',
+                    'judul_kegiatan' => 'Sistem Prediksi Harga Komoditas Pangan Jawa Tengah dengan LSTM',
                     'tahun_usulan' => '2025',
                     'tahun_kegiatan' => '2026',
                     'tahun_pelaksanaan' => '2026',
                     'bidang' => 'Teknik Elektro',
                     'instansi' => 'Politeknik Negeri Semarang',
                 ],
-                [
-                    'judul' => 'Rancang Bangun Sistem Monitoring Kualitas Udara Berbasis IoT',
-                    'tahun_usulan' => '2024',
-                    'tahun_kegiatan' => '2025',
-                    'tahun_pelaksanaan' => '2025',
-                    'bidang' => 'Teknik Elektro',
-                    'instansi' => 'Politeknik Negeri Semarang',
-                ],
-                [
-                    'judul' => 'Optimasi Proses Pengolahan Limbah Cair Industri Tekstil',
-                    'tahun_usulan' => '2024',
-                    'tahun_kegiatan' => '2025',
-                    'tahun_pelaksanaan' => '2025',
-                    'bidang' => 'Teknik Elektro',
-                    'instansi' => 'Politeknik Negeri Semarang',
-                ],
-                [
-                    'judul' => 'Pengembangan Aplikasi Presensi Mahasiswa dengan Pengenalan Wajah',
-                    'tahun_usulan' => '2024',
-                    'tahun_kegiatan' => '2025',
-                    'tahun_pelaksanaan' => '2025',
-                    'bidang' => 'Teknik Elektro',
-                    'instansi' => 'Politeknik Negeri Semarang',
-                ],
-                [
-                    'judul' => 'Analisis Kekuatan Beton Ringan dengan Campuran Abu Sekam Padi',
-                    'tahun_usulan' => '2024',
-                    'tahun_kegiatan' => '2025',
-                    'tahun_pelaksanaan' => '2025',
-                    'bidang' => 'Teknik Elektro',
-                    'instansi' => 'Politeknik Negeri Semarang',
-                ],
-            ];
+            ]);
 
         $penelitianList = array_map(function ($item) {
             if (! is_array($item)) {
-                return [
-                    'judul' => (string) $item,
-                    'tahun_usulan' => '2025',
-                    'tahun_kegiatan' => '2026',
-                    'tahun_pelaksanaan' => '2026',
-                    'bidang' => 'Teknik Elektro',
-                    'instansi' => 'Politeknik Negeri Semarang',
-                ];
+                return ['judul' => (string) $item, 'tahun_usulan' => '2025', 'tahun_kegiatan' => '2026', 'tahun_pelaksanaan' => '2026', 'bidang' => 'Teknik Elektro', 'instansi' => 'Politeknik Negeri Semarang'];
             }
 
             return [
-                'judul' => $this->extractString($item['judul'] ?? ($item['title'] ?? ($item['nama'] ?? null)), 'Judul Penelitian'),
+                'judul' => $this->extractString($item['judul_kegiatan'] ?? ($item['judul'] ?? ($item['title'] ?? ($item['nama'] ?? null))), 'Judul Penelitian'),
                 'tahun_usulan' => $this->extractString($item['tahun_usulan'] ?? ($item['usulan'] ?? '2025'), '2025'),
                 'tahun_kegiatan' => $this->extractString($item['tahun_kegiatan'] ?? ($item['kegiatan'] ?? '2026'), '2026'),
                 'tahun_pelaksanaan' => $this->extractString($item['tahun_pelaksanaan'] ?? ($item['pelaksanaan'] ?? '2026'), '2026'),
@@ -297,98 +240,45 @@ class DosenController extends Controller
             ];
         }, $rawPenelitian);
 
-        // HaKI (Intellectual Property) list
-        $rawHaki = ! empty($dosenData['haki']) && is_array($dosenData['haki'])
-            ? $dosenData['haki']
-            : [
+        // Pengabdian list — API key: pkm
+        $rawPkm = isset($dosenData['pkm']) && is_array($dosenData['pkm'])
+            ? $dosenData['pkm']
+            : (array_key_exists('pkm', $dosenData) ? [] : [
                 [
-                    'judul' => 'Sistem Deteksi Anomali Jaringan Komputer Menggunakan Deep Autoencoder',
-                    'nomor' => 'EC00202518920',
-                    'tahun' => '2025',
-                    'jenis' => 'Hak Cipta',
-                    'status' => 'Tercatat',
-                    'instansi' => 'Politeknik Negeri Semarang',
+                    'judul_kegiatan' => 'SISTEM KEAMANAN LINGKUNGAN BERBASIS INTERNET OF THING (IOT) DI WILAYAH TLOGO RT 06, GEBLAKAN, TAMANTIRTO, KASIHAN, BANTUL',
+                    'tahun_pelaksanaan' => '2026',
+                    'lokasi_kegiatan' => 'TLOGO RT 06, GEBLAKAN, TAMANTIRTO, KASIHAN, BANTUL',
                 ],
-                [
-                    'judul' => 'Modul IoT Smart Agriculture Terintegrasi Sensor Suhu dan Kelembapan Tanah',
-                    'nomor' => 'P00202405671',
-                    'tahun' => '2024',
-                    'jenis' => 'Paten Sederhana',
-                    'status' => 'Granted',
-                    'instansi' => 'Politeknik Negeri Semarang',
-                ],
-                [
-                    'judul' => 'Perangkat Lunak Simulasi Protokol Routing Ad-Hoc On-Demand Distance Vector',
-                    'nomor' => 'EC00202434190',
-                    'tahun' => '2024',
-                    'jenis' => 'Hak Cipta',
-                    'status' => 'Tercatat',
-                    'instansi' => 'Politeknik Negeri Semarang',
-                ],
-            ];
+            ]);
 
-        $hakiList = array_map(function ($item) {
+        $pengabdianMasyarakat = array_map(function ($item) {
             if (! is_array($item)) {
-                return [
-                    'judul' => (string) $item,
-                    'nomor' => 'EC00202518920',
-                    'tahun' => '2025',
-                    'jenis' => 'Hak Cipta',
-                    'status' => 'Tercatat',
-                    'instansi' => 'Politeknik Negeri Semarang',
-                ];
+                return ['judul' => (string) $item, 'tahun' => '2026', 'lokasi' => 'Semarang'];
             }
 
             return [
-                'judul' => $this->extractString($item['judul'] ?? ($item['title'] ?? null), 'Judul HaKI'),
-                'nomor' => $this->extractString($item['nomor'] ?? ($item['no'] ?? 'EC00202518920'), 'EC00202518920'),
-                'tahun' => $this->extractString($item['tahun'] ?? '2025', '2025'),
-                'jenis' => $this->extractString($item['jenis'] ?? 'Hak Cipta', 'Hak Cipta'),
-                'status' => $this->extractString($item['status'] ?? 'Tercatat', 'Tercatat'),
-                'instansi' => $this->extractString($item['instansi'] ?? 'Politeknik Negeri Semarang', 'Politeknik Negeri Semarang'),
+                'judul' => $this->extractString($item['judul_kegiatan'] ?? ($item['judul'] ?? ($item['title'] ?? null)), 'Kegiatan Pengabdian'),
+                'tahun' => $this->extractString($item['tahun_pelaksanaan'] ?? ($item['tahun_kegiatan'] ?? ($item['tahun'] ?? '2026')), '2026'),
+                'lokasi' => $this->extractString($item['lokasi_kegiatan'] ?? ($item['lokasi'] ?? ($item['tempat'] ?? 'Semarang')), 'Semarang'),
             ];
-        }, $rawHaki);
+        }, $rawPkm);
 
-        // Riwayat Pendidikan list
-        $rawPendidikan = ! empty($dosenData['riwayat_pendidikan']) && is_array($dosenData['riwayat_pendidikan'])
-            ? $dosenData['riwayat_pendidikan']
-            : (
-                ! empty($dosenData['pendidikan']) && is_array($dosenData['pendidikan'])
-                    ? $dosenData['pendidikan']
-                    : [
-                        [
-                            'gelar' => 'Dr',
-                            'jenjang' => 'S3',
-                            'instansi' => 'Politeknik Negeri Semarang',
-                            'jurusan' => 'Teknik Informatika',
-                            'tahun_lulus' => '2026',
-                        ],
-                        [
-                            'gelar' => 'Dr',
-                            'jenjang' => 'S3',
-                            'instansi' => 'Politeknik Negeri Semarang',
-                            'jurusan' => 'Teknik Informatika',
-                            'tahun_lulus' => '2026',
-                        ],
-                        [
-                            'gelar' => 'Dr',
-                            'jenjang' => 'S3',
-                            'instansi' => 'Politeknik Negeri Semarang',
-                            'jurusan' => 'Teknik Informatika',
-                            'tahun_lulus' => '2026',
-                        ],
-                    ]
-            );
+        // Riwayat Pendidikan — API returns a single object under key: pendidikan
+        $rawPendidikan = $dosenData['pendidikan'] ?? null;
+        $pendidikanItems = [];
+        if (is_array($rawPendidikan) && ! empty($rawPendidikan)) {
+            $pendidikanItems = array_is_list($rawPendidikan) ? $rawPendidikan : [$rawPendidikan];
+        } elseif (array_key_exists('pendidikan', $dosenData) && is_null($dosenData['pendidikan'])) {
+            $pendidikanItems = [];
+        } else {
+            $pendidikanItems = [
+                ['gelar' => 'Dr', 'jenjang' => 'S3', 'instansi' => 'Politeknik Negeri Semarang', 'jurusan' => 'Teknik Informatika', 'tahun_lulus' => '2026'],
+            ];
+        }
 
         $riwayatPendidikan = array_map(function ($item) {
             if (! is_array($item)) {
-                return [
-                    'gelar' => 'Dr',
-                    'jenjang' => 'S3',
-                    'instansi' => (string) $item,
-                    'jurusan' => 'Teknik Informatika',
-                    'tahun_lulus' => '2026',
-                ];
+                return ['gelar' => 'Dr', 'jenjang' => 'S3', 'instansi' => (string) $item, 'jurusan' => 'Teknik Informatika', 'tahun_lulus' => '2026'];
             }
 
             return [
@@ -398,55 +288,69 @@ class DosenController extends Controller
                 'jurusan' => $this->extractString($item['jurusan'] ?? ($item['program_studi'] ?? ($item['prodi'] ?? 'Teknik Informatika')), 'Teknik Informatika'),
                 'tahun_lulus' => $this->extractString($item['tahun_lulus'] ?? ($item['tahun'] ?? '2026'), '2026'),
             ];
-        }, $rawPendidikan);
+        }, $pendidikanItems);
 
-        // Pengabdian Kepada Masyarakat list
-        $rawPkm = ! empty($dosenData['pengabdian_masyarakat']) && is_array($dosenData['pengabdian_masyarakat'])
-            ? $dosenData['pengabdian_masyarakat']
-            : (
-                ! empty($dosenData['pkm']) && is_array($dosenData['pkm'])
-                    ? $dosenData['pkm']
-                    : [
-                        [
-                            'judul' => 'SISTEM KEAMANAN LINGKUNGAN BERBASIS INTERNET OF THING (IOT) DI WILAYAH TLOGO RT 06, GEBLAKAN, TAMANTIRTO, KASIHAN, BANTUL',
-                            'tahun' => '2026',
-                            'lokasi' => 'TLOGO RT 06, GEBLAKAN, TAMANTIRTO, KASIHAN, BANTUL',
-                        ],
-                        [
-                            'judul' => 'PELATIHAN PEMANFAATAN PANEL SURYA SEBAGAI SUMBER ENERGI ALTERNATIF BAGI MASYARAKAT DESA',
-                            'tahun' => '2026',
-                            'lokasi' => 'DESA KALISIDI, UNGARAN BARAT, KABUPATEN SEMARANG',
-                        ],
-                        [
-                            'judul' => 'PEMANFAATAN INTERNET OF THINGS UNTUK MONITORING SUHU DAN KELEMBAPAN PADA BUDIDAYA TANAMAN',
-                            'tahun' => '2026',
-                            'lokasi' => 'DESA LEREP, UNGARAN BARAT, SEMARANG',
-                        ],
-                    ]
-            );
+        // Luaran — combines hki, luaran, buku from API
+        $hkiItems = is_array($dosenData['hki'] ?? null) ? $dosenData['hki'] : [];
+        $luaranItems = is_array($dosenData['luaran'] ?? null) ? $dosenData['luaran'] : [];
+        $bukuItems = is_array($dosenData['buku'] ?? null) ? $dosenData['buku'] : [];
 
-        $pengabdianMasyarakat = array_map(function ($item) {
-            if (! is_array($item)) {
+        $hasLuaranKeys = array_key_exists('hki', $dosenData) || array_key_exists('luaran', $dosenData) || array_key_exists('buku', $dosenData);
+
+        $combinedLuaran = array_merge(
+            array_map(function ($item) {
+                $rawJenis = is_array($item) ? $this->extractString($item['jenis_luaran']['nama_jenis_luaran'] ?? ($item['jenis'] ?? null), 'HKI') : 'HKI';
+                $jenis = (str_contains(strtolower($rawJenis), 'hak cipta') || str_contains(strtolower($rawJenis), 'hki')) ? 'HKI' : $rawJenis;
+
                 return [
-                    'judul' => (string) $item,
-                    'tahun' => '2026',
-                    'lokasi' => 'Semarang',
+                    'judul' => is_array($item) ? $this->extractString($item['judul_hak_cipta'] ?? ($item['judul'] ?? ($item['title'] ?? null)), '-') : (string) $item,
+                    'nomor' => is_array($item) ? $this->extractString($item['nomor_sertifikat_hki'] ?? ($item['nomor_pendaftaran_hki'] ?? ($item['nomor'] ?? ($item['no'] ?? null))), '-') : '-',
+                    'tahun' => is_array($item) ? $this->extractString($item['tahun'] ?? (! empty($item['created_at']) ? substr((string) $item['created_at'], 0, 4) : null), '-') : '-',
+                    'jenis' => $jenis,
+                    'status' => is_array($item) ? $this->extractString($item['status_hki'] ?? ($item['status'] ?? null), '-') : '-',
                 ];
-            }
+            }, $hkiItems),
+            array_map(function ($item) {
+                $rawJenis = is_array($item) ? $this->extractString($item['jenis_luaran']['nama_jenis_luaran'] ?? ($item['jenis'] ?? null), 'Luaran') : 'Luaran';
+                $jenis = (str_contains(strtolower($rawJenis), 'hak cipta') || str_contains(strtolower($rawJenis), 'hki')) ? 'HKI' : $rawJenis;
 
-            return [
-                'judul' => $this->extractString($item['judul'] ?? ($item['title'] ?? ($item[0] ?? 'Kegiatan Pengabdian Masyarakat')), 'Kegiatan Pengabdian Masyarakat'),
-                'tahun' => $this->extractString($item['tahun'] ?? '2026', '2026'),
-                'lokasi' => $this->extractString($item['lokasi'] ?? ($item['tempat'] ?? 'Semarang'), 'Semarang'),
-            ];
-        }, $rawPkm);
+                return [
+                    'judul' => is_array($item) ? $this->extractString($item['judul_hak_cipta'] ?? ($item['judul_buku'] ?? ($item['nama_jurnal'] ?? ($item['nama_prosiding'] ?? ($item['nama_produk'] ?? ($item['judul'] ?? ($item['title'] ?? null)))))), '-') : (string) $item,
+                    'nomor' => is_array($item) ? $this->extractString($item['nomor_sertifikat_hki'] ?? ($item['isbn'] ?? ($item['nomor_pendaftaran_hki'] ?? ($item['issn'] ?? ($item['isbn_prosiding'] ?? ($item['nomor'] ?? null))))), '-') : '-',
+                    'tahun' => is_array($item) ? $this->extractString($item['tahun_terbit'] ?? ($item['tahun'] ?? (! empty($item['created_at']) ? substr((string) $item['created_at'], 0, 4) : null)), '-') : '-',
+                    'jenis' => $jenis,
+                    'status' => is_array($item) ? $this->extractString($item['status_hki'] ?? ($item['status_pengembangan'] ?? ($item['status'] ?? null)), '-') : '-',
+                ];
+            }, $luaranItems),
+            array_map(function ($item) {
+                $rawJenis = is_array($item) ? $this->extractString($item['jenis_luaran']['nama_jenis_luaran'] ?? ($item['jenis'] ?? null), 'Buku') : 'Buku';
+
+                return [
+                    'judul' => is_array($item) ? $this->extractString($item['judul_buku'] ?? ($item['judul'] ?? ($item['title'] ?? ($item['nama'] ?? null))), '-') : (string) $item,
+                    'nomor' => is_array($item) ? $this->extractString($item['isbn'] ?? ($item['nomor'] ?? null), '-') : '-',
+                    'tahun' => is_array($item) ? $this->extractString($item['tahun_terbit'] ?? ($item['tahun'] ?? null), '-') : '-',
+                    'jenis' => $rawJenis,
+                    'status' => '-',
+                ];
+            }, $bukuItems),
+        );
+
+        $luaranList = ! empty($combinedLuaran) || $hasLuaranKeys ? $combinedLuaran : [
+            [
+                'judul' => 'SISTEM KEAMANAN LINGKUNGAN BERBASIS INTERNET OF THING (IOT) DI WILAYAH TLOGO RT 06, GEBLAKAN, TAMANTIRTO, KASIHAN, BANTUL',
+                'nomor' => '-',
+                'tahun' => '2026',
+                'jenis' => '2026',
+                'status' => 'TLOGO RT 06, GEBLAKAN, TAMANTIRTO, KASIHAN, BANTUL',
+            ],
+        ];
 
         return view('dosen.show', [
             'dosen' => $dosen,
             'penelitianList' => $penelitianList,
-            'hakiList' => $hakiList,
-            'riwayatPendidikan' => $riwayatPendidikan,
             'pengabdianMasyarakat' => $pengabdianMasyarakat,
+            'riwayatPendidikan' => $riwayatPendidikan,
+            'luaranList' => $luaranList,
         ]);
     }
 
