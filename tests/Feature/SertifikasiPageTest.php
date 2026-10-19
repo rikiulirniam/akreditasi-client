@@ -178,10 +178,12 @@ class SertifikasiPageTest extends TestCase
             ->assertSee('31 Des 2028')
             ->assertSee('Detail')
             ->assertSee(route('sertifikasi.index'), false)
+            ->assertSee('action="'.route('sertifikasi.destroy', 18).'"', false)
             ->assertSee('data-confirm-delete', false);
 
         self::assertSame(1, substr_count($response->getContent(), 'id="toast-container"'));
         self::assertSame(1, substr_count($response->getContent(), 'id="confirmDeleteModal"'));
+        $response->assertSee('btn instanceof HTMLFormElement ? btn.action : btn.form?.action', false);
     }
 
     public function test_edit_form_loads_certification_from_api(): void
