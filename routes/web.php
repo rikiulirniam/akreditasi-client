@@ -5,6 +5,7 @@ use App\Http\Controllers\AngkatanKelasController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\KelasController;
+use App\Http\Controllers\MahasiswaController;
 use App\Http\Controllers\PerguruanTinggiController;
 use App\Http\Controllers\PermissionController;
 use App\Http\Controllers\ProdiController;
@@ -47,6 +48,7 @@ Route::middleware('auth.akademik')->group(function () {
     Route::resource('angkatan-kelas', AngkatanKelasController::class)->only(['store', 'update', 'destroy']);
 
     Route::resource('kelas', KelasController::class);
+    Route::resource('mahasiswa', MahasiswaController::class);
     Route::resource('tahun-akademik', TahunAkademikController::class);
 
 });

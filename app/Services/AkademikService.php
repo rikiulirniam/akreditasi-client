@@ -481,4 +481,35 @@ class AkademikService
     {
         return $this->delete("angkatan-kelas/{$id}", [], $token);
     }
+
+    /*
+    |==========================================================================
+    | MODUL: KEMAHASISWAAN - MAHASISWA (/api/mahasiswa/*)
+    |==========================================================================
+    */
+
+    public function getMahasiswaList(array $query = [], ?string $token = null): Response
+    {
+        return $this->get('mahasiswa', $query, $token);
+    }
+
+    public function getMahasiswaById(int|string $id, ?string $token = null): Response
+    {
+        return $this->get("mahasiswa/{$id}", [], $token);
+    }
+
+    public function createMahasiswa(array $data, ?string $token = null): Response
+    {
+        return $this->post('mahasiswa', $data, $token);
+    }
+
+    public function updateMahasiswa(int|string $id, array $data, ?string $token = null): Response
+    {
+        return $this->put("mahasiswa/{$id}", $data, $token);
+    }
+
+    public function deleteMahasiswa(int|string $id, ?string $token = null): Response
+    {
+        return $this->delete("mahasiswa/{$id}", [], $token);
+    }
 }

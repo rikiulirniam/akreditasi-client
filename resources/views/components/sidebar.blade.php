@@ -128,7 +128,7 @@
 
                 <!-- Kemahasiswaan -->
                 @php
-                    $isKemahasiswaanActive = request()->routeIs('angkatan.*') || request()->routeIs('kelas.*');
+                    $isKemahasiswaanActive = request()->routeIs('angkatan.*') || request()->routeIs('kelas.*') || request()->routeIs('mahasiswa.*');
                 @endphp
                 <div>
                     <button type="button"
@@ -162,6 +162,12 @@
                             <span
                                 class="w-1.5 h-1.5 rounded-full {{ request()->routeIs('kelas.*') ? 'bg-secondary' : 'bg-white/40' }} shrink-0"></span>
                             <span>Kelas</span>
+                        </a>
+                        <a href="{{ route('mahasiswa.index') }}"
+                            class="flex items-center gap-2.5 py-2.5 px-3.5 rounded-xl text-sm font-semibold transition-all duration-150 {{ request()->routeIs('mahasiswa.*') ? 'bg-white/20 text-white shadow-xs font-bold' : 'text-white/80 hover:text-white hover:bg-white/10' }}">
+                            <span
+                                class="w-1.5 h-1.5 rounded-full {{ request()->routeIs('mahasiswa.*') ? 'bg-secondary' : 'bg-white/40' }} shrink-0"></span>
+                            <span>Data Mahasiswa</span>
                         </a>
                     </div>
                 </div>
