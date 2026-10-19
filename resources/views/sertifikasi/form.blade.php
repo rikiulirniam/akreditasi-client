@@ -1,5 +1,7 @@
 @extends('layouts.app')
 
+@section('browser-title', 'Sertifikasi')
+
 @section('title', 'Sertifikasi')
 
 @section('content')
@@ -42,14 +44,19 @@
                 @method('PUT')
             @endif
 
-            @if($errors->any())
+            @if(($ownerOptionsError ?? null) || $errors->any())
                 <div class="rounded-lg border border-rose-300 bg-rose-50 px-4 py-3 text-sm text-rose-700" role="alert">
-                    <p class="font-bold">Periksa kembali data yang diisi:</p>
-                    <ul class="mt-1 list-inside list-disc">
-                        @foreach($errors->all() as $error)
-                            <li>{{ $error }}</li>
-                        @endforeach
-                    </ul>
+                    @if($ownerOptionsError ?? null)
+                        <p>{{ $ownerOptionsError }}</p>
+                    @endif
+                    @if($errors->any())
+                        <p class="font-bold">Periksa kembali data yang diisi:</p>
+                        <ul class="mt-1 list-inside list-disc">
+                            @foreach($errors->all() as $error)
+                                <li>{{ $error }}</li>
+                            @endforeach
+                        </ul>
+                    @endif
                 </div>
             @endif
 
@@ -69,10 +76,52 @@
                             @error('owner_type')<p class="mt-1 text-xs font-semibold text-rose-600">{{ $message }}</p>@enderror
                         </div>
                         <div>
-                            <label for="owner_id" class="mb-1.5 block text-xs font-bold text-gray-900">ID Pemilik pada API</label>
-                            <input id="owner_id" type="number" name="owner_id" min="1" value="{{ $ownerIdValue }}" required placeholder="Masukkan ID dosen/tendik dari API" class="{{ $inputClass }} {{ $inputBorderClass('owner_id') }}">
+                            <label for="owner_id" class="mb-1.5 block text-xs font-bold text-gray-900">Nama Dosen/Tenaga Kependidikan</label>
+                            <select id="owner_id" name="owner_id" required class="{{ $inputClass }} {{ $inputBorderClass('owner_id') }}">
+                                <option value="">Pilih nama</option>
+                                @foreach(['dosen' => 'Dosen', 'tendik' => 'Tenaga Kependidikan'] as $type => $label)
+                                    <optgroup label="{{ $label }}" data-owner-type="{{ $type }}">
+                                        @foreach(($ownerOptions[$type] ?? []) as $owner)
+                                            <option
+                                                value="{{ $owner['id'] }}"
+                                                data-owner-type="{{ $type }}"
+                                                @selected($ownerTypeValue === $type && (string) $ownerIdValue === (string) $owner['id'])
+                                            >
+                                                {{ $owner['name'] }}
+                                            </option>
+                                        @endforeach
+                                    </optgroup>
+                                @endforeach
+                            </select>
                             @error('owner_id')<p class="mt-1 text-xs font-semibold text-rose-600">{{ $message }}</p>@enderror
                         </div>
+                        <script>
+                            (function () {
+                                const ownerType = document.getElementById('owner_type');
+                                const ownerSelect = document.getElementById('owner_id');
+                                if (!ownerType || !ownerSelect) return;
+
+                                const updateOwnerOptions = function () {
+                                    const selectedType = ownerType.value;
+                                    let selectedOptionIsValid = false;
+
+                                    ownerSelect.querySelectorAll('option[data-owner-type]').forEach(function (option) {
+                                        const isVisible = option.dataset.ownerType === selectedType;
+                                        option.hidden = !isVisible;
+                                        option.disabled = !isVisible;
+                                        if (isVisible && option.selected) selectedOptionIsValid = true;
+                                    });
+                                    ownerSelect.querySelectorAll('optgroup[data-owner-type]').forEach(function (group) {
+                                        group.hidden = group.dataset.ownerType !== selectedType;
+                                    });
+
+                                    if (!selectedOptionIsValid) ownerSelect.value = '';
+                                };
+
+                                ownerType.addEventListener('change', updateOwnerOptions);
+                                updateOwnerOptions();
+                            })();
+                        </script>
                     </div>
                 @endif
             @endunless

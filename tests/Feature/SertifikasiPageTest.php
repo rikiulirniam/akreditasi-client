@@ -44,7 +44,10 @@ class SertifikasiPageTest extends TestCase
         $response->assertOk()
             ->assertSee('Sertifikasi Jaringan Komputer')
             ->assertSee('SK-2025-00125')
-            ->assertSee('2025');
+            ->assertSee('2025')
+            ->assertSee('!border-x-0 border-y border-gray-300', false)
+            ->assertSee('!border-collapse !border-spacing-0', false)
+            ->assertSee('justify-center gap-4', false);
 
         Http::assertSent(fn (ClientRequest $request): bool => $request->method() === 'GET'
             && str_starts_with($request->url(), 'https://tridharma.fayra.my.id/api/sertifikasi?')
@@ -98,8 +101,24 @@ class SertifikasiPageTest extends TestCase
 
         $response->assertOk()
             ->assertSee('Cari sertifikasi')
-            ->assertSee('Semua Status')
-            ->assertSee('Terapkan')
+            ->assertSee('Status Sertifikasi')
+            ->assertSee('All Data')
+            ->assertSee('data-filter-value="1900"', false)
+            ->assertSee('max-h-40')
+            ->assertSee('w-[248px]')
+            ->assertSee('w-[140px]')
+            ->assertSee('w-[150px]')
+            ->assertSee('flex-1 truncate', false)
+            ->assertSee('bg-white-form')
+            ->assertSee('h-[38px] shrink-0 items-center justify-center gap-1.5 rounded-md bg-additional', false)
+            ->assertSee('rounded-full bg-white text-additional', false)
+            ->assertSee('type="text"', false)
+            ->assertDontSee('type="search"', false)
+            ->assertSee('data-filter-trigger', false)
+            ->assertSee('hover:underline', false)
+            ->assertSee('aria-label="Cari"', false)
+            ->assertSee('id="sertifikasi-table"', false)
+            ->assertDontSee('Terapkan')
             ->assertSee('Jenis Sertifikasi')
             ->assertDontSee('Belum Ada Data Sertifikasi')
             ->assertDontSee('Tekan tombol di bawah untuk menambah data');
@@ -131,6 +150,45 @@ class SertifikasiPageTest extends TestCase
             ->assertSee('Tambah Sertifikasi')
             ->assertSee('name="owner_type" value="tendik"', false)
             ->assertSee('name="owner_id" value="42"', false);
+    }
+
+    public function test_create_form_loads_dosen_and_tendik_names_for_owner_dropdowns(): void
+    {
+        Http::fake([
+            'https://tridharma.fayra.my.id/api/dosen*' => function (ClientRequest $request) {
+                return Http::response([
+                    'success' => true,
+                    'data' => [
+                        'data' => (int) $request['page'] === 1
+                            ? [['id_dosen' => 7, 'nama_dosen' => 'Dr. Siti Dosen']]
+                            : [['id_dosen' => 8, 'nama_dosen' => 'Prof. Andi Dosen']],
+                        'last_page' => 2,
+                    ],
+                ]);
+            },
+            'https://tridharma.fayra.my.id/api/tendik*' => Http::response([
+                'success' => true,
+                'data' => [
+                    ['id_tendik' => 12, 'nama_tendik' => 'Budi Tendik'],
+                ],
+            ]),
+        ]);
+
+        $response = $this->withSession(['access_token' => 'test-token'])
+            ->get(route('sertifikasi.create'));
+
+        $response->assertOk()
+            ->assertSee('Nama Dosen/Tenaga Kependidikan')
+            ->assertSee('Dr. Siti Dosen')
+            ->assertSee('Prof. Andi Dosen')
+            ->assertSee('Budi Tendik')
+            ->assertSee('value="7"', false)
+            ->assertSee('value="12"', false)
+            ->assertSee('data-owner-type="dosen"', false)
+            ->assertSee('data-owner-type="tendik"', false)
+            ->assertDontSee('type="number" name="owner_id"', false);
+
+        Http::assertSentCount(3);
     }
 
     public function test_dosen_create_form_hides_owner_fields_and_uses_the_logged_in_dosen_id(): void
@@ -172,6 +230,7 @@ class SertifikasiPageTest extends TestCase
             ->get(route('sertifikasi.show', 18));
 
         $response->assertOk()
+            ->assertSee('<title>Sertifikasi - Portal Akreditasi</title>', false)
             ->assertSee('Sertifikasi Kompetensi')
             ->assertSee('CERT-2025-01')
             ->assertSee('BNSP')
@@ -307,6 +366,7 @@ class SertifikasiPageTest extends TestCase
 
         Http::assertSent(fn (ClientRequest $request): bool => $request->method() === 'PUT'
             && $request['jenis_sertifikasi'] === 'Sertifikasi Diperbarui'
+            && $request['tahun_sertifikasi'] === '2025-01-15'
             && $request->hasHeader('Authorization', 'Bearer test-token'));
     }
 
@@ -353,7 +413,8 @@ class SertifikasiPageTest extends TestCase
                 'tahun_sertifikasi',
             ]);
 
-        Http::assertNothingSent();
+        Http::assertNotSent(fn (ClientRequest $request): bool => $request->method() === 'POST'
+            && str_contains($request->url(), '/api/sertifikasi'));
     }
 
     public function test_validation_errors_show_messages_and_red_borders(): void
@@ -375,7 +436,8 @@ class SertifikasiPageTest extends TestCase
             ->assertSee('Tahun sertifikasi harus berupa tanggal yang valid.')
             ->assertSee('border-rose-500', false);
 
-        Http::assertNothingSent();
+        Http::assertNotSent(fn (ClientRequest $request): bool => $request->method() === 'POST'
+            && str_contains($request->url(), '/api/sertifikasi'));
     }
 
     public function test_unauthorized_api_response_redirects_user_to_login(): void

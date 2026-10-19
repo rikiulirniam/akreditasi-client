@@ -1,5 +1,7 @@
 @extends('layouts.app')
 
+@section('browser-title', 'Sertifikasi')
+
 @section('title')
     <span class="inline-flex items-center gap-2.5 sm:gap-3.5 flex-wrap">
         <a href="{{ route('sertifikasi.index') }}" class="text-black transition hover:text-additional">Sertifikasi</a>
@@ -18,9 +20,35 @@
         'id_dosen' => $certification['id_dosen'] ?? null,
         'id_tendik' => $certification['id_tendik'] ?? null,
     ], static fn ($value) => $value !== null && $value !== '');
+    $driveUrl = $certification['url_sertifikasi'] ?? $certification['url_drive'] ?? null;
+    $drivePreviewUrl = null;
     $year = $certification['tahun_sertifikasi'] ?? null;
     $year = preg_match('/^\d{4}/', (string) $year) ? substr((string) $year, 0, 4) : ($year ?? '-');
     $expirationDate = $certification['tanggal_kedaluwarsa'] ?? null;
+
+    if (is_string($driveUrl) && filter_var($driveUrl, FILTER_VALIDATE_URL)) {
+        $driveUrlParts = parse_url($driveUrl);
+        $driveHost = is_array($driveUrlParts) ? strtolower($driveUrlParts['host'] ?? '') : '';
+        $driveFileId = null;
+
+        if ($driveHost === 'drive.google.com') {
+            $drivePath = $driveUrlParts['path'] ?? '';
+
+            if (preg_match('~^/file/d/([A-Za-z0-9_-]+)~', $drivePath, $matches)) {
+                $driveFileId = $matches[1];
+            } else {
+                parse_str($driveUrlParts['query'] ?? '', $driveQuery);
+                $candidateId = $driveQuery['id'] ?? null;
+                $driveFileId = is_string($candidateId) && preg_match('/^[A-Za-z0-9_-]+$/', $candidateId)
+                    ? $candidateId
+                    : null;
+            }
+        }
+
+        if ($driveFileId !== null) {
+            $drivePreviewUrl = 'https://drive.google.com/file/d/'.rawurlencode($driveFileId).'/preview';
+        }
+    }
 
     if (is_string($expirationDate) && preg_match('/^\d{4}-\d{2}-\d{2}/', $expirationDate)) {
         $expirationDate = \Illuminate\Support\Carbon::parse($expirationDate)->locale('id')->translatedFormat('d M Y');
@@ -53,7 +81,7 @@
         </section>
 
         <section class="grid grid-cols-1 overflow-hidden rounded-lg bg-[#D9D9D9] text-gray-950 sm:grid-cols-2">
-            <div class="border-b border-[#666666] p-5 sm:border-r sm:p-6">
+            <div class="border-b border-[#666666] p-5 sm:p-6">
                 <p class="text-sm font-bold">No Registrasi Pendidik</p>
                 <p class="text-sm">{{ $certification['nomor_registrasi_pendidik'] ?? '-' }}</p>
             </div>
@@ -61,7 +89,7 @@
                 <p class="text-sm font-bold">No SK</p>
                 <p class="text-sm">{{ $certification['nomor_sk'] ?? '-' }}</p>
             </div>
-            <div class="border-b border-[#666666] p-5 sm:border-b-0 sm:border-r sm:p-6">
+            <div class="border-b border-[#666666] p-5 sm:border-b-0 sm:p-6">
                 <p class="text-sm font-bold">No Sertifikasi</p>
                 <p class="text-sm">{{ $certification['nomor_sertifikat'] ?? '-' }}</p>
             </div>
@@ -71,7 +99,7 @@
             </div>
         </section>
 
-        <section class="grid grid-cols-1 divide-y divide-[#666666] overflow-hidden rounded-lg bg-[#D9D9D9] text-gray-950 sm:grid-cols-3 sm:divide-x sm:divide-y-0">
+        <section class="grid grid-cols-1 divide-y divide-[#666666] overflow-hidden rounded-lg bg-[#D9D9D9] text-gray-950 sm:grid-cols-3 sm:divide-y-0">
             <div class="p-5 sm:px-7 sm:py-6">
                 <p class="text-sm font-bold">Status Sertifikasi</p>
                 @php($status = $certification['status_sertifikasi'] ?? '-')
@@ -89,14 +117,37 @@
 
         <section class="rounded-lg bg-[#D9D9D9] p-5 text-gray-950 sm:p-6">
             <p class="text-sm font-bold">Tautan Sertifikasi (G. Drive)</p>
-            @if(!empty($certification['url_drive']))
-                <a href="{{ $certification['url_drive'] }}" target="_blank" rel="noopener noreferrer" class="inline-block break-all text-sm font-medium text-sky-700 underline">
-                    {{ $certification['url_drive'] }}
+            @if($driveUrl)
+                <a href="{{ $driveUrl }}" target="_blank" rel="noopener noreferrer" class="inline-block break-all text-sm font-medium text-sky-700 underline">
+                    {{ $driveUrl }}
                 </a>
             @else
                 <p class="text-sm">-</p>
             @endif
         </section>
+
+        @if($drivePreviewUrl)
+            <section class="overflow-hidden rounded-lg border border-gray-200 bg-[#D9D9D9]">
+                <h2 class="bg-primary px-4 py-3 text-center text-sm font-semibold text-white sm:text-base">Pratinjau File Sertifikasi</h2>
+                <div class="p-4 sm:p-6">
+                    <iframe
+                        src="{{ $drivePreviewUrl }}"
+                        title="Pratinjau PDF sertifikasi"
+                        class="h-[70vh] min-h-[480px] w-full rounded bg-white"
+                        loading="lazy"
+                        allow="autoplay"
+                    ></iframe>
+                    <p class="mt-3 text-center text-xs text-gray-700">
+                        Jika pratinjau tidak muncul, pastikan file PDF dapat diakses oleh siapa saja yang memiliki tautan.
+                        <a href="{{ $driveUrl }}" target="_blank" rel="noopener noreferrer" class="font-semibold text-sky-700 underline">Buka file di Google Drive</a>
+                    </p>
+                </div>
+            </section>
+        @elseif($driveUrl)
+            <section class="rounded-lg border border-gray-200 bg-[#D9D9D9] p-5 text-sm text-gray-800 sm:p-6">
+                Pratinjau otomatis tersedia untuk tautan berbagi Google Drive. Gunakan tautan Drive dengan format file atau folder yang valid.
+            </section>
+        @endif
     </div>
 </div>
 @endsection

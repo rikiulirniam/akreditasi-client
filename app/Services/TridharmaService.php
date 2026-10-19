@@ -47,6 +47,16 @@ class TridharmaService
         return $this->http()->get($this->buildUrl('sertifikasi'), $query);
     }
 
+    public function getDosenList(array $query = []): Response
+    {
+        return $this->http()->get($this->buildUrl('dosen'), $query);
+    }
+
+    public function getTendikList(array $query = []): Response
+    {
+        return $this->http()->get($this->buildUrl('tendik'), $query);
+    }
+
     public function getSertifikasiById(int|string $id): Response
     {
         return $this->http()->get($this->buildUrl("sertifikasi/{$id}"));

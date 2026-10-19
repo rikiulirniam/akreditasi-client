@@ -70,7 +70,7 @@ class SertifikasiController extends Controller
         ]);
     }
 
-    public function create(Request $request): View
+    public function create(Request $request): View|RedirectResponse
     {
         $isDosen = $this->isAuthenticatedDosen();
         $user = session('user', []);
@@ -81,12 +81,75 @@ class SertifikasiController extends Controller
                 ? $request->query('id_dosen')
                 : ($ownerType === 'tendik' ? $request->query('id_tendik') : null));
 
+        $ownerOptions = ['dosen' => [], 'tendik' => []];
+        $ownerOptionsError = null;
+
+        if (! $isDosen && ! ($ownerType && $ownerId)) {
+            try {
+                foreach (['dosen', 'tendik'] as $type) {
+                    $options = [];
+                    $lastPage = 1;
+
+                    for ($page = 1; $page <= $lastPage; $page++) {
+                        $response = $type === 'dosen'
+                            ? $this->tridharmaService->getDosenList(['page' => $page, 'per_page' => 100])
+                            : $this->tridharmaService->getTendikList(['page' => $page, 'per_page' => 100]);
+
+                        if ($response->status() === 401) {
+                            return $this->redirectToLogin();
+                        }
+
+                        if (! $response->successful() || $response->json('success') === false) {
+                            $ownerOptionsError = $this->responseMessage(
+                                $response,
+                                'Gagal memuat daftar '.($type === 'dosen' ? 'dosen' : 'tenaga kependidikan').'.'
+                            );
+                            break 2;
+                        }
+
+                        $payload = $response->json();
+                        $data = is_array($payload) ? ($payload['data'] ?? []) : [];
+                        $records = is_array($data) && is_array($data['data'] ?? null)
+                            ? $data['data']
+                            : (is_array($data) && array_is_list($data) ? $data : []);
+                        $pagination = is_array($data)
+                            ? ($data['pagination'] ?? $payload['pagination'] ?? [])
+                            : ($payload['pagination'] ?? []);
+                        $lastPage = max(1, (int) ($data['last_page'] ?? $payload['last_page'] ?? $pagination['last_page'] ?? 1));
+
+                        foreach ($records as $record) {
+                            if (! is_array($record)) {
+                                continue;
+                            }
+
+                            $id = $type === 'dosen'
+                                ? ($record['id_dosen'] ?? $record['id'] ?? null)
+                                : ($record['id_tendik'] ?? $record['id'] ?? null);
+                            $name = $type === 'dosen'
+                                ? ($record['nama_dosen'] ?? $record['nama'] ?? $record['name'] ?? null)
+                                : ($record['nama_tendik'] ?? $record['nama'] ?? $record['name'] ?? null);
+
+                            if (is_numeric($id) && is_string($name) && trim($name) !== '') {
+                                $options[] = ['id' => (int) $id, 'name' => trim($name)];
+                            }
+                        }
+                    }
+
+                    $ownerOptions[$type] = $options;
+                }
+            } catch (ConnectionException) {
+                $ownerOptionsError = 'Tidak dapat terhubung ke server Tridharma untuk memuat daftar pemilik sertifikasi.';
+            }
+        }
+
         return view('sertifikasi.form', [
             'certification' => [],
             'isEditing' => false,
             'ownerType' => in_array($ownerType, ['dosen', 'tendik'], true) ? $ownerType : '',
             'ownerId' => is_numeric($ownerId) ? (int) $ownerId : '',
             'isDosen' => $isDosen,
+            'ownerOptions' => $ownerOptions,
+            'ownerOptionsError' => $ownerOptionsError,
         ]);
     }
 
@@ -268,16 +331,33 @@ class SertifikasiController extends Controller
     {
         return [
             'jenis_sertifikasi.required' => 'Jenis sertifikasi wajib diisi.',
+            'jenis_sertifikasi.string' => 'Jenis sertifikasi harus berupa teks.',
+            'jenis_sertifikasi.max' => 'Jenis sertifikasi maksimal 255 karakter.',
             'bidang_studi.required' => 'Bidang studi wajib diisi.',
+            'bidang_studi.string' => 'Bidang studi harus berupa teks.',
+            'bidang_studi.max' => 'Bidang studi maksimal 255 karakter.',
+            'nomor_registrasi_pendidik.string' => 'Nomor registrasi pendidik harus berupa teks.',
+            'nomor_registrasi_pendidik.max' => 'Nomor registrasi pendidik maksimal 255 karakter.',
+            'nomor_sk.string' => 'Nomor SK harus berupa teks.',
+            'nomor_sk.max' => 'Nomor SK maksimal 255 karakter.',
+            'nomor_sertifikat.string' => 'Nomor sertifikat harus berupa teks.',
+            'nomor_sertifikat.max' => 'Nomor sertifikat maksimal 255 karakter.',
             'lembaga_penerbit.required' => 'Lembaga penerbit wajib diisi.',
+            'lembaga_penerbit.string' => 'Lembaga penerbit harus berupa teks.',
+            'lembaga_penerbit.max' => 'Lembaga penerbit maksimal 255 karakter.',
             'status_sertifikasi.required' => 'Status sertifikasi wajib dipilih.',
+            'status_sertifikasi.string' => 'Status sertifikasi tidak valid.',
+            'status_sertifikasi.max' => 'Status sertifikasi maksimal 50 karakter.',
             'tahun_sertifikasi.required' => 'Tahun sertifikasi wajib diisi.',
             'tahun_sertifikasi.date_format' => 'Tahun sertifikasi harus berupa tanggal yang valid.',
-            'tanggal_kedaluwarsa.date' => 'Tanggal kedaluwarsa tidak valid.',
             'url_drive.url' => 'Tautan sertifikasi harus berupa URL yang valid.',
+            'url_drive.max' => 'Tautan sertifikasi maksimal 2048 karakter.',
+            'tanggal_kedaluwarsa.date' => 'Tanggal kedaluwarsa tidak valid.',
             'owner_type.required' => 'Jenis pemilik wajib dipilih.',
+            'owner_type.in' => 'Jenis pemilik harus Dosen atau Tenaga Kependidikan.',
             'owner_id.required' => 'ID pemilik wajib diisi.',
             'owner_id.integer' => 'ID pemilik harus berupa angka.',
+            'owner_id.min' => 'ID pemilik harus lebih besar dari 0.',
         ];
     }
 
@@ -353,7 +433,10 @@ class SertifikasiController extends Controller
             }
 
             if ($fieldErrors !== []) {
-                return back()->withInput()->withErrors($fieldErrors)->with('toast', [
+                // Terjemahkan pesan error yang umum dan/atau datang dari API
+                $translated = $this->translateApiFieldErrors($fieldErrors);
+
+                return back()->withInput()->withErrors($translated)->with('toast', [
                     'type' => 'error',
                     'title' => 'Gagal',
                     'message' => $message,
@@ -387,6 +470,51 @@ class SertifikasiController extends Controller
             'tahun_sertifikasi',
             'status_sertifikasi',
         ]));
+    }
+
+    /**
+     * Translate/normalize API field errors into localized Indonesian messages where possible.
+     *
+     * This helps when the backend returns English messages or uses different field keys
+     * (for example "url_sertifikasi") that the frontend wants to present in Bahasa.
+     *
+     * @param  array<string, array<int, string>>  $fieldErrors
+     * @return array<string, array<int, string>>
+     */
+    private function translateApiFieldErrors(array $fieldErrors): array
+    {
+        $mapFieldToMessage = [
+            // backend may use url_sertifikasi while frontend uses url_drive
+            'url_sertifikasi' => ['Tautan sertifikasi wajib diisi.'],
+            'url_drive' => ['Tautan sertifikasi wajib diisi.'],
+            'tahun_sertifikasi' => ['Tahun sertifikasi tidak valid atau wajib diisi.'],
+            'jenis_sertifikasi' => ['Jenis sertifikasi wajib diisi.'],
+            'bidang_studi' => ['Bidang studi wajib diisi.'],
+        ];
+
+        $translated = [];
+
+        foreach ($fieldErrors as $field => $messages) {
+            // prefer a deterministic translated message when we know the field
+            if (array_key_exists($field, $mapFieldToMessage)) {
+                $translated[$field] = $mapFieldToMessage[$field];
+
+                continue;
+            }
+
+            // fallback: if message looks like the default Laravel english "The {attr} field is required."
+            $first = is_array($messages) && count($messages) ? $messages[0] : null;
+            if (is_string($first) && preg_match('/^The\s+(.+)\s+field\s+is\s+required\./i', $first)) {
+                $translated[$field] = [sprintf('%s wajib diisi.', ucwords(str_replace(['_', '-'], ' ', $field)))];
+
+                continue;
+            }
+
+            // otherwise keep original messages
+            $translated[$field] = $messages;
+        }
+
+        return $translated;
     }
 
     private function redirectToLogin(): RedirectResponse

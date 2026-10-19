@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
-    <title>@yield('title', $title ?? 'Dashboard') - Portal Akreditasi</title>
+    <title>@yield('browser-title', $title ?? 'Dashboard') - Portal Akreditasi</title>
 
     <!-- Scripts and Styles -->
     @vite(['resources/css/app.css', 'resources/js/app.js'])
@@ -88,19 +88,19 @@
                     </div>
                 </div>
 
-                <!-- Right: Profile Pill (Matches User Attached Image) -->
+                <!-- Right: Profile Pill -->
                 <div class="relative" id="profileDropdownContainer">
                     <button 
                         type="button" 
                         id="profileDropdownBtn"
-                        class="bg-white-form border-2 border-primary rounded-2xl px-3.5 py-1.5 sm:px-4 sm:py-2 flex items-center gap-3 sm:gap-4 cursor-pointer shadow-xs hover:brightness-95 active:scale-[0.99] transition duration-150 select-none"
+                        class="relative z-[51] flex items-center gap-2 rounded-md border border-primary bg-[#e5e5e5] px-2.5 py-1.5 text-primary shadow-sm transition duration-150 hover:bg-[#dcdcdc] active:scale-[0.99] sm:gap-2.5 sm:px-3"
+                        style="background-color: #e5e5e5;"
                         aria-expanded="false"
                         aria-haspopup="true"
                     >
-                        <!-- Left: Chevron Down -->
                         <svg 
                             id="profileChevron" 
-                            class="w-4 h-4 sm:w-5 sm:h-5 text-primary stroke-[3] transition-transform duration-200" 
+                            class="h-4 w-4 shrink-0 text-primary stroke-[3] transition-transform duration-200 sm:h-[18px] sm:w-[18px]"
                             fill="none" 
                             viewBox="0 0 24 24" 
                             stroke="currentColor"
@@ -108,19 +108,17 @@
                             <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
                         </svg>
 
-                        <!-- Middle: Greeting & Role -->
                         <div class="text-left leading-tight">
-                            <span class="block font-bold text-xs sm:text-sm text-black tracking-tight">
+                            <span class="block whitespace-nowrap text-xs font-bold tracking-tight text-[#102b46] sm:text-[13px]">
                                 Halo, {{ explode(' ', $currentUser['nama'] ?? 'Kuwat')[0] }}
                             </span>
-                            <span class="block text-[11px] sm:text-xs text-black/80 font-medium">
+                            <span class="block text-[10px] font-medium leading-tight text-gray-600">
                                 {{ ucfirst(strtolower($currentUser['role'] ?? 'Kaprodi')) }}
                             </span>
                         </div>
 
-                        <!-- Right: Circle User Avatar Icon (Exact line art matching attached image) -->
-                        <div class="shrink-0 text-primary">
-                            <svg class="w-8 h-8 sm:w-9 sm:h-9" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <div class="shrink-0 text-additional">
+                            <svg class="h-8 w-8 sm:h-[34px] sm:w-[34px]" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
                                 <circle cx="18" cy="18" r="15.5" stroke="currentColor" stroke-width="2.6"/>
                                 <circle cx="18" cy="14" r="4.5" stroke="currentColor" stroke-width="2.6"/>
                                 <path d="M9.5 28C10.8 23.5 14.1 21.5 18 21.5C21.9 21.5 25.2 23.5 26.5 28" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/>
@@ -131,29 +129,40 @@
                     <!-- Dropdown Menu -->
                     <div 
                         id="profileDropdownMenu" 
-                        class="absolute right-0 mt-2 w-60 rounded-2xl bg-white border border-[#EAEAEA] shadow-xl py-2 z-50 transform origin-top-right transition-all duration-150 opacity-0 scale-95 pointer-events-none"
+                        class="pointer-events-none absolute right-0 top-full z-50 w-full origin-top-right scale-95 transform rounded-b-md border border-t-0 border-primary bg-[#e5e5e5] py-1.5 opacity-0 shadow-lg transition-all duration-150"
+                        style="background-color: #e5e5e5;"
                         role="menu"
                     >
-                        <!-- User Info Header -->
-                        <div class="px-4 py-2.5 border-b border-gray-100">
-                            <p class="text-[11px] text-gray-form uppercase tracking-wider font-semibold">Akun Aktif</p>
-                            <p class="text-sm font-bold text-primary truncate mt-0.5">{{ $currentUser['nama'] ?? 'Kuwat' }}</p>
-                            <p class="text-xs text-gray-500 truncate">{{ $currentUser['email'] ?? '-' }}</p>
+                        <div class="border-b border-primary/20 px-3 py-1.5">
+                            <p class="truncate text-xs font-bold leading-tight text-[#102b46]">{{ $currentUser['nama'] ?? 'Kuwat' }}</p>
+                            <p class="truncate text-[10px] font-medium leading-tight text-gray-600">{{ ucfirst(strtolower($currentUser['role'] ?? 'Kaprodi')) }}</p>
                         </div>
 
-                        <!-- Logout Action -->
-                        <div class="p-1.5">
+                        <div class="space-y-0.5 p-1">
+                            <div class="flex items-center gap-2 rounded px-2 py-1.5 text-xs font-medium text-gray-800">
+                                <svg class="h-3.5 w-3.5 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 6h3m-1.5-1.5v3M6.75 9.75l-1.06-1.06m12.62 0-1.06 1.06M4.5 13.5h1.5m12 0h1.5M7.5 19.5l1.06-1.06m6.88 0 1.06 1.06M12 21v-1.5m0-12a6 6 0 1 0 0 12 6 6 0 0 0 0-12Z" />
+                                </svg>
+                                Pengaturan
+                            </div>
+                            <div class="flex items-center gap-2 rounded px-2 py-1.5 text-xs font-medium text-gray-800">
+                                <svg class="h-3.5 w-3.5 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M3 12h3l2-6 4 12 2-6h3l2 3h2" />
+                                </svg>
+                                Aktivitas
+                            </div>
                             <form method="POST" action="{{ route('logout') }}">
                                 @csrf
                                 <button 
                                     type="submit" 
-                                    class="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-semibold text-rose-600 hover:bg-rose-50 transition cursor-pointer text-left"
+                                    class="flex w-full cursor-pointer items-center gap-2 rounded px-2 py-1.5 text-left text-xs font-medium transition hover:bg-white/60"
+                                    style="color: #dc2626;"
                                     role="menuitem"
                                 >
-                                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15M12 9l-3 3m0 0l3 3m-3-3h12.75" />
+                                    <svg class="h-3.5 w-3.5" style="color: #dc2626;" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M10 4H5.5A1.5 1.5 0 0 0 4 5.5v13A1.5 1.5 0 0 0 5.5 20H10M14 8l4 4-4 4m4-4H9" />
                                     </svg>
-                                    Logout
+                                    Keluar
                                 </button>
                             </form>
                         </div>
@@ -273,11 +282,13 @@
                 if (isDropdownOpen) {
                     profileMenu.classList.remove('opacity-0', 'scale-95', 'pointer-events-none');
                     profileMenu.classList.add('opacity-100', 'scale-100');
+                    profileBtn.classList.add('rounded-b-none');
                     if (profileChevron) profileChevron.classList.add('rotate-180');
                     profileBtn.setAttribute('aria-expanded', 'true');
                 } else {
                     profileMenu.classList.remove('opacity-100', 'scale-100');
                     profileMenu.classList.add('opacity-0', 'scale-95', 'pointer-events-none');
+                    profileBtn.classList.remove('rounded-b-none');
                     if (profileChevron) profileChevron.classList.remove('rotate-180');
                     profileBtn.setAttribute('aria-expanded', 'false');
                 }
