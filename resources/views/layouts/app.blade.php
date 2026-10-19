@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
-    <title>@yield('title', $title ?? 'Dashboard') - Portal Akreditasi</title>
+    <title>@hasSection('meta_title')@yield('meta_title')@else{{ trim(preg_replace('/\s+/', ' ', html_entity_decode(strip_tags($__env->yieldContent('title', $title ?? 'Dashboard'))))) }}@endif - Portal Akreditasi</title>
 
     <!-- Scripts and Styles -->
     @vite(['resources/css/app.css', 'resources/js/app.js'])
@@ -75,10 +75,17 @@
                         </svg>
                     </button>
 
-                    <!-- Page Title -->
-                    <h1 class="text-lg sm:text-2xl font-extrabold text-primary tracking-tight">
-                        @yield('title', $title ?? 'Dashboard')
-                    </h1>
+                    <!-- Page Title & Subtitle -->
+                    <div class="leading-tight">
+                        <h1 class="text-2xl sm:text-3xl font-extrabold text-black tracking-tight flex items-center gap-1.5 flex-wrap">
+                            @yield('title', $title ?? 'Dashboard')
+                        </h1>
+                        @hasSection('subtitle')
+                            <p class="text-xs sm:text-sm font-normal text-gray-700 mt-1">
+                                @yield('subtitle')
+                            </p>
+                        @endif
+                    </div>
                 </div>
 
                 <!-- Right: Profile Pill (Matches User Attached Image) -->

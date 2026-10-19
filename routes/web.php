@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\DosenController;
 use App\Http\Controllers\PermissionController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\UserController;
@@ -27,4 +28,9 @@ Route::middleware('auth.akademik')->group(function () {
     Route::put('/permissions/module/{module}', [PermissionController::class, 'updateModule'])->name('permissions.update-module');
     Route::delete('/permissions/module/{module}', [PermissionController::class, 'destroyModule'])->name('permissions.destroy-module');
     Route::resource('permissions', PermissionController::class)->except(['show']);
+
+    // Modul Dosen
+    Route::get('/dosen/template', [DosenController::class, 'template'])->name('dosen.template');
+    Route::post('/dosen/import', [DosenController::class, 'import'])->name('dosen.import');
+    Route::resource('dosen', DosenController::class);
 });
