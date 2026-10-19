@@ -22,7 +22,7 @@
                 <!-- 1. Download Template Excel (Yellow Outline) -->
                 <a 
                     href="{{ route('dosen.template') }}" 
-                    class="w-full flex items-center justify-center gap-2.5 px-6 py-3.5 rounded-xl border-2 border-secondary text-secondary hover:bg-secondary/10 font-bold text-sm sm:text-base transition cursor-pointer shadow-2xs active:scale-[0.99]"
+                    class="w-full flex items-center justify-center gap-2.5 px-6 py-3.5 rounded-xl border border-secondary text-secondary hover:bg-secondary/10 font-bold text-sm sm:text-base transition cursor-pointer shadow-2xs active:scale-[0.99]"
                 >
                     <svg class="w-5 h-5 shrink-0 stroke-[2.2]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M7.5 12l4.5 4.5m0 0l4.5-4.5M12 3v13.5" />
@@ -34,7 +34,7 @@
                 <button 
                     type="button" 
                     id="openImportModalBtnEmpty"
-                    class="open-import-modal-btn w-full flex items-center justify-center gap-2.5 px-6 py-3.5 rounded-xl border-2 border-[#16A34A] text-[#16A34A] hover:bg-emerald-50 font-bold text-sm sm:text-base transition cursor-pointer shadow-2xs active:scale-[0.99]"
+                    class="open-import-modal-btn w-full flex items-center justify-center gap-2.5 px-6 py-3.5 rounded-xl border border-[#16A34A] text-[#16A34A] hover:bg-emerald-50 font-bold text-sm sm:text-base transition cursor-pointer shadow-2xs active:scale-[0.99]"
                 >
                     <svg class="w-5 h-5 shrink-0 stroke-[2.2]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
@@ -71,10 +71,10 @@
                             id="searchDosenInput"
                             value="{{ $search }}"
                             placeholder="Cari nama" 
-                            class="w-full h-11 pl-4 pr-11 rounded-[14px] bg-white-form border-2 border-primary text-black text-base font-normal placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-primary/20 transition"
+                            class="w-full h-11 pl-4 pr-11 rounded-[14px] bg-white-form border border-primary text-black text-base font-normal placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-primary/20 transition"
                         />
                         <span class="absolute inset-y-0 right-0 flex items-center pr-3.5 pointer-events-none text-black">
-                            <svg class="w-5 h-5 stroke-[2.5]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <svg class="w-5 h-5 stroke-[2]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
                             </svg>
                         </span>
@@ -86,15 +86,15 @@
                         <button 
                             type="button" 
                             id="filterStatusBtn"
-                            class="w-full h-11 px-3.5 bg-white-form border-2 border-primary rounded-[14px] flex items-center justify-between cursor-pointer select-none transition focus:outline-none focus:ring-2 focus:ring-primary/20"
+                            class="w-full h-11 px-3.5 bg-white-form border border-primary rounded-[14px] flex items-center justify-between cursor-pointer select-none transition focus:outline-none focus:ring-2 focus:ring-primary/20"
                             aria-expanded="false"
                             aria-haspopup="true"
                         >
                             <span id="filterStatusLabel" class="text-sm font-semibold text-gray-900 truncate pr-2">
                                 {{ !empty($selectedStatus) && $selectedStatus !== 'all' ? $selectedStatus : 'Status' }}
                             </span>
-                            <div class="w-8 h-8 rounded-[10px] bg-secondary border-2 border-primary flex items-center justify-center shrink-0 shadow-2xs">
-                                <svg id="filterStatusChevron" class="w-4 h-4 text-primary stroke-primary transition-transform duration-200 rotate-0" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" fill="none" viewBox="0 0 24 24">
+                            <div class="w-8 h-8 rounded-[10px] bg-secondary border border-primary flex items-center justify-center shrink-0 shadow-2xs">
+                                <svg id="filterStatusChevron" class="w-4 h-4 text-primary stroke-primary transition-transform duration-200 rotate-0" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none" viewBox="0 0 24 24">
                                     <path d="m6 9 6 6 6-6" />
                                 </svg>
                             </div>
@@ -106,7 +106,7 @@
                         <!-- Dropdown Menu Popover -->
                         <div 
                             id="filterStatusMenu"
-                            class="hidden absolute left-0 top-full mt-1.5 w-full bg-white-form border-2 border-primary rounded-[14px] shadow-lg py-2 z-40 overflow-hidden transition-all duration-150"
+                            class="hidden absolute left-0 top-full mt-1.5 w-full bg-white-form border border-primary rounded-[14px] shadow-lg py-2 z-40 overflow-hidden transition-all duration-150"
                             role="menu"
                         >
                             <button 
@@ -151,7 +151,7 @@
                     <button 
                         type="button" 
                         id="openImportModalBtnTable"
-                        class="open-import-modal-btn h-10 inline-flex items-center gap-2 px-4 py-2 rounded-xl border-2 border-[#16A34A] text-[#16A34A] bg-white hover:bg-emerald-50 text-xs sm:text-sm font-semibold transition cursor-pointer shadow-2xs whitespace-nowrap shrink-0"
+                        class="open-import-modal-btn h-10 inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-[#16A34A] text-[#16A34A] bg-white hover:bg-emerald-50 text-xs sm:text-sm font-semibold transition cursor-pointer shadow-2xs whitespace-nowrap shrink-0"
                     >
                         <svg class="w-4 h-4 stroke-[2.2] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m6.75 12l-3-3m0 0l-3 3m3-3v6m-1.5-15H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />

@@ -4,6 +4,7 @@ use App\Http\Controllers\AngkatanController;
 use App\Http\Controllers\AngkatanKelasController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\DosenController;
 use App\Http\Controllers\KelasController;
 use App\Http\Controllers\MahasiswaController;
 use App\Http\Controllers\PerguruanTinggiController;
@@ -52,4 +53,8 @@ Route::middleware('auth.akademik')->group(function () {
     Route::resource('mahasiswa', MahasiswaController::class);
     Route::resource('tahun-akademik', TahunAkademikController::class);
 
+    // Modul Dosen
+    Route::get('/dosen/template', [DosenController::class, 'template'])->name('dosen.template');
+    Route::post('/dosen/import', [DosenController::class, 'import'])->name('dosen.import');
+    Route::resource('dosen', DosenController::class);
 });

@@ -47,29 +47,50 @@ class DosenController extends Controller
         $rawResponse = $response->json();
         $responseData = $rawResponse['data'] ?? [];
 
-        // Support both nested paginator (data.data) and flat array (data)
+        $perPage = 10;
+        // Support nested paginator (data.data), API with pagination key, and flat array (data)
         if (isset($responseData['data']) && is_array($responseData['data'])) {
             $dosenList = $responseData['data'];
+            $total = (int) ($responseData['total'] ?? count($dosenList));
+            $perPage = (int) ($responseData['per_page'] ?? $perPage);
+            $lastPage = (int) ($responseData['last_page'] ?? max(1, (int) ceil($total / $perPage)));
             $pagination = [
-                'total' => (int) ($responseData['total'] ?? count($dosenList)),
-                'per_page' => (int) ($responseData['per_page'] ?? 10),
+                'total' => $total,
+                'per_page' => $perPage,
                 'current_page' => (int) ($responseData['current_page'] ?? $page),
-                'last_page' => (int) ($responseData['last_page'] ?? 1),
+                'last_page' => $lastPage,
             ];
         } elseif (is_array($responseData)) {
-            $dosenList = $responseData;
             $rawPagination = $rawResponse['pagination'] ?? [];
-            $pagination = [
-                'total' => (int) ($rawPagination['total'] ?? count($dosenList)),
-                'per_page' => (int) ($rawPagination['per_page'] ?? 10),
-                'current_page' => (int) ($rawPagination['current_page'] ?? $page),
-                'last_page' => (int) ($rawPagination['last_page'] ?? 1),
-            ];
+            if (! empty($rawPagination) && is_array($rawPagination)) {
+                $dosenList = $responseData;
+                $total = (int) ($rawPagination['total'] ?? count($dosenList));
+                $perPage = (int) ($rawPagination['per_page'] ?? $perPage);
+                $lastPage = (int) ($rawPagination['last_page'] ?? max(1, (int) ceil($total / $perPage)));
+                $pagination = [
+                    'total' => $total,
+                    'per_page' => $perPage,
+                    'current_page' => (int) ($rawPagination['current_page'] ?? $page),
+                    'last_page' => $lastPage,
+                ];
+            } else {
+                $total = count($responseData);
+                $lastPage = max(1, (int) ceil($total / $perPage));
+                $currentPage = max(1, min($page, $lastPage));
+                $offset = ($currentPage - 1) * $perPage;
+                $dosenList = array_slice($responseData, $offset, $perPage);
+                $pagination = [
+                    'total' => $total,
+                    'per_page' => $perPage,
+                    'current_page' => $currentPage,
+                    'last_page' => $lastPage,
+                ];
+            }
         } else {
             $dosenList = [];
             $pagination = [
                 'total' => 0,
-                'per_page' => 10,
+                'per_page' => $perPage,
                 'current_page' => 1,
                 'last_page' => 1,
             ];
