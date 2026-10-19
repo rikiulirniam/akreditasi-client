@@ -78,6 +78,33 @@ class SertifikasiPageTest extends TestCase
             ->assertDontSee('Cari sertifikasi');
     }
 
+    public function test_empty_filtered_list_keeps_the_filter_and_empty_table_instead_of_the_initial_empty_state(): void
+    {
+        Http::fake([
+            'https://tridharma.fayra.my.id/api/sertifikasi*' => Http::response([
+                'success' => true,
+                'data' => [
+                    'current_page' => 1,
+                    'data' => [],
+                    'last_page' => 1,
+                    'per_page' => 10,
+                    'total' => 0,
+                ],
+            ]),
+        ]);
+
+        $response = $this->withSession(['access_token' => 'test-token'])
+            ->get(route('sertifikasi.index', ['status_sertifikasi' => 'Kedaluwarsa']));
+
+        $response->assertOk()
+            ->assertSee('Cari sertifikasi')
+            ->assertSee('Semua Status')
+            ->assertSee('Terapkan')
+            ->assertSee('Jenis Sertifikasi')
+            ->assertDontSee('Belum Ada Data Sertifikasi')
+            ->assertDontSee('Tekan tombol di bawah untuk menambah data');
+    }
+
     public function test_api_failures_are_displayed_instead_of_as_empty_data(): void
     {
         Http::fake([
@@ -104,6 +131,20 @@ class SertifikasiPageTest extends TestCase
             ->assertSee('Tambah Sertifikasi')
             ->assertSee('name="owner_type" value="tendik"', false)
             ->assertSee('name="owner_id" value="42"', false);
+    }
+
+    public function test_dosen_create_form_hides_owner_fields_and_uses_the_logged_in_dosen_id(): void
+    {
+        $response = $this->withSession([
+            'access_token' => 'test-token',
+            'user' => ['id' => 7, 'role' => 'DOSEN'],
+        ])->get(route('sertifikasi.create'));
+
+        $response->assertOk()
+            ->assertSee('name="owner_type" value="dosen"', false)
+            ->assertSee('name="owner_id" value="7"', false)
+            ->assertDontSee('Tipe Pemilik')
+            ->assertDontSee('ID Pemilik pada API');
     }
 
     public function test_show_displays_api_certification_details(): void
@@ -134,8 +175,13 @@ class SertifikasiPageTest extends TestCase
             ->assertSee('Sertifikasi Kompetensi')
             ->assertSee('CERT-2025-01')
             ->assertSee('BNSP')
-            ->assertSee('2028-12-31')
+            ->assertSee('31 Des 2028')
+            ->assertSee('Detail')
+            ->assertSee(route('sertifikasi.index'), false)
             ->assertSee('data-confirm-delete', false);
+
+        self::assertSame(1, substr_count($response->getContent(), 'id="toast-container"'));
+        self::assertSame(1, substr_count($response->getContent(), 'id="confirmDeleteModal"'));
     }
 
     public function test_edit_form_loads_certification_from_api(): void
@@ -160,7 +206,7 @@ class SertifikasiPageTest extends TestCase
         $response->assertOk()
             ->assertSee('Perbarui Sertifikasi')
             ->assertSee('value="Sertifikasi Kompetensi"', false)
-            ->assertSee('value="2025"', false);
+            ->assertSee('type="date" name="tahun_sertifikasi" value="2025-01-01"', false);
     }
 
     public function test_store_sends_certification_to_tridharma_api_without_local_database(): void
@@ -184,7 +230,7 @@ class SertifikasiPageTest extends TestCase
                 'nomor_sertifikat' => 'CERT-2025-01',
                 'lembaga_penerbit' => 'BNSP',
                 'status_sertifikasi' => 'Aktif',
-                'tahun_sertifikasi' => 2025,
+                'tahun_sertifikasi' => '2025-01-15',
                 'tanggal_kedaluwarsa' => '2028-12-31',
                 'url_drive' => 'https://drive.google.com/file/d/test/view',
             ]);
@@ -199,7 +245,42 @@ class SertifikasiPageTest extends TestCase
             && $request['id_tendik'] === 42
             && $request['id_dosen'] === null
             && $request['jenis_sertifikasi'] === 'Sertifikasi Kompetensi'
-            && $request['tahun_sertifikasi'] === 2025);
+            && $request['tahun_sertifikasi'] === '2025-01-15'
+            && $request['url_drive'] === 'https://drive.google.com/file/d/test/view');
+    }
+
+    public function test_store_uses_the_logged_in_dosen_as_owner_and_sends_a_date_value(): void
+    {
+        Http::fake([
+            'https://tridharma.fayra.my.id/api/sertifikasi' => Http::response([
+                'success' => true,
+                'message' => 'Sertifikasi berhasil ditambahkan.',
+                'data' => ['id' => 18],
+            ], 201),
+        ]);
+
+        $response = $this->withSession([
+            'access_token' => 'test-token',
+            'user' => ['id' => 7, 'role' => 'DOSEN'],
+        ])->post(route('sertifikasi.store'), [
+            'owner_type' => 'tendik',
+            'owner_id' => 99,
+            'jenis_sertifikasi' => 'Sertifikasi Kompetensi',
+            'bidang_studi' => 'Teknik Informatika',
+            'lembaga_penerbit' => 'BNSP',
+            'status_sertifikasi' => 'Aktif',
+            'tahun_sertifikasi' => '2025-01-15',
+        ]);
+
+        $response->assertRedirect(route('sertifikasi.index', [
+            'tipe_pemilik' => 'dosen',
+            'id_dosen' => 7,
+        ]));
+
+        Http::assertSent(fn (ClientRequest $request): bool => $request->method() === 'POST'
+            && $request['id_dosen'] === 7
+            && $request['id_tendik'] === null
+            && $request['tahun_sertifikasi'] === '2025-01-15');
     }
 
     public function test_update_sends_changes_to_tridharma_api(): void
@@ -217,7 +298,7 @@ class SertifikasiPageTest extends TestCase
                 'bidang_studi' => 'Teknik Informatika',
                 'lembaga_penerbit' => 'BNSP',
                 'status_sertifikasi' => 'Aktif',
-                'tahun_sertifikasi' => 2025,
+                'tahun_sertifikasi' => '2025-01-15',
             ]);
 
         $response->assertRedirect(route('sertifikasi.show', 18));
@@ -269,6 +350,28 @@ class SertifikasiPageTest extends TestCase
                 'status_sertifikasi',
                 'tahun_sertifikasi',
             ]);
+
+        Http::assertNothingSent();
+    }
+
+    public function test_validation_errors_show_messages_and_red_borders(): void
+    {
+        Http::fake();
+
+        $response = $this->withSession(['access_token' => 'test-token'])
+            ->from(route('sertifikasi.create'))
+            ->followingRedirects()
+            ->post(route('sertifikasi.store'), [
+                'owner_type' => 'tendik',
+                'owner_id' => 7,
+                'tahun_sertifikasi' => '2025',
+            ]);
+
+        $response->assertOk()
+            ->assertSee('Periksa kembali data yang diisi:')
+            ->assertSee('Jenis sertifikasi wajib diisi.')
+            ->assertSee('Tahun sertifikasi harus berupa tanggal yang valid.')
+            ->assertSee('border-rose-500', false);
 
         Http::assertNothingSent();
     }

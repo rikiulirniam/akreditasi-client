@@ -17,19 +17,20 @@
     ], static fn ($value) => $value !== null && $value !== '');
     $createUrl = route('sertifikasi.create', $ownerQuery);
     $startNumber = (int) ($pagination['from'] ?? (((int) ($pagination['current_page'] ?? 1) - 1) * (int) ($pagination['per_page'] ?? 10) + 1));
+    $hasActiveFilters = array_filter([
+        $filters['search'] ?? null,
+        $filters['tahun_sertifikasi'] ?? null,
+        $filters['status_sertifikasi'] ?? null,
+    ], static fn ($value) => $value !== null && $value !== '') !== [];
 @endphp
 
 <div class="space-y-5 pb-8">
-    @if(session('toast'))
-        <x-toast />
-    @endif
-
     @if($apiError)
         <div class="rounded-xl border border-rose-200 bg-rose-50 px-5 py-4 text-sm font-semibold text-rose-700" role="alert">
             {{ $apiError }}
         </div>
     @else
-        @if(count($certifications) > 0)
+        @if(count($certifications) > 0 || $hasActiveFilters)
         <form method="GET" action="{{ route('sertifikasi.index') }}" class="flex flex-col gap-3 sm:flex-row sm:items-center">
             @foreach($ownerQuery as $key => $value)
                 <input type="hidden" name="{{ $key }}" value="{{ $value }}">
@@ -100,6 +101,8 @@
                     @php
                         $certificationId = $certification['id'] ?? $certification['id_sertifikasi'] ?? null;
                         $status = $certification['status_sertifikasi'] ?? '-';
+                        $year = $certification['tahun_sertifikasi'] ?? '-';
+                        $year = preg_match('/^\d{4}/', (string) $year) ? substr((string) $year, 0, 4) : $year;
                     @endphp
                     <x-table.row>
                         <x-table.cell class="w-14 text-gray-500">{{ $startNumber + $index }}.</x-table.cell>
@@ -112,14 +115,14 @@
                                 {{ $status }}
                             </span>
                         </x-table.cell>
-                        <x-table.cell>{{ $certification['tahun_sertifikasi'] ?? '-' }}</x-table.cell>
+                        <x-table.cell>{{ $year }}</x-table.cell>
                         <x-table.cell class="min-w-28">
                             @if($certificationId)
                                 <div class="flex items-center justify-end gap-3">
                                     <a href="{{ route('sertifikasi.edit', $certificationId) }}" class="text-amber-500 transition hover:text-amber-700" title="Edit sertifikasi" aria-label="Edit sertifikasi">
                                         <x-icon.edit class="h-5 w-5" />
                                     </a>
-                                    <form method="POST" action="{{ route('sertifikasi.destroy', $certificationId) }}" data-confirm-delete data-title="Hapus Sertifikasi?" data-message="Apakah Anda yakin ingin menghapus sertifikasi ini? Tindakan ini bersifat permanen dan data tidak dapat dikembalikan.">
+                                    <form method="POST" action="{{ route('sertifikasi.destroy', ['sertifikasi' => $certificationId] + request()->only(['search', 'tipe_pemilik', 'id_dosen', 'id_tendik', 'tahun_sertifikasi', 'status_sertifikasi'])) }}" data-confirm-delete data-title="Hapus Sertifikasi?" data-message="Apakah Anda yakin ingin menghapus sertifikasi ini? Tindakan ini bersifat permanen dan data tidak dapat dikembalikan.">
                                         @csrf
                                         @method('DELETE')
                                         @foreach(request()->only(['search', 'tipe_pemilik', 'id_dosen', 'id_tendik', 'tahun_sertifikasi', 'status_sertifikasi']) as $key => $value)
@@ -157,7 +160,6 @@
                 </a>
             </div>
         @endif
-        <x-confirm-delete id="deleteSertifikasiModal" />
     @endif
 </div>
 @endsection

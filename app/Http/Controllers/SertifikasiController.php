@@ -72,21 +72,41 @@ class SertifikasiController extends Controller
 
     public function create(Request $request): View
     {
-        $ownerType = $request->query('tipe_pemilik');
-        $ownerId = $ownerType === 'dosen'
-            ? $request->query('id_dosen')
-            : ($ownerType === 'tendik' ? $request->query('id_tendik') : null);
+        $isDosen = $this->isAuthenticatedDosen();
+        $user = session('user', []);
+        $ownerType = $isDosen ? 'dosen' : $request->query('tipe_pemilik');
+        $ownerId = $isDosen
+            ? (is_array($user) ? ($user['id_dosen'] ?? $user['id'] ?? null) : null)
+            : ($ownerType === 'dosen'
+                ? $request->query('id_dosen')
+                : ($ownerType === 'tendik' ? $request->query('id_tendik') : null));
 
         return view('sertifikasi.form', [
             'certification' => [],
             'isEditing' => false,
             'ownerType' => in_array($ownerType, ['dosen', 'tendik'], true) ? $ownerType : '',
             'ownerId' => is_numeric($ownerId) ? (int) $ownerId : '',
+            'isDosen' => $isDosen,
         ]);
     }
 
     public function store(Request $request): RedirectResponse
     {
+        if ($this->isAuthenticatedDosen()) {
+            $ownerId = $this->authenticatedDosenId();
+
+            if ($ownerId === null) {
+                return back()->withInput()->withErrors([
+                    'owner_id' => 'ID Dosen tidak ditemukan pada sesi login. Silakan login kembali atau hubungi administrator.',
+                ]);
+            }
+
+            $request->merge([
+                'owner_type' => 'dosen',
+                'owner_id' => $ownerId,
+            ]);
+        }
+
         $validated = $request->validate($this->certificationRules() + [
             'owner_type' => ['required', 'in:dosen,tendik'],
             'owner_id' => ['required', 'integer', 'min:1'],
@@ -164,6 +184,7 @@ class SertifikasiController extends Controller
             'isEditing' => true,
             'ownerType' => '',
             'ownerId' => '',
+            'isDosen' => $this->isAuthenticatedDosen(),
         ]);
     }
 
@@ -237,7 +258,7 @@ class SertifikasiController extends Controller
             'nomor_sertifikat' => ['nullable', 'string', 'max:255'],
             'lembaga_penerbit' => ['required', 'string', 'max:255'],
             'status_sertifikasi' => ['required', 'string', 'max:50'],
-            'tahun_sertifikasi' => ['required', 'integer', 'between:1900,2100'],
+            'tahun_sertifikasi' => ['required', 'date_format:Y-m-d'],
             'tanggal_kedaluwarsa' => ['nullable', 'date'],
             'url_drive' => ['nullable', 'url', 'max:2048'],
         ];
@@ -251,7 +272,7 @@ class SertifikasiController extends Controller
             'lembaga_penerbit.required' => 'Lembaga penerbit wajib diisi.',
             'status_sertifikasi.required' => 'Status sertifikasi wajib dipilih.',
             'tahun_sertifikasi.required' => 'Tahun sertifikasi wajib diisi.',
-            'tahun_sertifikasi.integer' => 'Tahun sertifikasi harus berupa angka.',
+            'tahun_sertifikasi.date_format' => 'Tahun sertifikasi harus berupa tanggal yang valid.',
             'tanggal_kedaluwarsa.date' => 'Tanggal kedaluwarsa tidak valid.',
             'url_drive.url' => 'Tautan sertifikasi harus berupa URL yang valid.',
             'owner_type.required' => 'Jenis pemilik wajib dipilih.',
@@ -270,10 +291,30 @@ class SertifikasiController extends Controller
             'nomor_sertifikat' => $validated['nomor_sertifikat'] ?? null,
             'lembaga_penerbit' => $validated['lembaga_penerbit'],
             'status_sertifikasi' => $validated['status_sertifikasi'],
-            'tahun_sertifikasi' => (int) $validated['tahun_sertifikasi'],
+            'tahun_sertifikasi' => $validated['tahun_sertifikasi'],
             'tanggal_kedaluwarsa' => $validated['tanggal_kedaluwarsa'] ?? null,
             'url_drive' => $validated['url_drive'] ?? null,
         ];
+    }
+
+    private function isAuthenticatedDosen(): bool
+    {
+        $user = session('user', []);
+        $roles = is_array($user) && is_array($user['roles'] ?? null) ? $user['roles'] : [];
+        $primaryRole = is_array($roles[0] ?? null)
+            ? ($roles[0]['name'] ?? '')
+            : ($roles[0] ?? '');
+        $role = is_array($user) ? ($user['role'] ?? $primaryRole) : '';
+
+        return strtolower((string) $role) === 'dosen';
+    }
+
+    private function authenticatedDosenId(): ?int
+    {
+        $user = session('user', []);
+        $ownerId = is_array($user) ? ($user['id_dosen'] ?? $user['id'] ?? null) : null;
+
+        return is_numeric($ownerId) && (int) $ownerId > 0 ? (int) $ownerId : null;
     }
 
     private function ownerQuery(string $ownerType, int $ownerId): array

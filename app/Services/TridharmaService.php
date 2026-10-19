@@ -5,6 +5,7 @@ namespace App\Services;
 use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Http;
+use InvalidArgumentException;
 
 class TridharmaService
 {
@@ -12,7 +13,13 @@ class TridharmaService
 
     public function __construct(?string $baseUrl = null)
     {
-        $this->baseUrl = rtrim($baseUrl ?? (string) config('services.tridharma.base_url'), '/');
+        $configuredBaseUrl = trim($baseUrl ?? (string) config('services.tridharma.base_url'));
+
+        if ($configuredBaseUrl === '') {
+            throw new InvalidArgumentException('TRIDHARMA_API_URL must be configured.');
+        }
+
+        $this->baseUrl = rtrim($configuredBaseUrl, '/');
     }
 
     protected function http(): PendingRequest
