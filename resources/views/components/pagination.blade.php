@@ -6,6 +6,8 @@
     'lastPage' => 1,
     'from' => null,
     'to' => null,
+    'alwaysShow' => false,
+    'showTotal' => true,
 ])
 
 @php
@@ -58,13 +60,13 @@
 <div class="flex flex-col sm:flex-row items-center justify-between gap-3 pt-3 text-xs text-gray-700">
     <div>
         @if($total > 0)
-            <span>Menampilkan {{ $fromFormatted }}–{{ $toFormatted }} dari {{ $total }}</span>
+            <span>Menampilkan {{ $fromFormatted }}–{{ $toFormatted }}{{ $showTotal ? ' dari ' . $total : ' Data' }}</span>
         @else
             <span>Menampilkan 0 dari 0 data</span>
         @endif
     </div>
 
-    @if($lastPage > 1)
+    @if($lastPage > 1 || ($alwaysShow && $total > 0))
         <div class="flex items-center gap-1.5">
             @if($currentPage > 1)
                 <a 
