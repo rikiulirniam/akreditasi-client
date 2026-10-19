@@ -1,208 +1,256 @@
 @extends('layouts.app')
 
+@section('meta_title', 'Tenaga Kependidikan')
 @section('title', 'Tenaga Kependidikan')
-@section('subtitle', $totalData . ' Data ditemukan')
+@if($totalData > 0 || $search !== '' || $selectedJabatan !== '')
+    @section('subtitle', $totalData . ' Data ditemukan')
+@endif
 
 @section('content')
-<div class="pt-10 sm:pt-16 lg:pt-20">
+<div class="w-full flex-1 flex flex-col {{ $totalData === 0 && empty($search) && empty($selectedJabatan) ? 'min-h-[70vh] justify-center items-center' : 'pt-12 sm:pt-16 lg:pt-20' }}">
     @if($apiError)
-        <div class="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-xs font-medium text-amber-900 mb-6" role="alert">
+        <div class="w-full rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs font-semibold text-amber-900 mb-4" role="alert">
             {{ $apiError }}
         </div>
     @endif
 
-    <!-- Toolbar: Search, Filter, & Tambah Tendik (Matches Image 2 Spacing & Style) -->
-    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8 sm:mb-10 lg:mb-12">
-        
-        <!-- Left: Search & Filter Form -->
-        <form method="GET" action="{{ route('tenaga-kependidikan.index') }}" id="searchFilterForm" class="flex flex-wrap items-center gap-3.5 flex-1">
-            <!-- Search Input (Matches Image 2: uniform grey background with outline search icon on right) -->
-            <div class="relative w-full sm:w-[310px]">
-                <input 
-                    type="text" 
-                    name="cari" 
-                    value="{{ $search }}" 
-                    placeholder="Cari nama"
-                    class="box-border w-full h-[36px] bg-white-form border border-[#8093A7] rounded-[6px] pl-3.5 pr-10 text-xs font-medium text-black placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary/20 transition"
-                    autocomplete="off"
-                >
-                <button 
-                    type="submit" 
-                    class="absolute inset-y-0 right-0 pr-3.5 flex items-center text-gray-800 hover:text-black transition cursor-pointer" 
-                    aria-label="Cari"
-                >
-                    <svg class="w-4 h-4 stroke-[2]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
-                    </svg>
-                </button>
-            </div>
-
-            <!-- Jabatan Filter Dropdown (Matches Image 2: grey box with yellow square button on right) -->
-            <div class="relative shrink-0" id="filterDropdownContainer" style="width: 140px; flex: 0 0 140px;">
-                <input type="hidden" name="jabatan" id="filterJabatanValue" value="{{ $selectedJabatan }}">
-                <button
-                    type="button"
-                    id="filterDropdownToggle"
-                    aria-expanded="false"
-                    aria-haspopup="true"
-                    class="box-border flex h-[36px] w-full items-center justify-between rounded-[6px] border border-[#8093A7] bg-white-form pl-3.5 pr-1 text-xs font-medium text-gray-900 transition hover:brightness-95 focus:outline-none focus:ring-2 focus:ring-primary/20 cursor-pointer"
-                >
-                    <span class="truncate">{{ $selectedJabatan ?: 'Jabatan' }}</span>
-                    <span class="flex h-[28px] w-[28px] items-center justify-center rounded-[4px] bg-secondary text-primary shrink-0 border border-[#8093A7]">
-                        <svg id="filterChevronIcon" class="h-4 w-4 stroke-[3] transition-transform duration-200" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="m6 9 6 6 6-6" />
-                        </svg>
-                    </span>
-                </button>
-                <div
-                    id="filterPopover"
-                    class="absolute left-0 top-full z-40 mt-1 hidden w-full overflow-hidden rounded-[6px] border border-[#8093A7] bg-[#EAEAEA] py-1 shadow-lg"
-                    role="menu"
-                    aria-label="Filter berdasarkan jabatan"
-                >
-                    <button type="button" class="filter-jabatan-option w-full px-3 py-1.5 text-left text-xs font-medium text-gray-800 hover:bg-black/10 transition cursor-pointer {{ $selectedJabatan === '' ? 'font-bold text-primary bg-black/5' : '' }}" data-value="" role="menuitem">
-                        All Data
-                    </button>
-                    <button type="button" class="filter-jabatan-option w-full px-3 py-1.5 text-left text-xs font-medium text-gray-800 hover:bg-black/10 transition cursor-pointer {{ Str::lower($selectedJabatan) === 'kepala' ? 'font-bold text-primary bg-black/5' : '' }}" data-value="Kepala" role="menuitem">
-                        Kepala
-                    </button>
-                    <button type="button" class="filter-jabatan-option w-full px-3 py-1.5 text-left text-xs font-medium text-gray-800 hover:bg-black/10 transition cursor-pointer {{ Str::lower($selectedJabatan) === 'admin' ? 'font-bold text-primary bg-black/5' : '' }}" data-value="Admin" role="menuitem">
-                        Admin
-                    </button>
-                    <button type="button" class="filter-jabatan-option w-full px-3 py-1.5 text-left text-xs font-medium text-gray-800 hover:bg-black/10 transition cursor-pointer {{ in_array(Str::lower($selectedJabatan), ['staff', 'staf']) ? 'font-bold text-primary bg-black/5' : '' }}" data-value="Staff" role="menuitem">
-                        Staff
-                    </button>
-                    <button type="button" class="filter-jabatan-option w-full px-3 py-1.5 text-left text-xs font-medium text-gray-800 hover:bg-black/10 transition cursor-pointer {{ Str::lower($selectedJabatan) === 'teknisi' ? 'font-bold text-primary bg-black/5' : '' }}" data-value="Teknisi" role="menuitem">
-                        Teknisi
-                    </button>
-                    @foreach($jabatans as $jabatan)
-                        @if(!in_array(Str::lower($jabatan), ['kepala', 'admin', 'staff', 'staf', 'teknisi', 'all data', 'all']))
-                            <button type="button" class="filter-jabatan-option w-full px-3 py-1.5 text-left text-xs font-medium text-gray-800 hover:bg-black/10 transition cursor-pointer {{ $selectedJabatan === $jabatan ? 'font-bold text-primary bg-black/5' : '' }}" data-value="{{ $jabatan }}" role="menuitem">
-                                {{ $jabatan }}
-                            </button>
-                        @endif
-                    @endforeach
-                </div>
-            </div>
-
-            <!-- Active Filter Badge / Reset All -->
-            @if($selectedJabatan || $search)
-                <a 
-                    href="{{ route('tenaga-kependidikan.index') }}" 
-                    class="inline-flex items-center gap-1.5 text-xs text-rose-600 hover:text-rose-800 font-semibold px-2.5 py-1.5 bg-rose-50 rounded-xl border border-rose-200 transition"
-                    title="Hapus semua pencarian dan filter"
-                >
-                    <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                    <span>Reset</span>
-                </a>
-            @endif
-        </form>
-
-        <!-- Right: Tambah Tendik Button (navy pill matching Image 2) -->
-        <div class="shrink-0">
+    {{-- KONDISI 1: Belum Ada Data Tendik (Empty State - Screenshot 1 / Foto 3) --}}
+    @if($totalData === 0 && empty($search) && empty($selectedJabatan))
+        <div class="flex flex-col items-center justify-center text-center px-4 select-none my-auto">
+            <h2 class="text-3xl sm:text-4xl lg:text-[48px] font-black text-black tracking-tight mb-2 sm:mb-3">
+                Belum Ada Data Tendik
+            </h2>
+            <p class="text-base sm:text-lg lg:text-[20px] font-normal text-black mb-7 sm:mb-8">
+                Tekan tombol di bawah untuk menambah data
+            </p>
             <button 
                 type="button" 
-                id="openCreateModalBtn"
-                class="inline-flex items-center gap-2 rounded-full bg-[#012650] hover:bg-[#01568D] px-5 h-[36px] text-xs font-bold text-white shadow-sm transition cursor-pointer active:scale-[0.98]"
+                class="open-create-modal w-full max-w-[410px] h-[58px] sm:h-[61px] rounded-[10px] bg-[#075B91] hover:bg-[#004e7e] text-white flex items-center justify-center gap-3 text-base sm:text-[18px] font-bold shadow-sm transition active:scale-[0.98] cursor-pointer"
                 title="Tambah Tendik"
             >
-                <svg class="w-4 h-4 stroke-[2.5] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-                </svg>
+                <span class="flex h-6 w-6 items-center justify-center rounded-full bg-white text-[#075B91] shrink-0">
+                    <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                    </svg>
+                </span>
                 <span>Tambah Tendik</span>
             </button>
         </div>
-    </div>
+    @else
+        {{-- KONDISI 2: Data Tersedia / Sedang Pencarian (Screenshot 2 & 3) --}}
+        
+        <!-- Toolbar: Search, Filter, & Tambah Tendik -->
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4 sm:mb-5">
+            
+            <!-- Left: Search & Filter Form -->
+            <form method="GET" action="{{ route('tenaga-kependidikan.index') }}" id="searchFilterForm" class="flex flex-wrap items-center gap-3 sm:gap-3.5 flex-1">
+                <!-- Search Input: Grey box with magnifying glass on right -->
+                <div class="relative w-full sm:w-[275px]">
+                    <input 
+                        type="text" 
+                        id="searchInput"
+                        name="cari" 
+                        value="{{ $search }}" 
+                        placeholder="Cari nama"
+                        class="box-border w-full h-[36px] bg-[#D6DADE] border border-[#8093A7] rounded-[6px] pl-3.5 pr-10 text-xs font-medium text-black placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-[#075B91]/30 transition"
+                        autocomplete="off"
+                    >
+                    <button 
+                        type="submit" 
+                        class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-800 hover:text-black transition cursor-pointer" 
+                        aria-label="Cari"
+                    >
+                        <svg class="w-4 h-4 stroke-[2.2]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
+                        </svg>
+                    </button>
+                </div>
 
-    <div class="tendik-flow-table">
-    <x-table>
-        <x-slot:header>
-            <x-table.th class="w-[7%]">No</x-table.th>
-            <x-table.th class="w-[20%]">Nama</x-table.th>
-            <x-table.th class="w-[22%]">NIP</x-table.th>
-            <x-table.th class="w-[17%]">Jabatan</x-table.th>
-            <x-table.th class="w-[17%]">Kualifikasi</x-table.th>
-            <x-table.th class="w-[17%] text-center">Action</x-table.th>
-        </x-slot:header>
-
-        @forelse($tenagaKependidikan as $index => $item)
-            @php
-                $rowNumber = $index + 1 + (($tenagaKependidikan->currentPage() - 1) * $tenagaKependidikan->perPage());
-            @endphp
-            <x-table.row class="tendik-row">
-                <x-table.cell class="text-gray-500 font-medium w-[7%]">
-                    <span class="row-number-text">{{ $rowNumber }}.</span>
-                </x-table.cell>
-                <x-table.cell class="w-[20%]">
-                    <span class="text-sm font-medium text-gray-700">
-                        {{ $item['nama'] }}
-                    </span>
-                </x-table.cell>
-                <x-table.cell class="w-[22%] whitespace-nowrap">
-                    <span class="text-sm font-medium text-gray-700">{{ $item['nip'] }}</span>
-                </x-table.cell>
-                <x-table.cell class="w-[17%] text-sm font-medium text-gray-700">
-                    {{ $item['jabatan'] }}
-                </x-table.cell>
-                <x-table.cell class="w-[17%] text-sm font-medium text-gray-700">
-                    {{ $item['kualifikasi'] }}
-                </x-table.cell>
-                <x-table.cell class="w-[17%]">
-                    <div class="flex items-center justify-center gap-3">
-                                <!-- Edit Icon (Yellow #FFC400) -->
-                                <button
-                                    type="button" 
-                                    class="edit-tendik-btn text-[#F59E0B] hover:text-[#D97706] transition p-1 cursor-pointer"
-                                    data-id="{{ $item['id'] }}"
-                                    data-nama="{{ $item['nama'] }}"
-                                    data-nip="{{ $item['nip'] }}"
-                                    data-jabatan="{{ $item['jabatan'] }}"
-                                    data-id-pendidikan="{{ $item['id_pendidikan'] }}"
-                                    data-kualifikasi="{{ $item['kualifikasi'] }}"
-                                    data-action="{{ route('tenaga-kependidikan.update', $item['id']) }}"
-                                    title="Edit Tenaga Kependidikan"
-                                    aria-label="Edit {{ $item['nama'] }}"
-                                >
-                                    <x-icon.edit class="w-5 h-5" />
+                <!-- Jabatan Filter Dropdown: Grey box with yellow square chevron on right -->
+                <div class="relative shrink-0" id="filterDropdownContainer" style="width: 128px; flex: 0 0 128px;">
+                    <input type="hidden" name="jabatan" id="filterJabatanValue" value="{{ $selectedJabatan }}">
+                    <button
+                        type="button"
+                        id="filterDropdownToggle"
+                        aria-expanded="false"
+                        aria-haspopup="true"
+                        class="box-border flex h-[36px] w-full items-center justify-between rounded-[6px] border border-[#8093A7] bg-[#D6DADE] pl-3 pr-1 text-xs font-semibold text-gray-900 transition hover:brightness-95 focus:outline-none focus:ring-2 focus:ring-[#075B91]/30 cursor-pointer"
+                    >
+                        <span class="truncate">{{ $selectedJabatan ?: 'Jabatan' }}</span>
+                        <span class="flex h-[26px] w-[26px] items-center justify-center rounded-[4px] bg-[#FFCC00] text-black shrink-0 border border-[#8093A7]">
+                            <svg id="filterChevronIcon" class="h-4 w-4 stroke-[3] transition-transform duration-200" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="m6 9 6 6 6-6" />
+                            </svg>
+                        </span>
+                    </button>
+                    <div
+                        id="filterPopover"
+                        class="absolute left-0 top-full z-40 mt-1 hidden w-full overflow-hidden rounded-[8px] border border-[#8093A7] bg-[#EAEAEA] py-1 shadow-lg"
+                        role="menu"
+                        aria-label="Filter berdasarkan jabatan"
+                    >
+                        <button type="button" class="filter-jabatan-option w-full px-3 py-1.5 text-left text-xs font-medium text-gray-800 hover:bg-black/10 transition cursor-pointer {{ $selectedJabatan === '' ? 'font-bold text-primary bg-black/5' : '' }}" data-value="" role="menuitem">
+                            All Data
+                        </button>
+                        <button type="button" class="filter-jabatan-option w-full px-3 py-1.5 text-left text-xs font-medium text-gray-800 hover:bg-black/10 transition cursor-pointer {{ Str::lower($selectedJabatan) === 'kepala' ? 'font-bold text-primary bg-black/5' : '' }}" data-value="Kepala" role="menuitem">
+                            Kepala
+                        </button>
+                        <button type="button" class="filter-jabatan-option w-full px-3 py-1.5 text-left text-xs font-medium text-gray-800 hover:bg-black/10 transition cursor-pointer {{ Str::lower($selectedJabatan) === 'admin' ? 'font-bold text-primary bg-black/5' : '' }}" data-value="Admin" role="menuitem">
+                            Admin
+                        </button>
+                        <button type="button" class="filter-jabatan-option w-full px-3 py-1.5 text-left text-xs font-medium text-gray-800 hover:bg-black/10 transition cursor-pointer {{ in_array(Str::lower($selectedJabatan), ['staff', 'staf']) ? 'font-bold text-primary bg-black/5' : '' }}" data-value="Staff" role="menuitem">
+                            Staff
+                        </button>
+                        <button type="button" class="filter-jabatan-option w-full px-3 py-1.5 text-left text-xs font-medium text-gray-800 hover:bg-black/10 transition cursor-pointer {{ Str::lower($selectedJabatan) === 'teknisi' ? 'font-bold text-primary bg-black/5' : '' }}" data-value="Teknisi" role="menuitem">
+                            Teknisi
+                        </button>
+                        @foreach($jabatans as $jabatan)
+                            @if(!in_array(Str::lower($jabatan), ['kepala', 'admin', 'staff', 'staf', 'teknisi', 'all data', 'all']))
+                                <button type="button" class="filter-jabatan-option w-full px-3 py-1.5 text-left text-xs font-medium text-gray-800 hover:bg-black/10 transition cursor-pointer {{ $selectedJabatan === $jabatan ? 'font-bold text-primary bg-black/5' : '' }}" data-value="{{ $jabatan }}" role="menuitem">
+                                    {{ $jabatan }}
                                 </button>
-
-                                <!-- Delete Icon (Red #C92D23) -->
-                                <button 
-                                    type="button" 
-                                    class="delete-tendik-btn text-[#DC2626] hover:text-[#B91C1C] transition p-1 cursor-pointer"
-                                    data-id="{{ $item['id'] }}"
-                                    data-nama="{{ $item['nama'] }}"
-                                    data-action="{{ route('tenaga-kependidikan.destroy', $item['id']) }}"
-                                    title="Hapus Tenaga Kependidikan"
-                                    aria-label="Hapus {{ $item['nama'] }}"
-                                >
-                                    <x-icon.delete class="w-5 h-5" />
-                                </button>
-
-                                <!-- Detail Icon (Navy / Blue #012650) -->
-                                <a
-                                    href="{{ route('tenaga-pendidikan.show', $item['id']) }}"
-                                    class="text-primary hover:text-additional transition p-1 cursor-pointer flex items-center justify-center"
-                                    title="Detail Tenaga Kependidikan"
-                                    aria-label="Detail {{ $item['nama'] }}"
-                                >
-                                    <x-icon.detail class="w-5 h-5" />
-                                </a>
+                            @endif
+                        @endforeach
                     </div>
-                </x-table.cell>
-            </x-table.row>
-        @empty
-            <x-table.empty colspan="6" message="Belum ada data tenaga kependidikan" submessage="Coba ubah kata kunci pencarian atau reset filter." />
-        @endforelse
-    </x-table>
-    </div>
+                </div>
 
-    <!-- Bottom Pagination (Matches Image 2 distance) -->
-    <div class="mt-8 sm:mt-10 mb-8">
-        <x-pagination :paginator="$tenagaKependidikan" :always-show="true" :show-total="false" />
-    </div>
+                <!-- Active Filter Reset Button -->
+                @if($selectedJabatan || $search)
+                    <a 
+                        href="{{ route('tenaga-kependidikan.index') }}" 
+                        class="inline-flex items-center gap-1.5 text-xs text-rose-600 hover:text-rose-800 font-semibold px-2.5 py-1.5 bg-rose-50 rounded-lg border border-rose-200 transition"
+                        title="Hapus pencarian dan filter"
+                    >
+                        <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                        <span>Reset</span>
+                    </a>
+                @endif
+            </form>
+
+            <!-- Right: Tambah Tendik Button (Figma: rounded rect with white circle + icon) -->
+            <div class="shrink-0">
+                <button 
+                    type="button" 
+                    id="openCreateModalBtn"
+                    class="open-create-modal inline-flex items-center gap-2 rounded-[6px] bg-[#005B94] hover:bg-[#004e7e] pl-2.5 pr-3.5 h-[36px] text-xs font-semibold text-white shadow-xs transition cursor-pointer active:scale-[0.98]"
+                    title="Tambah Tendik"
+                >
+                    <span class="flex h-4 w-4 items-center justify-center rounded-full bg-white text-[#005B94] shrink-0">
+                        <svg class="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                        </svg>
+                    </span>
+                    <span>Tambah Tendik</span>
+                </button>
+            </div>
+        </div>
+
+        {{-- Table Area --}}
+        @if($tenagaKependidikan->isEmpty())
+            <div class="py-16 text-center text-gray-600 bg-white rounded-2xl border border-dashed border-gray-300 mt-2">
+                <p class="text-base font-bold text-gray-800">Tidak ada data tenaga kependidikan yang sesuai.</p>
+                <p class="text-xs text-gray-500 mt-1">Coba ubah kata kunci pencarian atau reset filter.</p>
+                <a href="{{ route('tenaga-kependidikan.index') }}" class="inline-flex items-center gap-1.5 mt-4 text-xs font-bold text-[#075B91] hover:underline">
+                    Reset Pencarian & Filter
+                </a>
+            </div>
+        @else
+            <div class="tendik-flow-table">
+                <x-table>
+                    <x-slot:header>
+                        <x-table.th class="w-[5%] text-center">No</x-table.th>
+                        <x-table.th class="w-[23%] text-left">Nama</x-table.th>
+                        <x-table.th class="w-[21%] text-left">NIP</x-table.th>
+                        <x-table.th class="w-[19%] text-left">Jabatan</x-table.th>
+                        <x-table.th class="w-[18%] text-left">Kualifikasi</x-table.th>
+                        <x-table.th class="w-[14%] text-center">Action</x-table.th>
+                    </x-slot:header>
+
+                    @foreach($tenagaKependidikan as $index => $item)
+                        @php
+                            $rowNumber = $index + 1 + (($tenagaKependidikan->currentPage() - 1) * $tenagaKependidikan->perPage());
+                        @endphp
+                        <x-table.row class="tendik-row">
+                            <x-table.cell class="text-black font-normal w-[5%] text-center">
+                                <span class="row-number-text">{{ $rowNumber }}.</span>
+                            </x-table.cell>
+                            <x-table.cell class="w-[23%]">
+                                <span class="text-[14px] font-medium text-black">
+                                    {{ $item['nama'] }}
+                                </span>
+                            </x-table.cell>
+                            <x-table.cell class="w-[21%] whitespace-nowrap">
+                                <span class="text-[14px] font-normal text-black">{{ $item['nip'] }}</span>
+                            </x-table.cell>
+                            <x-table.cell class="w-[19%] text-[14px] font-normal text-black">
+                                {{ $item['jabatan'] }}
+                            </x-table.cell>
+                            <x-table.cell class="w-[18%] text-[14px] font-normal text-black">
+                                {{ $item['kualifikasi'] }}
+                            </x-table.cell>
+                            <x-table.cell class="w-[14%] text-center">
+                                <div class="flex items-center justify-center gap-3">
+                                    <!-- Edit Icon (Yellow #FFC400) -->
+                                    <button
+                                        type="button" 
+                                        class="edit-tendik-btn text-[#FFC400] hover:text-[#e0ac00] transition p-1 cursor-pointer focus:outline-none"
+                                        data-id="{{ $item['id'] }}"
+                                        data-nama="{{ $item['nama'] }}"
+                                        data-nip="{{ $item['nip'] }}"
+                                        data-jabatan="{{ $item['jabatan'] }}"
+                                        data-id-pendidikan="{{ $item['id_pendidikan'] }}"
+                                        data-kualifikasi="{{ $item['kualifikasi'] }}"
+                                        data-action="{{ route('tenaga-kependidikan.update', $item['id']) }}"
+                                        title="Edit {{ $item['nama'] }}"
+                                        aria-label="Edit {{ $item['nama'] }}"
+                                    >
+                                        <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10" />
+                                        </svg>
+                                    </button>
+
+                                    <!-- Delete Icon (Solid Red #C72C22) -->
+                                    <button 
+                                        type="button" 
+                                        class="delete-tendik-btn text-[#C72C22] hover:text-[#a8251c] transition p-1 cursor-pointer focus:outline-none"
+                                        data-id="{{ $item['id'] }}"
+                                        data-nama="{{ $item['nama'] }}"
+                                        data-action="{{ route('tenaga-kependidikan.destroy', $item['id']) }}"
+                                        title="Hapus {{ $item['nama'] }}"
+                                        aria-label="Hapus {{ $item['nama'] }}"
+                                    >
+                                        <svg class="w-5 h-5 fill-current" viewBox="0 0 24 24">
+                                            <path fill-rule="evenodd" d="M16.5 4.478v.227a48.816 48.816 0 0 1 3.878.512.75.75 0 1 1-.256 1.478l-.209-.035-1.005 13.07a3 3 0 0 1-2.991 2.77H8.084a3 3 0 0 1-2.991-2.77L4.087 6.66l-.209.035a.75.75 0 0 1-.256-1.478A48.567 48.567 0 0 1 7.5 4.705v-.227c0-1.564 1.213-2.9 2.816-2.951a52.662 52.662 0 0 1 3.369 0c1.603.051 2.815 1.387 2.815 2.951Zm-6.136-1.452a51.196 51.196 0 0 1 3.273 0C14.39 3.05 15 3.684 15 4.478v.113a49.488 49.488 0 0 0-6 0v-.113c0-.794.609-1.428 1.364-1.452Zm-.353 6.83a.75.75 0 0 1 .75.75v7.5a.75.75 0 0 1-1.5 0v-7.5a.75.75 0 0 1 .75-.75Zm4.5 0a.75.75 0 0 1 .75.75v7.5a.75.75 0 0 1-1.5 0v-7.5a.75.75 0 0 1 .75-.75Z" clip-rule="evenodd" />
+                                        </svg>
+                                    </button>
+
+                                    <!-- Detail Icon (Navy / Blue #003B6D) -->
+                                    <a
+                                        href="{{ route('tenaga-pendidikan.show', $item['id']) }}"
+                                        class="text-[#003B6D] hover:text-[#075B91] transition p-1 cursor-pointer flex items-center justify-center focus:outline-none"
+                                        title="Detail {{ $item['nama'] }}"
+                                        aria-label="Detail {{ $item['nama'] }}"
+                                    >
+                                        <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178Z" />
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+                                        </svg>
+                                    </a>
+                                </div>
+                            </x-table.cell>
+                        </x-table.row>
+                    @endforeach
+                </x-table>
+            </div>
+
+            <!-- Bottom Pagination (Adaptive: shows "dari X" if multi-page) -->
+            <div class="mt-6 sm:mt-8 mb-6">
+                <x-pagination :paginator="$tenagaKependidikan" :always-show="true" :show-total="$tenagaKependidikan->total() > $tenagaKependidikan->perPage()" />
+            </div>
+        @endif
+    @endif
 </div>
 
 <!-- ========================================== -->
@@ -217,14 +265,14 @@
 >
     <div 
         id="createModalCard" 
-        class="w-full max-w-[570px] bg-white rounded-[20px] shadow-2xl p-7 sm:px-12 sm:py-9 transform scale-95 transition-all duration-200 relative select-none"
+        class="w-full max-w-[540px] bg-white rounded-[20px] shadow-2xl p-7 sm:px-11 sm:py-8 transform scale-95 transition-all duration-200 relative select-none"
     >
-        <!-- Modal Title: Centered, Bold, Black, No Close X Icon -->
-        <h2 id="createModalTitle" class="text-center font-bold text-black text-2xl sm:text-[26px] tracking-tight mb-7 sm:mb-8">
+        <!-- Modal Title: Centered, Bold, Black -->
+        <h2 id="createModalTitle" class="text-center font-bold text-black text-2xl sm:text-[26px] tracking-tight mb-6 sm:mb-7">
             Tambahkan Tenaga Kependidikan
         </h2>
 
-        <!-- Form: Nama, NIP, Jabatan -->
+        <!-- Form: Nama, NIP, Jabatan, Kualifikasi -->
         <form method="POST" action="{{ route('tenaga-kependidikan.store') }}" id="createTendikForm" class="space-y-4">
             @csrf
 
@@ -240,7 +288,7 @@
                     value="{{ old('nama') }}" 
                     placeholder="Nama Tenaga Kependidikan"
                     required
-                    class="w-full h-[52px] bg-[#E0E0E0] border border-transparent rounded-[8px] pl-[28px] pr-4 text-[17px] text-black placeholder-[#8E8E8E] focus:outline-none focus:ring-2 focus:ring-[#075B91]/30 focus:border-[#075B91] transition @error('nama') border-rose-500 ring-1 ring-rose-500 @enderror"
+                    class="w-full h-[50px] bg-[#DEDEDE] border border-transparent rounded-[10px] px-5 text-[16px] text-black placeholder-[#737373] focus:outline-none focus:ring-2 focus:ring-[#075B91]/30 focus:border-[#075B91] transition @error('nama') border-rose-500 ring-1 ring-rose-500 @enderror"
                 >
                 @error('nama')
                     <p class="text-rose-600 text-xs font-semibold mt-1.5 text-left">{{ $message }}</p>
@@ -259,7 +307,7 @@
                     value="{{ old('nip') }}" 
                     placeholder="Nomor Induk Pegawai"
                     required
-                    class="w-full h-[52px] bg-[#E0E0E0] border border-transparent rounded-[8px] pl-[28px] pr-4 text-[17px] text-black placeholder-[#8E8E8E] focus:outline-none focus:ring-2 focus:ring-[#075B91]/30 focus:border-[#075B91] transition font-mono @error('nip') border-rose-500 ring-1 ring-rose-500 @enderror"
+                    class="w-full h-[50px] bg-[#DEDEDE] border border-transparent rounded-[10px] px-5 text-[16px] text-black placeholder-[#737373] focus:outline-none focus:ring-2 focus:ring-[#075B91]/30 focus:border-[#075B91] transition @error('nip') border-rose-500 ring-1 ring-rose-500 @enderror"
                 >
                 @error('nip')
                     <p class="text-rose-600 text-xs font-semibold mt-1.5 text-left">{{ $message }}</p>
@@ -278,7 +326,7 @@
                     value="{{ old('jabatan') }}" 
                     placeholder="Jabatan Tenaga Kependidikan"
                     required
-                    class="w-full h-[52px] bg-[#E0E0E0] border border-transparent rounded-[8px] pl-[28px] pr-4 text-[17px] text-black placeholder-[#8E8E8E] focus:outline-none focus:ring-2 focus:ring-[#075B91]/30 focus:border-[#075B91] transition @error('jabatan') border-rose-500 ring-1 ring-rose-500 @enderror"
+                    class="w-full h-[50px] bg-[#DEDEDE] border border-transparent rounded-[10px] px-5 text-[16px] text-black placeholder-[#737373] focus:outline-none focus:ring-2 focus:ring-[#075B91]/30 focus:border-[#075B91] transition @error('jabatan') border-rose-500 ring-1 ring-rose-500 @enderror"
                 >
                 @error('jabatan')
                     <p class="text-rose-600 text-xs font-semibold mt-1.5 text-left">{{ $message }}</p>
@@ -294,9 +342,9 @@
                     id="create_kualifikasi" 
                     name="id_pendidikan"
                     required
-                    class="w-full h-[52px] bg-[#E0E0E0] border border-transparent rounded-[8px] pl-[28px] pr-4 text-[17px] text-black focus:outline-none focus:ring-2 focus:ring-[#075B91]/30 focus:border-[#075B91] transition @error('id_pendidikan') border-rose-500 ring-1 ring-rose-500 @enderror"
+                    class="w-full h-[50px] bg-[#DEDEDE] border border-transparent rounded-[10px] px-5 text-[16px] text-black focus:outline-none focus:ring-2 focus:ring-[#075B91]/30 focus:border-[#075B91] transition cursor-pointer @error('id_pendidikan') border-rose-500 ring-1 ring-rose-500 @enderror"
                 >
-                    <option value="">Pilih jenjang pendidikan</option>
+                    <option value="" disabled {{ old('id_pendidikan') ? '' : 'selected' }}>Isi Pendidikan Terakhir</option>
                     @foreach($pendidikan as $level)
                         <option value="{{ $level['id'] ?? '' }}" {{ (string) old('id_pendidikan') === (string) ($level['id'] ?? '') ? 'selected' : '' }}>
                             {{ $level['jenjang'] ?? '-' }}
@@ -309,18 +357,18 @@
             </div>
 
             <!-- Modal Action Buttons: Batal & Simpan -->
-            <div class="flex items-center justify-between gap-4 sm:gap-6 pt-4 sm:pt-6">
+            <div class="flex items-center justify-between gap-4 pt-4 sm:pt-6">
                 <button 
                     type="button" 
                     id="cancelCreateBtn"
-                    class="close-create-modal w-full sm:w-[215px] h-[51px] bg-[#D9D9D9] hover:bg-[#cfcfcf] text-black font-semibold text-[17px] rounded-[6px] transition cursor-pointer active:scale-[0.99] flex items-center justify-center select-none"
+                    class="close-create-modal flex-1 h-[50px] bg-[#DEDEDE] hover:bg-[#d0d0d0] text-black font-bold text-[17px] rounded-[10px] transition cursor-pointer active:scale-[0.99] flex items-center justify-center select-none"
                 >
                     Batal
                 </button>
                 <button 
                     type="submit" 
                     id="submitCreateBtn"
-                    class="w-full sm:w-[215px] h-[51px] bg-[#075B91] hover:bg-[#064e7c] text-white font-semibold text-[17px] rounded-[6px] shadow-xs transition cursor-pointer active:scale-[0.99] flex items-center justify-center select-none"
+                    class="flex-1 h-[50px] bg-[#075B91] hover:bg-[#064e7c] text-white font-bold text-[17px] rounded-[10px] shadow-xs transition cursor-pointer active:scale-[0.99] flex items-center justify-center select-none"
                 >
                     Simpan
                 </button>
@@ -341,10 +389,10 @@
 >
     <div 
         id="editModalCard" 
-        class="w-full max-w-[570px] bg-white rounded-[20px] shadow-2xl p-7 sm:px-12 sm:py-9 transform scale-95 transition-all duration-200 relative select-none"
+        class="w-full max-w-[540px] bg-white rounded-[20px] shadow-2xl p-7 sm:px-11 sm:py-8 transform scale-95 transition-all duration-200 relative select-none"
     >
-        <!-- Modal Title: Centered, Bold, Black, Matching Frame 10 -->
-        <h2 id="editModalTitle" class="text-center font-bold text-black text-2xl sm:text-[26px] tracking-tight mb-7 sm:mb-8">
+        <!-- Modal Title: Centered, Bold, Black -->
+        <h2 id="editModalTitle" class="text-center font-bold text-black text-2xl sm:text-[26px] tracking-tight mb-6 sm:mb-7">
             Perbarui Tenaga Kependidikan
         </h2>
 
@@ -364,7 +412,7 @@
                     name="nama" 
                     placeholder="Nama Tenaga Kependidikan"
                     required
-                    class="w-full h-[52px] bg-[#E0E0E0] border border-transparent rounded-[8px] pl-[28px] pr-4 text-[17px] text-black placeholder-[#8E8E8E] focus:outline-none focus:ring-2 focus:ring-[#075B91]/30 focus:border-[#075B91] transition"
+                    class="w-full h-[50px] bg-[#DEDEDE] border border-transparent rounded-[10px] px-5 text-[16px] text-black placeholder-[#737373] focus:outline-none focus:ring-2 focus:ring-[#075B91]/30 focus:border-[#075B91] transition"
                 >
             </div>
 
@@ -379,7 +427,7 @@
                     name="nip" 
                     placeholder="Nomor Induk Pegawai"
                     required
-                    class="w-full h-[52px] bg-[#E0E0E0] border border-transparent rounded-[8px] pl-[28px] pr-4 text-[17px] text-black placeholder-[#8E8E8E] focus:outline-none focus:ring-2 focus:ring-[#075B91]/30 focus:border-[#075B91] transition font-mono"
+                    class="w-full h-[50px] bg-[#DEDEDE] border border-transparent rounded-[10px] px-5 text-[16px] text-black placeholder-[#737373] focus:outline-none focus:ring-2 focus:ring-[#075B91]/30 focus:border-[#075B91] transition"
                 >
             </div>
 
@@ -394,7 +442,7 @@
                     name="jabatan" 
                     placeholder="Jabatan Tenaga Kependidikan"
                     required
-                    class="w-full h-[52px] bg-[#E0E0E0] border border-transparent rounded-[8px] pl-[28px] pr-4 text-[17px] text-black placeholder-[#8E8E8E] focus:outline-none focus:ring-2 focus:ring-[#075B91]/30 focus:border-[#075B91] transition"
+                    class="w-full h-[50px] bg-[#DEDEDE] border border-transparent rounded-[10px] px-5 text-[16px] text-black placeholder-[#737373] focus:outline-none focus:ring-2 focus:ring-[#075B91]/30 focus:border-[#075B91] transition"
                 >
             </div>
 
@@ -407,7 +455,7 @@
                     id="edit_kualifikasi" 
                     name="id_pendidikan"
                     required
-                    class="w-full h-[52px] bg-[#E0E0E0] border border-transparent rounded-[8px] pl-[28px] pr-4 text-[17px] text-black focus:outline-none focus:ring-2 focus:ring-[#075B91]/30 focus:border-[#075B91] transition"
+                    class="w-full h-[50px] bg-[#DEDEDE] border border-transparent rounded-[10px] px-5 text-[16px] text-black focus:outline-none focus:ring-2 focus:ring-[#075B91]/30 focus:border-[#075B91] transition cursor-pointer"
                 >
                     <option value="" disabled>Isi Pendidikan Terakhir</option>
                     @foreach($pendidikan as $level)
@@ -416,18 +464,18 @@
                 </select>
             </div>
 
-            <!-- Modal Action Buttons (Frame 10: Batal & Simpan) -->
-            <div class="flex items-center justify-between gap-4 pt-4">
+            <!-- Modal Action Buttons: Batal & Simpan -->
+            <div class="flex items-center justify-between gap-4 pt-4 sm:pt-6">
                 <button 
                     type="button" 
-                    class="close-edit-modal w-full sm:w-[215px] h-[51px] bg-[#D9D9D9] hover:bg-[#CACACA] text-black font-semibold text-[17px] rounded-[6px] shadow-xs transition cursor-pointer active:scale-[0.99] flex items-center justify-center select-none"
+                    class="close-edit-modal flex-1 h-[50px] bg-[#DEDEDE] hover:bg-[#CACACA] text-black font-bold text-[17px] rounded-[10px] shadow-xs transition cursor-pointer active:scale-[0.99] flex items-center justify-center select-none"
                 >
                     Batal
                 </button>
                 <button 
                     type="submit" 
                     id="submitEditBtn"
-                    class="w-full sm:w-[215px] h-[51px] bg-[#075B91] hover:bg-[#064e7c] text-white font-semibold text-[17px] rounded-[6px] shadow-xs transition cursor-pointer active:scale-[0.99] flex items-center justify-center select-none"
+                    class="flex-1 h-[50px] bg-[#075B91] hover:bg-[#064e7c] text-white font-bold text-[17px] rounded-[10px] shadow-xs transition cursor-pointer active:scale-[0.99] flex items-center justify-center select-none"
                 >
                     Simpan
                 </button>
@@ -441,139 +489,56 @@
 <!-- ========================================== -->
 <div
     id="deleteTendikModal"
-    class="fixed inset-0 z-50 flex items-center justify-center p-4 opacity-0 pointer-events-none transition-all duration-200"
-    style="background-color: rgba(0, 0, 0, 0.45); backdrop-filter: blur(1px);"
+    class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/45 backdrop-blur-[1px] opacity-0 pointer-events-none transition-all duration-200"
     role="dialog"
     aria-modal="true"
     aria-labelledby="deleteModalTitle"
 >
     <div
         id="deleteModalCard"
-        class="w-full transform scale-95 transition-all duration-200 relative text-center select-none"
-        style="max-width: 490px; width: 100%; background-color: #ffffff; border-radius: 16px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); padding: 40px 32px;"
+        class="w-full max-w-[490px] bg-white rounded-[16px] shadow-2xl p-8 sm:p-10 transform scale-95 transition-all duration-200 text-center select-none"
     >
         <!-- Warning Triangle Icon (red, centered matching reference) -->
-        <div class="flex items-center justify-center mb-5" style="display: flex; align-items: center; justify-content: center; margin-bottom: 20px;">
+        <div class="flex items-center justify-center mb-5">
             <svg width="58" height="52" viewBox="0 0 58 52" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-                <path d="M26.3923 2.5C27.547 0.5 30.453 0.5 31.6077 2.5L56.7224 46C57.8771 48 56.4241 50.5 54.1147 50.5H3.88527C1.57587 50.5 0.122869 48 1.27757 46L26.3923 2.5Z" fill="#C92D23"/>
+                <path d="M26.3923 2.5C27.547 0.5 30.453 0.5 31.6077 2.5L56.7224 46C57.8771 48 56.4241 50.5 54.1147 50.5H3.88527C1.57587 50.5 0.122869 48 1.27757 46L26.3923 2.5Z" fill="#C52B21"/>
                 <rect x="26.5" y="18" width="5" height="15" rx="2.5" fill="white"/>
                 <circle cx="29" cy="40" r="3" fill="white"/>
             </svg>
         </div>
 
         <!-- Title -->
-        <h3 id="deleteModalTitle" class="font-extrabold text-black leading-tight mb-3" style="color: #000000; font-weight: 800; font-size: 26px; margin-bottom: 12px;">
+        <h3 id="deleteModalTitle" class="font-extrabold text-black text-2xl sm:text-[26px] leading-tight mb-3">
             Hapus Data Tendik?
         </h3>
 
         <!-- Body text -->
-        <p class="text-black text-sm leading-relaxed mx-auto" style="color: #1f2937; font-size: 14.5px; line-height: 1.5; max-width: 380px; margin-bottom: 30px;">
+        <p class="text-gray-800 text-[14.5px] leading-relaxed mx-auto max-w-[380px] mb-8">
             Apakah Anda yakin ingin menghapus data Tendik ini?<br>
             Tindakan ini bersifat permanen dan data tidak dapat dikembalikan.
         </p>
 
         <!-- Action Buttons -->
-        <form method="POST" action="" id="deleteTendikForm" style="width: 100%;">
+        <form method="POST" action="" id="deleteTendikForm" class="w-full">
             @csrf
             @method('DELETE')
-            <div class="flex items-center justify-center gap-4" style="display: flex; align-items: center; justify-content: center; gap: 16px;">
+            <div class="flex items-center justify-center gap-4">
                 <button
                     type="button"
                     id="cancelDeleteBtn"
-                    class="close-delete-modal font-bold transition duration-150 cursor-pointer flex items-center justify-center"
-                    style="width: 155px; height: 48px; background-color: #D9D9D9; color: #000000; border-radius: 10px; font-weight: 700; font-size: 15px; border: none; cursor: pointer;"
-                    onmouseover="this.style.backgroundColor='#CACACA'"
-                    onmouseout="this.style.backgroundColor='#D9D9D9'"
+                    class="close-delete-modal w-[155px] h-[48px] bg-[#D9D9D9] hover:bg-[#CACACA] text-black font-bold text-[15px] rounded-[10px] transition cursor-pointer flex items-center justify-center"
                 >
                     Batal
                 </button>
                 <button
                     type="submit"
                     id="submitDeleteBtn"
-                    class="font-bold text-white transition duration-150 cursor-pointer flex items-center justify-center"
-                    style="width: 155px; height: 48px; background-color: #C92D23; color: #FFFFFF; border-radius: 10px; font-weight: 700; font-size: 15px; border: none; cursor: pointer;"
-                    onmouseover="this.style.backgroundColor='#B02720'"
-                    onmouseout="this.style.backgroundColor='#C92D23'"
+                    class="w-[155px] h-[48px] bg-[#C52B21] hover:bg-[#B02720] text-white font-bold text-[15px] rounded-[10px] transition cursor-pointer flex items-center justify-center shadow-xs"
                 >
                     Hapus
                 </button>
             </div>
         </form>
-    </div>
-</div>
-
-<!-- ========================================== -->
-<!-- MODAL: DETAIL TENAGA KEPENDIDIKAN          -->
-<!-- ========================================== -->
-<div 
-    id="detailTendikModal" 
-    class="fixed inset-0 z-50 flex items-center justify-center p-4 opacity-0 pointer-events-none transition-all duration-200"
-    style="background-color: rgba(0, 0, 0, 0.45); backdrop-filter: blur(1px);"
-    role="dialog"
-    aria-modal="true"
-    aria-labelledby="detailModalTitle"
->
-    <div 
-        id="detailModalCard" 
-        class="w-full transform scale-95 transition-all duration-200 relative select-none"
-        style="max-width: 520px; width: 100%; background-color: #ffffff; border-radius: 16px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); padding: 36px 32px;"
-    >
-        <!-- Modal Header with Blue Eye Icon & Title -->
-        <div class="flex items-center justify-between pb-4 border-b border-gray-100">
-            <div class="flex items-center gap-3">
-                <span class="w-10 h-10 rounded-xl bg-[#01568D]/10 text-[#01568D] flex items-center justify-center">
-                    <x-icon.detail class="w-5 h-5 stroke-[2]" />
-                </span>
-                <div>
-                    <h2 id="detailModalTitle" class="font-extrabold text-black text-xl leading-tight">
-                        Detail Tenaga Kependidikan
-                    </h2>
-                    <p class="text-xs text-gray-500 font-medium">Informasi lengkap data tenaga kependidikan</p>
-                </div>
-            </div>
-            <button 
-                type="button" 
-                class="close-detail-modal p-1.5 rounded-xl text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition cursor-pointer"
-                aria-label="Tutup"
-            >
-                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
-                </svg>
-            </button>
-        </div>
-
-        <!-- Detail Information Rows -->
-        <div class="py-6 space-y-3.5">
-            <p id="detailStatus" class="hidden rounded-lg bg-blue-50 px-3 py-2 text-xs font-medium text-blue-800" role="status"></p>
-            <div class="bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl p-3.5">
-                <span class="block text-xs font-semibold text-gray-500 mb-1">Nama Lengkap</span>
-                <span id="detail_nama" class="block text-base font-bold text-black">-</span>
-            </div>
-            <div class="bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl p-3.5">
-                <span class="block text-xs font-semibold text-gray-500 mb-1">Nomor Induk Pegawai (NIP)</span>
-                <span id="detail_nip" class="block text-base font-bold text-black font-mono">-</span>
-            </div>
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-                <div class="bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl p-3.5">
-                    <span class="block text-xs font-semibold text-gray-500 mb-1">Jabatan</span>
-                    <span id="detail_jabatan" class="block text-sm font-bold text-black">-</span>
-                </div>
-                <div class="bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl p-3.5">
-                    <span class="block text-xs font-semibold text-gray-500 mb-1">Kualifikasi</span>
-                    <span id="detail_kualifikasi" class="block text-sm font-bold text-black">-</span>
-                </div>
-            </div>
-        </div>
-
-        <!-- Footer: Tutup Button -->
-        <div class="pt-2 flex justify-end">
-            <button 
-                type="button" 
-                class="close-detail-modal px-6 py-2.5 bg-[#012650] hover:bg-[#01568D] text-white text-sm font-bold rounded-xl transition cursor-pointer shadow-xs active:scale-[0.98]"
-            >
-                Tutup
-            </button>
-        </div>
     </div>
 </div>
 
@@ -588,10 +553,10 @@ document.addEventListener('DOMContentLoaded', function () {
     const filterChevron = document.getElementById('filterChevronIcon');
     const selectedJabatanInput = document.getElementById('filterJabatanValue');
     const searchFilterForm = document.getElementById('searchFilterForm');
+    const searchInput = document.getElementById('searchInput');
 
     function setFilterMenuOpen(isOpen) {
         if (!filterMenu || !filterToggle) return;
-
         filterMenu.classList.toggle('hidden', !isOpen);
         filterToggle.setAttribute('aria-expanded', String(isOpen));
         filterChevron?.classList.toggle('rotate-180', isOpen);
@@ -619,10 +584,21 @@ document.addEventListener('DOMContentLoaded', function () {
         if (event.key === 'Escape') setFilterMenuOpen(false);
     });
 
+    // Debounced search on input change
+    let searchDebounceTimeout = null;
+    if (searchInput && searchFilterForm) {
+        searchInput.addEventListener('input', function () {
+            clearTimeout(searchDebounceTimeout);
+            searchDebounceTimeout = setTimeout(() => {
+                searchFilterForm.requestSubmit();
+            }, 600);
+        });
+    }
+
     // ----------------------------------------
     // 1. CREATE MODAL (TAMBAHKAN TENAGA KEPENDIDIKAN)
     // ----------------------------------------
-    const openCreateBtn = document.getElementById('openCreateModalBtn');
+    const openCreateBtns = document.querySelectorAll('.open-create-modal');
     const createModal = document.getElementById('createTendikModal');
     const createModalCard = document.getElementById('createModalCard');
     const closeCreateBtns = document.querySelectorAll('.close-create-modal');
@@ -649,9 +625,10 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 
-    if (openCreateBtn) {
-        openCreateBtn.addEventListener('click', () => toggleCreateModal(true));
-    }
+    openCreateBtns.forEach(btn => {
+        btn.addEventListener('click', () => toggleCreateModal(true));
+    });
+
     closeCreateBtns.forEach(btn => {
         btn.addEventListener('click', () => toggleCreateModal(false));
     });
@@ -687,7 +664,7 @@ document.addEventListener('DOMContentLoaded', function () {
     @endif
 
     // ----------------------------------------
-    // 3. EDIT MODAL
+    // 2. EDIT MODAL
     // ----------------------------------------
     const editModal = document.getElementById('editTendikModal');
     const editModalCard = document.getElementById('editModalCard');
@@ -703,11 +680,13 @@ document.addEventListener('DOMContentLoaded', function () {
         if (!editModal || !editModalCard) return;
         if (show) {
             editModal.classList.remove('opacity-0', 'pointer-events-none');
+            editModal.classList.add('opacity-100');
             editModalCard.classList.remove('scale-95');
             editModalCard.classList.add('scale-100');
             if (editNama) setTimeout(() => editNama.focus(), 100);
         } else {
             editModal.classList.add('opacity-0', 'pointer-events-none');
+            editModal.classList.remove('opacity-100');
             editModalCard.classList.remove('scale-100');
             editModalCard.classList.add('scale-95');
         }
@@ -765,7 +744,7 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     // ----------------------------------------
-    // 4. DELETE CONFIRMATION MODAL
+    // 3. DELETE CONFIRMATION MODAL
     // ----------------------------------------
     const deleteModal = document.getElementById('deleteTendikModal');
     const deleteModalCard = document.getElementById('deleteModalCard');
@@ -810,7 +789,6 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     });
 
-    // Stop propagation so clicking inside modal card won't close it
     if (deleteModalCard) {
         deleteModalCard.addEventListener('click', function (e) {
             e.stopPropagation();
@@ -829,7 +807,7 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-    // Animated deletion with smooth upward slide of rows below
+    // Animated deletion with smooth upward slide
     if (deleteForm) {
         deleteForm.addEventListener('submit', function (e) {
             e.preventDefault();
@@ -845,7 +823,6 @@ document.addEventListener('DOMContentLoaded', function () {
             toggleDeleteModal(false);
 
             if (targetRow) {
-                // 1. Initial fade-out state
                 targetRow.style.transition = 'opacity 0.25s ease, transform 0.25s ease';
                 targetRow.style.opacity = '0.35';
                 targetRow.style.pointerEvents = 'none';
@@ -868,7 +845,6 @@ document.addEventListener('DOMContentLoaded', function () {
                         throw new Error(data.message || 'Gagal menghapus data.');
                     }
 
-                    // 2. Animate row height collapsing so rows below it smoothly slide upwards!
                     targetRow.style.opacity = '0';
                     targetRow.style.transform = 'translateY(-6px)';
 
@@ -896,7 +872,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     setTimeout(() => {
                         targetRow.remove();
 
-                        // 3. Re-number remaining rows in the table
+                        // Re-number remaining rows in the table
                         document.querySelectorAll('.tendik-row').forEach((r, idx) => {
                             const noCell = r.querySelector('.row-number-text') || r.querySelector('td:first-child');
                             if (noCell) noCell.textContent = (idx + 1) + '.';
@@ -905,10 +881,7 @@ document.addEventListener('DOMContentLoaded', function () {
                         // Show empty state if all rows are removed
                         const tbody = document.querySelector('.tendik-flow-table tbody');
                         if (tbody && tbody.querySelectorAll('.tendik-row').length === 0) {
-                            const emptyRow = document.createElement('tr');
-                            emptyRow.className = 'tendik-row';
-                            emptyRow.innerHTML = '<td colspan="6" class="text-center py-10 text-gray-500 font-medium">Belum ada data Tenaga Kependidikan</td>';
-                            tbody.appendChild(emptyRow);
+                            window.location.reload();
                         }
 
                         if (window.showToast) {
@@ -945,106 +918,12 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-    // ----------------------------------------
-    // 5. DETAIL MODAL INTERACTION
-    // ----------------------------------------
-    const detailModal = document.getElementById('detailTendikModal');
-    const detailModalCard = document.getElementById('detailModalCard');
-    const closeDetailBtns = document.querySelectorAll('.close-detail-modal');
-    const detailButtons = document.querySelectorAll('.detail-tendik-btn');
-    const detailNama = document.getElementById('detail_nama');
-    const detailNip = document.getElementById('detail_nip');
-    const detailJabatan = document.getElementById('detail_jabatan');
-    const detailKualifikasi = document.getElementById('detail_kualifikasi');
-    const detailStatus = document.getElementById('detailStatus');
-
-    function toggleDetailModal(show) {
-        if (!detailModal || !detailModalCard) return;
-        if (show) {
-            detailModal.classList.remove('opacity-0', 'pointer-events-none');
-            detailModal.classList.add('opacity-100');
-            detailModalCard.classList.remove('scale-95');
-            detailModalCard.classList.add('scale-100');
-            document.body.classList.add('overflow-hidden');
-        } else {
-            detailModal.classList.remove('opacity-100');
-            detailModal.classList.add('opacity-0', 'pointer-events-none');
-            detailModalCard.classList.remove('scale-100');
-            detailModalCard.classList.add('scale-95');
-            document.body.classList.remove('overflow-hidden');
-        }
-    }
-
-    detailButtons.forEach(btn => {
-        btn.addEventListener('click', async function () {
-            if (detailNama) detailNama.textContent = '-';
-            if (detailNip) detailNip.textContent = '-';
-            if (detailJabatan) detailJabatan.textContent = '-';
-            if (detailKualifikasi) detailKualifikasi.textContent = '-';
-            if (detailStatus) {
-                detailStatus.textContent = 'Memuat detail...';
-                detailStatus.classList.remove('hidden', 'bg-rose-50', 'text-rose-800');
-                detailStatus.classList.add('bg-blue-50', 'text-blue-800');
-            }
-            toggleDetailModal(true);
-
-            try {
-                const response = await fetch(this.dataset.endpoint, {
-                    headers: { Accept: 'application/json' },
-                });
-                const contentType = response.headers.get('content-type') || '';
-                if (response.redirected || !contentType.includes('application/json')) {
-                    throw new Error('Sesi API berakhir atau detail tidak tersedia. Silakan login kembali.');
-                }
-                const result = await response.json();
-
-                if (!response.ok || result.success !== true || !result.data) {
-                    throw new Error(result.message || 'Detail Tendik tidak dapat dimuat.');
-                }
-
-                if (detailNama) detailNama.textContent = result.data.nama || '-';
-                if (detailNip) detailNip.textContent = result.data.nip || '-';
-                if (detailJabatan) detailJabatan.textContent = result.data.jabatan || '-';
-                const selectedEducation = document.querySelector(`#create_kualifikasi option[value="${CSS.escape(String(result.data.id_pendidikan || ''))}"]`);
-                if (detailKualifikasi) {
-                    detailKualifikasi.textContent = result.data.kualifikasi && result.data.kualifikasi !== '-'
-                        ? result.data.kualifikasi
-                        : (selectedEducation?.textContent.trim() || '-');
-                }
-                detailStatus?.classList.add('hidden');
-            } catch (error) {
-                if (detailStatus) {
-                    detailStatus.textContent = error.message || 'Tidak dapat terhubung ke layanan Tendik.';
-                    detailStatus.classList.remove('hidden', 'bg-blue-50', 'text-blue-800');
-                    detailStatus.classList.add('bg-rose-50', 'text-rose-800');
-                }
-            }
-        });
-    });
-
-    closeDetailBtns.forEach(btn => {
-        btn.addEventListener('click', () => toggleDetailModal(false));
-    });
-
-    if (detailModal) {
-        detailModal.addEventListener('click', function (e) {
-            if (e.target === detailModal) toggleDetailModal(false);
-        });
-    }
-
-    if (detailModalCard) {
-        detailModalCard.addEventListener('click', function (e) {
-            e.stopPropagation();
-        });
-    }
-
     // ESC key closes all modals
     document.addEventListener('keydown', function (e) {
         if (e.key === 'Escape') {
             toggleCreateModal(false);
             toggleEditModal(false);
             toggleDeleteModal(false);
-            toggleDetailModal(false);
             setFilterMenuOpen(false);
         }
     });

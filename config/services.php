@@ -40,7 +40,7 @@ return [
     ],
 
     'tridharma' => [
-        'base_url' => env('TRIDHARMA_API_URL', 'https://tridharma.fayra.my.id/api'),
+        'base_url' => env('TRIDHARMA_API_URL', env('API_BASE_URL', 'https://tridharma.fayra.my.id/api')),
     ],
 
 ];

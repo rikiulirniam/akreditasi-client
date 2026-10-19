@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Services\TridharmaService;
+use App\Services\TenagaKependidikanService;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\Response;
 use Illuminate\Http\JsonResponse;
@@ -16,13 +16,14 @@ use Illuminate\View\View;
 class TenagaKependidikanController extends Controller
 {
     public function __construct(
-        protected TridharmaService $tridharmaService,
+        protected TenagaKependidikanService $tridharmaService,
     ) {}
 
     public function index(Request $request): View|RedirectResponse
     {
         $search = trim((string) $request->query('cari', $request->query('search', '')));
         $selectedJabatan = trim((string) $request->query('jabatan', ''));
+        $selectedKualifikasi = trim((string) $request->query('kualifikasi', ''));
 
         try {
             $tendikResponse = $this->tridharmaService->getTendikList(array_filter([
@@ -52,7 +53,7 @@ class TenagaKependidikanController extends Controller
                 ? $this->listData($pendidikanResponse)
                 : [];
 
-            $pendidikan = collect($rawPendidikan)
+            $apiPendidikan = collect($rawPendidikan)
                 ->map(function (array $item) {
                     $id = $item['id_pendidikan'] ?? $item['id'] ?? null;
                     $jenjang = $item['jenjang'] ?? $item['nama_pendidikan'] ?? null;
@@ -64,17 +65,34 @@ class TenagaKependidikanController extends Controller
                     ];
                 })
                 ->filter(fn (array $item) => ! empty($item['id']) && $item['jenjang'] !== '')
-                ->unique(fn (array $item) => Str::lower($item['jenjang']))
-                ->values()
                 ->all();
 
-            if (empty($pendidikan)) {
-                $pendidikan = [
-                    ['id' => 4, 'id_pendidikan' => 4, 'jenjang' => 'D4/S1'],
-                    ['id' => 1, 'id_pendidikan' => 1, 'jenjang' => 'S2'],
-                    ['id' => 3, 'id_pendidikan' => 3, 'jenjang' => 'S3'],
-                ];
-            }
+            $standardOptions = [
+                ['id' => 1, 'id_pendidikan' => 1, 'jenjang' => 'S2'],
+                ['id' => 3, 'id_pendidikan' => 3, 'jenjang' => 'S3'],
+                ['id' => 4, 'id_pendidikan' => 4, 'jenjang' => 'D4/S1'],
+            ];
+
+            // Merge API items with standard options so S2, S3, D4/S1 are always present, matching reference
+            $pendidikan = collect($apiPendidikan)
+                ->concat($standardOptions)
+                ->unique(fn (array $item) => Str::lower($item['jenjang']))
+                ->sortBy(function (array $item) {
+                    $val = Str::lower($item['jenjang']);
+                    if ($val === 's2') {
+                        return 1;
+                    }
+                    if ($val === 's3') {
+                        return 2;
+                    }
+                    if ($val === 'd4/s1' || $val === 's1' || $val === 'd4') {
+                        return 3;
+                    }
+
+                    return 10;
+                })
+                ->values()
+                ->all();
 
             $pendidikanById = collect($pendidikan)->mapWithKeys(fn (array $item) => [
                 (string) ($item['id'] ?? '') => (string) ($item['jenjang'] ?? ''),
@@ -100,6 +118,14 @@ class TenagaKependidikanController extends Controller
                     return $collection->filter(fn ($item) => Str::contains(Str::lower($item['jabatan']), $needle)
                     );
                 })
+                ->when($selectedKualifikasi !== '', function ($collection) use ($selectedKualifikasi) {
+                    $needle = Str::lower($selectedKualifikasi);
+                    if ($needle === 'all data' || $needle === 'all' || $needle === 'semua kualifikasi') {
+                        return $collection;
+                    }
+
+                    return $collection->filter(fn ($item) => Str::contains(Str::lower($item['kualifikasi']), $needle));
+                })
                 ->values();
 
             $jabatans = collect($this->listData($tendikResponse))
@@ -109,7 +135,7 @@ class TenagaKependidikanController extends Controller
                 ->sort()
                 ->values();
 
-            $perPage = 9;
+            $perPage = 8;
             $currentPage = max(1, (int) $request->query('page', 1));
             $totalData = $items->count();
 
@@ -133,6 +159,7 @@ class TenagaKependidikanController extends Controller
                 'totalData' => $totalData,
                 'search' => $search,
                 'selectedJabatan' => $selectedJabatan,
+                'selectedKualifikasi' => $selectedKualifikasi,
                 'jabatans' => $jabatans,
                 'pendidikan' => $pendidikan,
                 'apiError' => null,
@@ -508,14 +535,18 @@ class TenagaKependidikanController extends Controller
 
         $id = $record['id'] ?? $record['id_tendik'] ?? '';
 
+        $bidangKeahlian = (string) ($record['bidang_keahlian'] ?? (is_array($pendidikan) ? ($pendidikan['program_studi'] ?? '') : ''));
+        $email = (string) ($record['email'] ?? '');
+        $status = (string) ($record['status'] ?? ($record['status_kepegawaian'] ?? ''));
+
         return [
             'id' => $id,
             'nama' => (string) ($record['nama_tendik'] ?? $record['nama'] ?? ''),
             'nip' => (string) ($record['nip'] ?? ''),
             'jabatan' => (string) ($record['jabatan_tendik'] ?? $record['jabatan'] ?? ''),
-            'bidang_keahlian' => (string) ($record['bidang_keahlian'] ?? ''),
-            'email' => (string) ($record['email'] ?? ''),
-            'status' => (string) ($record['status'] ?? ''),
+            'bidang_keahlian' => $bidangKeahlian,
+            'email' => $email,
+            'status' => $status,
             'id_pendidikan' => $pendidikanId,
             'kualifikasi' => (string) ($kualifikasi ?: ($pendidikanById[$pendidikanId] ?? '-')),
         ];
@@ -536,10 +567,22 @@ class TenagaKependidikanController extends Controller
             return array_map(fn (array $item) => [
                 'gelar' => (string) ($item['gelar'] ?? $item['jenjang'] ?? $tendik['kualifikasi']),
                 'jenjang' => (string) ($item['jenjang'] ?? ''),
-                'institusi' => (string) ($item['institusi'] ?? ''),
+                'institusi' => (string) ($item['institusi'] ?? $item['universitas'] ?? ''),
                 'program_studi' => (string) ($item['program_studi'] ?? ''),
                 'tahun_lulus' => (string) ($item['tahun_lulus'] ?? ''),
             ], array_filter($qualifications, 'is_array'));
+        }
+
+        if (isset($record['pendidikan']) && is_array($record['pendidikan']) && (! empty($record['pendidikan']['jenjang']) || ! empty($record['pendidikan']['universitas']))) {
+            $p = $record['pendidikan'];
+
+            return [[
+                'gelar' => (string) ($p['gelar'] ?? $p['jenjang'] ?? $tendik['kualifikasi']),
+                'jenjang' => (string) ($p['jenjang'] ?? ''),
+                'institusi' => (string) ($p['universitas'] ?? $p['institusi'] ?? ''),
+                'program_studi' => (string) ($p['program_studi'] ?? ''),
+                'tahun_lulus' => (string) ($p['tahun_lulus'] ?? ''),
+            ]];
         }
 
         return $tendik['kualifikasi'] !== '-'
