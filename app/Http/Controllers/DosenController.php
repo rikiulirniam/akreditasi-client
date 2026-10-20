@@ -337,11 +337,18 @@ class DosenController extends Controller
 
         $luaranList = ! empty($combinedLuaran) || $hasLuaranKeys ? $combinedLuaran : [
             [
-                'judul' => 'SISTEM KEAMANAN LINGKUNGAN BERBASIS INTERNET OF THING (IOT) DI WILAYAH TLOGO RT 06, GEBLAKAN, TAMANTIRTO, KASIHAN, BANTUL',
-                'nomor' => '-',
-                'tahun' => '2026',
-                'jenis' => '2026',
-                'status' => 'TLOGO RT 06, GEBLAKAN, TAMANTIRTO, KASIHAN, BANTUL',
+                'judul' => 'Sistem Deteksi Anomali Jaringan Komputer Menggunakan Deep Autoencoder',
+                'nomor' => 'EC00202518920',
+                'tahun' => '2025',
+                'jenis' => 'HKI',
+                'status' => 'Tercatat',
+            ],
+            [
+                'judul' => 'Modul IoT Smart Agriculture Terintegrasi Sensor Suhu dan Kelembapan Tanah',
+                'nomor' => 'P00202405671',
+                'tahun' => '2024',
+                'jenis' => 'HKI',
+                'status' => 'Granted',
             ],
         ];
 
