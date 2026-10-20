@@ -1,12 +1,12 @@
 @props([
     'colspan' => 1,
-    'message' => 'Belum ada data tersedia',
-    'submessage' => '',
+    'message' => 'Tidak ada data ditemukan.',
+    'submessage' => null,
 ])
 
 <tr>
-    <td colspan="{{ $colspan }}" class="py-12 px-6 border border-[#D5D5D5] rounded-[12px] text-center bg-[#F3F3F3] text-gray-600">
-        <p class="text-base font-bold text-gray-800">{{ $message }}</p>
+    <td colspan="{{ $colspan }}" class="py-12 px-6 border-b border-gray-200 text-center text-gray-500">
+        <p class="text-base font-semibold text-gray-700">{{ $message }}</p>
         @if($submessage)
             <p class="text-sm text-gray-500 mt-1">{{ $submessage }}</p>
         @endif

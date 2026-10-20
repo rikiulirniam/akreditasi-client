@@ -8,10 +8,10 @@
     @php
         $rawMeta = trim((string) $__env->yieldContent('meta_title'));
         if ($rawMeta === '') {
-            $rawMeta = trim(strip_tags((string) $__env->yieldContent('title', $title ?? 'Tenaga Kependidikan')));
+            $rawMeta = trim(strip_tags((string) $__env->yieldContent('title', $title ?? 'Dashboard')));
             $rawMeta = preg_replace('/\s+/', ' ', $rawMeta);
         }
-        $pageTitle = $rawMeta !== '' && $rawMeta !== 'Dashboard' ? $rawMeta : 'Tenaga Kependidikan';
+        $pageTitle = $rawMeta !== '' ? $rawMeta : 'Portal Akreditasi';
     @endphp
     <title>{{ $pageTitle }} - Portal Akreditasi</title>
 
@@ -44,6 +44,16 @@
             'email' => 'kuwat@example.com',
             'role' => 'Kaprodi',
         ];
+        $tokenExpiresAt = session('token_expires_at');
+        if (! $tokenExpiresAt && session()->has('access_token')) {
+            $parts = explode('.', (string) session('access_token'));
+            if (isset($parts[1])) {
+                $payload = json_decode(base64_decode(strtr($parts[1], '-_', '+/')), true);
+                if (isset($payload['exp'])) {
+                    $tokenExpiresAt = (int) $payload['exp'];
+                }
+            }
+        }
     @endphp
 
     <div class="flex h-screen w-full overflow-hidden bg-white">
@@ -85,7 +95,7 @@
 
                     <!-- Page Title & Subtitle -->
                     <div>
-                        <h1 class="text-3xl sm:text-4xl lg:text-[44px] font-black text-black tracking-tight leading-tight">
+                        <h1 class="text-3xl sm:text-4xl lg:text-[44px] font-black text-black tracking-tight leading-tight flex items-center gap-1.5 flex-wrap">
                             @yield('title', $title ?? 'Dashboard')
                         </h1>
                         @hasSection('subtitle')
@@ -215,6 +225,14 @@
 
             let isCollapsed = localStorage.getItem('sidebar_collapsed') === 'true';
 
+            // Track open submenus so they remain open when expanded
+            const openSubmenus = new Set();
+            submenuContainers.forEach(container => {
+                if (container.getAttribute('data-is-active') === 'true' || !container.classList.contains('hidden')) {
+                    openSubmenus.add(container.id);
+                }
+            });
+
             function applySidebarState() {
                 if (isCollapsed) {
                     sidebar.classList.remove('w-[350px]', 'w-64');
@@ -227,6 +245,23 @@
                     sidebar.classList.add(sidebarExpandedWidth);
                     sidebarTexts.forEach(el => el.classList.remove('hidden'));
                     sidebarChevrons.forEach(el => el.classList.remove('hidden'));
+
+                    // Restore open submenu state when expanded
+                    submenuContainers.forEach(container => {
+                        const targetId = container.id;
+                        const btn = document.querySelector(`.submenu-toggle-btn[data-target="${targetId}"]`);
+                        const chevron = btn ? btn.querySelector('.submenu-chevron') : null;
+                        const shouldBeOpen = openSubmenus.has(targetId) || container.getAttribute('data-is-active') === 'true';
+
+                        if (shouldBeOpen) {
+                            container.classList.remove('hidden');
+                            if (chevron) chevron.classList.add('rotate-180');
+                            openSubmenus.add(targetId);
+                        } else {
+                            container.classList.add('hidden');
+                            if (chevron) chevron.classList.remove('rotate-180');
+                        }
+                    });
                 }
             }
 
@@ -261,27 +296,44 @@
             if (mobileToggleBtn) mobileToggleBtn.addEventListener('click', openMobileSidebar);
             if (backdrop) backdrop.addEventListener('click', closeMobileSidebar);
 
+            window.addEventListener('resize', function () {
+                if (window.innerWidth >= 1024) {
+                    applySidebarState();
+                } else {
+                    if (sidebar) {
+                        sidebar.classList.remove('w-20', 'is-collapsed');
+                        sidebar.classList.add('w-64');
+                    }
+                    sidebarTexts.forEach(el => el.classList.remove('hidden'));
+                    sidebarChevrons.forEach(el => el.classList.remove('hidden'));
+                }
+            });
+
             // Submenu Accordion Logic
             const submenuButtons = document.querySelectorAll('.submenu-toggle-btn');
             submenuButtons.forEach(btn => {
                 btn.addEventListener('click', function () {
-                    // If collapsed, expand first so submenu is visible
-                    if (isCollapsed) {
-                        toggleDesktopSidebar();
-                    }
-
                     const targetId = this.getAttribute('data-target');
                     const targetSubmenu = document.getElementById(targetId);
                     const chevron = this.querySelector('.submenu-chevron');
+
+                    // If collapsed, expand first and ensure this submenu is opened
+                    if (isCollapsed) {
+                        openSubmenus.add(targetId);
+                        toggleDesktopSidebar();
+                        return;
+                    }
 
                     if (targetSubmenu) {
                         const isHidden = targetSubmenu.classList.contains('hidden');
                         if (isHidden) {
                             targetSubmenu.classList.remove('hidden');
                             if (chevron) chevron.classList.add('rotate-180');
+                            openSubmenus.add(targetId);
                         } else {
                             targetSubmenu.classList.add('hidden');
                             if (chevron) chevron.classList.remove('rotate-180');
+                            openSubmenus.delete(targetId);
                         }
                     }
                 });
@@ -344,6 +396,56 @@
                     closeMobileSidebar();
                 }
             });
+
+            // Auto-refresh JWT token proactively before expiration
+            let tokenExpiresAt = {{ (int) ($tokenExpiresAt ?? 0) }};
+            const refreshTokenUrl = "{{ route('auth.refresh-token') }}";
+            const csrfMetaToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+
+            if (tokenExpiresAt > 0 && csrfMetaToken) {
+                let tokenRefreshTimer = null;
+
+                function scheduleTokenRefresh() {
+                    if (tokenRefreshTimer) {
+                        clearTimeout(tokenRefreshTimer);
+                    }
+
+                    const nowSeconds = Math.floor(Date.now() / 1000);
+                    const leadSeconds = 300;
+                    const secondsLeft = tokenExpiresAt - nowSeconds - leadSeconds;
+
+                    const delayMs = Math.max(3000, secondsLeft * 1000);
+
+                    tokenRefreshTimer = setTimeout(async function () {
+                        try {
+                            const res = await fetch(refreshTokenUrl, {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'X-CSRF-TOKEN': csrfMetaToken,
+                                    'Accept': 'application/json',
+                                    'X-Requested-With': 'XMLHttpRequest'
+                                }
+                            });
+
+                            if (res.ok) {
+                                const data = await res.json();
+                                if (data.success && data.expires_at) {
+                                    tokenExpiresAt = data.expires_at;
+                                    scheduleTokenRefresh();
+                                }
+                            } else if (res.status === 401) {
+                                window.location.href = "{{ route('login') }}";
+                            }
+                        } catch (e) {
+                            // Coba kembali dalam 30 detik jika ada gangguan jaringan
+                            tokenRefreshTimer = setTimeout(scheduleTokenRefresh, 30000);
+                        }
+                    }, delayMs);
+                }
+
+                scheduleTokenRefresh();
+            }
         });
     </script>
 </body>

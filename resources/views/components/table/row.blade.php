@@ -2,6 +2,6 @@
     'class' => '',
 ])
 
-<tr {{ $attributes->merge(['class' => 'border-b border-[#E5E7EB] bg-white hover:bg-gray-50/60 transition-all duration-150 group ' . $class]) }}>
+<tr {{ $attributes->merge(['class' => 'border-b border-gray-200 hover:bg-gray-50/60 transition-colors duration-150 group ' . $class]) }}>
     {{ $slot }}
 </tr>
