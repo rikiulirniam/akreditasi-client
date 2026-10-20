@@ -578,4 +578,92 @@ class AkademikService
     {
         return $this->delete("mahasiswa/{$id}", [], $token);
     }
+
+    /*
+    |==========================================================================
+    | MODUL: KURIKULUM (/api/kurikulum/*)
+    |==========================================================================
+    */
+
+    public function getKurikulumList(array $query = [], ?string $token = null): Response
+    {
+        return $this->get('kurikulum', $query, $token);
+    }
+
+    public function getKurikulumById(int|string $id, ?string $token = null): Response
+    {
+        return $this->get("kurikulum/{$id}", [], $token);
+    }
+
+    public function createKurikulum(array $data, ?string $token = null): Response
+    {
+        return $this->post('kurikulum', $data, $token);
+    }
+
+    public function updateKurikulum(int|string $id, array $data, ?string $token = null): Response
+    {
+        return $this->put("kurikulum/{$id}", $data, $token);
+    }
+
+    public function deleteKurikulum(int|string $id, ?string $token = null): Response
+    {
+        return $this->delete("kurikulum/{$id}", [], $token);
+    }
+
+    /*
+    |==========================================================================
+    | MODUL: CPL (/api/cpl/*)
+    |==========================================================================
+    */
+
+    public function getCplList(array $query = [], ?string $token = null): Response
+    {
+        return $this->get('cpl', $query, $token);
+    }
+
+    public function getCplById(int|string $id, ?string $token = null): Response
+    {
+        return $this->get("cpl/{$id}", [], $token);
+    }
+
+    public function createCpl(array $data, ?string $token = null): Response
+    {
+        return $this->post('cpl', $data, $token);
+    }
+
+    public function updateCpl(int|string $id, array $data, ?string $token = null): Response
+    {
+        return $this->put("cpl/{$id}", $data, $token);
+    }
+
+    public function deleteCpl(int|string $id, ?string $token = null): Response
+    {
+        return $this->delete("cpl/{$id}", [], $token);
+    }
+
+    /*
+    |==========================================================================
+    | MODUL: MATA KULIAH (/api/mata-kuliah/*)
+    |==========================================================================
+    */
+
+    public function getMataKuliahList(array $query = [], ?string $token = null): Response
+    {
+        return $this->get('mata-kuliah', $query, $token);
+    }
+
+    public function getMataKuliahById(int|string $id, ?string $token = null): Response
+    {
+        return $this->get("mata-kuliah/{$id}", [], $token);
+    }
+
+    public function getCplByMataKuliahId(int|string $mataKuliahId, ?string $token = null): Response
+    {
+        return $this->get("mata-kuliah/{$mataKuliahId}/cpl", [], $token);
+    }
+
+    public function syncMataKuliahCpl(int|string $mataKuliahId, array $cplIds, ?string $token = null): Response
+    {
+        return $this->post("mata-kuliah/{$mataKuliahId}/cpl/sync", ['cpl_ids' => $cplIds], $token);
+    }
 }
