@@ -57,13 +57,16 @@
                     </label>
                     <div class="relative">
                         <input
-                            type="text"
+                            type="number"
                             name="berlaku_sampai"
                             id="berlakuSampaiInput"
-                            placeholder="29/07/2028"
+                            placeholder="yyyy"
+                            min="1900"
+                            max="2100"
+                            step="1"
                             value="{{ old('berlaku_sampai') }}"
                             required
-                            class="w-full px-4 py-2.5 pr-10 rounded-[10px] bg-white-form border-none text-sm font-medium text-gray-900 focus:ring-2 focus:ring-primary/20 focus:outline-none placeholder:text-gray-400"
+                            class="w-full px-4 py-2.5 pr-10 rounded-[10px] bg-white-form border-none text-sm font-medium text-gray-900 focus:ring-2 focus:ring-primary/20 focus:outline-none placeholder:text-gray-400 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                         >
                         <span class="absolute inset-y-0 right-0 flex items-center pr-3.5 pointer-events-none text-gray-700">
                             <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">

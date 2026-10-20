@@ -47,13 +47,13 @@ class KurikulumController extends Controller
                 $found = false;
                 foreach ($kurikulumList as $idx => $k) {
                     if ((string) ($k['id'] ?? '') === (string) ($custom['id'] ?? '')) {
-                        $kurikulumList[$idx] = array_merge($kurikulumList[$idx], $custom);
+                        $kurikulumList[$idx] = $this->normalizeKurikulum(array_merge($kurikulumList[$idx], $custom));
                         $found = true;
                         break;
                     }
                 }
                 if (! $found) {
-                    array_unshift($kurikulumList, $custom);
+                    array_unshift($kurikulumList, $this->normalizeKurikulum($custom));
                 }
             }
         }
@@ -123,22 +123,21 @@ class KurikulumController extends Controller
         $validated = $request->validate([
             'nama_kurikulum' => ['required', 'string', 'max:255'],
             'sk_kurikulum' => ['required', 'string', 'max:100'],
-            'berlaku_sampai' => ['required', 'string', 'max:50'],
+            'berlaku_sampai' => ['required', 'integer', 'min:1900', 'max:2100'],
             'id_prodi' => ['required'],
             'deskripsi_cpl' => ['nullable', 'string'],
             'kategori_cpl' => ['nullable', 'string', 'max:100'],
         ], [
             'nama_kurikulum.required' => 'Nama Kurikulum wajib diisi.',
             'sk_kurikulum.required' => 'SK Kurikulum wajib diisi.',
-            'berlaku_sampai.required' => 'Tahun atau tanggal berlaku wajib diisi.',
+            'berlaku_sampai.required' => 'Tahun berlaku wajib diisi.',
+            'berlaku_sampai.integer' => 'Tahun berlaku harus berupa angka.',
+            'berlaku_sampai.min' => 'Tahun berlaku minimal tahun 1900.',
+            'berlaku_sampai.max' => 'Tahun berlaku maksimal tahun 2100.',
             'id_prodi.required' => 'Program Studi wajib dipilih.',
         ]);
 
-        $berlakuInput = trim($validated['berlaku_sampai']);
-        $berlakuTahun = 2028;
-        if (preg_match('/\b(19\d{2}|20\d{2})\b/', $berlakuInput, $matches)) {
-            $berlakuTahun = (int) $matches[1];
-        }
+        $berlakuTahun = (int) $validated['berlaku_sampai'];
 
         $payload = [
             'nama_kurikulum' => trim($validated['nama_kurikulum']),
@@ -160,7 +159,7 @@ class KurikulumController extends Controller
             $customList = session('custom_kurikulum_list', []);
             $customList[] = array_merge($payload, [
                 'id' => $newId,
-                'berlaku_sampai' => $berlakuInput,
+                'berlaku_sampai' => $berlakuTahun,
                 'cpl_deskripsi' => $deskripsiCpl,
                 'cpl_kategori' => $kategoriCpl,
             ]);
@@ -188,7 +187,7 @@ class KurikulumController extends Controller
         $customList = session('custom_kurikulum_list', []);
         $customList[] = array_merge($payload, [
             'id' => $newId,
-            'berlaku_sampai' => $berlakuInput,
+            'berlaku_sampai' => $berlakuTahun,
             'cpl_deskripsi' => $deskripsiCpl,
             'cpl_kategori' => $kategoriCpl,
         ]);
@@ -406,22 +405,21 @@ class KurikulumController extends Controller
         $validated = $request->validate([
             'nama_kurikulum' => ['required', 'string', 'max:255'],
             'sk_kurikulum' => ['required', 'string', 'max:100'],
-            'berlaku_sampai' => ['required', 'string', 'max:50'],
+            'berlaku_sampai' => ['required', 'integer', 'min:1900', 'max:2100'],
             'id_prodi' => ['required'],
             'deskripsi_cpl' => ['nullable', 'string'],
             'kategori_cpl' => ['nullable', 'string', 'max:100'],
         ], [
             'nama_kurikulum.required' => 'Nama Kurikulum wajib diisi.',
             'sk_kurikulum.required' => 'SK Kurikulum wajib diisi.',
-            'berlaku_sampai.required' => 'Tahun atau tanggal berlaku wajib diisi.',
+            'berlaku_sampai.required' => 'Tahun berlaku wajib diisi.',
+            'berlaku_sampai.integer' => 'Tahun berlaku harus berupa angka.',
+            'berlaku_sampai.min' => 'Tahun berlaku minimal tahun 1900.',
+            'berlaku_sampai.max' => 'Tahun berlaku maksimal tahun 2100.',
             'id_prodi.required' => 'Program Studi wajib dipilih.',
         ]);
 
-        $berlakuInput = trim($validated['berlaku_sampai']);
-        $berlakuTahun = 2028;
-        if (preg_match('/\b(19\d{2}|20\d{2})\b/', $berlakuInput, $matches)) {
-            $berlakuTahun = (int) $matches[1];
-        }
+        $berlakuTahun = (int) $validated['berlaku_sampai'];
 
         $payload = [
             'nama_kurikulum' => trim($validated['nama_kurikulum']),
@@ -442,7 +440,7 @@ class KurikulumController extends Controller
             if ((string) ($k['id'] ?? '') === (string) $id) {
                 $k = array_merge($k, $payload, [
                     'id' => $id,
-                    'berlaku_sampai' => $berlakuInput,
+                    'berlaku_sampai' => $berlakuTahun,
                     'cpl_deskripsi' => $deskripsiCpl,
                     'cpl_kategori' => $kategoriCpl,
                 ]);
@@ -454,7 +452,7 @@ class KurikulumController extends Controller
         if (! $found) {
             $customList[] = array_merge($payload, [
                 'id' => $id,
-                'berlaku_sampai' => $berlakuInput,
+                'berlaku_sampai' => $berlakuTahun,
                 'cpl_deskripsi' => $deskripsiCpl,
                 'cpl_kategori' => $kategoriCpl,
             ]);
@@ -534,11 +532,18 @@ class KurikulumController extends Controller
     {
         $deskripsiFallback = 'Menjadi perguruan tinggi terapan berstandar nasional dan internasional yang mampu bersaing, akuntabel, berkarakter, dan beretika dalam bidang teknologi dan bisnis.';
 
+        $berlakuSampai = $item['berlaku_sampai'] ?? 2028;
+        if (preg_match('/\b(19\d{2}|20\d{2})\b/', (string) $berlakuSampai, $matches)) {
+            $berlakuSampai = (int) $matches[1];
+        } else {
+            $berlakuSampai = is_numeric($berlakuSampai) ? (int) $berlakuSampai : 2028;
+        }
+
         return [
             'id' => $item['id'] ?? null,
             'nama_kurikulum' => $item['nama_kurikulum'] ?? 'Kurikulum Merdeka 2024',
             'sk_kurikulum' => $item['sk_kurikulum'] ?? 'SK-08202421/2024',
-            'berlaku_sampai' => $item['berlaku_sampai'] ?? '2028',
+            'berlaku_sampai' => $berlakuSampai,
             'id_prodi' => $item['id_prodi'] ?? null,
             'nama_prodi' => $item['prodi']['nama_prodi'] ?? $item['nama_prodi'] ?? 'Teknologi Rekayasa Komputer',
             'cpl' => $item['cpl'] ?? [],
