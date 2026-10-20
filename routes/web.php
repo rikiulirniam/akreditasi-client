@@ -6,7 +6,9 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DosenController;
 use App\Http\Controllers\KelasController;
+use App\Http\Controllers\KurikulumController;
 use App\Http\Controllers\MahasiswaController;
+use App\Http\Controllers\MataKuliahController;
 use App\Http\Controllers\PerguruanTinggiController;
 use App\Http\Controllers\PermissionController;
 use App\Http\Controllers\ProdiController;
@@ -58,10 +60,16 @@ Route::middleware('auth.akademik')->group(function () {
 
     Route::resource('kelas', KelasController::class);
     Route::resource('mahasiswa', MahasiswaController::class);
+    Route::put('/mata-kuliah-enrollment/{enrollmentId}/evidence', [MataKuliahController::class, 'updateEvidence'])->name('mata-kuliah.update-evidence');
+    Route::resource('mata-kuliah', MataKuliahController::class);
     Route::resource('tahun-akademik', TahunAkademikController::class);
 
     // Modul Dosen
     Route::get('/dosen/template', [DosenController::class, 'template'])->name('dosen.template');
     Route::post('/dosen/import', [DosenController::class, 'import'])->name('dosen.import');
     Route::resource('dosen', DosenController::class);
+
+    // Modul Kurikulum
+    Route::resource('kurikulum', KurikulumController::class);
+    Route::put('kurikulum/{kurikulum}/cpl-mata-kuliah', [KurikulumController::class, 'updateMataKuliahCpl'])->name('kurikulum.update-mk-cpl');
 });
