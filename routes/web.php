@@ -5,6 +5,7 @@ use App\Http\Controllers\AngkatanKelasController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\KelasController;
+use App\Http\Controllers\KurikulumController;
 use App\Http\Controllers\MahasiswaController;
 use App\Http\Controllers\MataKuliahController;
 use App\Http\Controllers\PerguruanTinggiController;
@@ -54,5 +55,8 @@ Route::middleware('auth.akademik')->group(function () {
     Route::put('/mata-kuliah-enrollment/{enrollmentId}/evidence', [MataKuliahController::class, 'updateEvidence'])->name('mata-kuliah.update-evidence');
     Route::resource('mata-kuliah', MataKuliahController::class);
     Route::resource('tahun-akademik', TahunAkademikController::class);
+
+    Route::resource('kurikulum', KurikulumController::class);
+    Route::put('kurikulum/{kurikulum}/cpl-mata-kuliah', [KurikulumController::class, 'updateMataKuliahCpl'])->name('kurikulum.update-mk-cpl');
 
 });
