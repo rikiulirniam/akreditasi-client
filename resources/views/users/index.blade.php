@@ -65,11 +65,11 @@
 
         <x-table>
             <x-slot:header>
-                <x-table.th>No</x-table.th>
+                <x-table.th class="w-16">No</x-table.th>
                 <x-table.th>Nama</x-table.th>
                 <x-table.th>Peran</x-table.th>
                 <x-table.th>Email</x-table.th>
-                <x-table.th>Action</x-table.th>
+                <x-table.th class="w-28 text-right">Action</x-table.th>
             </x-slot:header>
 
             @forelse($users as $index => $u)
@@ -84,12 +84,12 @@
                     <x-table.cell class="text-gray-500 font-medium w-16">
                         {{ $rowNumber }}
                     </x-table.cell>
-                    <x-table.cell class="w-64">
+                    <x-table.cell>
                         <span class="font-extrabold text-sm text-gray-900 user-name tracking-tight font-mono">
                             {{ $userName }}
                         </span>
                     </x-table.cell>
-                    <x-table.cell class="w-36">
+                    <x-table.cell>
                         <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-gray-100 text-gray-700 user-role">
                             {{ $userRoleDisplay }}
                         </span>
@@ -201,10 +201,11 @@
                     type="email" 
                     name="email" 
                     id="createEmailInput" 
-                    placeholder="contohsaja@gmail.com" 
+                    placeholder="nama@polines.ac.id" 
                     required 
                     class="w-full px-4 py-2.5 rounded-[10px] bg-white-form border-none text-sm font-medium text-gray-900 focus:ring-2 focus:ring-primary/20 focus:outline-none placeholder:text-gray-500"
                 >
+                <p class="text-[11px] text-gray-500 mt-1">Hanya email institusi (*.polines.ac.id).</p>
             </div>
 
             <!-- Field 4: Password -->
@@ -367,10 +368,11 @@
                     type="email" 
                     name="email" 
                     id="editEmailInput" 
-                    placeholder="contohsaja@gmail.com" 
+                    placeholder="nama@polines.ac.id" 
                     required 
                     class="w-full px-4 py-2.5 rounded-[10px] bg-white-form border-none text-sm font-medium text-gray-900 focus:ring-2 focus:ring-primary/20 focus:outline-none placeholder:text-gray-500"
                 >
+                <p class="text-[11px] text-gray-500 mt-1">Hanya email institusi (*.polines.ac.id).</p>
             </div>
 
             <!-- Field 4: Perbarui Password (Matching Label in Image 3) -->
