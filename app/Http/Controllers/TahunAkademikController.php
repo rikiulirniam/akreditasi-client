@@ -273,4 +273,87 @@ class TahunAkademikController extends Controller
 
         return (string) ($body['message'] ?? $fallback);
     }
+    /**
+     * Flow Halaman 2: Daftar Kelas berdasarkan Tahun Akademik
+     */
+    public function daftarKelas(Request $request, int|string $id): View|RedirectResponse
+    {
+        // 1. Ambil detail Tahun Akademik
+        $tahunResponse = $this->akademikService->getTahunAkademikById($id);
+
+        if ($tahunResponse->status() === 401) {
+            return redirect()->route('login')->with('toast', [
+                'type' => 'warning',
+                'title' => 'Sesi Berakhir',
+                'message' => 'Sesi Anda telah kedaluwarsa. Silakan login kembali.',
+            ]);
+        }
+
+        $tahunAkademik = $tahunResponse->json('data') ?? ['id' => $id, 'tahun' => '2025/2026'];
+
+        // 2. Ambil daftar kelas dari API
+        $page = max(1, (int) $request->query('page', 1));
+        $perPage = max(1, (int) $request->query('per_page', 10));
+
+        $kelasResponse = $this->akademikService->getKelasList([
+            'tahun_akademik_id' => $id,
+            'page' => $page,
+            'per_page' => $perPage,
+        ]);
+
+        $kelasList = $kelasResponse->json('data') ?? [];
+        $apiPagination = $kelasResponse->json('pagination');
+
+        $pagination = [
+            'total' => (int) ($apiPagination['total'] ?? count($kelasList)),
+            'per_page' => (int) ($apiPagination['per_page'] ?? $perPage),
+            'current_page' => (int) ($apiPagination['current_page'] ?? $page),
+            'last_page' => (int) ($apiPagination['last_page'] ?? 1),
+        ];
+
+        return view('tahun-akademik.kelas', [
+            'tahunAkademik' => $tahunAkademik,
+            'kelasList' => $kelasList,
+            'pagination' => $pagination,
+        ]);
+    }
+
+    /**
+     * Flow Halaman 3: Detail Kelas (Daftar Mahasiswa & Daftar Mata Kuliah)
+     */
+    public function detailKelas(int|string $id, int|string $kelasId): View|RedirectResponse
+    {
+        // 1. Ambil detail Tahun Akademik & Kelas
+        $tahunResponse = $this->akademikService->getTahunAkademikById($id);
+
+        if ($tahunResponse->status() === 401) {
+            return redirect()->route('login')->with('toast', [
+                'type' => 'warning',
+                'title' => 'Sesi Berakhir',
+                'message' => 'Sesi Anda telah kedaluwarsa. Silakan login kembali.',
+            ]);
+        }
+
+        $tahunAkademik = $tahunResponse->json('data') ?? ['id' => $id, 'tahun' => '2025/2026'];
+
+        $kelasResponse = $this->akademikService->getKelasById($kelasId);
+        $kelas = $kelasResponse->json('data') ?? ['id' => $kelasId, 'nama' => 'TI 2-A'];
+
+        // 2. Ambil Daftar Mahasiswa
+        $mahasiswaResponse = $this->akademikService->getMahasiswaList([
+            'kelas_id' => $kelasId,
+        ]);
+        $mahasiswaList = $mahasiswaResponse->json('data') ?? [];
+
+        // 3. Ambil Daftar Mata Kuliah
+        $matakuliahResponse = $this->akademikService->get("kelas/{$kelasId}/mata-kuliah");
+        $matakuliahList = $matakuliahResponse->json('data') ?? [];
+
+        return view('tahun-akademik.detail', [
+            'tahunAkademik' => $tahunAkademik,
+            'kelas' => $kelas,
+            'mahasiswaList' => $mahasiswaList,
+            'matakuliahList' => $matakuliahList,
+        ]);
+    }
 }
