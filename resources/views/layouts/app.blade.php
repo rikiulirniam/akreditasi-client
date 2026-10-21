@@ -8,8 +8,10 @@
     @php
         $rawMeta = trim((string) $__env->yieldContent('meta_title'));
         if ($rawMeta === '') {
-            $rawMeta = trim(strip_tags((string) $__env->yieldContent('title', $title ?? 'Dashboard')));
-            $rawMeta = preg_replace('/\s+/', ' ', $rawMeta);
+            $rawMeta = trim((string) $__env->yieldContent('browser-title'));
+        }
+        if ($rawMeta === '') {
+            $rawMeta = trim(preg_replace('/\s+/', ' ', html_entity_decode(strip_tags((string) $__env->yieldContent('title', $title ?? 'Dashboard')))));
         }
         $pageTitle = $rawMeta !== '' ? $rawMeta : 'Portal Akreditasi';
     @endphp
@@ -115,7 +117,6 @@
                         aria-expanded="false"
                         aria-haspopup="true"
                     >
-                        <!-- Left: Chevron Down -->
                         <svg 
                             id="profileChevron" 
                             class="w-4 h-4 text-[#012650] stroke-[3] transition-transform duration-300 shrink-0" 
@@ -302,7 +303,7 @@
                 } else {
                     if (sidebar) {
                         sidebar.classList.remove('w-20', 'is-collapsed');
-                        sidebar.classList.add('w-64');
+                        sidebar.classList.add('w-[350px]');
                     }
                     sidebarTexts.forEach(el => el.classList.remove('hidden'));
                     sidebarChevrons.forEach(el => el.classList.remove('hidden'));

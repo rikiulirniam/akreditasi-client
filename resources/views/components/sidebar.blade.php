@@ -9,12 +9,12 @@
         <div class="absolute inset-0 bg-gradient-to-r from-primary/30 to-black/20 pointer-events-none"></div>
 
         <div class="relative z-10 shrink-0">
-            <img src="{{ asset('images/cap-icon.png') }}" alt="Logo" class="w-13 h-auto drop-shadow-md">
+            <img src="{{ asset('images/cap-icon.png') }}" alt="Logo" class="w-12 h-auto drop-shadow-md">
         </div>
         <div class="relative z-10 sidebar-text min-w-0 text-white font-black leading-[1.12] select-none">
-            <span class="block text-base sm:text-lg font-black tracking-wider">SISTEM</span>
-            <span class="block text-base sm:text-lg font-black tracking-wider">AKREDITASI</span>
-            <span class="block text-xs sm:text-sm font-black tracking-wider">PROGRAM STUDI</span>
+            <span class="block text-sm sm:text-base font-extrabold tracking-wide">SISTEM</span>
+            <span class="block text-sm sm:text-base font-extrabold tracking-wide">AKREDITASI</span>
+            <span class="block text-xs sm:text-sm font-extrabold tracking-wide">PROGRAM STUDI</span>
         </div>
     </div>
 
@@ -36,7 +36,7 @@
                     </a>
                 </div>
 
-                <!-- Pengguna / Akun -->
+                <!-- Pengguna -->
                 @php
                     $isUserMgmtActive = request()->routeIs('users.*') || request()->routeIs('roles.*') || request()->routeIs('permissions.*');
                 @endphp
@@ -213,7 +213,7 @@
 
                 <!-- SDM -->
                 @php
-                    $isSdmActive = request()->routeIs('dosen.*') || request()->routeIs('tenaga-kependidikan.*') || request()->routeIs('tenaga-pendidikan.*');
+                    $isSdmActive = request()->routeIs('dosen.*') || request()->routeIs('tenaga-kependidikan.*') || request()->routeIs('tenaga-pendidikan.*') || request()->routeIs('sertifikasi.*');
                 @endphp
                 <div>
                     <button 
@@ -240,9 +240,13 @@
                             <span class="w-1.5 h-1.5 rounded-full {{ request()->routeIs('dosen.*') ? 'bg-secondary' : 'bg-white/40' }} shrink-0"></span>
                             <span>Dosen</span>
                         </a>
-                        <a href="{{ route('tenaga-kependidikan.index') }}" class="flex items-center gap-2.5 py-2.5 px-3.5 rounded-xl text-sm font-semibold transition-all duration-150 {{ request()->routeIs('tenaga-kependidikan.*') ? 'bg-white/20 text-white shadow-xs font-bold' : 'text-white/80 hover:text-white hover:bg-white/10' }}">
-                            <span class="w-1.5 h-1.5 rounded-full {{ request()->routeIs('tenaga-kependidikan.*') ? 'bg-secondary' : 'bg-white/40' }} shrink-0"></span>
+                        <a href="{{ route('tenaga-kependidikan.index') }}" class="flex items-center gap-2.5 py-2.5 px-3.5 rounded-xl text-sm font-semibold transition-all duration-150 {{ (request()->routeIs('tenaga-kependidikan.*') || request()->routeIs('tenaga-pendidikan.*')) ? 'bg-white/20 text-white shadow-xs font-bold' : 'text-white/80 hover:text-white hover:bg-white/10' }}">
+                            <span class="w-1.5 h-1.5 rounded-full {{ (request()->routeIs('tenaga-kependidikan.*') || request()->routeIs('tenaga-pendidikan.*')) ? 'bg-secondary' : 'bg-white/40' }} shrink-0"></span>
                             <span>Tenaga Kependidikan</span>
+                        </a>
+                        <a href="{{ route('sertifikasi.index') }}" class="flex items-center gap-2.5 py-2.5 px-3.5 rounded-xl text-sm font-semibold transition-all duration-150 {{ request()->routeIs('sertifikasi.*') ? 'bg-white/20 text-white shadow-xs font-bold' : 'text-white/80 hover:text-white hover:bg-white/10' }}">
+                            <span class="w-1.5 h-1.5 rounded-full {{ request()->routeIs('sertifikasi.*') ? 'bg-secondary' : 'bg-white/40' }} shrink-0"></span>
+                            <span>Sertifikasi</span>
                         </a>
                     </div>
                 </div>
@@ -267,6 +271,10 @@
                     </button>
 
                     <div id="submenu-tridharma" class="submenu-container hidden pl-10 pr-2 pt-1 pb-1 space-y-1.5">
+                        <a href="#" class="flex items-center gap-2.5 py-2.5 px-3.5 rounded-xl text-sm font-medium text-white/80 hover:text-white hover:bg-white/10 transition">
+                            <span class="w-1.5 h-1.5 rounded-full bg-white/40 shrink-0"></span>
+                            <span>Pendidikan &amp; Pengajaran</span>
+                        </a>
                         <a href="#" class="flex items-center gap-2.5 py-2.5 px-3.5 rounded-xl text-sm font-medium text-white/80 hover:text-white hover:bg-white/10 transition">
                             <span class="w-1.5 h-1.5 rounded-full bg-white/40 shrink-0"></span>
                             <span>Penelitian</span>

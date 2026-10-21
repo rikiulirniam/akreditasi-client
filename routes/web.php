@@ -13,6 +13,7 @@ use App\Http\Controllers\PerguruanTinggiController;
 use App\Http\Controllers\PermissionController;
 use App\Http\Controllers\ProdiController;
 use App\Http\Controllers\RoleController;
+use App\Http\Controllers\SertifikasiController;
 use App\Http\Controllers\TahunAkademikController;
 use App\Http\Controllers\TenagaKependidikanController;
 use App\Http\Controllers\UppsController;
@@ -44,6 +45,8 @@ Route::middleware('auth.akademik')->group(function () {
     Route::post('/tenaga-pendidikan/{tendikId}/sertifikasi', [TenagaKependidikanController::class, 'storeSertifikasi'])->name('tenaga-pendidikan.sertifikasi.store');
     Route::put('/tenaga-pendidikan/{tendikId}/sertifikasi/{sertifikasiId}', [TenagaKependidikanController::class, 'updateSertifikasi'])->name('tenaga-pendidikan.sertifikasi.update');
     Route::delete('/tenaga-pendidikan/{tendikId}/sertifikasi/{sertifikasiId}', [TenagaKependidikanController::class, 'destroySertifikasi'])->name('tenaga-pendidikan.sertifikasi.destroy');
+    Route::post('/tenaga-kependidikan/{tendikId}/sertifikasi', [TenagaKependidikanController::class, 'storeSertifikasi'])->name('tenaga-kependidikan.sertifikasi.store');
+    Route::delete('/tenaga-kependidikan/{tendikId}/sertifikasi/{sertifikasiId}', [TenagaKependidikanController::class, 'destroySertifikasi'])->name('tenaga-kependidikan.sertifikasi.destroy');
     Route::post('/tenaga-kependidikan/{tendikId}/pendidikan', [TenagaKependidikanController::class, 'storePendidikan'])->name('tenaga-kependidikan.pendidikan.store');
 
     Route::get('/perguruan-tinggi', [PerguruanTinggiController::class, 'index'])->name('perguruan-tinggi.index');
@@ -51,6 +54,7 @@ Route::middleware('auth.akademik')->group(function () {
 
     Route::resource('prodi', ProdiController::class);
     Route::resource('upps', UppsController::class);
+
     Route::resource('users', UserController::class);
     Route::resource('roles', RoleController::class)->except(['show']);
     Route::put('/permissions/module/{module}', [PermissionController::class, 'updateModule'])->name('permissions.update-module');
@@ -73,4 +77,13 @@ Route::middleware('auth.akademik')->group(function () {
     // Modul Kurikulum
     Route::resource('kurikulum', KurikulumController::class);
     Route::put('kurikulum/{kurikulum}/cpl-mata-kuliah', [KurikulumController::class, 'updateMataKuliahCpl'])->name('kurikulum.update-mk-cpl');
+
+    // Modul Sertifikasi
+    Route::get('/sertifikasi', [SertifikasiController::class, 'index'])->name('sertifikasi.index');
+    Route::get('/sertifikasi/create', [SertifikasiController::class, 'create'])->name('sertifikasi.create');
+    Route::post('/sertifikasi', [SertifikasiController::class, 'store'])->name('sertifikasi.store');
+    Route::get('/sertifikasi/{sertifikasi}/edit', [SertifikasiController::class, 'edit'])->whereNumber('sertifikasi')->name('sertifikasi.edit');
+    Route::put('/sertifikasi/{sertifikasi}', [SertifikasiController::class, 'update'])->whereNumber('sertifikasi')->name('sertifikasi.update');
+    Route::delete('/sertifikasi/{sertifikasi}', [SertifikasiController::class, 'destroy'])->whereNumber('sertifikasi')->name('sertifikasi.destroy');
+    Route::get('/sertifikasi/{sertifikasi}', [SertifikasiController::class, 'show'])->whereNumber('sertifikasi')->name('sertifikasi.show');
 });

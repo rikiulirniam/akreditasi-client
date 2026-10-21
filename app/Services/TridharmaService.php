@@ -208,9 +208,23 @@ class TridharmaService
         return $this->http($token)->get($this->url('sertifikasi'), $query);
     }
 
+    public function getSertifikasiById(int|string $id, ?string $token = null): Response
+    {
+        return $this->http($token)->get($this->url("sertifikasi/{$id}"));
+    }
+
+    public function getSertifikasi(int|string $id, ?string $token = null): Response
+    {
+        return $this->getSertifikasiById($id, $token);
+    }
+
     /** @param array<string, int|string|null> $payload */
     public function createSertifikasi(array $payload, ?UploadedFile $evidenceFile = null, ?string $token = null): Response
     {
+        if (func_num_args() === 1) {
+            return $this->post('sertifikasi', $payload, $token);
+        }
+
         $request = Http::acceptJson()->timeout(30);
         $resolvedToken = $token ?? $this->token ?? (string) session('access_token');
         if ($resolvedToken !== '') {
@@ -236,11 +250,6 @@ class TridharmaService
         }
 
         return $request->send('POST', $this->url('sertifikasi'), ['multipart' => $multipart]);
-    }
-
-    public function getSertifikasi(int|string $id, ?string $token = null): Response
-    {
-        return $this->http($token)->get($this->url("sertifikasi/{$id}"));
     }
 
     /** @param array<string, int|string|null> $payload */

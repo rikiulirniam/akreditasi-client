@@ -637,17 +637,21 @@ class TenagaKependidikanController extends Controller
     {
         $fromApi = $this->qualificationCards($record, $tendik);
 
-        $fromDb = Kualifikasi::where('tendik_api_id', $tendikApiId)
-            ->orderBy('id')
-            ->get()
-            ->map(fn (Kualifikasi $q) => [
-                'gelar' => (string) ($q->gelar ?? $q->jenjang ?? ''),
-                'jenjang' => (string) ($q->jenjang ?? ''),
-                'institusi' => (string) ($q->institusi ?? ''),
-                'program_studi' => (string) ($q->program_studi ?? ''),
-                'tahun_lulus' => (string) ($q->tahun_lulus ?? ''),
-            ])
-            ->all();
+        try {
+            $fromDb = Kualifikasi::where('tendik_api_id', $tendikApiId)
+                ->orderBy('id')
+                ->get()
+                ->map(fn (Kualifikasi $q) => [
+                    'gelar' => (string) ($q->gelar ?? $q->jenjang ?? ''),
+                    'jenjang' => (string) ($q->jenjang ?? ''),
+                    'institusi' => (string) ($q->institusi ?? ''),
+                    'program_studi' => (string) ($q->program_studi ?? ''),
+                    'tahun_lulus' => (string) ($q->tahun_lulus ?? ''),
+                ])
+                ->all();
+        } catch (\Throwable) {
+            $fromDb = [];
+        }
 
         return array_merge($fromApi, $fromDb);
     }
