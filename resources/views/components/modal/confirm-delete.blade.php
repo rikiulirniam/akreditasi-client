@@ -116,7 +116,10 @@
             if (!btn) return;
 
             e.preventDefault();
-            const action = btn.getAttribute('data-action') || btn.getAttribute('href') || (btn.form ? btn.form.action : '#');
+            const action = btn.getAttribute('data-action')
+                || btn.getAttribute('href')
+                || (btn instanceof HTMLFormElement ? btn.action : btn.form?.action)
+                || '#';
             const title = btn.getAttribute('data-title') || 'Hapus Data?';
             const message = btn.getAttribute('data-message') || 'Apakah Anda yakin ingin menghapus data ini? Tindakan ini bersifat permanen dan data tidak dapat dikembalikan.';
 

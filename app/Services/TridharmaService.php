@@ -138,6 +138,42 @@ class TridharmaService
 
     /*
     |==========================================================================
+    | MODUL: SERTIFIKASI & TENDIK (/api/sertifikasi/*, /api/tendik/*)
+    |==========================================================================
+    */
+
+    public function getSertifikasiList(array $query = [], ?string $token = null): Response
+    {
+        return $this->get('sertifikasi', $query, $token);
+    }
+
+    public function getSertifikasiById(int|string $id, ?string $token = null): Response
+    {
+        return $this->get("sertifikasi/{$id}", [], $token);
+    }
+
+    public function createSertifikasi(array $data, ?string $token = null): Response
+    {
+        return $this->post('sertifikasi', $data, $token);
+    }
+
+    public function updateSertifikasi(int|string $id, array $data, ?string $token = null): Response
+    {
+        return $this->put("sertifikasi/{$id}", $data, $token);
+    }
+
+    public function deleteSertifikasi(int|string $id, ?string $token = null): Response
+    {
+        return $this->delete("sertifikasi/{$id}", [], $token);
+    }
+
+    public function getTendikList(array $query = [], ?string $token = null): Response
+    {
+        return $this->get('tendik', $query, $token);
+    }
+
+    /*
+    |==========================================================================
     | MASTER DATA (Jabatan Akademik, Pendidikan, Bidang Keahlian)
     |==========================================================================
     */
