@@ -2,13 +2,17 @@
 
 @section('title', 'Dosen')
 
+@php
+    $hasActiveFilters = !empty($search) || !empty($selectedStatus);
+@endphp
+
 @if(!empty($dosenList) && count($dosenList) > 0)
     @section('subtitle', ($pagination['total'] ?? count($dosenList)) . ' Data ditemukan')
 @endif
 
 @section('content')
 <div class="h-full flex flex-col">
-    @if(empty($dosenList) || count($dosenList) === 0)
+    @if((empty($dosenList) || count($dosenList) === 0) && !$hasActiveFilters)
         <!-- EMPTY STATE -->
         <div class="flex-1 min-h-[70vh] flex flex-col items-center justify-center -mt-6 sm:-mt-10 px-4 text-center select-none">
             <h2 class="text-3xl sm:text-4xl font-extrabold text-black tracking-tight mb-2">
@@ -20,9 +24,9 @@
 
             <div class="w-full max-w-[340px] sm:max-w-[380px] space-y-3.5">
                 <!-- 1. Download Template Excel (Yellow Outline) -->
-                <a 
-                    href="{{ route('dosen.template') }}" 
-                    class="w-full flex items-center justify-center gap-2.5 px-6 py-3.5 rounded-xl border border-secondary text-secondary hover:bg-secondary/10 font-bold text-sm sm:text-base transition cursor-pointer shadow-2xs active:scale-[0.99]"
+                <a
+                    href="{{ route('dosen.template') }}"
+                    class="w-full flex items-center justify-center gap-2.5 px-6 py-3 rounded-[9px] border border-secondary text-secondary hover:bg-secondary/10 font-bold text-sm sm:text-base transition cursor-pointer shadow-2xs active:scale-[0.99]"
                 >
                     <svg class="w-5 h-5 shrink-0 stroke-[2.2]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M7.5 12l4.5 4.5m0 0l4.5-4.5M12 3v13.5" />
@@ -31,10 +35,10 @@
                 </a>
 
                 <!-- 2. Import Excel (Green Outline) -->
-                <button 
-                    type="button" 
+                <button
+                    type="button"
                     id="openImportModalBtnEmpty"
-                    class="open-import-modal-btn w-full flex items-center justify-center gap-2.5 px-6 py-3.5 rounded-xl border border-[#16A34A] text-[#16A34A] hover:bg-emerald-50 font-bold text-sm sm:text-base transition cursor-pointer shadow-2xs active:scale-[0.99]"
+                    class="open-import-modal-btn w-full flex items-center justify-center gap-2.5 px-6 py-3 rounded-[9px] border border-[#16A34A] text-[#16A34A] hover:bg-emerald-50 font-bold text-sm sm:text-base transition cursor-pointer shadow-2xs active:scale-[0.99]"
                 >
                     <svg class="w-5 h-5 shrink-0 stroke-[2.2]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
@@ -43,10 +47,10 @@
                 </button>
 
                 <!-- 3. Tambah Dosen (Blue Solid) -->
-                <button 
-                    type="button" 
+                <button
+                    type="button"
                     id="openCreateModalBtnEmpty"
-                    class="open-create-modal-btn w-full flex items-center justify-center gap-2.5 px-6 py-3.5 rounded-xl bg-additional hover:bg-primary text-white font-bold text-sm sm:text-base transition cursor-pointer shadow-sm active:scale-[0.99]"
+                    class="open-create-modal-btn w-full flex items-center justify-center gap-2.5 px-6 py-3 rounded-[9px] bg-[#01568D] hover:bg-primary text-white font-bold text-sm sm:text-base transition cursor-pointer shadow-xs active:scale-[0.99]"
                 >
                     <svg class="w-5 h-5 shrink-0 stroke-[2.5]" viewBox="0 0 24 24" fill="none" stroke="currentColor">
                         <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2"/>
@@ -60,40 +64,41 @@
     @else
         <!-- TABLE STATE -->
         <div class="space-y-5">
-            <!-- Toolbar: Left (Search & Status Filter), Right (Import Excel & Tambah Dosen) -->
+            <!-- Toolbar: Left (Search & Status Filter Form), Right (Import Excel & Tambah Dosen) -->
             <div class="flex flex-wrap items-center justify-between gap-3 mb-2">
-                <!-- Left: Search "Cari nama" & Status Dropdown -->
-                <div class="flex items-center gap-3">
+                <!-- Left: Search "Cari nama" & Status Dropdown Form -->
+                <form method="GET" action="{{ route('dosen.index') }}" id="searchFilterForm" class="flex items-center gap-3">
                     <!-- Search Input -->
                     <div class="relative w-64 sm:w-80 shrink-0">
-                        <input 
-                            type="text" 
+                        <input
+                            type="text"
+                            name="search"
                             id="searchDosenInput"
                             value="{{ $search }}"
-                            placeholder="Cari nama" 
-                            class="w-full h-11 pl-4 pr-11 rounded-[14px] bg-white-form border border-primary text-black text-base font-normal placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-primary/20 transition"
+                            placeholder="Cari nama"
+                            class="w-full h-[36px] pl-4 pr-10 rounded-[10px] bg-[#D9D9D9] border-2 border-primary text-black text-sm font-medium placeholder:text-gray-600 focus:outline-none focus:ring-2 focus:ring-primary/20 transition"
                         />
-                        <span class="absolute inset-y-0 right-0 flex items-center pr-3.5 pointer-events-none text-black">
-                            <svg class="w-5 h-5 stroke-[2]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
+                        <button type="submit" class="absolute inset-y-0 right-0 flex items-center pr-3.5 text-primary hover:scale-110 transition cursor-pointer" aria-label="Cari">
+                            <svg class="w-4 h-4 stroke-[2.5]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
                             </svg>
-                        </span>
+                        </button>
                     </div>
 
                     <!-- Status Filter Dropdown (Custom Mockup Design) -->
                     <div class="relative w-36 sm:w-40 shrink-0" id="filterStatusDropdown">
                         <!-- Trigger Button -->
-                        <button 
-                            type="button" 
+                        <button
+                            type="button"
                             id="filterStatusBtn"
-                            class="w-full h-11 px-3.5 bg-white-form border border-primary rounded-[14px] flex items-center justify-between cursor-pointer select-none transition focus:outline-none focus:ring-2 focus:ring-primary/20"
+                            class="w-full h-[36px] pl-3.5 pr-1 bg-[#D9D9D9] border-2 border-primary rounded-[10px] flex items-center justify-between cursor-pointer select-none transition focus:outline-none focus:ring-2 focus:ring-primary/20"
                             aria-expanded="false"
                             aria-haspopup="true"
                         >
                             <span id="filterStatusLabel" class="text-sm font-semibold text-gray-900 truncate pr-2">
                                 {{ !empty($selectedStatus) && $selectedStatus !== 'all' ? $selectedStatus : 'Status' }}
                             </span>
-                            <div class="w-8 h-8 rounded-[10px] bg-secondary border border-primary flex items-center justify-center shrink-0 shadow-2xs">
+                            <div class="w-7 h-7 rounded-[6px] bg-secondary border border-primary flex items-center justify-center shrink-0 shadow-2xs">
                                 <svg id="filterStatusChevron" class="w-4 h-4 text-primary stroke-primary transition-transform duration-200 rotate-0" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none" viewBox="0 0 24 24">
                                     <path d="m6 9 6 6 6-6" />
                                 </svg>
@@ -104,37 +109,37 @@
                         <input type="hidden" name="status" id="filterStatusSelect" value="{{ $selectedStatus ?? '' }}">
 
                         <!-- Dropdown Menu Popover -->
-                        <div 
+                        <div
                             id="filterStatusMenu"
-                            class="hidden absolute left-0 top-full mt-1.5 w-full bg-white-form border border-primary rounded-[14px] shadow-lg py-2 z-40 overflow-hidden transition-all duration-150"
+                            class="hidden absolute left-0 top-full mt-1.5 w-full bg-white border border-primary rounded-[10px] shadow-lg py-1.5 z-40 overflow-hidden transition-all duration-150"
                             role="menu"
                         >
-                            <button 
-                                type="button" 
+                            <button
+                                type="button"
                                 class="status-option-btn w-full text-left px-4 py-1.5 text-xs sm:text-sm font-medium text-gray-900 hover:bg-black/5 hover:text-primary transition cursor-pointer select-none"
                                 data-value=""
                                 data-label="All Data"
                             >
                                 All Data
                             </button>
-                            <button 
-                                type="button" 
+                            <button
+                                type="button"
                                 class="status-option-btn w-full text-left px-4 py-1.5 text-xs sm:text-sm font-medium text-gray-900 hover:bg-black/5 hover:text-primary transition cursor-pointer select-none"
                                 data-value="DTPS"
                                 data-label="DTPS"
                             >
                                 DTPS
                             </button>
-                            <button 
-                                type="button" 
+                            <button
+                                type="button"
                                 class="status-option-btn w-full text-left px-4 py-1.5 text-xs sm:text-sm font-medium text-gray-900 hover:bg-black/5 hover:text-primary transition cursor-pointer select-none"
                                 data-value="Tidak Tetap"
                                 data-label="Tidak tetap"
                             >
                                 Tidak tetap
                             </button>
-                            <button 
-                                type="button" 
+                            <button
+                                type="button"
                                 class="status-option-btn w-full text-left px-4 py-1.5 text-xs sm:text-sm font-medium text-gray-900 hover:bg-black/5 hover:text-primary transition cursor-pointer select-none"
                                 data-value="Non-aktif"
                                 data-label="Non-aktif"
@@ -143,15 +148,15 @@
                             </button>
                         </div>
                     </div>
-                </div>
+                </form>
 
                 <!-- Right Action Buttons: Import Excel & Tambah Dosen -->
                 <div class="flex items-center gap-3 shrink-0">
                     <!-- Import Excel (Green Border, Single Line) -->
-                    <button 
-                        type="button" 
+                    <button
+                        type="button"
                         id="openImportModalBtnTable"
-                        class="open-import-modal-btn h-10 inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-[#16A34A] text-[#16A34A] bg-white hover:bg-emerald-50 text-xs sm:text-sm font-semibold transition cursor-pointer shadow-2xs whitespace-nowrap shrink-0"
+                        class="open-import-modal-btn h-[35px] inline-flex items-center gap-2 px-3.5 rounded-[8px] border border-[#16A34A] text-[#16A34A] bg-white hover:bg-emerald-50 text-xs sm:text-[13px] font-bold transition cursor-pointer shadow-2xs whitespace-nowrap shrink-0"
                     >
                         <svg class="w-4 h-4 stroke-[2.2] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m6.75 12l-3-3m0 0l-3 3m3-3v6m-1.5-15H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
@@ -160,10 +165,10 @@
                     </button>
 
                     <!-- Tambah Dosen (Dark Blue Solid, Single Line) -->
-                    <button 
-                        type="button" 
+                    <button
+                        type="button"
                         id="openCreateModalBtnTable"
-                        class="open-create-modal-btn h-10 inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[#01568D] hover:bg-[#012650] text-white text-xs sm:text-sm font-semibold shadow-sm transition cursor-pointer whitespace-nowrap shrink-0"
+                        class="open-create-modal-btn h-[35px] inline-flex items-center gap-2 px-3.5 rounded-[8px] bg-[#01568D] hover:bg-[#012650] text-white text-xs sm:text-[13px] font-bold shadow-xs transition cursor-pointer whitespace-nowrap shrink-0"
                     >
                         <svg class="w-4 h-4 stroke-[2.5] shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor">
                             <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2"/>
@@ -175,118 +180,119 @@
             </div>
 
             <!-- Table (Exact 6 Columns from Mockup: No, Nama Dosen, NIDN, Status, Sertifikasi, Action) -->
-            <x-table>
-                <x-slot:header>
-                    <x-table.th class="w-16 text-center">No</x-table.th>
-                    <x-table.th class="w-72 text-left">Nama Dosen</x-table.th>
-                    <x-table.th class="w-48 text-center">NIDN</x-table.th>
-                    <x-table.th class="w-36 text-center">Status</x-table.th>
-                    <x-table.th class="w-44 text-center">Sertifikasi</x-table.th>
-                    <x-table.th class="w-36 text-center">Action</x-table.th>
-                </x-slot:header>
+            <div class="mx-1 mt-7 w-full overflow-x-auto">
+                <table class="w-full text-left border-collapse table-fixed min-w-[760px]">
+                    <thead>
+                        <tr class="h-[43px] border-t border-b border-black text-black font-bold text-sm sm:text-base">
+                            <th scope="col" class="w-[8%] px-3 text-center">No</th>
+                            <th scope="col" class="w-[22.5%] px-4 text-left">Nama Dosen</th>
+                            <th scope="col" class="w-[16.8%] px-4 text-left">NIDN</th>
+                            <th scope="col" class="w-[16.8%] px-4 text-left">Status</th>
+                            <th scope="col" class="w-[19%] px-4 text-left">Sertifikasi</th>
+                            <th scope="col" class="w-[16.9%] px-4 text-center">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody class="text-black">
+                        @forelse($dosenList as $index => $d)
+                            @php
+                                $pageCurrent = (int) ($pagination['current_page'] ?? 1);
+                                $pageLimit = (int) ($pagination['per_page'] ?? 10);
+                                $rowNumber = $loop->iteration + (($pageCurrent - 1) * $pageLimit);
+                                $rawId = $d['id_dosen'] ?? ($d['id'] ?? $loop->index);
+                                $dosenId = is_scalar($rawId) ? $rawId : (is_array($rawId) ? ($rawId['id'] ?? $loop->index) : $loop->index);
 
-                @forelse($dosenList as $index => $d)
-                    @php
-                        $pageCurrent = (int) ($pagination['current_page'] ?? 1);
-                        $pageLimit = (int) ($pagination['per_page'] ?? 10);
-                        $rowNumber = $loop->iteration + (($pageCurrent - 1) * $pageLimit);
-                        $rawId = $d['id_dosen'] ?? ($d['id'] ?? $loop->index);
-                        $dosenId = is_scalar($rawId) ? $rawId : (is_array($rawId) ? ($rawId['id'] ?? $loop->index) : $loop->index);
+                                $rawNama = $d['nama_dosen'] ?? ($d['nama'] ?? ($d['name'] ?? '-'));
+                                $nama = is_string($rawNama) ? $rawNama : (is_array($rawNama) ? ($rawNama['nama'] ?? ($rawNama['name'] ?? '-')) : '-');
 
-                        $rawNama = $d['nama_dosen'] ?? ($d['nama'] ?? ($d['name'] ?? '-'));
-                        $nama = is_string($rawNama) ? $rawNama : (is_array($rawNama) ? ($rawNama['nama'] ?? ($rawNama['name'] ?? '-')) : '-');
+                                $rawNidn = $d['nidn'] ?? '-';
+                                $nidn = is_scalar($rawNidn) ? (string) $rawNidn : '-';
 
-                        $rawNidn = $d['nidn'] ?? '-';
-                        $nidn = is_scalar($rawNidn) ? (string) $rawNidn : '-';
+                                $rawStatus = $d['status_dosen'] ?? ($d['status'] ?? 'DTPS');
+                                $statusDosen = is_string($rawStatus) ? $rawStatus : (is_array($rawStatus) ? ($rawStatus['status'] ?? ($rawStatus['nama'] ?? 'DTPS')) : 'DTPS');
 
-                        $rawStatus = $d['status_dosen'] ?? ($d['status'] ?? 'DTPS');
-                        $statusDosen = is_string($rawStatus) ? $rawStatus : (is_array($rawStatus) ? ($rawStatus['status'] ?? ($rawStatus['nama'] ?? 'DTPS')) : 'DTPS');
+                                $rawEmail = $d['email'] ?? '-';
+                                $email = is_string($rawEmail) ? $rawEmail : '-';
 
-                        $rawEmail = $d['email'] ?? '-';
-                        $email = is_string($rawEmail) ? $rawEmail : '-';
+                                $rawSertifikasi = $d['sertifikasi'] ?? '';
+                                $sertifikasi = is_string($rawSertifikasi) ? $rawSertifikasi : (is_array($rawSertifikasi) ? ($rawSertifikasi['url'] ?? ($rawSertifikasi['link'] ?? '')) : '');
+                                $isSertifikasi = ! empty($sertifikasi);
+                            @endphp
+                            <tr class="dosen-row h-[69.5px] border-b border-[#C7C7C7] hover:bg-gray-50/40 transition-colors">
+                                <td class="px-3 text-center text-black font-normal text-sm sm:text-base align-middle">{{ $rowNumber }}</td>
+                                <td class="px-4 text-left align-middle">
+                                    <span class="font-normal text-sm sm:text-base text-black dosen-nama tracking-tight block max-w-xs leading-snug">{{ $nama }}</span>
+                                </td>
+                                <td class="px-4 text-left text-black font-normal text-sm sm:text-base align-middle"><span class="dosen-nidn">{{ $nidn }}</span></td>
+                                <td class="px-4 text-left text-black font-normal text-sm sm:text-base align-middle"><span class="dosen-status">{{ $statusDosen }}</span></td>
+                                <td class="px-4 text-left text-black font-normal text-sm sm:text-base align-middle"><span>{{ $isSertifikasi ? 'Tersertifikasi' : 'Belum' }}</span></td>
+                                <td class="px-4 text-center align-middle">
+                                    <div class="flex items-center justify-center gap-4">
+                                        <!-- Edit (Yellow Pencil) -->
+                                        <button
+                                            type="button"
+                                            class="edit-dosen-btn text-[#FFCC03] hover:text-amber-500 transition cursor-pointer"
+                                            title="Edit Data Dosen"
+                                            data-id="{{ $dosenId }}"
+                                            data-nama="{{ $nama }}"
+                                            data-nidn="{{ $nidn }}"
+                                            data-status="{{ $statusDosen }}"
+                                            data-email="{{ $email }}"
+                                            data-sertifikasi="{{ $sertifikasi }}"
+                                            data-jabatan-id="{{ $d['id_jabatan'] ?? ($d['jabatan']['id_jabatan'] ?? ($d['jabatan']['id'] ?? '')) }}"
+                                            data-pendidikan-id="{{ $d['id_pendidikan'] ?? ($d['pendidikan']['id_pendidikan'] ?? ($d['pendidikan']['id'] ?? '')) }}"
+                                            data-action="{{ route('dosen.update', $dosenId) }}"
+                                        >
+                                            <svg class="w-5 h-5 stroke-[2]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10" />
+                                            </svg>
+                                        </button>
 
-                        $rawSertifikasi = $d['sertifikasi'] ?? '';
-                        $sertifikasi = is_string($rawSertifikasi) ? $rawSertifikasi : (is_array($rawSertifikasi) ? ($rawSertifikasi['url'] ?? ($rawSertifikasi['link'] ?? '')) : '');
-                        $isSertifikasi = ! empty($sertifikasi);
-                    @endphp
-                    <x-table.row class="dosen-row">
-                        <!-- 1. No (no trailing dot, centered matching mockup) -->
-                        <x-table.cell class="text-center text-gray-800 font-medium text-sm sm:text-base">
-                            {{ $rowNumber }}
-                        </x-table.cell>
+                                        <!-- Delete (Solid Red Trash Can) -->
+                                        <button
+                                            type="button"
+                                            class="text-[#DC2626] hover:text-[#B91C1C] transition cursor-pointer"
+                                            title="Hapus Dosen"
+                                            data-confirm-delete
+                                            data-action="{{ route('dosen.destroy', $dosenId) }}"
+                                            data-title="Hapus Data Dosen?"
+                                            data-message="Apakah Anda yakin ingin menghapus data dosen ini? Tindakan ini bersifat permanen dan data tidak dapat dikembalikan."
+                                        >
+                                            <svg class="w-5 h-5 fill-current" viewBox="0 0 24 24">
+                                                <path fill-rule="evenodd" d="M16.5 4.478v.227a48.816 48.816 0 0 1 3.878.512.75.75 0 1 1-.256 1.478l-.209-.035-1.005 13.07a3 3 0 0 1-2.991 2.77H8.084a3 3 0 0 1-2.991-2.77L4.087 6.66l-.209.035a.75.75 0 0 1-.256-1.478A48.567 48.567 0 0 1 7.5 4.705v-.227c0-1.564 1.213-2.9 2.816-2.951a52.662 52.662 0 0 1 3.369 0c1.603.051 2.815 1.387 2.815 2.951Zm-6.136-1.452a51.196 51.196 0 0 1 3.273 0C14.39 3.05 15 3.684 15 4.478v.113a49.488 49.488 0 0 0-6 0v-.113c0-.794.609-1.428 1.364-1.452Z" clip-rule="evenodd" />
+                                            </svg>
+                                        </button>
 
-                        <!-- 2. Nama Dosen (left-aligned, bold, multi-line) -->
-                        <x-table.cell class="text-left">
-                            <span class="font-bold text-sm sm:text-base text-gray-900 dosen-nama tracking-tight block max-w-xs leading-snug">
-                                {{ $nama }}
-                            </span>
-                        </x-table.cell>
-
-                        <!-- 3. NIDN (centered) -->
-                        <x-table.cell class="text-center text-gray-800 font-medium text-sm sm:text-base">
-                            <span class="dosen-nidn">{{ $nidn }}</span>
-                        </x-table.cell>
-
-                        <!-- 4. Status (centered) -->
-                        <x-table.cell class="text-center text-gray-800 font-medium text-sm sm:text-base">
-                            <span class="dosen-status">{{ $statusDosen }}</span>
-                        </x-table.cell>
-
-                        <!-- 5. Sertifikasi (centered) -->
-                        <x-table.cell class="text-center text-gray-800 font-medium text-sm sm:text-base">
-                            <span>{{ $isSertifikasi ? 'Tersertifikasi' : 'Belum' }}</span>
-                        </x-table.cell>
-
-                        <!-- 6. Action (centered: Yellow Edit, Outline Red Trash, Navy Blue Eye) -->
-                        <x-table.cell class="text-center">
-                            <div class="flex items-center justify-center gap-3">
-                                <!-- Edit (Yellow Pencil) -->
-                                <button 
-                                    type="button" 
-                                    class="edit-dosen-btn text-[#FFCC03] hover:text-amber-500 transition p-1 cursor-pointer"
-                                    title="Edit Data Dosen"
-                                    data-id="{{ $dosenId }}"
-                                    data-nama="{{ $nama }}"
-                                    data-nidn="{{ $nidn }}"
-                                    data-status="{{ $statusDosen }}"
-                                    data-email="{{ $email }}"
-                                    data-sertifikasi="{{ $sertifikasi }}"
-                                    data-action="{{ route('dosen.update', $dosenId) }}"
-                                >
-                                    <x-icon.edit class="w-5 h-5" />
-                                </button>
-
-                                <!-- Delete (Outline Red Trash) -->
-                                <button 
-                                    type="button" 
-                                    class="text-[#DC2626] hover:text-[#B91C1C] transition p-1 cursor-pointer"
-                                    title="Hapus Dosen"
-                                    data-confirm-delete
-                                    data-action="{{ route('dosen.destroy', $dosenId) }}"
-                                    data-title="Hapus Data Dosen?"
-                                    data-message="Apakah Anda yakin ingin menghapus data dosen ini? Tindakan ini bersifat permanen dan data tidak dapat dikembalikan."
-                                >
-                                    <x-icon.delete class="w-5 h-5" />
-                                </button>
-
-                                <!-- Detail / View (Navy Blue Eye) -->
-                                <a 
-                                    href="{{ route('dosen.show', $dosenId) }}"
-                                    class="text-[#012650] hover:text-[#01568D] transition p-1 cursor-pointer"
-                                    title="Lihat Detail Dosen"
-                                >
-                                    <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2">
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" />
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                    </svg>
-                                </a>
-                            </div>
-                        </x-table.cell>
-                    </x-table.row>
-                @empty
-                    <x-table.empty colspan="6" message="Belum ada data dosen" submessage="Silakan klik tombol Tambah Dosen atau Import Excel untuk menambahkan data." />
-                @endforelse
-            </x-table>
+                                        <!-- Detail / View (Navy Blue Eye) -->
+                                        <a
+                                            href="{{ route('dosen.show', $dosenId) }}"
+                                            class="text-[#012650] hover:text-[#01568D] transition cursor-pointer"
+                                            title="Lihat Detail Dosen"
+                                            data-test="dosen-detail-link"
+                                        >
+                                            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2">
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" />
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                            </svg>
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                        @empty
+                            <tr>
+                                <td colspan="6" class="py-12 px-6 border-b border-gray-200 text-center text-gray-500">
+                                    @if($hasActiveFilters)
+                                        <p class="text-base font-semibold text-gray-900 mb-1">Tidak ada data dosen yang sesuai</p>
+                                        <p class="text-sm text-gray-500">Coba ubah kata kunci pencarian atau filter status Anda.</p>
+                                    @else
+                                        <p class="text-base font-semibold text-gray-900 mb-1">Belum ada data dosen</p>
+                                        <p class="text-sm text-gray-500">Silakan klik tombol Tambah Dosen atau Import Excel untuk menambahkan data.</p>
+                                    @endif
+                                </td>
+                            </tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
 
             <x-pagination :paginator="$pagination" />
         </div>
@@ -301,7 +307,7 @@
     aria-modal="true"
     aria-labelledby="createDosenModalTitle"
 >
-    <div class="dosen-modal-card relative bg-white rounded-[18px] p-8 max-w-[440px] w-full shadow-2xl text-left transform scale-95 transition-all duration-200 overflow-hidden">
+    <div class="dosen-modal-card relative bg-white rounded-[20px] p-8 max-w-[440px] w-full shadow-2xl text-left transform scale-95 transition-all duration-200 overflow-hidden">
         <!-- Title: Tambahkan Dosen -->
         <h3 id="createDosenModalTitle" class="text-xl font-bold text-gray-900 tracking-tight text-center mb-6">
             Tambahkan Dosen
@@ -384,27 +390,87 @@
                 <label for="createSertifikasiInput" class="block text-xs font-bold text-gray-900 mb-1.5">
                     Sertifikasi (G. Drive)
                 </label>
-                <input 
-                    type="text" 
-                    name="sertifikasi" 
-                    id="createSertifikasiInput" 
-                    placeholder="Masukkan Tautan Sertifikasi" 
+                <input
+                    type="text"
+                    name="sertifikasi"
+                    id="createSertifikasiInput"
+                    placeholder="Masukkan Tautan Sertifikasi"
                     class="w-full px-4 py-2.5 rounded-[10px] bg-white-form border-none text-sm font-medium text-gray-900 focus:ring-2 focus:ring-primary/20 focus:outline-none placeholder:text-gray-500"
                 >
             </div>
 
+            <!-- 6. Jabatan Akademik -->
+            <div>
+                <label for="createJabatanSelect" class="block text-xs font-bold text-gray-900 mb-1.5">
+                    Jabatan Akademik
+                </label>
+                <div class="relative">
+                    <select
+                        name="id_jabatan"
+                        id="createJabatanSelect"
+                        class="w-full appearance-none px-4 py-2.5 pr-10 rounded-[10px] bg-white-form border-none text-sm font-medium text-gray-700 focus:ring-2 focus:ring-primary/20 focus:outline-none cursor-pointer"
+                    >
+                        <option value="">Pilih Jabatan Akademik (Opsional)</option>
+                        @foreach($jabatanList as $j)
+                            @php
+                                $jId = $j['id_jabatan'] ?? ($j['id'] ?? '');
+                                $jNama = $j['nama_jabatan'] ?? ($j['nama'] ?? ($j['nama_jabatan_akademik'] ?? $jId));
+                            @endphp
+                            @if(!empty($jId))
+                                <option value="{{ $jId }}">{{ $jNama }}</option>
+                            @endif
+                        @endforeach
+                    </select>
+                    <span class="absolute inset-y-0 right-0 flex items-center pr-3.5 pointer-events-none text-primary">
+                        <svg class="w-5 h-5 stroke-[3]" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="m6 9 6 6 6-6" />
+                        </svg>
+                    </span>
+                </div>
+            </div>
+
+            <!-- 7. Pendidikan Terakhir -->
+            <div>
+                <label for="createPendidikanSelect" class="block text-xs font-bold text-gray-900 mb-1.5">
+                    Pendidikan Terakhir
+                </label>
+                <div class="relative">
+                    <select
+                        name="id_pendidikan"
+                        id="createPendidikanSelect"
+                        class="w-full appearance-none px-4 py-2.5 pr-10 rounded-[10px] bg-white-form border-none text-sm font-medium text-gray-700 focus:ring-2 focus:ring-primary/20 focus:outline-none cursor-pointer"
+                    >
+                        <option value="">Pilih Pendidikan Terakhir (Opsional)</option>
+                        @foreach($pendidikanList as $p)
+                            @php
+                                $pId = $p['id_pendidikan'] ?? ($p['id'] ?? '');
+                                $pNama = $p['nama_pendidikan'] ?? ($p['jenjang'] ?? ($p['nama'] ?? $pId));
+                            @endphp
+                            @if(!empty($pId))
+                                <option value="{{ $pId }}">{{ $pNama }}</option>
+                            @endif
+                        @endforeach
+                    </select>
+                    <span class="absolute inset-y-0 right-0 flex items-center pr-3.5 pointer-events-none text-primary">
+                        <svg class="w-5 h-5 stroke-[3]" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="m6 9 6 6 6-6" />
+                        </svg>
+                    </span>
+                </div>
+            </div>
+
             <!-- Action Buttons: Batal & Simpan -->
             <div class="grid grid-cols-2 gap-4 pt-3">
-                <button 
-                    type="button" 
+                <button
+                    type="button"
                     id="closeCreateModalBtn"
-                    class="w-full py-3 px-6 rounded-xl bg-white-form hover:bg-gray-300 text-gray-900 font-bold text-sm transition cursor-pointer text-center"
+                    class="w-full py-2.5 px-6 rounded-[8px] bg-white-form hover:bg-gray-300 text-gray-900 font-bold text-sm transition cursor-pointer text-center"
                 >
                     Batal
                 </button>
-                <button 
-                    type="submit" 
-                    class="w-full py-3 px-6 rounded-xl bg-[#01568D] hover:bg-primary text-white font-bold text-sm shadow-sm transition cursor-pointer text-center"
+                <button
+                    type="submit"
+                    class="w-full py-2.5 px-6 rounded-[8px] bg-[#01568D] hover:bg-primary text-white font-bold text-sm shadow-xs transition cursor-pointer text-center"
                 >
                     Simpan
                 </button>
@@ -421,7 +487,7 @@
     aria-modal="true"
     aria-labelledby="editDosenModalTitle"
 >
-    <div class="dosen-modal-card relative bg-white rounded-[18px] p-8 max-w-[440px] w-full shadow-2xl text-left transform scale-95 transition-all duration-200 overflow-hidden">
+    <div class="dosen-modal-card relative bg-white rounded-[20px] p-8 max-w-[440px] w-full shadow-2xl text-left transform scale-95 transition-all duration-200 overflow-hidden">
         <!-- Title: Perbarui Data Dosen -->
         <h3 id="editDosenModalTitle" class="text-xl font-bold text-gray-900 tracking-tight text-center mb-6">
             Perbarui Data Dosen
@@ -505,27 +571,87 @@
                 <label for="editSertifikasiInput" class="block text-xs font-bold text-gray-900 mb-1.5">
                     Sertifikasi (G. Drive)
                 </label>
-                <input 
-                    type="text" 
-                    name="sertifikasi" 
-                    id="editSertifikasiInput" 
-                    placeholder="Masukkan Tautan Sertifikasi" 
+                <input
+                    type="text"
+                    name="sertifikasi"
+                    id="editSertifikasiInput"
+                    placeholder="Masukkan Tautan Sertifikasi"
                     class="w-full px-4 py-2.5 rounded-[10px] bg-white-form border-none text-sm font-medium text-gray-900 focus:ring-2 focus:ring-primary/20 focus:outline-none placeholder:text-gray-500"
                 >
             </div>
 
+            <!-- 6. Jabatan Akademik -->
+            <div>
+                <label for="editJabatanSelect" class="block text-xs font-bold text-gray-900 mb-1.5">
+                    Jabatan Akademik
+                </label>
+                <div class="relative">
+                    <select
+                        name="id_jabatan"
+                        id="editJabatanSelect"
+                        class="w-full appearance-none px-4 py-2.5 pr-10 rounded-[10px] bg-white-form border-none text-sm font-medium text-gray-700 focus:ring-2 focus:ring-primary/20 focus:outline-none cursor-pointer"
+                    >
+                        <option value="">Pilih Jabatan Akademik (Opsional)</option>
+                        @foreach($jabatanList as $j)
+                            @php
+                                $jId = $j['id_jabatan'] ?? ($j['id'] ?? '');
+                                $jNama = $j['nama_jabatan'] ?? ($j['nama'] ?? ($j['nama_jabatan_akademik'] ?? $jId));
+                            @endphp
+                            @if(!empty($jId))
+                                <option value="{{ $jId }}">{{ $jNama }}</option>
+                            @endif
+                        @endforeach
+                    </select>
+                    <span class="absolute inset-y-0 right-0 flex items-center pr-3.5 pointer-events-none text-primary">
+                        <svg class="w-5 h-5 stroke-[3]" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="m6 9 6 6 6-6" />
+                        </svg>
+                    </span>
+                </div>
+            </div>
+
+            <!-- 7. Pendidikan Terakhir -->
+            <div>
+                <label for="editPendidikanSelect" class="block text-xs font-bold text-gray-900 mb-1.5">
+                    Pendidikan Terakhir
+                </label>
+                <div class="relative">
+                    <select
+                        name="id_pendidikan"
+                        id="editPendidikanSelect"
+                        class="w-full appearance-none px-4 py-2.5 pr-10 rounded-[10px] bg-white-form border-none text-sm font-medium text-gray-700 focus:ring-2 focus:ring-primary/20 focus:outline-none cursor-pointer"
+                    >
+                        <option value="">Pilih Pendidikan Terakhir (Opsional)</option>
+                        @foreach($pendidikanList as $p)
+                            @php
+                                $pId = $p['id_pendidikan'] ?? ($p['id'] ?? '');
+                                $pNama = $p['nama_pendidikan'] ?? ($p['jenjang'] ?? ($p['nama'] ?? $pId));
+                            @endphp
+                            @if(!empty($pId))
+                                <option value="{{ $pId }}">{{ $pNama }}</option>
+                            @endif
+                        @endforeach
+                    </select>
+                    <span class="absolute inset-y-0 right-0 flex items-center pr-3.5 pointer-events-none text-primary">
+                        <svg class="w-5 h-5 stroke-[3]" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="m6 9 6 6 6-6" />
+                        </svg>
+                    </span>
+                </div>
+            </div>
+
             <!-- Action Buttons: Batal & Simpan -->
             <div class="grid grid-cols-2 gap-4 pt-3">
-                <button 
-                    type="button" 
+                <button
+                    type="button"
                     id="closeEditModalBtn"
-                    class="w-full py-3 px-6 rounded-xl bg-white-form hover:bg-gray-300 text-gray-900 font-bold text-sm transition cursor-pointer text-center"
+                    class="w-full py-2.5 px-6 rounded-[8px] bg-white-form hover:bg-gray-300 text-gray-900 font-bold text-sm transition cursor-pointer text-center"
                 >
                     Batal
                 </button>
-                <button 
-                    type="submit" 
-                    class="w-full py-3 px-6 rounded-xl bg-[#01568D] hover:bg-primary text-white font-bold text-sm shadow-sm transition cursor-pointer text-center"
+                <button
+                    type="submit"
+                    class="w-full py-2.5 px-6 rounded-[8px] bg-[#01568D] hover:bg-primary text-white font-bold text-sm shadow-xs transition cursor-pointer text-center"
                 >
                     Simpan
                 </button>
@@ -542,7 +668,7 @@
     aria-modal="true"
     aria-labelledby="importExcelModalTitle"
 >
-    <div class="dosen-modal-card relative bg-white rounded-[18px] p-8 max-w-[440px] w-full shadow-2xl text-left transform scale-95 transition-all duration-200 overflow-hidden">
+    <div class="dosen-modal-card relative bg-white rounded-[20px] p-8 max-w-[440px] w-full shadow-2xl text-left transform scale-95 transition-all duration-200 overflow-hidden">
         <!-- Title: Import Data Dosen -->
         <h3 id="importExcelModalTitle" class="text-xl font-bold text-gray-900 tracking-tight text-center mb-6">
             Import Data Dosen
@@ -601,10 +727,10 @@
             <!-- Action Buttons: Dynamic based on file selected state -->
             <!-- 1. State Tanpa File (Mockup State 1): Hanya tombol "Batal" full-width -->
             <div id="noFileButtons" class="pt-2">
-                <button 
-                    type="button" 
+                <button
+                    type="button"
                     id="closeImportModalBtnSingle"
-                    class="w-full py-3 px-6 rounded-xl bg-white-form hover:bg-gray-300 text-gray-900 font-bold text-sm transition cursor-pointer text-center"
+                    class="w-full py-2.5 px-6 rounded-[8px] bg-white-form hover:bg-gray-300 text-gray-900 font-bold text-sm transition cursor-pointer text-center"
                 >
                     Batal
                 </button>
@@ -612,16 +738,16 @@
 
             <!-- 2. State Dengan File (Mockup State 2): Grid "Batal" & "Import" -->
             <div id="withFileButtons" class="hidden grid-cols-2 gap-4 pt-2">
-                <button 
-                    type="button" 
+                <button
+                    type="button"
                     id="closeImportModalBtnDual"
-                    class="w-full py-3 px-6 rounded-xl bg-white-form hover:bg-gray-300 text-gray-900 font-bold text-sm transition cursor-pointer text-center"
+                    class="w-full py-2.5 px-6 rounded-[8px] bg-white-form hover:bg-gray-300 text-gray-900 font-bold text-sm transition cursor-pointer text-center"
                 >
                     Batal
                 </button>
-                <button 
-                    type="submit" 
-                    class="w-full py-3 px-6 rounded-xl bg-[#01568D] hover:bg-primary text-white font-bold text-sm shadow-sm transition cursor-pointer text-center"
+                <button
+                    type="submit"
+                    class="w-full py-2.5 px-6 rounded-[8px] bg-[#01568D] hover:bg-primary text-white font-bold text-sm shadow-xs transition cursor-pointer text-center"
                 >
                     Import
                 </button>
@@ -787,6 +913,8 @@
         const editStatus = document.getElementById('editStatusSelect');
         const editEmail = document.getElementById('editEmailInput');
         const editSertifikasi = document.getElementById('editSertifikasiInput');
+        const editJabatan = document.getElementById('editJabatanSelect');
+        const editPendidikan = document.getElementById('editPendidikanSelect');
 
         document.querySelectorAll('.edit-dosen-btn').forEach(btn => {
             btn.addEventListener('click', function () {
@@ -796,6 +924,8 @@
                 const status = this.getAttribute('data-status');
                 const email = this.getAttribute('data-email');
                 const sertifikasi = this.getAttribute('data-sertifikasi');
+                const jabatanId = this.getAttribute('data-jabatan-id');
+                const pendidikanId = this.getAttribute('data-pendidikan-id');
 
                 if (editForm) editForm.action = action;
                 if (editNama) editNama.value = nama || '';
@@ -811,6 +941,8 @@
                 }
                 if (editEmail) editEmail.value = (email && email !== '-') ? email : '';
                 if (editSertifikasi) editSertifikasi.value = sertifikasi || '';
+                if (editJabatan) editJabatan.value = jabatanId || '';
+                if (editPendidikan) editPendidikan.value = pendidikanId || '';
 
                 showModal(editModal);
                 setTimeout(() => editNama?.focus(), 100);
@@ -846,6 +978,7 @@
         const statusFilterLabel = document.getElementById('filterStatusLabel');
         const statusSelect = document.getElementById('filterStatusSelect');
         const statusOptions = document.querySelectorAll('.status-option-btn');
+        const searchFilterForm = document.getElementById('searchFilterForm');
 
         function toggleStatusFilterMenu() {
             if (!statusFilterMenu) return;
@@ -883,7 +1016,6 @@
 
                 if (statusSelect) {
                     statusSelect.value = val;
-                    statusSelect.dispatchEvent(new Event('change'));
                 }
 
                 if (statusFilterLabel) {
@@ -891,6 +1023,11 @@
                 }
 
                 closeStatusFilterMenu();
+
+                // Submit searchFilterForm for server-side search & filtering
+                if (searchFilterForm) {
+                    searchFilterForm.submit();
+                }
             });
         });
 
@@ -899,47 +1036,6 @@
                 closeStatusFilterMenu();
             }
         });
-
-        // 7. Client-Side Search and Status Filter
-        const searchInput = document.getElementById('searchDosenInput');
-        const rows = document.querySelectorAll('.dosen-row');
-
-        let currentStatusFilter = statusSelect ? statusSelect.value.toLowerCase().trim() : '';
-
-        if (statusSelect) {
-            statusSelect.addEventListener('change', function () {
-                currentStatusFilter = this.value.toLowerCase().trim();
-                filterDosenRows();
-            });
-        }
-
-        function filterDosenRows() {
-            const keyword = searchInput ? searchInput.value.toLowerCase().trim() : '';
-
-            rows.forEach(row => {
-                const nama = row.querySelector('.dosen-nama')?.textContent.toLowerCase() || '';
-                const nidn = row.querySelector('.dosen-nidn')?.textContent.toLowerCase() || '';
-                const status = row.querySelector('.dosen-status')?.textContent.toLowerCase() || '';
-                const matchesSearch = !keyword || (nama.includes(keyword) || nidn.includes(keyword));
-                
-                let matchesStatus = true;
-                if (currentStatusFilter && currentStatusFilter !== 'all' && currentStatusFilter !== 'all data') {
-                    if (currentStatusFilter === 'tidak tetap') {
-                        matchesStatus = status.includes('tidak tetap') || status.includes('dtt');
-                    } else if (currentStatusFilter === 'non-aktif' || currentStatusFilter === 'non aktif') {
-                        matchesStatus = status.includes('non-aktif') || status.includes('non aktif') || status.includes('tidak aktif');
-                    } else {
-                        matchesStatus = status.includes(currentStatusFilter);
-                    }
-                }
-
-                row.style.display = (matchesSearch && matchesStatus) ? '' : 'none';
-            });
-        }
-
-        if (searchInput) {
-            searchInput.addEventListener('input', filterDosenRows);
-        }
     });
 </script>
 @endsection

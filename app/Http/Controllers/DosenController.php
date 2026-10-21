@@ -133,6 +133,8 @@ class DosenController extends Controller
             'status_dosen' => ['required', 'string', 'max:50'],
             'email' => ['required', 'email', 'max:255'],
             'sertifikasi' => ['nullable', 'string', 'max:500'],
+            'id_jabatan' => ['nullable', 'integer'],
+            'id_pendidikan' => ['nullable', 'integer'],
         ], [
             'nama_dosen.required' => 'Nama dosen wajib diisi.',
             'nidn.required' => 'NIDN wajib diisi.',
@@ -147,8 +149,8 @@ class DosenController extends Controller
             'status_dosen' => trim($validated['status_dosen']),
             'email' => strtolower(trim($validated['email'])),
             'sertifikasi' => ! empty($validated['sertifikasi']) ? trim($validated['sertifikasi']) : null,
-            'id_jabatan' => 1,
-            'id_pendidikan' => 1,
+            'id_jabatan' => isset($validated['id_jabatan']) && $validated['id_jabatan'] !== null ? (int) $validated['id_jabatan'] : null,
+            'id_pendidikan' => isset($validated['id_pendidikan']) && $validated['id_pendidikan'] !== null ? (int) $validated['id_pendidikan'] : null,
         ];
 
         $response = $this->tridharmaService->createDosen($payload);
@@ -195,71 +197,56 @@ class DosenController extends Controller
         // Normalize lecturer profile
         $rawJabatan = $dosenData['jabatan_akademik'] ?? ($dosenData['jabatan'] ?? ($dosenData['nama_jabatan'] ?? null));
         $rawJurusan = $dosenData['jurusan'] ?? ($dosenData['bidang_keahlian'] ?? ($dosenData['bidang'] ?? null));
-        $rawProdi = $dosenData['prodi'] ?? ($dosenData['program_studi'] ?? null);
+        $rawProdi = $dosenData['prodi'] ?? ($dosenData['program_studi'] ?? ($dosenData['nama_prodi'] ?? null));
         $rawSertifikasi = $dosenData['sertifikasi'] ?? null;
         $rawNama = $dosenData['nama_dosen'] ?? ($dosenData['nama'] ?? ($dosenData['name'] ?? null));
 
         $dosen = [
             'id' => is_scalar($dosenData['id_dosen'] ?? ($dosenData['id'] ?? null)) ? ($dosenData['id_dosen'] ?? $dosenData['id']) : $id,
-            'nama_dosen' => $this->extractString($rawNama, 'Dr. Budi Santoso, M. Kom.'),
-            'nidn' => $this->extractString($dosenData['nidn'] ?? null, '0015088501'),
-            'jabatan' => $this->extractString($rawJabatan, 'Lektor Kepala'),
-            'jurusan' => ! empty($rawJurusan) ? $this->extractString($rawJurusan, 'Teknik Elektro') : 'Teknik Elektro',
-            'prodi' => 'D4 - Teknologi Rekayasa Komputer',
-            'email' => $this->extractString($dosenData['email'] ?? null, 'Budisantoso@gmail.com'),
-            'status_dosen' => $this->extractString($dosenData['status_dosen'] ?? ($dosenData['status'] ?? null), 'Aktif'),
+            'nama_dosen' => $this->extractString($rawNama, '-'),
+            'nidn' => $this->extractString($dosenData['nidn'] ?? null, '-'),
+            'jabatan' => $this->extractString($rawJabatan, '-'),
+            'jurusan' => ! empty($rawJurusan) ? $this->extractString($rawJurusan, '-') : '-',
+            'prodi' => $this->extractString($rawProdi, '-'),
+            'email' => $this->extractString($dosenData['email'] ?? null, '-'),
+            'status_dosen' => $this->extractString($dosenData['status_dosen'] ?? ($dosenData['status'] ?? null), '-'),
             'sertifikasi' => is_string($rawSertifikasi) && trim($rawSertifikasi) !== '' ? trim($rawSertifikasi) : (is_array($rawSertifikasi) ? $this->extractString($rawSertifikasi, '') : null),
         ];
 
         // Penelitian list — API key: penelitian
         $rawPenelitian = isset($dosenData['penelitian']) && is_array($dosenData['penelitian'])
             ? $dosenData['penelitian']
-            : (array_key_exists('penelitian', $dosenData) ? [] : [
-                [
-                    'judul_kegiatan' => 'Sistem Prediksi Harga Komoditas Pangan Jawa Tengah dengan LSTM',
-                    'tahun_usulan' => '2025',
-                    'tahun_kegiatan' => '2026',
-                    'tahun_pelaksanaan' => '2026',
-                    'bidang' => 'Teknik Elektro',
-                    'instansi' => 'Politeknik Negeri Semarang',
-                ],
-            ]);
+            : [];
 
         $penelitianList = array_map(function ($item) {
             if (! is_array($item)) {
-                return ['judul' => (string) $item, 'tahun_usulan' => '2025', 'tahun_kegiatan' => '2026', 'tahun_pelaksanaan' => '2026', 'bidang' => 'Teknik Elektro', 'instansi' => 'Politeknik Negeri Semarang'];
+                return ['judul' => (string) $item, 'tahun_usulan' => '-', 'tahun_kegiatan' => '-', 'tahun_pelaksanaan' => '-', 'bidang' => '-', 'instansi' => '-'];
             }
 
             return [
-                'judul' => $this->extractString($item['judul_kegiatan'] ?? ($item['judul'] ?? ($item['title'] ?? ($item['nama'] ?? null))), 'Judul Penelitian'),
-                'tahun_usulan' => $this->extractString($item['tahun_usulan'] ?? ($item['usulan'] ?? '2025'), '2025'),
-                'tahun_kegiatan' => $this->extractString($item['tahun_kegiatan'] ?? ($item['kegiatan'] ?? '2026'), '2026'),
-                'tahun_pelaksanaan' => $this->extractString($item['tahun_pelaksanaan'] ?? ($item['pelaksanaan'] ?? '2026'), '2026'),
-                'bidang' => $this->extractString($item['bidang'] ?? ($item['jurusan'] ?? 'Teknik Elektro'), 'Teknik Elektro'),
-                'instansi' => $this->extractString($item['instansi'] ?? 'Politeknik Negeri Semarang', 'Politeknik Negeri Semarang'),
+                'judul' => $this->extractString($item['judul_kegiatan'] ?? ($item['judul'] ?? ($item['title'] ?? ($item['nama'] ?? null))), '-'),
+                'tahun_usulan' => $this->extractString($item['tahun_usulan'] ?? ($item['usulan'] ?? null), '-'),
+                'tahun_kegiatan' => $this->extractString($item['tahun_kegiatan'] ?? ($item['kegiatan'] ?? null), '-'),
+                'tahun_pelaksanaan' => $this->extractString($item['tahun_pelaksanaan'] ?? ($item['pelaksanaan'] ?? null), '-'),
+                'bidang' => $this->extractString($item['bidang'] ?? ($item['jurusan'] ?? null), '-'),
+                'instansi' => $this->extractString($item['instansi'] ?? null, '-'),
             ];
         }, $rawPenelitian);
 
         // Pengabdian list — API key: pkm
         $rawPkm = isset($dosenData['pkm']) && is_array($dosenData['pkm'])
             ? $dosenData['pkm']
-            : (array_key_exists('pkm', $dosenData) ? [] : [
-                [
-                    'judul_kegiatan' => 'SISTEM KEAMANAN LINGKUNGAN BERBASIS INTERNET OF THING (IOT) DI WILAYAH TLOGO RT 06, GEBLAKAN, TAMANTIRTO, KASIHAN, BANTUL',
-                    'tahun_pelaksanaan' => '2026',
-                    'lokasi_kegiatan' => 'TLOGO RT 06, GEBLAKAN, TAMANTIRTO, KASIHAN, BANTUL',
-                ],
-            ]);
+            : [];
 
         $pengabdianMasyarakat = array_map(function ($item) {
             if (! is_array($item)) {
-                return ['judul' => (string) $item, 'tahun' => '2026', 'lokasi' => 'Semarang'];
+                return ['judul' => (string) $item, 'tahun' => '-', 'lokasi' => '-'];
             }
 
             return [
-                'judul' => $this->extractString($item['judul_kegiatan'] ?? ($item['judul'] ?? ($item['title'] ?? null)), 'Kegiatan Pengabdian'),
-                'tahun' => $this->extractString($item['tahun_pelaksanaan'] ?? ($item['tahun_kegiatan'] ?? ($item['tahun'] ?? '2026')), '2026'),
-                'lokasi' => $this->extractString($item['lokasi_kegiatan'] ?? ($item['lokasi'] ?? ($item['tempat'] ?? 'Semarang')), 'Semarang'),
+                'judul' => $this->extractString($item['judul_kegiatan'] ?? ($item['judul'] ?? ($item['title'] ?? null)), '-'),
+                'tahun' => $this->extractString($item['tahun_pelaksanaan'] ?? ($item['tahun_kegiatan'] ?? ($item['tahun'] ?? null)), '-'),
+                'lokasi' => $this->extractString($item['lokasi_kegiatan'] ?? ($item['lokasi'] ?? ($item['tempat'] ?? null)), '-'),
             ];
         }, $rawPkm);
 
@@ -268,25 +255,19 @@ class DosenController extends Controller
         $pendidikanItems = [];
         if (is_array($rawPendidikan) && ! empty($rawPendidikan)) {
             $pendidikanItems = array_is_list($rawPendidikan) ? $rawPendidikan : [$rawPendidikan];
-        } elseif (array_key_exists('pendidikan', $dosenData) && is_null($dosenData['pendidikan'])) {
-            $pendidikanItems = [];
-        } else {
-            $pendidikanItems = [
-                ['gelar' => 'Dr', 'jenjang' => 'S3', 'instansi' => 'Politeknik Negeri Semarang', 'jurusan' => 'Teknik Informatika', 'tahun_lulus' => '2026'],
-            ];
         }
 
         $riwayatPendidikan = array_map(function ($item) {
             if (! is_array($item)) {
-                return ['gelar' => 'Dr', 'jenjang' => 'S3', 'instansi' => (string) $item, 'jurusan' => 'Teknik Informatika', 'tahun_lulus' => '2026'];
+                return ['gelar' => '-', 'jenjang' => '-', 'instansi' => (string) $item, 'jurusan' => '-', 'tahun_lulus' => '-'];
             }
 
             return [
-                'gelar' => $this->extractString($item['gelar'] ?? 'Dr', 'Dr'),
-                'jenjang' => $this->extractString($item['jenjang'] ?? ($item['tingkat'] ?? 'S3'), 'S3'),
-                'instansi' => $this->extractString($item['instansi'] ?? ($item['universitas'] ?? ($item['kampus'] ?? 'Politeknik Negeri Semarang')), 'Politeknik Negeri Semarang'),
-                'jurusan' => $this->extractString($item['jurusan'] ?? ($item['program_studi'] ?? ($item['prodi'] ?? 'Teknik Informatika')), 'Teknik Informatika'),
-                'tahun_lulus' => $this->extractString($item['tahun_lulus'] ?? ($item['tahun'] ?? '2026'), '2026'),
+                'gelar' => $this->extractString($item['gelar'] ?? null, '-'),
+                'jenjang' => $this->extractString($item['jenjang'] ?? ($item['tingkat'] ?? null), '-'),
+                'instansi' => $this->extractString($item['instansi'] ?? ($item['universitas'] ?? ($item['kampus'] ?? null)), '-'),
+                'jurusan' => $this->extractString($item['jurusan'] ?? ($item['program_studi'] ?? ($item['prodi'] ?? null)), '-'),
+                'tahun_lulus' => $this->extractString($item['tahun_lulus'] ?? ($item['tahun'] ?? null), '-'),
             ];
         }, $pendidikanItems);
 
@@ -335,22 +316,7 @@ class DosenController extends Controller
             }, $bukuItems),
         );
 
-        $luaranList = ! empty($combinedLuaran) || $hasLuaranKeys ? $combinedLuaran : [
-            [
-                'judul' => 'Sistem Deteksi Anomali Jaringan Komputer Menggunakan Deep Autoencoder',
-                'nomor' => 'EC00202518920',
-                'tahun' => '2025',
-                'jenis' => 'HKI',
-                'status' => 'Tercatat',
-            ],
-            [
-                'judul' => 'Modul IoT Smart Agriculture Terintegrasi Sensor Suhu dan Kelembapan Tanah',
-                'nomor' => 'P00202405671',
-                'tahun' => '2024',
-                'jenis' => 'HKI',
-                'status' => 'Granted',
-            ],
-        ];
+        $luaranList = $combinedLuaran;
 
         return view('dosen.show', [
             'dosen' => $dosen,
@@ -417,6 +383,8 @@ class DosenController extends Controller
             'status_dosen' => ['required', 'string', 'max:50'],
             'email' => ['required', 'email', 'max:255'],
             'sertifikasi' => ['nullable', 'string', 'max:500'],
+            'id_jabatan' => ['nullable', 'integer'],
+            'id_pendidikan' => ['nullable', 'integer'],
         ], [
             'nama_dosen.required' => 'Nama dosen wajib diisi.',
             'nidn.required' => 'NIDN wajib diisi.',
@@ -431,8 +399,8 @@ class DosenController extends Controller
             'status_dosen' => trim($validated['status_dosen']),
             'email' => strtolower(trim($validated['email'])),
             'sertifikasi' => ! empty($validated['sertifikasi']) ? trim($validated['sertifikasi']) : null,
-            'id_jabatan' => 1,
-            'id_pendidikan' => 1,
+            'id_jabatan' => isset($validated['id_jabatan']) && $validated['id_jabatan'] !== null ? (int) $validated['id_jabatan'] : null,
+            'id_pendidikan' => isset($validated['id_pendidikan']) && $validated['id_pendidikan'] !== null ? (int) $validated['id_pendidikan'] : null,
         ];
 
         $response = $this->tridharmaService->updateDosen($id, $payload);
