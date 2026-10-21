@@ -15,11 +15,6 @@
 @section('content')
 @php
     $certificationId = $certification['id'] ?? $certification['id_sertifikasi'] ?? null;
-    $ownerQuery = array_filter([
-        'tipe_pemilik' => $certification['tipe_pemilik'] ?? null,
-        'id_dosen' => $certification['id_dosen'] ?? null,
-        'id_tendik' => $certification['id_tendik'] ?? null,
-    ], static fn ($value) => $value !== null && $value !== '');
     $driveUrl = $certification['url_sertifikasi'] ?? $certification['url_drive'] ?? null;
     $drivePreviewUrl = null;
     $year = $certification['tahun_sertifikasi'] ?? null;
@@ -57,14 +52,14 @@
 
 <div class="space-y-5 pb-8">
     <div class="flex flex-wrap justify-end gap-3">
-        <a href="{{ route('sertifikasi.index', $ownerQuery) }}" class="inline-flex min-w-36 items-center justify-center rounded-lg bg-white-form px-5 py-3 text-sm font-bold text-gray-900 transition hover:bg-gray-300">Kembali</a>
+        <a href="{{ route('sertifikasi.index') }}" class="inline-flex min-w-36 items-center justify-center rounded-lg bg-white-form px-5 py-3 text-sm font-bold text-gray-900 transition hover:bg-gray-300">Kembali</a>
         @if($certificationId)
-            <form method="POST" action="{{ route('sertifikasi.destroy', ['sertifikasi' => $certificationId] + $ownerQuery) }}" data-confirm-delete data-title="Hapus Sertifikasi?" data-message="Apakah Anda yakin ingin menghapus sertifikasi ini? Tindakan ini bersifat permanen dan data tidak dapat dikembalikan.">
+            <form method="POST" action="{{ route('sertifikasi.destroy', $certificationId) }}" data-confirm-delete data-title="Hapus Sertifikasi?" data-message="Apakah Anda yakin ingin menghapus sertifikasi ini? Tindakan ini bersifat permanen dan data tidak dapat dikembalikan.">
                 @csrf
                 @method('DELETE')
                 <button type="submit" class="inline-flex min-w-36 items-center justify-center rounded-lg bg-red-700 px-5 py-3 text-sm font-bold text-white transition hover:bg-red-800">Hapus</button>
             </form>
-            <a href="{{ route('sertifikasi.edit', ['sertifikasi' => $certificationId] + $ownerQuery) }}" class="inline-flex min-w-36 items-center justify-center rounded-lg bg-secondary px-5 py-3 text-sm font-bold text-gray-950 transition hover:brightness-95">Edit</a>
+            <a href="{{ route('sertifikasi.edit', $certificationId) }}" class="inline-flex min-w-36 items-center justify-center rounded-lg bg-secondary px-5 py-3 text-sm font-bold text-gray-950 transition hover:brightness-95">Edit</a>
         @endif
     </div>
 

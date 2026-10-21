@@ -194,12 +194,11 @@ class SertifikasiController extends Controller
         }
 
         if ($this->successfulResponse($response)) {
-            return redirect()->route('sertifikasi.index', $this->ownerQuery($validated['owner_type'], (int) $validated['owner_id']))
-                ->with('toast', [
-                    'type' => 'success',
-                    'title' => 'Berhasil',
-                    'message' => $this->responseMessage($response, 'Sertifikasi berhasil ditambahkan.'),
-                ]);
+            return redirect()->route('sertifikasi.index')->with('toast', [
+                'type' => 'success',
+                'title' => 'Berhasil',
+                'message' => $this->responseMessage($response, 'Sertifikasi berhasil ditambahkan.'),
+            ]);
         }
 
         return $this->mutationFailure($response, 'Gagal menambahkan sertifikasi.');
@@ -270,7 +269,7 @@ class SertifikasiController extends Controller
         }
 
         if ($this->successfulResponse($response)) {
-            return redirect()->route('sertifikasi.show', $sertifikasi)->with('toast', [
+            return redirect()->route('sertifikasi.index')->with('toast', [
                 'type' => 'success',
                 'title' => 'Berhasil',
                 'message' => $this->responseMessage($response, 'Sertifikasi berhasil diperbarui.'),
@@ -397,16 +396,6 @@ class SertifikasiController extends Controller
         return is_numeric($ownerId) && (int) $ownerId > 0 ? (int) $ownerId : null;
     }
 
-    private function ownerQuery(string $ownerType, int $ownerId): array
-    {
-        $ownerKey = $ownerType === 'dosen' ? 'id_dosen' : 'id_tendik';
-
-        return [
-            'tipe_pemilik' => $ownerType,
-            $ownerKey => $ownerId,
-        ];
-    }
-
     private function successfulResponse(Response $response): bool
     {
         return $response->successful() && $response->json('success') !== false;
@@ -462,14 +451,7 @@ class SertifikasiController extends Controller
 
     private function indexRedirect(): RedirectResponse
     {
-        return redirect()->route('sertifikasi.index', request()->only([
-            'search',
-            'tipe_pemilik',
-            'id_dosen',
-            'id_tendik',
-            'tahun_sertifikasi',
-            'status_sertifikasi',
-        ]));
+        return redirect()->route('sertifikasi.index');
     }
 
     /**

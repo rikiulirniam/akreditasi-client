@@ -193,7 +193,7 @@
             </div>
 
             <div class="flex flex-col-reverse justify-end gap-3 pt-4 sm:flex-row">
-                <a href="{{ $isEditing && $certificationId ? route('sertifikasi.show', $certificationId) : route('sertifikasi.index', $ownerTypeValue === 'dosen' ? ['tipe_pemilik' => 'dosen', 'id_dosen' => $ownerIdValue] : ($ownerTypeValue === 'tendik' ? ['tipe_pemilik' => 'tendik', 'id_tendik' => $ownerIdValue] : [])) }}" class="inline-flex min-w-36 items-center justify-center rounded-lg bg-white-form px-6 py-3 text-sm font-bold text-gray-900 transition hover:bg-gray-300">
+                <a href="{{ route('sertifikasi.index') }}" class="inline-flex min-w-36 items-center justify-center rounded-lg bg-white-form px-6 py-3 text-sm font-bold text-gray-900 transition hover:bg-gray-300">
                     Kembali
                 </a>
                 <button type="submit" class="inline-flex min-w-36 items-center justify-center rounded-lg bg-additional px-6 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-primary">
