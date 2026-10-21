@@ -13,6 +13,7 @@ class Kualifikasi extends Model
     protected $table = 'kualifikasis';
 
     protected $fillable = [
+        'tendik_api_id',
         'tenaga_kependidikan_id',
         'gelar',
         'jenjang',

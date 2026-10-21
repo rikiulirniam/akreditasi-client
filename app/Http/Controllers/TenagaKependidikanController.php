@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Kualifikasi;
 use App\Services\TenagaKependidikanService;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\Response;
@@ -174,6 +175,35 @@ class TenagaKependidikanController extends Controller
         }
     }
 
+    public function storePendidikan(Request $request, int|string $tendikId): RedirectResponse
+    {
+        $validated = $request->validate([
+            'gelar' => ['nullable', 'string', 'max:100'],
+            'jenjang' => ['required', 'string', 'max:50'],
+            'institusi' => ['nullable', 'string', 'max:255'],
+            'program_studi' => ['nullable', 'string', 'max:255'],
+            'tahun_lulus' => ['nullable', 'string', 'max:10'],
+        ], [
+            'jenjang.required' => 'Jenjang pendidikan wajib dipilih.',
+        ]);
+
+        Kualifikasi::create([
+            'tendik_api_id' => (int) $tendikId,
+            'tenaga_kependidikan_id' => null,
+            'gelar' => $validated['gelar'] ?? null,
+            'jenjang' => $validated['jenjang'],
+            'institusi' => $validated['institusi'] ?? null,
+            'program_studi' => $validated['program_studi'] ?? null,
+            'tahun_lulus' => $validated['tahun_lulus'] ?? null,
+        ]);
+
+        return redirect()->route('tenaga-kependidikan.show', $tendikId)->with('toast', [
+            'type' => 'success',
+            'title' => 'Berhasil',
+            'message' => 'Pendidikan berhasil ditambahkan.',
+        ]);
+    }
+
     public function create(): RedirectResponse
     {
         return redirect()->route('tenaga-kependidikan.index', ['tambah' => 1]);
@@ -267,7 +297,7 @@ class TenagaKependidikanController extends Controller
 
             return view('tenaga-kependidikan.show', [
                 'tenagaKependidikan' => $tendik,
-                'kualifikasis' => $this->qualificationCards($record, $tendik),
+                'kualifikasis' => $this->mergeKualifikasi($record, $tendik, (int) $id),
                 'sertifikasis' => $this->apiSucceeded($sertifikasiResponse)
                     ? $this->listData($sertifikasiResponse)
                     : [],
@@ -596,6 +626,32 @@ class TenagaKependidikanController extends Controller
             : [];
     }
 
+    /**
+     * Merge kualifikasi from API record with locally-stored rows (linked via tendik_api_id).
+     *
+     * @param  array<string, mixed>  $record
+     * @param  array<string, mixed>  $tendik
+     * @return array<int, array<string, string>>
+     */
+    private function mergeKualifikasi(array $record, array $tendik, int $tendikApiId): array
+    {
+        $fromApi = $this->qualificationCards($record, $tendik);
+
+        $fromDb = Kualifikasi::where('tendik_api_id', $tendikApiId)
+            ->orderBy('id')
+            ->get()
+            ->map(fn (Kualifikasi $q) => [
+                'gelar' => (string) ($q->gelar ?? $q->jenjang ?? ''),
+                'jenjang' => (string) ($q->jenjang ?? ''),
+                'institusi' => (string) ($q->institusi ?? ''),
+                'program_studi' => (string) ($q->program_studi ?? ''),
+                'tahun_lulus' => (string) ($q->tahun_lulus ?? ''),
+            ])
+            ->all();
+
+        return array_merge($fromApi, $fromDb);
+    }
+
     /** @return array<int, array<string, mixed>> */
     private function listData(Response $response): array
     {
@@ -609,7 +665,16 @@ class TenagaKependidikanController extends Controller
 
     private function apiSucceeded(Response $response): bool
     {
-        return $response->successful() && $response->json('success') === true;
+        if (! $response->successful()) {
+            return false;
+        }
+
+        $success = $response->json('success');
+        if ($success !== null) {
+            return (bool) $success;
+        }
+
+        return $response->status() >= 200 && $response->status() < 300;
     }
 
     private function handleMutationResponse(Response $response, string $successFallback, int|string|null $editingId = null): JsonResponse|RedirectResponse

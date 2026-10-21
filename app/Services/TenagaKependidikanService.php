@@ -7,6 +7,14 @@ use Illuminate\Http\UploadedFile;
 
 class TenagaKependidikanService extends TridharmaService
 {
+    public function __construct(?string $baseUrl = null, ?string $token = null)
+    {
+        parent::__construct(
+            $baseUrl ?? (string) config('services.tridharma.base_url', env('TRIDHARMA_API_URL', env('API_BASE_URL', 'https://tridharma.fayra.my.id/api'))),
+            $token
+        );
+    }
+
     /**
      * Mengambil daftar tenaga kependidikan dari API eksternal.
      *
