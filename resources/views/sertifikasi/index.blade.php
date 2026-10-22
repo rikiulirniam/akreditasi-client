@@ -123,6 +123,8 @@
                 @foreach($certifications as $index => $certification)
                     @php
                         $certificationId = $certification['id'] ?? $certification['id_sertifikasi'] ?? null;
+                        $certificationType = trim((string) ($certification['jenis_sertifikasi'] ?? '-'));
+                        $certificationTypeLines = array_chunk(preg_split('/\s+/', $certificationType) ?: [], 2);
                         $status = $certification['status_sertifikasi'] ?? '-';
                         $year = $certification['tahun_sertifikasi'] ?? '-';
                         $year = preg_match('/^\d{4}/', (string) $year) ? substr((string) $year, 0, 4) : $year;
@@ -130,7 +132,9 @@
                     <x-table.row class="bg-white transition-colors hover:bg-gray-50/40">
                         <x-table.cell class="!rounded-none !border-x-0 border-y border-gray-300 !px-3 !py-3.5 text-center text-sm text-gray-900">{{ $startNumber + $index }}.</x-table.cell>
                         <x-table.cell class="!rounded-none !border-x-0 border-y border-gray-300 !px-4 !py-3.5 !text-sm font-medium leading-[1.2] text-gray-900">
-                            {{ $certification['jenis_sertifikasi'] ?? '-' }}
+                            @foreach($certificationTypeLines as $line)
+                                <span class="block break-words">{{ implode(' ', $line) }}</span>
+                            @endforeach
                         </x-table.cell>
                         <x-table.cell class="!rounded-none !border-x-0 border-y border-gray-300 !px-4 !py-3.5 !text-sm text-gray-900">{{ $certification['nomor_sertifikat'] ?? '-' }}</x-table.cell>
                         <x-table.cell class="!rounded-none !border-x-0 border-y border-gray-300 !px-4 !py-3.5 !text-sm">

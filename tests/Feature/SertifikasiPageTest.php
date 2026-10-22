@@ -17,7 +17,7 @@ class SertifikasiPageTest extends TestCase
                     'current_page' => 2,
                     'data' => [[
                         'id' => 15,
-                        'jenis_sertifikasi' => 'Sertifikasi Jaringan Komputer',
+                        'jenis_sertifikasi' => 'Sertifikasi Jaringan Komputer Lanjutan',
                         'nomor_sertifikat' => 'SK-2025-00125',
                         'status_sertifikasi' => 'Aktif',
                         'tahun_sertifikasi' => 2025,
@@ -42,7 +42,8 @@ class SertifikasiPageTest extends TestCase
             ]));
 
         $response->assertOk()
-            ->assertSee('Sertifikasi Jaringan Komputer')
+            ->assertSee('<span class="block break-words">Sertifikasi Jaringan</span>', false)
+            ->assertSee('<span class="block break-words">Komputer Lanjutan</span>', false)
             ->assertSee('SK-2025-00125')
             ->assertSee('2025')
             ->assertSee('!border-x-0 border-y border-gray-300', false)
