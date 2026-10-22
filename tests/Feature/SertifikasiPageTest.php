@@ -17,7 +17,7 @@ class SertifikasiPageTest extends TestCase
                     'current_page' => 2,
                     'data' => [[
                         'id' => 15,
-                        'jenis_sertifikasi' => 'Sertifikasi Jaringan Komputer',
+                        'jenis_sertifikasi' => 'Sertifikasi Jaringan Komputer Lanjutan',
                         'nomor_sertifikat' => 'SK-2025-00125',
                         'status_sertifikasi' => 'Aktif',
                         'tahun_sertifikasi' => 2025,
@@ -42,7 +42,8 @@ class SertifikasiPageTest extends TestCase
             ]));
 
         $response->assertOk()
-            ->assertSee('Sertifikasi Jaringan Komputer')
+            ->assertSee('<span class="block break-words">Sertifikasi Jaringan</span>', false)
+            ->assertSee('<span class="block break-words">Komputer Lanjutan</span>', false)
             ->assertSee('SK-2025-00125')
             ->assertSee('2025')
             ->assertSee('!border-x-0 border-y border-gray-300', false)
@@ -110,7 +111,10 @@ class SertifikasiPageTest extends TestCase
             ->assertSee('w-[150px]')
             ->assertSee('flex-1 truncate', false)
             ->assertSee('bg-white-form')
-            ->assertSee('h-[38px] shrink-0 items-center justify-center gap-1.5 rounded-md bg-additional', false)
+            ->assertSee('h-[34px] shrink-0 items-center justify-center gap-1.5 rounded-md bg-additional', false)
+            ->assertSee('h-[34px] w-[140px]', false)
+            ->assertSee('h-[34px] w-[150px]', false)
+            ->assertSee('!text-[13px] !font-bold border-y border-gray-300', false)
             ->assertSee('rounded-full bg-white text-additional', false)
             ->assertSee('type="text"', false)
             ->assertDontSee('type="search"', false)
@@ -149,7 +153,8 @@ class SertifikasiPageTest extends TestCase
         $response->assertOk()
             ->assertSee('Tambah Sertifikasi')
             ->assertSee('name="owner_type" value="tendik"', false)
-            ->assertSee('name="owner_id" value="42"', false);
+            ->assertSee('name="owner_id" value="42"', false)
+            ->assertSee('<a href="'.route('sertifikasi.index').'"', false);
     }
 
     public function test_create_form_loads_dosen_and_tendik_names_for_owner_dropdowns(): void
@@ -220,6 +225,8 @@ class SertifikasiPageTest extends TestCase
                     'lembaga_penerbit' => 'BNSP',
                     'status_sertifikasi' => 'Aktif',
                     'tahun_sertifikasi' => 2025,
+                    'tipe_pemilik' => 'tendik',
+                    'id_tendik' => 42,
                     'tanggal_kedaluwarsa' => '2028-12-31',
                     'url_drive' => 'https://drive.google.com/file/d/test/view',
                 ],
@@ -237,6 +244,7 @@ class SertifikasiPageTest extends TestCase
             ->assertSee('31 Des 2028')
             ->assertSee('Detail')
             ->assertSee(route('sertifikasi.index'), false)
+            ->assertSee('<a href="'.route('sertifikasi.index').'"', false)
             ->assertSee('action="'.route('sertifikasi.destroy', 18).'"', false)
             ->assertSee('data-confirm-delete', false);
 
@@ -267,7 +275,8 @@ class SertifikasiPageTest extends TestCase
         $response->assertOk()
             ->assertSee('Perbarui Sertifikasi')
             ->assertSee('value="Sertifikasi Kompetensi"', false)
-            ->assertSee('type="date" name="tahun_sertifikasi" value="2025-01-01"', false);
+            ->assertSee('type="date" name="tahun_sertifikasi" value="2025-01-01"', false)
+            ->assertSee('<a href="'.route('sertifikasi.index').'"', false);
     }
 
     public function test_store_sends_certification_to_tridharma_api_without_local_database(): void
@@ -296,10 +305,7 @@ class SertifikasiPageTest extends TestCase
                 'url_drive' => 'https://drive.google.com/file/d/test/view',
             ]);
 
-        $response->assertRedirect(route('sertifikasi.index', [
-            'tipe_pemilik' => 'tendik',
-            'id_tendik' => 42,
-        ]));
+        $response->assertRedirect(route('sertifikasi.index'));
 
         Http::assertSent(fn (ClientRequest $request): bool => $request->method() === 'POST'
             && $request->hasHeader('Authorization', 'Bearer test-token')
@@ -333,10 +339,7 @@ class SertifikasiPageTest extends TestCase
             'tahun_sertifikasi' => '2025-01-15',
         ]);
 
-        $response->assertRedirect(route('sertifikasi.index', [
-            'tipe_pemilik' => 'dosen',
-            'id_dosen' => 7,
-        ]));
+        $response->assertRedirect(route('sertifikasi.index'));
 
         Http::assertSent(fn (ClientRequest $request): bool => $request->method() === 'POST'
             && $request['id_dosen'] === 7
@@ -362,7 +365,7 @@ class SertifikasiPageTest extends TestCase
                 'tahun_sertifikasi' => '2025-01-15',
             ]);
 
-        $response->assertRedirect(route('sertifikasi.show', 18));
+        $response->assertRedirect(route('sertifikasi.index'));
 
         Http::assertSent(fn (ClientRequest $request): bool => $request->method() === 'PUT'
             && $request['jenis_sertifikasi'] === 'Sertifikasi Diperbarui'
@@ -385,10 +388,7 @@ class SertifikasiPageTest extends TestCase
                 'id_tendik' => 42,
             ]);
 
-        $response->assertRedirect(route('sertifikasi.index', [
-            'tipe_pemilik' => 'tendik',
-            'id_tendik' => 42,
-        ]));
+        $response->assertRedirect(route('sertifikasi.index'));
 
         Http::assertSent(fn (ClientRequest $request): bool => $request->method() === 'DELETE'
             && $request->hasHeader('Authorization', 'Bearer test-token'));
