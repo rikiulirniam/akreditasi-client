@@ -20,6 +20,7 @@
                     class="pl-10 text-xs"
                 />
             </div>
+            @haspermission('tahun_akademik.create')
             <div>
                 <button 
                     type="button" 
@@ -32,6 +33,7 @@
                     Tambah Tahun Akademik
                 </button>
             </div>
+            @endhaspermission
         </div>
 
         <!-- Table: Data Tahun Akademik -->
@@ -93,6 +95,7 @@
                     <!-- Action (Yellow Edit, Red Delete) -->
                     <x-table.cell class="w-28">
                         <div class="flex items-center justify-end gap-2.5">
+                            @haspermission('tahun_akademik.update')
                             <!-- Edit Icon (Yellow) -->
                             <button 
                                 type="button" 
@@ -106,7 +109,9 @@
                             >
                                 <x-icon.edit class="w-5 h-5" />
                             </button>
+                            @endhaspermission
 
+                            @haspermission('tahun_akademik.delete')
                             <!-- Delete Icon (Red) -->
                             <button 
                                 type="button" 
@@ -119,6 +124,7 @@
                             >
                                 <x-icon.delete class="w-5 h-5" />
                             </button>
+                            @endhaspermission
 
                             <!-- Eye / View Icon (Navy) -> ke Halaman 2 (Daftar Kelas) -->
                             <a 

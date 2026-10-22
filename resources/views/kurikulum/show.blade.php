@@ -31,6 +31,7 @@
             </h3>
             
             <div class="flex items-center gap-2.5">
+                @haspermission('kurikulum.delete')
                 <!-- Hapus Data Button -->
                 <button
                     type="button"
@@ -45,7 +46,9 @@
                     </svg>
                     Hapus Data
                 </button>
+                @endhaspermission
 
+                @haspermission('kurikulum.update')
                 <!-- Edit Data Button -->
                 <a
                     href="{{ route('kurikulum.edit', $kurikulum['id']) }}"
@@ -56,6 +59,7 @@
                     </svg>
                     Edit Data
                 </a>
+                @endhaspermission
             </div>
         </div>
 

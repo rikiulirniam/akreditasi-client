@@ -20,6 +20,7 @@
                     class="pl-10 text-xs"
                 />
             </div>
+            @haspermission('kelas.create')
             <div>
                 <button 
                     type="button" 
@@ -32,6 +33,7 @@
                     Tambah Kelas
                 </button>
             </div>
+            @endhaspermission
         </div>
 
         <!-- Table: Data Kelas -->
@@ -63,6 +65,7 @@
                     <!-- Action (Yellow Edit, Red Delete) -->
                     <x-table.cell class="w-28">
                         <div class="flex items-center justify-end gap-3">
+                            @haspermission('kelas.update')
                             <!-- Edit Kelas Icon (Yellow) -->
                             <button 
                                 type="button" 
@@ -74,7 +77,9 @@
                             >
                                 <x-icon.edit class="w-5 h-5" />
                             </button>
+                            @endhaspermission
 
+                            @haspermission('kelas.delete')
                             <!-- Delete Kelas Icon (Red) -->
                             <button 
                                 type="button" 
@@ -87,6 +92,7 @@
                             >
                                 <x-icon.delete class="w-5 h-5" />
                             </button>
+                            @endhaspermission
                         </div>
                     </x-table.cell>
                 </x-table.row>
