@@ -70,23 +70,106 @@ class SertifikasiController extends Controller
         ]);
     }
 
-    public function create(Request $request): View
+    public function create(Request $request): View|RedirectResponse
     {
-        $ownerType = $request->query('tipe_pemilik');
-        $ownerId = $ownerType === 'dosen'
-            ? $request->query('id_dosen')
-            : ($ownerType === 'tendik' ? $request->query('id_tendik') : null);
+        $isDosen = $this->isAuthenticatedDosen();
+        $user = session('user', []);
+        $ownerType = $isDosen ? 'dosen' : $request->query('tipe_pemilik');
+        $ownerId = $isDosen
+            ? (is_array($user) ? ($user['id_dosen'] ?? $user['id'] ?? null) : null)
+            : ($ownerType === 'dosen'
+                ? $request->query('id_dosen')
+                : ($ownerType === 'tendik' ? $request->query('id_tendik') : null));
+
+        $ownerOptions = ['dosen' => [], 'tendik' => []];
+        $ownerOptionsError = null;
+
+        if (! $isDosen && ! ($ownerType && $ownerId)) {
+            try {
+                foreach (['dosen', 'tendik'] as $type) {
+                    $options = [];
+                    $lastPage = 1;
+
+                    for ($page = 1; $page <= $lastPage; $page++) {
+                        $response = $type === 'dosen'
+                            ? $this->tridharmaService->getDosenList(['page' => $page, 'per_page' => 100])
+                            : $this->tridharmaService->getTendikList(['page' => $page, 'per_page' => 100]);
+
+                        if ($response->status() === 401) {
+                            return $this->redirectToLogin();
+                        }
+
+                        if (! $response->successful() || $response->json('success') === false) {
+                            $ownerOptionsError = $this->responseMessage(
+                                $response,
+                                'Gagal memuat daftar '.($type === 'dosen' ? 'dosen' : 'tenaga kependidikan').'.'
+                            );
+                            break 2;
+                        }
+
+                        $payload = $response->json();
+                        $data = is_array($payload) ? ($payload['data'] ?? []) : [];
+                        $records = is_array($data) && is_array($data['data'] ?? null)
+                            ? $data['data']
+                            : (is_array($data) && array_is_list($data) ? $data : []);
+                        $pagination = is_array($data)
+                            ? ($data['pagination'] ?? $payload['pagination'] ?? [])
+                            : ($payload['pagination'] ?? []);
+                        $lastPage = max(1, (int) ($data['last_page'] ?? $payload['last_page'] ?? $pagination['last_page'] ?? 1));
+
+                        foreach ($records as $record) {
+                            if (! is_array($record)) {
+                                continue;
+                            }
+
+                            $id = $type === 'dosen'
+                                ? ($record['id_dosen'] ?? $record['id'] ?? null)
+                                : ($record['id_tendik'] ?? $record['id'] ?? null);
+                            $name = $type === 'dosen'
+                                ? ($record['nama_dosen'] ?? $record['nama'] ?? $record['name'] ?? null)
+                                : ($record['nama_tendik'] ?? $record['nama'] ?? $record['name'] ?? null);
+
+                            if (is_numeric($id) && is_string($name) && trim($name) !== '') {
+                                $options[] = ['id' => (int) $id, 'name' => trim($name)];
+                            }
+                        }
+                    }
+
+                    $ownerOptions[$type] = $options;
+                }
+            } catch (ConnectionException) {
+                $ownerOptionsError = 'Tidak dapat terhubung ke server Tridharma untuk memuat daftar pemilik sertifikasi.';
+            }
+        }
 
         return view('sertifikasi.form', [
             'certification' => [],
             'isEditing' => false,
             'ownerType' => in_array($ownerType, ['dosen', 'tendik'], true) ? $ownerType : '',
             'ownerId' => is_numeric($ownerId) ? (int) $ownerId : '',
+            'isDosen' => $isDosen,
+            'ownerOptions' => $ownerOptions,
+            'ownerOptionsError' => $ownerOptionsError,
         ]);
     }
 
     public function store(Request $request): RedirectResponse
     {
+        if ($this->isAuthenticatedDosen()) {
+            $ownerId = $this->authenticatedDosenId();
+
+            if ($ownerId === null) {
+                return back()->withInput()->withErrors([
+                    'owner_id' => 'ID Dosen tidak ditemukan pada sesi login. Silakan login kembali atau hubungi administrator.',
+                ]);
+            }
+
+            $request->merge([
+                'owner_type' => 'dosen',
+                'owner_id' => $ownerId,
+            ]);
+        }
+
         $validated = $request->validate($this->certificationRules() + [
             'owner_type' => ['required', 'in:dosen,tendik'],
             'owner_id' => ['required', 'integer', 'min:1'],
@@ -111,12 +194,11 @@ class SertifikasiController extends Controller
         }
 
         if ($this->successfulResponse($response)) {
-            return redirect()->route('sertifikasi.index', $this->ownerQuery($validated['owner_type'], (int) $validated['owner_id']))
-                ->with('toast', [
-                    'type' => 'success',
-                    'title' => 'Berhasil',
-                    'message' => $this->responseMessage($response, 'Sertifikasi berhasil ditambahkan.'),
-                ]);
+            return redirect()->route('sertifikasi.index')->with('toast', [
+                'type' => 'success',
+                'title' => 'Berhasil',
+                'message' => $this->responseMessage($response, 'Sertifikasi berhasil ditambahkan.'),
+            ]);
         }
 
         return $this->mutationFailure($response, 'Gagal menambahkan sertifikasi.');
@@ -164,6 +246,7 @@ class SertifikasiController extends Controller
             'isEditing' => true,
             'ownerType' => '',
             'ownerId' => '',
+            'isDosen' => $this->isAuthenticatedDosen(),
         ]);
     }
 
@@ -186,7 +269,7 @@ class SertifikasiController extends Controller
         }
 
         if ($this->successfulResponse($response)) {
-            return redirect()->route('sertifikasi.show', $sertifikasi)->with('toast', [
+            return redirect()->route('sertifikasi.index')->with('toast', [
                 'type' => 'success',
                 'title' => 'Berhasil',
                 'message' => $this->responseMessage($response, 'Sertifikasi berhasil diperbarui.'),
@@ -237,7 +320,7 @@ class SertifikasiController extends Controller
             'nomor_sertifikat' => ['nullable', 'string', 'max:255'],
             'lembaga_penerbit' => ['required', 'string', 'max:255'],
             'status_sertifikasi' => ['required', 'string', 'max:50'],
-            'tahun_sertifikasi' => ['required', 'integer', 'between:1900,2100'],
+            'tahun_sertifikasi' => ['required', 'date_format:Y-m-d'],
             'tanggal_kedaluwarsa' => ['nullable', 'date'],
             'url_drive' => ['nullable', 'url', 'max:2048'],
         ];
@@ -247,16 +330,33 @@ class SertifikasiController extends Controller
     {
         return [
             'jenis_sertifikasi.required' => 'Jenis sertifikasi wajib diisi.',
+            'jenis_sertifikasi.string' => 'Jenis sertifikasi harus berupa teks.',
+            'jenis_sertifikasi.max' => 'Jenis sertifikasi maksimal 255 karakter.',
             'bidang_studi.required' => 'Bidang studi wajib diisi.',
+            'bidang_studi.string' => 'Bidang studi harus berupa teks.',
+            'bidang_studi.max' => 'Bidang studi maksimal 255 karakter.',
+            'nomor_registrasi_pendidik.string' => 'Nomor registrasi pendidik harus berupa teks.',
+            'nomor_registrasi_pendidik.max' => 'Nomor registrasi pendidik maksimal 255 karakter.',
+            'nomor_sk.string' => 'Nomor SK harus berupa teks.',
+            'nomor_sk.max' => 'Nomor SK maksimal 255 karakter.',
+            'nomor_sertifikat.string' => 'Nomor sertifikat harus berupa teks.',
+            'nomor_sertifikat.max' => 'Nomor sertifikat maksimal 255 karakter.',
             'lembaga_penerbit.required' => 'Lembaga penerbit wajib diisi.',
+            'lembaga_penerbit.string' => 'Lembaga penerbit harus berupa teks.',
+            'lembaga_penerbit.max' => 'Lembaga penerbit maksimal 255 karakter.',
             'status_sertifikasi.required' => 'Status sertifikasi wajib dipilih.',
+            'status_sertifikasi.string' => 'Status sertifikasi tidak valid.',
+            'status_sertifikasi.max' => 'Status sertifikasi maksimal 50 karakter.',
             'tahun_sertifikasi.required' => 'Tahun sertifikasi wajib diisi.',
-            'tahun_sertifikasi.integer' => 'Tahun sertifikasi harus berupa angka.',
-            'tanggal_kedaluwarsa.date' => 'Tanggal kedaluwarsa tidak valid.',
+            'tahun_sertifikasi.date_format' => 'Tahun sertifikasi harus berupa tanggal yang valid.',
             'url_drive.url' => 'Tautan sertifikasi harus berupa URL yang valid.',
+            'url_drive.max' => 'Tautan sertifikasi maksimal 2048 karakter.',
+            'tanggal_kedaluwarsa.date' => 'Tanggal kedaluwarsa tidak valid.',
             'owner_type.required' => 'Jenis pemilik wajib dipilih.',
+            'owner_type.in' => 'Jenis pemilik harus Dosen atau Tenaga Kependidikan.',
             'owner_id.required' => 'ID pemilik wajib diisi.',
             'owner_id.integer' => 'ID pemilik harus berupa angka.',
+            'owner_id.min' => 'ID pemilik harus lebih besar dari 0.',
         ];
     }
 
@@ -270,20 +370,30 @@ class SertifikasiController extends Controller
             'nomor_sertifikat' => $validated['nomor_sertifikat'] ?? null,
             'lembaga_penerbit' => $validated['lembaga_penerbit'],
             'status_sertifikasi' => $validated['status_sertifikasi'],
-            'tahun_sertifikasi' => (int) $validated['tahun_sertifikasi'],
+            'tahun_sertifikasi' => $validated['tahun_sertifikasi'],
             'tanggal_kedaluwarsa' => $validated['tanggal_kedaluwarsa'] ?? null,
             'url_drive' => $validated['url_drive'] ?? null,
         ];
     }
 
-    private function ownerQuery(string $ownerType, int $ownerId): array
+    private function isAuthenticatedDosen(): bool
     {
-        $ownerKey = $ownerType === 'dosen' ? 'id_dosen' : 'id_tendik';
+        $user = session('user', []);
+        $roles = is_array($user) && is_array($user['roles'] ?? null) ? $user['roles'] : [];
+        $primaryRole = is_array($roles[0] ?? null)
+            ? ($roles[0]['name'] ?? '')
+            : ($roles[0] ?? '');
+        $role = is_array($user) ? ($user['role'] ?? $primaryRole) : '';
 
-        return [
-            'tipe_pemilik' => $ownerType,
-            $ownerKey => $ownerId,
-        ];
+        return strtolower((string) $role) === 'dosen';
+    }
+
+    private function authenticatedDosenId(): ?int
+    {
+        $user = session('user', []);
+        $ownerId = is_array($user) ? ($user['id_dosen'] ?? $user['id'] ?? null) : null;
+
+        return is_numeric($ownerId) && (int) $ownerId > 0 ? (int) $ownerId : null;
     }
 
     private function successfulResponse(Response $response): bool
@@ -312,7 +422,10 @@ class SertifikasiController extends Controller
             }
 
             if ($fieldErrors !== []) {
-                return back()->withInput()->withErrors($fieldErrors)->with('toast', [
+                // Terjemahkan pesan error yang umum dan/atau datang dari API
+                $translated = $this->translateApiFieldErrors($fieldErrors);
+
+                return back()->withInput()->withErrors($translated)->with('toast', [
                     'type' => 'error',
                     'title' => 'Gagal',
                     'message' => $message,
@@ -338,14 +451,52 @@ class SertifikasiController extends Controller
 
     private function indexRedirect(): RedirectResponse
     {
-        return redirect()->route('sertifikasi.index', request()->only([
-            'search',
-            'tipe_pemilik',
-            'id_dosen',
-            'id_tendik',
-            'tahun_sertifikasi',
-            'status_sertifikasi',
-        ]));
+        return redirect()->route('sertifikasi.index');
+    }
+
+    /**
+     * Translate/normalize API field errors into localized Indonesian messages where possible.
+     *
+     * This helps when the backend returns English messages or uses different field keys
+     * (for example "url_sertifikasi") that the frontend wants to present in Bahasa.
+     *
+     * @param  array<string, array<int, string>>  $fieldErrors
+     * @return array<string, array<int, string>>
+     */
+    private function translateApiFieldErrors(array $fieldErrors): array
+    {
+        $mapFieldToMessage = [
+            // backend may use url_sertifikasi while frontend uses url_drive
+            'url_sertifikasi' => ['Tautan sertifikasi wajib diisi.'],
+            'url_drive' => ['Tautan sertifikasi wajib diisi.'],
+            'tahun_sertifikasi' => ['Tahun sertifikasi tidak valid atau wajib diisi.'],
+            'jenis_sertifikasi' => ['Jenis sertifikasi wajib diisi.'],
+            'bidang_studi' => ['Bidang studi wajib diisi.'],
+        ];
+
+        $translated = [];
+
+        foreach ($fieldErrors as $field => $messages) {
+            // prefer a deterministic translated message when we know the field
+            if (array_key_exists($field, $mapFieldToMessage)) {
+                $translated[$field] = $mapFieldToMessage[$field];
+
+                continue;
+            }
+
+            // fallback: if message looks like the default Laravel english "The {attr} field is required."
+            $first = is_array($messages) && count($messages) ? $messages[0] : null;
+            if (is_string($first) && preg_match('/^The\s+(.+)\s+field\s+is\s+required\./i', $first)) {
+                $translated[$field] = [sprintf('%s wajib diisi.', ucwords(str_replace(['_', '-'], ' ', $field)))];
+
+                continue;
+            }
+
+            // otherwise keep original messages
+            $translated[$field] = $messages;
+        }
+
+        return $translated;
     }
 
     private function redirectToLogin(): RedirectResponse

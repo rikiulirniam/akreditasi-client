@@ -2,15 +2,26 @@
     'headers' => [],
 ])
 
-<div class="w-full overflow-x-auto rounded-[14px] border border-[#E6E6E6] bg-white shadow-sm">
-    <table {{ $attributes->merge(['class' => 'w-full border-separate border-spacing-y-2 text-left text-xs']) }}>
+<div class="w-full overflow-x-auto">
+    <table {{ $attributes->merge(['class' => 'w-full text-left border-collapse table-fixed min-w-[640px]']) }}>
         <thead>
-            <tr class="text-gray-800 font-semibold">
+            <tr class="border-b border-gray-200 text-gray-900 font-semibold text-sm">
                 @if(isset($header))
                     {{ $header }}
                 @elseif(!empty($headers))
                     @foreach($headers as $h)
-                        <th class="py-3.5 px-5 bg-[#D9D9D9] first:rounded-l-[12px] last:rounded-r-[12px] font-bold tracking-tight text-gray-900 text-sm">
+                        @php
+                            $trimmedH = trim(strip_tags((string) $h));
+                            $isNo = in_array(strtolower($trimmedH), ['no', 'no.', '#']);
+                            $isAction = in_array(strtolower($trimmedH), ['action', 'aksi']);
+                            $thClass = 'py-3.5 px-4 sm:px-6 font-semibold tracking-tight text-gray-900 text-sm border-b border-gray-200';
+                            if ($isNo) {
+                                $thClass .= ' w-16 text-left';
+                            } elseif ($isAction) {
+                                $thClass .= ' w-28 text-right';
+                            }
+                        @endphp
+                        <th scope="col" class="{{ $thClass }}">
                             {{ $h }}
                         </th>
                     @endforeach

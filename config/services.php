@@ -43,4 +43,10 @@ return [
         'base_url' => env('TRIDHARMA_API_URL', 'https://tridharma.fayra.my.id/api'),
     ],
 
+    'google' => [
+        'client_id' => env('GOOGLE_CLIENT_ID'),
+        'client_secret' => env('GOOGLE_CLIENT_SECRET'),
+        'redirect' => env('GOOGLE_REDIRECT_URI', env('APP_URL', 'http://localhost:8000').'/auth/google/callback'),
+    ],
+
 ];

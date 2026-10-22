@@ -9,87 +9,205 @@ use Illuminate\Support\Facades\Http;
 
 class TridharmaService
 {
-    public function __construct(
-        protected ?string $baseUrl = null,
-        protected ?string $token = null,
-    ) {}
+    protected string $baseUrl;
 
-    protected function http(): PendingRequest
+    protected ?string $token = null;
+
+    public function __construct(?string $baseUrl = null, ?string $token = null)
     {
+        $this->baseUrl = rtrim($baseUrl ?? (string) config('services.tridharma.base_url', 'https://tridharma.fayra.my.id/api'), '/');
+        $this->token = $token;
+    }
+
+    public function withToken(?string $token = null): static
+    {
+        $clone = clone $this;
+        $clone->token = $token ?? (string) session('access_token');
+
+        return $clone;
+    }
+
+    public function getBaseUrl(): string
+    {
+        return $this->baseUrl;
+    }
+
+    protected function http(?string $token = null): PendingRequest
+    {
+        $resolvedToken = $token ?? $this->token ?? (string) session('access_token');
+
         $client = Http::acceptJson()
             ->asJson()
-            ->timeout(20);
+            ->timeout(30);
 
-        $token = $this->token ?? (string) session('access_token');
-        if ($token !== '') {
-            $client = $client->withToken($token);
+        if (! empty($resolvedToken)) {
+            $client = $client->withToken($resolvedToken);
         }
 
         return $client;
     }
 
-    protected function url(string $endpoint): string
+    protected function buildUrl(string $endpoint): string
     {
-        $configuredBaseUrl = $this->baseUrl ?? (string) config('services.tridharma.base_url');
-        $baseUrl = rtrim($configuredBaseUrl !== '' ? $configuredBaseUrl : 'https://tridharma.fayra.my.id/api', '/');
+        $trimmed = ltrim($endpoint, '/');
 
-        return $baseUrl.'/'.ltrim($endpoint, '/');
-    }
-
-    /** @param array<string, int|string> $query */
-    public function getTendikList(array $query = []): Response
-    {
-        return $this->http()->get($this->url('tendik'), $query);
-    }
-
-    public function getTendik(int|string $id): Response
-    {
-        return $this->http()->get($this->url("tendik/{$id}"));
-    }
-
-    /** @param array{id_pendidikan: int, nama_tendik: string, jabatan_tendik: string, nip: string} $payload */
-    public function createTendik(array $payload): Response
-    {
-        return $this->http()->post($this->url('tendik'), $payload);
-    }
-
-    /** @param array{id_pendidikan: int, nama_tendik: string, jabatan_tendik: string, nip: string} $payload */
-    public function updateTendik(int|string $id, array $payload): Response
-    {
-        return $this->http()->put($this->url("tendik/{$id}"), $payload);
-    }
-
-    public function deleteTendik(int|string $id): Response
-    {
-        return $this->http()->delete($this->url("tendik/{$id}"));
-    }
-
-    public function getPendidikanList(): Response
-    {
-        return $this->http()->get($this->url('pendidikan'));
-    }
-
-    /** @param array<string, int|string> $query */
-    public function getSertifikasiList(array $query = []): Response
-    {
-        return $this->http()->get($this->url('sertifikasi'), $query);
-    }
-
-    /** @param array<string, int|string|null> $payload */
-    public function createSertifikasi(array $payload, ?UploadedFile $evidenceFile = null, bool $asMultipart = false): Response
-    {
-        if ($evidenceFile === null && ! $asMultipart) {
-            return $this->http()->post($this->url('sertifikasi'), $payload);
+        if (str_starts_with($trimmed, 'api/')) {
+            $trimmed = substr($trimmed, 4);
         }
 
-        $request = Http::acceptJson()->timeout(30);
-        $token = $this->token ?? (string) session('access_token');
-        if ($token !== '') {
-            $request = $request->withToken($token);
+        return "{$this->baseUrl}/{$trimmed}";
+    }
+
+    protected function url(string $endpoint): string
+    {
+        return $this->buildUrl($endpoint);
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Generic HTTP Request Helpers
+    |--------------------------------------------------------------------------
+    */
+
+    public function get(string $endpoint, array $query = [], ?string $token = null): Response
+    {
+        return $this->http($token)->get($this->buildUrl($endpoint), $query);
+    }
+
+    public function post(string $endpoint, array $data = [], ?string $token = null): Response
+    {
+        return $this->http($token)->post($this->buildUrl($endpoint), $data);
+    }
+
+    public function put(string $endpoint, array $data = [], ?string $token = null): Response
+    {
+        return $this->http($token)->put($this->buildUrl($endpoint), $data);
+    }
+
+    public function delete(string $endpoint, array $data = [], ?string $token = null): Response
+    {
+        return $this->http($token)->delete($this->buildUrl($endpoint), $data);
+    }
+
+    /*
+    |==========================================================================
+    | MODUL: DOSEN (/api/dosen/*)
+    |==========================================================================
+    */
+
+    public function getDosenList(array $query = [], ?string $token = null): Response
+    {
+        return $this->get('dosen', $query, $token);
+    }
+
+    public function getDosenById(int|string $id, ?string $token = null): Response
+    {
+        return $this->get("dosen/{$id}", [], $token);
+    }
+
+    public function createDosen(array $data, ?string $token = null): Response
+    {
+        return $this->post('dosen', $data, $token);
+    }
+
+    public function updateDosen(int|string $id, array $data, ?string $token = null): Response
+    {
+        return $this->put("dosen/{$id}", $data, $token);
+    }
+
+    public function deleteDosen(int|string $id, ?string $token = null): Response
+    {
+        return $this->delete("dosen/{$id}", [], $token);
+    }
+
+    public function restoreDosen(int|string $id, ?string $token = null): Response
+    {
+        return $this->post("dosen/{$id}/restore", [], $token);
+    }
+
+    public function importDosenExcel(UploadedFile $file, ?string $token = null): Response
+    {
+        $resolvedToken = $token ?? $this->token ?? (string) session('access_token');
+        $client = Http::acceptJson()->timeout(60);
+
+        if (! empty($resolvedToken)) {
+            $client = $client->withToken($resolvedToken);
+        }
+
+        return $client->attach(
+            'file',
+            file_get_contents($file->getRealPath()),
+            $file->getClientOriginalName()
+        )->post($this->buildUrl('dosen/import'));
+    }
+
+    /*
+    |==========================================================================
+    | MODUL: TENDIK (/api/tendik/*)
+    |==========================================================================
+    */
+
+    public function getTendikList(array $query = [], ?string $token = null): Response
+    {
+        return $this->get('tendik', $query, $token);
+    }
+
+    public function getTendik(int|string $id, ?string $token = null): Response
+    {
+        return $this->get("tendik/{$id}", [], $token);
+    }
+
+    public function createTendik(array $data, ?string $token = null): Response
+    {
+        return $this->post('tendik', $data, $token);
+    }
+
+    public function updateTendik(int|string $id, array $data, ?string $token = null): Response
+    {
+        return $this->put("tendik/{$id}", $data, $token);
+    }
+
+    public function deleteTendik(int|string $id, ?string $token = null): Response
+    {
+        return $this->delete("tendik/{$id}", [], $token);
+    }
+
+    /*
+    |==========================================================================
+    | MODUL: SERTIFIKASI (/api/sertifikasi/*)
+    |==========================================================================
+    */
+
+    public function getSertifikasiList(array $query = [], ?string $token = null): Response
+    {
+        return $this->get('sertifikasi', $query, $token);
+    }
+
+    public function getSertifikasiById(int|string $id, ?string $token = null): Response
+    {
+        return $this->get("sertifikasi/{$id}", [], $token);
+    }
+
+    public function getSertifikasi(int|string $id, ?string $token = null): Response
+    {
+        return $this->getSertifikasiById($id, $token);
+    }
+
+    public function createSertifikasi(array $data, ?UploadedFile $evidenceFile = null, bool $asMultipart = false, ?string $token = null): Response
+    {
+        if ($evidenceFile === null && ! $asMultipart) {
+            return $this->post('sertifikasi', $data, $token);
+        }
+
+        $resolvedToken = $token ?? $this->token ?? (string) session('access_token');
+        $client = Http::acceptJson()->timeout(30);
+
+        if (! empty($resolvedToken)) {
+            $client = $client->withToken($resolvedToken);
         }
 
         $multipart = [];
-        foreach ($payload as $name => $value) {
+        foreach ($data as $name => $value) {
             if ($value !== null && $value !== '') {
                 $multipart[] = [
                     'name' => $name,
@@ -106,27 +224,37 @@ class TridharmaService
             ];
         }
 
-        return $request->send('POST', $this->url('sertifikasi'), ['multipart' => $multipart]);
+        return $client->send('POST', $this->buildUrl('sertifikasi'), ['multipart' => $multipart]);
     }
 
-    public function getSertifikasi(int|string $id): Response
+    public function updateSertifikasi(int|string $id, array $data, ?string $token = null): Response
     {
-        return $this->http()->get($this->url("sertifikasi/{$id}"));
+        return $this->put("sertifikasi/{$id}", $data, $token);
     }
 
-    public function getSertifikasiById(int|string $id): Response
+    public function deleteSertifikasi(int|string $id, ?string $token = null): Response
     {
-        return $this->getSertifikasi($id);
+        return $this->delete("sertifikasi/{$id}", [], $token);
     }
 
-    /** @param array<string, int|string|null> $payload */
-    public function updateSertifikasi(int|string $id, array $payload): Response
+    /*
+    |==========================================================================
+    | MASTER DATA (Jabatan Akademik, Pendidikan, Bidang Keahlian)
+    |==========================================================================
+    */
+
+    public function getJabatanAkademikList(array $query = [], ?string $token = null): Response
     {
-        return $this->http()->put($this->url("sertifikasi/{$id}"), $payload);
+        return $this->get('jabatan-akademik', $query, $token);
     }
 
-    public function deleteSertifikasi(int|string $id): Response
+    public function getPendidikanList(array $query = [], ?string $token = null): Response
     {
-        return $this->http()->delete($this->url("sertifikasi/{$id}"));
+        return $this->get('pendidikan', $query, $token);
+    }
+
+    public function getBidangKeahlianList(array $query = [], ?string $token = null): Response
+    {
+        return $this->get('bidang-keahlian', $query, $token);
     }
 }

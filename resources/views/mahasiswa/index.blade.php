@@ -1,0 +1,762 @@
+@extends('layouts.app')
+
+@section('title', 'Data Mahasiswa')
+
+@section('content')
+<div class="space-y-6">
+    <div class="space-y-4">
+        <!-- Top Action Bar: Search Input & Tambah Mahasiswa Button -->
+        <div class="flex items-center justify-between gap-3">
+            <div class="relative flex-1 max-w-sm">
+                <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-gray-400">
+                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
+                    </svg>
+                </span>
+                <x-input 
+                    type="text" 
+                    id="searchMahasiswaInput"
+                    placeholder="Cari..." 
+                    class="pl-10 text-xs"
+                />
+            </div>
+            <div>
+                <button 
+                    type="button" 
+                    id="openCreateMahasiswaModalBtn"
+                    class="inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-primary text-white text-sm font-bold shadow-sm hover:bg-additional transition cursor-pointer"
+                >
+                    <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                    </svg>
+                    Tambah Mahasiswa
+                </button>
+            </div>
+        </div>
+
+        <!-- Table: Data Mahasiswa -->
+        <x-table>
+            <x-slot:header>
+                <x-table.th class="w-16">No</x-table.th>
+                <x-table.th>Nama Mahasiswa</x-table.th>
+                <x-table.th>NIM</x-table.th>
+                <x-table.th>Tahun Masuk</x-table.th>
+                <x-table.th>Tanggal Kelulusan</x-table.th>
+                <x-table.th class="w-28 text-right">Action</x-table.th>
+            </x-slot:header>
+
+            @forelse($mahasiswaList as $index => $item)
+                @php
+                    $rowNumber = $index + 1 + (($pagination['current_page'] - 1) * $pagination['per_page']);
+                    $id = $item['id'] ?? '';
+                    $nama = $item['nama_mahasiswa'] ?? $item['nama'] ?? '-';
+                    $nim = $item['nim_display'] ?? $item['nim'] ?? '-';
+                    $tahunMasuk = $item['tahun_masuk'] ?? '-';
+                    $jenisPendaftaran = $item['jenis_pendaftaran'] ?? 'Reguler';
+                    $rawKelulusan = $item['tanggal_kelulusan'] ?? '';
+                    $formattedKelulusan = !empty($rawKelulusan) ? \Carbon\Carbon::parse($rawKelulusan)->format('d-m-Y') : '-';
+                    $masaStudi = $item['masa_studi_bulan'] ?? 48;
+                @endphp
+                <x-table.row class="mahasiswa-row">
+                    <!-- No -->
+                    <x-table.cell class="text-gray-500 font-medium w-16">
+                        {{ $rowNumber }}
+                    </x-table.cell>
+
+                    <!-- Nama Mahasiswa -->
+                    <x-table.cell>
+                        <span class="font-extrabold text-sm text-gray-900 mahasiswa-nama tracking-tight font-mono">
+                            {{ $nama }}
+                        </span>
+                    </x-table.cell>
+
+                    <!-- NIM -->
+                    <x-table.cell>
+                        <span class="font-mono text-sm text-gray-700 mahasiswa-nim">
+                            {{ $nim }}
+                        </span>
+                    </x-table.cell>
+
+                    <!-- Tahun Masuk -->
+                    <x-table.cell>
+                        <span class="text-sm font-medium text-gray-700 mahasiswa-tahun">
+                            {{ $tahunMasuk }}
+                        </span>
+                    </x-table.cell>
+
+                    <!-- Tanggal Kelulusan -->
+                    <x-table.cell>
+                        <span class="text-sm font-medium text-gray-700 mahasiswa-kelulusan">
+                            {{ $formattedKelulusan }}
+                        </span>
+                    </x-table.cell>
+
+                    <!-- Action: Edit (Yellow), Delete (Red), View / Detail (Navy) -->
+                    <x-table.cell class="w-28">
+                        <div class="flex items-center justify-end gap-3">
+                            <!-- Edit Mahasiswa Icon (Yellow) -->
+                            <button 
+                                type="button" 
+                                class="open-edit-mahasiswa-btn text-[#F59E0B] hover:text-[#D97706] transition p-1 cursor-pointer"
+                                title="Edit Mahasiswa"
+                                data-id="{{ $id }}"
+                                data-action="{{ route('mahasiswa.update', $id) }}"
+                                data-nama="{{ $nama }}"
+                                data-nim="{{ $nim }}"
+                                data-tahun="{{ $tahunMasuk }}"
+                                data-jenis="{{ $jenisPendaftaran }}"
+                                data-kelulusan="{{ $rawKelulusan }}"
+                                data-masa-studi="{{ $masaStudi }}"
+                            >
+                                <x-icon.edit class="w-5 h-5" />
+                            </button>
+
+                            <!-- Delete Mahasiswa Icon (Red) -->
+                            <button 
+                                type="button" 
+                                class="text-[#DC2626] hover:text-[#B91C1C] transition p-1 cursor-pointer"
+                                title="Hapus Mahasiswa"
+                                data-confirm-delete
+                                data-action="{{ route('mahasiswa.destroy', $id) }}"
+                                data-title="Hapus Data Mahasiswa?"
+                                data-message="Apakah Anda yakin ingin menghapus data mahasiswa {{ $nama }} (NIM: {{ $nim }})? Tindakan ini bersifat permanen dan data tidak dapat dikembalikan."
+                            >
+                                <x-icon.delete class="w-5 h-5" />
+                            </button>
+
+                            <!-- View / Detail Mahasiswa Icon (Navy Blue) -->
+                            <button 
+                                type="button" 
+                                class="open-detail-mahasiswa-btn text-primary hover:text-additional transition p-1 cursor-pointer"
+                                title="Detail Mahasiswa"
+                                data-id="{{ $id }}"
+                                data-action-update="{{ route('mahasiswa.update', $id) }}"
+                                data-action-destroy="{{ route('mahasiswa.destroy', $id) }}"
+                                data-nama="{{ $nama }}"
+                                data-nim="{{ $nim }}"
+                                data-tahun="{{ $tahunMasuk }}"
+                                data-jenis="{{ $jenisPendaftaran }}"
+                                data-kelulusan="{{ $formattedKelulusan }}"
+                                data-kelulusan-raw="{{ $rawKelulusan }}"
+                                data-masa-studi="{{ $masaStudi }}"
+                            >
+                                <x-icon.eye class="w-5 h-5" />
+                            </button>
+                        </div>
+                    </x-table.cell>
+                </x-table.row>
+            @empty
+                <x-table.empty colspan="6" message="Belum ada data mahasiswa" submessage="Silakan klik tombol Tambah Mahasiswa untuk menambahkan data baru." />
+            @endforelse
+        </x-table>
+
+        <!-- Pagination -->
+        <x-pagination :paginator="$pagination" />
+    </div>
+</div>
+
+<!-- ========================================== -->
+<!-- MODAL: Tambahkan Mahasiswa -->
+<!-- ========================================== -->
+<div 
+    id="createMahasiswaModal" 
+    class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/45 opacity-0 pointer-events-none transition-all duration-200 select-none"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="createMahasiswaModalTitle"
+>
+    <div class="mahasiswa-modal-card relative bg-white rounded-[28px] p-8 max-w-[460px] w-full shadow-2xl text-left transform scale-95 transition-all duration-200 max-h-[92vh] overflow-y-auto">
+        <h3 id="createMahasiswaModalTitle" class="text-xl font-bold text-gray-900 tracking-tight text-center mb-6">
+            Tambahkan Mahasiswa
+        </h3>
+
+        <form action="{{ route('mahasiswa.store') }}" method="POST" class="space-y-4">
+            @csrf
+
+            <!-- Field: Nama Mahasiswa -->
+            <div>
+                <label for="createNamaInput" class="block text-xs font-bold text-gray-900 mb-1.5">
+                    Nama Mahasiswa
+                </label>
+                <input 
+                    type="text" 
+                    name="nama_mahasiswa" 
+                    id="createNamaInput" 
+                    placeholder="Isi nama" 
+                    required 
+                    class="w-full px-4 py-2.5 rounded-[10px] bg-white-form border-none text-sm font-medium text-gray-900 focus:ring-2 focus:ring-additional/30 focus:outline-none placeholder:text-gray-500"
+                >
+            </div>
+
+            <!-- Field: NIM -->
+            <div>
+                <label for="createNimInput" class="block text-xs font-bold text-gray-900 mb-1.5">
+                    NIM
+                </label>
+                <input 
+                    type="text" 
+                    name="nim" 
+                    id="createNimInput" 
+                    placeholder="Masukkan NIM" 
+                    required 
+                    class="w-full px-4 py-2.5 rounded-[10px] bg-white-form border-none text-sm font-medium text-gray-900 focus:ring-2 focus:ring-additional/30 focus:outline-none placeholder:text-gray-500"
+                >
+            </div>
+
+            <!-- Field: Tahun Masuk -->
+            <div>
+                <label for="createTahunInput" class="block text-xs font-bold text-gray-900 mb-1.5">
+                    Tahun Masuk
+                </label>
+                <div class="relative">
+                    <select 
+                        name="tahun_masuk" 
+                        id="createTahunInput" 
+                        required 
+                        class="w-full px-4 py-2.5 rounded-[10px] bg-white-form border-none text-sm font-medium text-gray-900 focus:ring-2 focus:ring-additional/30 focus:outline-none appearance-none cursor-pointer"
+                    >
+                        <option value="" disabled selected>Pilih Tahun Masuk</option>
+                        @foreach($tahunOptions as $th)
+                            <option value="{{ $th }}">{{ $th }}</option>
+                        @endforeach
+                    </select>
+                    <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-gray-600">
+                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
+                        </svg>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Field: Jenis Pendaftaran -->
+            <div>
+                <label for="createJenisInput" class="block text-xs font-bold text-gray-900 mb-1.5">
+                    Jenis Pendaftaran
+                </label>
+                <div class="relative">
+                    <select 
+                        name="jenis_pendaftaran" 
+                        id="createJenisInput" 
+                        required 
+                        class="w-full px-4 py-2.5 rounded-[10px] bg-white-form border-none text-sm font-medium text-gray-900 focus:ring-2 focus:ring-additional/30 focus:outline-none appearance-none cursor-pointer"
+                    >
+                        <option value="" disabled selected>Pilih Jenis Pendaftaran</option>
+                        @foreach($jenisPendaftaranOptions as $jenis)
+                            <option value="{{ $jenis }}">{{ $jenis }}</option>
+                        @endforeach
+                    </select>
+                    <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-gray-600">
+                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
+                        </svg>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Field: Tanggal Kelulusan -->
+            <div>
+                <label for="createKelulusanInput" class="block text-xs font-bold text-gray-900 mb-1.5">
+                    Tanggal Kelulusan
+                </label>
+                <input 
+                    type="date" 
+                    name="tanggal_kelulusan" 
+                    id="createKelulusanInput" 
+                    class="w-full px-4 py-2.5 rounded-[10px] bg-white-form border-none text-sm font-medium text-gray-900 focus:ring-2 focus:ring-additional/30 focus:outline-none placeholder:text-gray-500 cursor-pointer"
+                >
+            </div>
+
+            <!-- Field: Masa Studi -->
+            <div>
+                <label for="createMasaStudiInput" class="block text-xs font-bold text-gray-900 mb-1.5">
+                    Masa Studi (Bulan)
+                </label>
+                <input 
+                    type="number" 
+                    name="masa_studi_bulan" 
+                    id="createMasaStudiInput" 
+                    placeholder="Isi Masa Studi (contoh: 48)" 
+                    value="48"
+                    min="1"
+                    max="120"
+                    required
+                    class="w-full px-4 py-2.5 rounded-[10px] bg-white-form border-none text-sm font-medium text-gray-900 focus:ring-2 focus:ring-additional/30 focus:outline-none placeholder:text-gray-500"
+                >
+            </div>
+
+            <!-- Modal Action Buttons (Batal & Simpan) -->
+            <div class="grid grid-cols-2 gap-4 pt-4">
+                <button 
+                    type="button" 
+                    class="close-mahasiswa-modal w-full py-3 px-6 rounded-xl bg-white-form hover:bg-gray-300 text-black font-bold text-sm transition cursor-pointer text-center"
+                >
+                    Batal
+                </button>
+                <button 
+                    type="submit" 
+                    class="w-full py-3 px-6 rounded-xl bg-additional hover:bg-[#01426c] text-white font-bold text-sm shadow-sm transition cursor-pointer text-center"
+                >
+                    Simpan
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- ========================================== -->
+<!-- MODAL: Detail Data Mahasiswa (Identik dengan Detail Prodi) -->
+<!-- ========================================== -->
+<div 
+    id="detailMahasiswaModal" 
+    class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/45 opacity-0 pointer-events-none transition-all duration-200 select-none"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="detailMahasiswaModalTitle"
+>
+    <div class="mahasiswa-modal-card relative bg-white rounded-[28px] p-8 max-w-[460px] w-full shadow-2xl text-left transform scale-95 transition-all duration-200 max-h-[92vh] overflow-y-auto">
+        <h3 id="detailMahasiswaModalTitle" class="text-xl font-bold text-gray-900 tracking-tight text-center mb-6">
+            Detail Data Mahasiswa
+        </h3>
+
+        <div class="space-y-4">
+            <!-- Field 1: Nama Mahasiswa -->
+            <div>
+                <label class="block text-xs font-bold text-gray-900 mb-1.5">Nama Mahasiswa</label>
+                <input 
+                    type="text" 
+                    id="viewMahasiswaNama" 
+                    readonly 
+                    class="w-full px-4 py-2.5 rounded-[10px] bg-white-form border-none text-sm font-medium text-gray-800 cursor-default select-none focus:outline-none"
+                >
+            </div>
+
+            <!-- Field 2: NIM -->
+            <div>
+                <label class="block text-xs font-bold text-gray-900 mb-1.5">NIM</label>
+                <input 
+                    type="text" 
+                    id="viewMahasiswaNim" 
+                    readonly 
+                    class="w-full px-4 py-2.5 rounded-[10px] bg-white-form border-none text-sm font-medium font-mono text-gray-800 cursor-default select-none focus:outline-none"
+                >
+            </div>
+
+            <!-- Field 3: Tahun Masuk -->
+            <div>
+                <label class="block text-xs font-bold text-gray-900 mb-1.5">Tahun Masuk</label>
+                <input 
+                    type="text" 
+                    id="viewMahasiswaTahun" 
+                    readonly 
+                    class="w-full px-4 py-2.5 rounded-[10px] bg-white-form border-none text-sm font-medium text-gray-800 cursor-default select-none focus:outline-none"
+                >
+            </div>
+
+            <!-- Field 4: Jenis Pendaftaran -->
+            <div>
+                <label class="block text-xs font-bold text-gray-900 mb-1.5">Jenis Pendaftaran</label>
+                <input 
+                    type="text" 
+                    id="viewMahasiswaJenis" 
+                    readonly 
+                    class="w-full px-4 py-2.5 rounded-[10px] bg-white-form border-none text-sm font-medium text-gray-800 cursor-default select-none focus:outline-none"
+                >
+            </div>
+
+            <!-- Field 5: Tanggal Kelulusan -->
+            <div>
+                <label class="block text-xs font-bold text-gray-900 mb-1.5">Tanggal Kelulusan</label>
+                <input 
+                    type="text" 
+                    id="viewMahasiswaKelulusan" 
+                    readonly 
+                    class="w-full px-4 py-2.5 rounded-[10px] bg-white-form border-none text-sm font-medium text-gray-800 cursor-default select-none focus:outline-none"
+                >
+            </div>
+
+            <!-- Field 6: Masa Studi -->
+            <div>
+                <label class="block text-xs font-bold text-gray-900 mb-1.5">Masa Studi</label>
+                <input 
+                    type="text" 
+                    id="viewMahasiswaMasaStudi" 
+                    readonly 
+                    class="w-full px-4 py-2.5 rounded-[10px] bg-white-form border-none text-sm font-medium text-gray-800 cursor-default select-none focus:outline-none"
+                >
+            </div>
+
+            <!-- Action Buttons: Hapus Data (Red), Edit Data (Yellow), OK (Navy) - Identik dengan Detail Prodi -->
+            <div class="grid grid-cols-3 gap-2.5 pt-4">
+                <button 
+                    type="button" 
+                    id="btnDetailHapusMahasiswa"
+                    class="w-full flex items-center justify-center gap-1.5 py-3 px-2 rounded-xl bg-[#C9352B] hover:bg-[#b02c23] text-white font-bold text-xs sm:text-sm transition cursor-pointer text-center"
+                >
+                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
+                    </svg>
+                    Hapus Data
+                </button>
+                <button 
+                    type="button" 
+                    id="btnDetailEditMahasiswa"
+                    class="w-full flex items-center justify-center gap-1.5 py-3 px-2 rounded-xl bg-[#EAB308] hover:bg-[#ca8a04] text-white font-bold text-xs sm:text-sm transition cursor-pointer text-center"
+                >
+                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10" />
+                    </svg>
+                    Edit Data
+                </button>
+                <button 
+                    type="button" 
+                    class="close-mahasiswa-modal w-full py-3 px-2 rounded-xl bg-additional hover:bg-[#01426c] text-white font-bold text-xs sm:text-sm transition cursor-pointer text-center"
+                >
+                    OK
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ========================================== -->
+<!-- MODAL: Update Mahasiswa -->
+<!-- ========================================== -->
+<div 
+    id="editMahasiswaModal" 
+    class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/45 opacity-0 pointer-events-none transition-all duration-200 select-none"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="editMahasiswaModalTitle"
+>
+    <div class="mahasiswa-modal-card relative bg-white rounded-[28px] p-8 max-w-[460px] w-full shadow-2xl text-left transform scale-95 transition-all duration-200 max-h-[92vh] overflow-y-auto">
+        <h3 id="editMahasiswaModalTitle" class="text-xl font-bold text-gray-900 tracking-tight text-center mb-6">
+            Update Mahasiswa
+        </h3>
+
+        <form id="editMahasiswaForm" action="" method="POST" class="space-y-4">
+            @csrf
+            @method('PUT')
+
+            <!-- Field: Nama Mahasiswa -->
+            <div>
+                <label for="editNamaInput" class="block text-xs font-bold text-gray-900 mb-1.5">
+                    Nama Mahasiswa
+                </label>
+                <input 
+                    type="text" 
+                    name="nama_mahasiswa" 
+                    id="editNamaInput" 
+                    placeholder="Isi nama" 
+                    required 
+                    class="w-full px-4 py-2.5 rounded-[10px] bg-white-form border-none text-sm font-medium text-gray-900 focus:ring-2 focus:ring-additional/30 focus:outline-none placeholder:text-gray-500"
+                >
+            </div>
+
+            <!-- Field: NIM -->
+            <div>
+                <label for="editNimInput" class="block text-xs font-bold text-gray-900 mb-1.5">
+                    NIM
+                </label>
+                <input 
+                    type="text" 
+                    name="nim" 
+                    id="editNimInput" 
+                    placeholder="Masukkan NIM" 
+                    required 
+                    class="w-full px-4 py-2.5 rounded-[10px] bg-white-form border-none text-sm font-medium text-gray-900 focus:ring-2 focus:ring-additional/30 focus:outline-none placeholder:text-gray-500"
+                >
+            </div>
+
+            <!-- Field: Tahun Masuk -->
+            <div>
+                <label for="editTahunInput" class="block text-xs font-bold text-gray-900 mb-1.5">
+                    Tahun Masuk
+                </label>
+                <div class="relative">
+                    <select 
+                        name="tahun_masuk" 
+                        id="editTahunInput" 
+                        required 
+                        class="w-full px-4 py-2.5 rounded-[10px] bg-white-form border-none text-sm font-medium text-gray-900 focus:ring-2 focus:ring-additional/30 focus:outline-none appearance-none cursor-pointer"
+                    >
+                        <option value="" disabled>Pilih Tahun Masuk</option>
+                        @foreach($tahunOptions as $th)
+                            <option value="{{ $th }}">{{ $th }}</option>
+                        @endforeach
+                    </select>
+                    <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-gray-600">
+                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
+                        </svg>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Field: Jenis Pendaftaran -->
+            <div>
+                <label for="editJenisInput" class="block text-xs font-bold text-gray-900 mb-1.5">
+                    Jenis Pendaftaran
+                </label>
+                <div class="relative">
+                    <select 
+                        name="jenis_pendaftaran" 
+                        id="editJenisInput" 
+                        required 
+                        class="w-full px-4 py-2.5 rounded-[10px] bg-white-form border-none text-sm font-medium text-gray-900 focus:ring-2 focus:ring-additional/30 focus:outline-none appearance-none cursor-pointer"
+                    >
+                        <option value="" disabled>Pilih Jenis Pendaftaran</option>
+                        @foreach($jenisPendaftaranOptions as $jenis)
+                            <option value="{{ $jenis }}">{{ $jenis }}</option>
+                        @endforeach
+                    </select>
+                    <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-gray-600">
+                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
+                        </svg>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Field: Tanggal Kelulusan -->
+            <div>
+                <label for="editKelulusanInput" class="block text-xs font-bold text-gray-900 mb-1.5">
+                    Tanggal Kelulusan
+                </label>
+                <input 
+                    type="date" 
+                    name="tanggal_kelulusan" 
+                    id="editKelulusanInput" 
+                    class="w-full px-4 py-2.5 rounded-[10px] bg-white-form border-none text-sm font-medium text-gray-900 focus:ring-2 focus:ring-additional/30 focus:outline-none placeholder:text-gray-500 cursor-pointer"
+                >
+            </div>
+
+            <!-- Field: Masa Studi -->
+            <div>
+                <label for="editMasaStudiInput" class="block text-xs font-bold text-gray-900 mb-1.5">
+                    Masa Studi (Bulan)
+                </label>
+                <input 
+                    type="number" 
+                    name="masa_studi_bulan" 
+                    id="editMasaStudiInput" 
+                    placeholder="Isi Masa Studi" 
+                    min="1"
+                    max="120"
+                    required 
+                    class="w-full px-4 py-2.5 rounded-[10px] bg-white-form border-none text-sm font-medium text-gray-900 focus:ring-2 focus:ring-additional/30 focus:outline-none placeholder:text-gray-500"
+                >
+            </div>
+
+            <!-- Modal Action Buttons (Batal & Simpan) -->
+            <div class="grid grid-cols-2 gap-4 pt-4">
+                <button 
+                    type="button" 
+                    class="close-mahasiswa-modal w-full py-3 px-6 rounded-xl bg-white-form hover:bg-gray-300 text-black font-bold text-sm transition cursor-pointer text-center"
+                >
+                    Batal
+                </button>
+                <button 
+                    type="submit" 
+                    class="w-full py-3 px-6 rounded-xl bg-additional hover:bg-[#01426c] text-white font-bold text-sm shadow-sm transition cursor-pointer text-center"
+                >
+                    Simpan
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        // Table Search Filtering
+        const searchInput = document.getElementById('searchMahasiswaInput');
+        const rows = document.querySelectorAll('.mahasiswa-row');
+
+        if (searchInput) {
+            searchInput.addEventListener('input', function () {
+                const keyword = this.value.toLowerCase().trim();
+                rows.forEach(row => {
+                    const nama = row.querySelector('.mahasiswa-nama')?.textContent.toLowerCase() || '';
+                    const nim = row.querySelector('.mahasiswa-nim')?.textContent.toLowerCase() || '';
+                    const tahun = row.querySelector('.mahasiswa-tahun')?.textContent.toLowerCase() || '';
+                    row.style.display = (!keyword || nama.includes(keyword) || nim.includes(keyword) || tahun.includes(keyword)) ? '' : 'none';
+                });
+            });
+        }
+
+        // Modal Helpers
+        function showModal(modalEl) {
+            if (!modalEl) return;
+            const card = modalEl.querySelector('.mahasiswa-modal-card');
+            modalEl.classList.remove('opacity-0', 'pointer-events-none');
+            modalEl.classList.add('opacity-100');
+            if (card) {
+                card.classList.remove('scale-95');
+                card.classList.add('scale-100');
+            }
+        }
+
+        function hideModal(modalEl) {
+            if (!modalEl) return;
+            const card = modalEl.querySelector('.mahasiswa-modal-card');
+            modalEl.classList.remove('opacity-100');
+            modalEl.classList.add('opacity-0', 'pointer-events-none');
+            if (card) {
+                card.classList.remove('scale-100');
+                card.classList.add('scale-95');
+            }
+        }
+
+        // Create Modal
+        const createModal = document.getElementById('createMahasiswaModal');
+        const openCreateBtn = document.getElementById('openCreateMahasiswaModalBtn');
+        const createNamaInput = document.getElementById('createNamaInput');
+
+        if (openCreateBtn) {
+            openCreateBtn.addEventListener('click', function () {
+                const form = createModal?.querySelector('form');
+                if (form) form.reset();
+                const defaultMasaStudi = document.getElementById('createMasaStudiInput');
+                if (defaultMasaStudi) defaultMasaStudi.value = '48';
+
+                showModal(createModal);
+                setTimeout(() => createNamaInput?.focus(), 100);
+            });
+        }
+
+        // Edit Modal
+        const editModal = document.getElementById('editMahasiswaModal');
+        const editForm = document.getElementById('editMahasiswaForm');
+        const editNama = document.getElementById('editNamaInput');
+        const editNim = document.getElementById('editNimInput');
+        const editTahun = document.getElementById('editTahunInput');
+        const editJenis = document.getElementById('editJenisInput');
+        const editKelulusan = document.getElementById('editKelulusanInput');
+        const editMasaStudi = document.getElementById('editMasaStudiInput');
+
+        function populateAndShowEdit(data) {
+            if (editForm) editForm.action = data.action || '';
+            if (editNama) editNama.value = data.nama || '';
+            if (editNim) editNim.value = data.nim || '';
+            if (editTahun) editTahun.value = data.tahun || '';
+            if (editJenis) editJenis.value = data.jenis || '';
+            if (editKelulusan) editKelulusan.value = data.kelulusan || '';
+            if (editMasaStudi) editMasaStudi.value = data.masaStudi || '48';
+
+            showModal(editModal);
+            setTimeout(() => editNama?.focus(), 100);
+        }
+
+        document.querySelectorAll('.open-edit-mahasiswa-btn').forEach(btn => {
+            btn.addEventListener('click', function () {
+                populateAndShowEdit({
+                    action: this.getAttribute('data-action'),
+                    nama: this.getAttribute('data-nama'),
+                    nim: this.getAttribute('data-nim'),
+                    tahun: this.getAttribute('data-tahun'),
+                    jenis: this.getAttribute('data-jenis'),
+                    kelulusan: this.getAttribute('data-kelulusan'),
+                    masaStudi: this.getAttribute('data-masa-studi')
+                });
+            });
+        });
+
+        // Detail Modal
+        const detailModal = document.getElementById('detailMahasiswaModal');
+        const viewNama = document.getElementById('viewMahasiswaNama');
+        const viewNim = document.getElementById('viewMahasiswaNim');
+        const viewTahun = document.getElementById('viewMahasiswaTahun');
+        const viewJenis = document.getElementById('viewMahasiswaJenis');
+        const viewKelulusan = document.getElementById('viewMahasiswaKelulusan');
+        const viewMasaStudi = document.getElementById('viewMahasiswaMasaStudi');
+        const btnDetailHapus = document.getElementById('btnDetailHapusMahasiswa');
+        const btnDetailEdit = document.getElementById('btnDetailEditMahasiswa');
+
+        let currentDetailData = null;
+
+        document.querySelectorAll('.open-detail-mahasiswa-btn').forEach(btn => {
+            btn.addEventListener('click', function () {
+                currentDetailData = {
+                    id: this.getAttribute('data-id'),
+                    actionUpdate: this.getAttribute('data-action-update'),
+                    actionDestroy: this.getAttribute('data-action-destroy'),
+                    nama: this.getAttribute('data-nama'),
+                    nim: this.getAttribute('data-nim'),
+                    tahun: this.getAttribute('data-tahun'),
+                    jenis: this.getAttribute('data-jenis'),
+                    kelulusan: this.getAttribute('data-kelulusan'),
+                    kelulusanRaw: this.getAttribute('data-kelulusan-raw'),
+                    masaStudi: this.getAttribute('data-masa-studi')
+                };
+
+                if (viewNama) viewNama.value = currentDetailData.nama || '-';
+                if (viewNim) viewNim.value = currentDetailData.nim || '-';
+                if (viewTahun) viewTahun.value = currentDetailData.tahun || '-';
+                if (viewJenis) viewJenis.value = currentDetailData.jenis || '-';
+                if (viewKelulusan) viewKelulusan.value = currentDetailData.kelulusan || '-';
+                if (viewMasaStudi) viewMasaStudi.value = (currentDetailData.masaStudi || '48') + ' Bulan';
+
+                showModal(detailModal);
+            });
+        });
+
+        // Trigger "Edit Data" from Detail Modal
+        if (btnDetailEdit) {
+            btnDetailEdit.addEventListener('click', function () {
+                if (!currentDetailData) return;
+                hideModal(detailModal);
+                setTimeout(() => {
+                    populateAndShowEdit({
+                        action: currentDetailData.actionUpdate,
+                        nama: currentDetailData.nama,
+                        nim: currentDetailData.nim,
+                        tahun: currentDetailData.tahun,
+                        jenis: currentDetailData.jenis,
+                        kelulusan: currentDetailData.kelulusanRaw,
+                        masaStudi: currentDetailData.masaStudi
+                    });
+                }, 150);
+            });
+        }
+
+        // Trigger "Hapus Data" from Detail Modal (using global openConfirmDeleteModal)
+        if (btnDetailHapus) {
+            btnDetailHapus.addEventListener('click', function () {
+                if (!currentDetailData) return;
+                hideModal(detailModal);
+
+                if (window.openConfirmDeleteModal) {
+                    window.openConfirmDeleteModal({
+                        action: currentDetailData.actionDestroy,
+                        title: 'Hapus Data Mahasiswa?',
+                        message: `Apakah Anda yakin ingin menghapus data mahasiswa ${currentDetailData.nama} (NIM: ${currentDetailData.nim})? Tindakan ini bersifat permanen dan data tidak dapat dikembalikan.`
+                    });
+                }
+            });
+        }
+
+        // Close Buttons on all modals
+        document.querySelectorAll('.close-mahasiswa-modal').forEach(btn => {
+            btn.addEventListener('click', function () {
+                hideModal(this.closest('[role="dialog"]'));
+            });
+        });
+
+        // Close on Backdrop Click
+        [createModal, editModal, detailModal].forEach(m => {
+            m?.addEventListener('click', function (e) {
+                if (e.target === m) hideModal(m);
+            });
+        });
+
+        // Close on Escape Key
+        document.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape') {
+                hideModal(createModal);
+                hideModal(editModal);
+                hideModal(detailModal);
+            }
+        });
+    });
+</script>
+@endsection
