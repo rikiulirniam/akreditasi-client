@@ -261,6 +261,36 @@ class PendidikanPageTest extends TestCase
             && (int) $request['id_pendidikan'] === 10);
     }
 
+    public function test_store_from_dosen_context_links_new_education_and_preserves_context(): void
+    {
+        Http::fake([
+            'https://tridharma.fayra.my.id/api/pendidikan' => Http::response([
+                'success' => true,
+                'data' => ['id_pendidikan' => 15],
+            ], 201),
+            'https://tridharma.fayra.my.id/api/dosen/7' => Http::response([
+                'success' => true,
+            ]),
+        ]);
+
+        $response = $this->withSession([
+            'access_token' => 'mock-jwt-token',
+            'user' => ['role' => 'kaprodi'],
+        ])->post(route('pendidikan.store'), [
+            'universitas' => 'Universitas Negeri Semarang',
+            'program_studi' => 'Pendidikan Informatika',
+            'jenjang' => 'S2',
+            'tahun_lulus' => 2024,
+            'id_dosen' => 7,
+        ]);
+
+        $response->assertRedirect(route('pendidikan.index', ['id_dosen' => 7]));
+
+        Http::assertSent(fn (ClientRequest $request): bool => $request->method() === 'PUT'
+            && $request->url() === 'https://tridharma.fayra.my.id/api/dosen/7'
+            && (int) $request['id_pendidikan'] === 15);
+    }
+
     public function test_filter_matches_normalized_jenjang(): void
     {
         Http::fake([

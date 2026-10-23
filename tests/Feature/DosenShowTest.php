@@ -61,6 +61,8 @@ class DosenShowTest extends TestCase
         $response->assertDontSee('<title><a href', false);
         $response->assertSee('Dosen');
         $response->assertSee('Detail dosen');
+        $response->assertSee('Tambah Pendidikan');
+        $response->assertSee(route('pendidikan.index', ['id_dosen' => 1]), false);
         $response->assertSee('Dr. Budi Santoso, M. Kom.');
         $response->assertSee('Lektor Kepala');
         $response->assertSee('Teknik Elektro');
@@ -185,6 +187,84 @@ class DosenShowTest extends TestCase
         $response->assertStatus(200);
         $response->assertSee('Dr. Budi Santoso, M. Kom.');
         $response->assertSee('0015088501');
+    }
+
+    public function test_dosen_index_deduplicates_education_options_in_create_modal(): void
+    {
+        Http::fake([
+            '*/dosen*' => Http::response([
+                'success' => true,
+                'data' => [
+                    'data' => [],
+                    'total' => 0,
+                    'per_page' => 10,
+                    'current_page' => 1,
+                    'last_page' => 1,
+                ],
+            ], 200),
+            '*/jabatan-akademik*' => Http::response(['data' => []], 200),
+            '*/pendidikan*' => Http::response([
+                'data' => [
+                    ['id_pendidikan' => 1, 'nama_pendidikan' => 'S2'],
+                    ['id_pendidikan' => 2, 'nama_pendidikan' => 'S2'],
+                    ['id_pendidikan' => 3, 'nama_pendidikan' => 'S3'],
+                    ['id_pendidikan' => 4, 'nama_pendidikan' => 'S1'],
+                ],
+            ], 200),
+            '*/bidang-keahlian*' => Http::response(['data' => []], 200),
+        ]);
+
+        $response = $this->withSession([
+            'access_token' => 'dummy-token',
+            'user' => [
+                'nama' => 'Kuwat',
+                'role' => 'Kaprodi',
+                'email' => 'kuwat@example.com',
+            ],
+        ])->get(route('dosen.index'));
+
+        $response->assertOk();
+        $html = $response->getContent();
+
+        $this->assertSame(1, substr_count($html, 'id="createPendidikanSelect"'));
+        $this->assertSame(1, substr_count($html, '>S2</option>'));
+        $this->assertSame(1, substr_count($html, '>S3</option>'));
+        $this->assertStringNotContainsString('>S1</option>', $html);
+        $this->assertStringNotContainsString('editPendidikanSelect', $html);
+    }
+
+    public function test_dosen_index_shows_empty_state_inside_the_table_and_keeps_page_actions_available(): void
+    {
+        Http::fake([
+            '*/dosen*' => Http::response([
+                'success' => true,
+                'data' => [
+                    'data' => [],
+                    'total' => 0,
+                    'per_page' => 10,
+                    'current_page' => 1,
+                    'last_page' => 1,
+                ],
+            ], 200),
+            '*/jabatan-akademik*' => Http::response(['data' => []], 200),
+            '*/pendidikan*' => Http::response(['data' => []], 200),
+            '*/bidang-keahlian*' => Http::response(['data' => []], 200),
+        ]);
+
+        $response = $this->withSession([
+            'access_token' => 'dummy-token',
+            'user' => [
+                'nama' => 'Kuwat',
+                'role' => 'Kaprodi',
+                'email' => 'kuwat@example.com',
+            ],
+        ])->get(route('dosen.index'));
+
+        $response->assertOk()
+            ->assertSee('Belum ada data dosen')
+            ->assertSee('openImportModalBtnTable')
+            ->assertSee('openCreateModalBtnTable')
+            ->assertSee('Download Template Excel');
     }
 
     public function test_dosen_index_passes_search_and_status_to_remote_api(): void
