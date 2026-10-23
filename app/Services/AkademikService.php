@@ -37,7 +37,6 @@ class AkademikService
 
         $client = Http::acceptJson()
             ->asJson()
-            ->withoutVerifying()
             ->timeout(20);
 
         if (! empty($resolvedToken)) {
@@ -366,6 +365,11 @@ class AkademikService
         return $this->get("upps/{$id}", [], $token);
     }
 
+    public function getUppsDetail(int|string $id, ?string $token = null): Response
+    {
+        return $this->getUppsById($id, $token);
+    }
+
     public function createUpps(array $data, ?string $token = null): Response
     {
         return $this->post('upps', $data, $token);
@@ -580,6 +584,11 @@ class AkademikService
         return $this->delete("mahasiswa/{$id}", [], $token);
     }
 
+    public function getJenisPrestasi(array $query = [], ?string $token = null): Response
+    {
+        return $this->get('jenis-prestasi', $query, $token);
+    }
+
     /*
     |==========================================================================
     | MODUL: KURIKULUM (/api/kurikulum/*)
@@ -666,5 +675,57 @@ class AkademikService
     public function syncMataKuliahCpl(int|string $mataKuliahId, array $cplIds, ?string $token = null): Response
     {
         return $this->post("mata-kuliah/{$mataKuliahId}/cpl/sync", ['cpl_ids' => $cplIds], $token);
+    }
+
+    /*
+    |==========================================================================
+    | MODUL: ANGGOTA UPPS (/api/anggota-upps/*)
+    |==========================================================================
+    */
+
+    public function getAnggotaUppsList(array $query = [], ?string $token = null): Response
+    {
+        return $this->get('anggota-upps', $query, $token);
+    }
+
+    public function createAnggotaUpps(array $data, ?string $token = null): Response
+    {
+        return $this->post('anggota-upps', $data, $token);
+    }
+
+    public function updateAnggotaUpps(int|string $id, array $data, ?string $token = null): Response
+    {
+        return $this->put("anggota-upps/{$id}", $data, $token);
+    }
+
+    public function deleteAnggotaUpps(int|string $id, ?string $token = null): Response
+    {
+        return $this->delete("anggota-upps/{$id}", [], $token);
+    }
+
+    /*
+    |==========================================================================
+    | MODUL: JENIS PRESTASI (/api/jenis-prestasi/*)
+    |==========================================================================
+    */
+
+    public function getJenisPrestasiList(array $query = [], ?string $token = null): Response
+    {
+        return $this->get('jenis-prestasi', $query, $token);
+    }
+
+    public function createJenisPrestasi(array $data, ?string $token = null): Response
+    {
+        return $this->post('jenis-prestasi', $data, $token);
+    }
+
+    public function updateJenisPrestasi(int|string $id, array $data, ?string $token = null): Response
+    {
+        return $this->put("jenis-prestasi/{$id}", $data, $token);
+    }
+
+    public function deleteJenisPrestasi(int|string $id, ?string $token = null): Response
+    {
+        return $this->delete("jenis-prestasi/{$id}", [], $token);
     }
 }
