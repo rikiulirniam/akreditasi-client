@@ -37,7 +37,6 @@ class AkademikService
 
         $client = Http::acceptJson()
             ->asJson()
-            ->withoutVerifying()
             ->timeout(20);
 
         if (! empty($resolvedToken)) {
@@ -366,6 +365,11 @@ class AkademikService
         return $this->get("upps/{$id}", [], $token);
     }
 
+    public function getUppsDetail(int|string $id, ?string $token = null): Response
+    {
+        return $this->getUppsById($id, $token);
+    }
+
     public function createUpps(array $data, ?string $token = null): Response
     {
         return $this->post('upps', $data, $token);
@@ -488,6 +492,16 @@ class AkademikService
     {
         return $this->delete("kelas/{$id}", [], $token);
     }
+
+    public function getMahasiswaByKelasId(int|string $kelasId, array $query = [], ?string $token = null): Response
+    {
+        return $this->get("kelas/{$kelasId}/mahasiswa", $query, $token);
+    }
+
+    public function getMataKuliahByKelasId(int|string $kelasId, array $query = [], ?string $token = null): Response
+    {
+        return $this->get("kelas/{$kelasId}/mata-kuliah", $query, $token);
+    }
     /*
         |==========================================================================
         | MODUL: PERGURUAN TINGGI - TAHUN AKADEMIK (/api/tahun-akademik/*)
@@ -580,6 +594,11 @@ class AkademikService
         return $this->delete("mahasiswa/{$id}", [], $token);
     }
 
+    public function getJenisPrestasi(array $query = [], ?string $token = null): Response
+    {
+        return $this->get('jenis-prestasi', $query, $token);
+    }
+
     /*
     |==========================================================================
     | MODUL: KURIKULUM (/api/kurikulum/*)
@@ -609,6 +628,11 @@ class AkademikService
     public function deleteKurikulum(int|string $id, ?string $token = null): Response
     {
         return $this->delete("kurikulum/{$id}", [], $token);
+    }
+
+    public function getMataKuliahByKurikulumId(int|string $kurikulumId, array $query = [], ?string $token = null): Response
+    {
+        return $this->get("kurikulum/{$kurikulumId}/mata-kuliah", $query, $token);
     }
 
     /*
@@ -666,6 +690,21 @@ class AkademikService
     public function syncMataKuliahCpl(int|string $mataKuliahId, array $cplIds, ?string $token = null): Response
     {
         return $this->post("mata-kuliah/{$mataKuliahId}/cpl/sync", ['cpl_ids' => $cplIds], $token);
+    }
+
+    public function createMataKuliah(array $data, ?string $token = null): Response
+    {
+        return $this->post('mata-kuliah', $data, $token);
+    }
+
+    public function updateMataKuliah(int|string $id, array $data, ?string $token = null): Response
+    {
+        return $this->put("mata-kuliah/{$id}", $data, $token);
+    }
+
+    public function deleteMataKuliah(int|string $id, ?string $token = null): Response
+    {
+        return $this->delete("mata-kuliah/{$id}", [], $token);
     }
 
     /*
@@ -728,6 +767,37 @@ class AkademikService
     public function deleteEnrollmentKelas(int|string $id, ?string $token = null): Response
     {
         return $this->delete("enrollment-kelas/{$id}", [], $token);
+    }
+
+    /*
+    |==========================================================================
+    | MODUL: ENROLLMENT MATA KULIAH & NILAI
+    |==========================================================================
+    */
+
+    public function getEnrollmentMataKuliahList(array $query = [], ?string $token = null): Response
+    {
+        return $this->get('enrollment-mata-kuliah', $query, $token);
+    }
+
+    public function getEnrollmentMataKuliahById(int|string $id, ?string $token = null): Response
+    {
+        return $this->get("enrollment-mata-kuliah/{$id}", [], $token);
+    }
+
+    public function updateEnrollmentMataKuliah(int|string $id, array $data, ?string $token = null): Response
+    {
+        return $this->put("enrollment-mata-kuliah/{$id}", $data, $token);
+    }
+
+    public function getMataKuliahAngkatanKelasList(array $query = [], ?string $token = null): Response
+    {
+        return $this->get('mata-kuliah-angkatan-kelas', $query, $token);
+    }
+
+    public function getNilaiMahasiswaList(array $query = [], ?string $token = null): Response
+    {
+        return $this->get('nilai-mahasiswa', $query, $token);
     }
 
     /*

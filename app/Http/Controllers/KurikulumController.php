@@ -239,13 +239,18 @@ class KurikulumController extends Controller
         $cplResponse = $this->akademikService->getCplList(['kurikulum_id' => $id]);
         $cplList = $cplResponse->successful() ? ($cplResponse->json('data') ?? []) : [];
 
-        // Fetch mata kuliah for this kurikulum
-        $mataKuliahResponse = $this->akademikService->getMataKuliahList(['kurikulum_id' => $id]);
-        $mataKuliahList = $mataKuliahResponse->successful() ? ($mataKuliahResponse->json('data') ?? []) : [];
+        // Fetch mata kuliah for this kurikulum using dedicated endpoint
+        $mataKuliahResponse = $this->akademikService->getMataKuliahByKurikulumId($id);
+        if (! $mataKuliahResponse->successful()) {
+            $mataKuliahResponse = $this->akademikService->getMataKuliahList(['kurikulum_id' => $id]);
+        }
 
-        // Jika API mengembalikan daftar mata kuliah umum, filter berdasarkan id_kurikulum jika tersedia
+        $rawDataMk = $mataKuliahResponse->json('data') ?? [];
+        $mataKuliahList = isset($rawDataMk['data']) && is_array($rawDataMk['data']) ? $rawDataMk['data'] : (is_array($rawDataMk) ? $rawDataMk : []);
+
+        // Filter by id_kurikulum if data came from generic list containing mixed kurikulum
         $curriculumMataKuliah = array_filter($mataKuliahList, function ($mk) use ($id) {
-            return isset($mk['id_kurikulum']) && (string) $mk['id_kurikulum'] === (string) $id;
+            return ! isset($mk['id_kurikulum']) || (string) $mk['id_kurikulum'] === (string) $id;
         });
 
         if (! empty($curriculumMataKuliah)) {

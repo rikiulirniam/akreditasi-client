@@ -181,4 +181,84 @@ class UppsController extends Controller
 
         return (string) ($response->json('message') ?? $fallback);
     }
+
+    public function anggota(int|string $id)
+    {
+        $responseUpps = $this->akademikService->getUppsById($id);
+        $upps = $responseUpps->successful() ? ($responseUpps->json('data') ?? []) : [];
+
+        $responseAnggota = $this->akademikService->getAnggotaUppsList(['id_upps' => $id]);
+        $anggotaList = $responseAnggota->successful() ? ($responseAnggota->json('data') ?? []) : ($upps['anggota'] ?? []);
+
+        return view('upps.anggota', compact('upps', 'anggotaList', 'id'));
+    }
+
+    public function storeAnggota(Request $request, int|string $id)
+    {
+        $validated = $request->validate([
+            'nama' => ['required', 'string', 'max:255'],
+            'jabatan' => ['required', 'string', 'max:255'],
+        ]);
+
+        $payload = array_merge($validated, ['id_upps' => (int) $id]);
+        $response = $this->akademikService->createAnggotaUpps($payload);
+
+        if (! $response->successful()) {
+            return redirect()->back()->withInput()->with('toast', [
+                'type' => 'error',
+                'title' => 'Gagal',
+                'message' => $response->json('message') ?? 'Gagal menambahkan anggota UPPS.',
+            ]);
+        }
+
+        return redirect()->back()->with('toast', [
+            'type' => 'success',
+            'title' => 'Berhasil',
+            'message' => 'Anggota UPPS berhasil ditambahkan.',
+        ]);
+    }
+
+    public function updateAnggota(Request $request, int|string $id, int|string $anggotaId)
+    {
+        $validated = $request->validate([
+            'nama' => ['required', 'string', 'max:255'],
+            'jabatan' => ['required', 'string', 'max:255'],
+        ]);
+
+        $payload = array_merge($validated, ['id_upps' => (int) $id]);
+        $response = $this->akademikService->updateAnggotaUpps($anggotaId, $payload);
+
+        if (! $response->successful()) {
+            return redirect()->back()->withInput()->with('toast', [
+                'type' => 'error',
+                'title' => 'Gagal',
+                'message' => $response->json('message') ?? 'Gagal memperbarui data anggota.',
+            ]);
+        }
+
+        return redirect()->back()->with('toast', [
+            'type' => 'success',
+            'title' => 'Berhasil',
+            'message' => 'Data anggota berhasil diperbarui.',
+        ]);
+    }
+
+    public function destroyAnggota(int|string $id, int|string $anggotaId)
+    {
+        $response = $this->akademikService->deleteAnggotaUpps($anggotaId);
+
+        if (! $response->successful()) {
+            return redirect()->back()->with('toast', [
+                'type' => 'error',
+                'title' => 'Gagal',
+                'message' => $response->json('message') ?? 'Gagal menghapus data anggota.',
+            ]);
+        }
+
+        return redirect()->back()->with('toast', [
+            'type' => 'success',
+            'title' => 'Berhasil',
+            'message' => 'Anggota berhasil dihapus.',
+        ]);
+    }
 }
