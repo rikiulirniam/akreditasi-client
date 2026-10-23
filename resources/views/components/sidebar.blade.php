@@ -36,6 +36,7 @@
                 </div>
 
                 <!-- Pengguna -->
+                @haspermission('user.read')
                 @php
                     $isUserMgmtActive = request()->routeIs('users.*') || request()->routeIs('roles.*') || request()->routeIs('permissions.*');
                 @endphp
@@ -79,6 +80,7 @@
                         </a>
                     </div>
                 </div>
+                @endhaspermission
 
                 <!-- Data Perguruan Tinggi -->
                 @php
