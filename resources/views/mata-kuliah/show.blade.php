@@ -41,6 +41,7 @@
             </h1>
 
             <div class="flex items-center gap-3 shrink-0">
+                @haspermission('mata_kuliah.delete')
                 <!-- Tombol Hapus Data (Merah) -->
                 <button 
                     type="button" 
@@ -53,7 +54,9 @@
                     <x-icon.delete class="w-4 h-4" />
                     <span>Hapus Data</span>
                 </button>
+                @endhaspermission
 
+                @haspermission('mata_kuliah.update')
                 <!-- Tombol Edit Data (Kuning) -->
                 <button 
                     type="button" 
@@ -63,6 +66,7 @@
                     <x-icon.edit class="w-4 h-4" />
                     <span>Edit Data</span>
                 </button>
+                @endhaspermission
             </div>
         </div>
 
