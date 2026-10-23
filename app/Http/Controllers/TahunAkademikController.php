@@ -273,6 +273,7 @@ class TahunAkademikController extends Controller
 
         return (string) ($body['message'] ?? $fallback);
     }
+
     /**
      * Flow Halaman 2: Daftar Kelas berdasarkan Tahun Akademik
      */

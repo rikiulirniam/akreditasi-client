@@ -42,6 +42,7 @@
                 <x-table.th>NIM</x-table.th>
                 <x-table.th>Tahun Masuk</x-table.th>
                 <x-table.th>Tanggal Kelulusan</x-table.th>
+                <x-table.th class="w-32">Status</x-table.th>
                 <x-table.th class="w-28 text-right">Action</x-table.th>
             </x-slot:header>
 
@@ -91,6 +92,27 @@
                         </span>
                     </x-table.cell>
 
+                    <!-- Status Terkini -->
+                    <x-table.cell class="w-32">
+                        @php
+                            $statusTerkini = $item['status_terkini'] ?? '-';
+                            $statusColor = match($statusTerkini) {
+                                'Aktif' => 'bg-emerald-50 text-emerald-700 border-emerald-200',
+                                'Lulus' => 'bg-blue-50 text-blue-700 border-blue-200',
+                                'Cuti' => 'bg-amber-50 text-amber-700 border-amber-200',
+                                'Non-Aktif', 'Drop Out' => 'bg-red-50 text-red-700 border-red-200',
+                                default => 'bg-gray-100 text-gray-500 border-gray-200',
+                            };
+                        @endphp
+                        @if($statusTerkini !== '-')
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold border {{ $statusColor }}">
+                                {{ $statusTerkini }}
+                            </span>
+                        @else
+                            <span class="text-gray-400 text-xs">-</span>
+                        @endif
+                    </x-table.cell>
+
                     <!-- Action: Edit (Yellow), Delete (Red), View / Detail (Navy) -->
                     <x-table.cell class="w-28">
                         <div class="flex items-center justify-end gap-3">
@@ -124,29 +146,19 @@
                                 <x-icon.delete class="w-5 h-5" />
                             </button>
 
-                            <!-- View / Detail Mahasiswa Icon (Navy Blue) -->
-                            <button 
-                                type="button" 
-                                class="open-detail-mahasiswa-btn text-primary hover:text-additional transition p-1 cursor-pointer"
+                            <!-- View / Detail Mahasiswa — redirect ke halaman detail -->
+                            <a
+                                href="{{ route('mahasiswa.show', $id) }}"
+                                class="text-primary hover:text-additional transition p-1 cursor-pointer inline-flex"
                                 title="Detail Mahasiswa"
-                                data-id="{{ $id }}"
-                                data-action-update="{{ route('mahasiswa.update', $id) }}"
-                                data-action-destroy="{{ route('mahasiswa.destroy', $id) }}"
-                                data-nama="{{ $nama }}"
-                                data-nim="{{ $nim }}"
-                                data-tahun="{{ $tahunMasuk }}"
-                                data-jenis="{{ $jenisPendaftaran }}"
-                                data-kelulusan="{{ $formattedKelulusan }}"
-                                data-kelulusan-raw="{{ $rawKelulusan }}"
-                                data-masa-studi="{{ $masaStudi }}"
                             >
                                 <x-icon.eye class="w-5 h-5" />
-                            </button>
+                            </a>
                         </div>
                     </x-table.cell>
                 </x-table.row>
             @empty
-                <x-table.empty colspan="6" message="Belum ada data mahasiswa" submessage="Silakan klik tombol Tambah Mahasiswa untuk menambahkan data baru." />
+                <x-table.empty colspan="7" message="Belum ada data mahasiswa" submessage="Silakan klik tombol Tambah Mahasiswa untuk menambahkan data baru." />
             @endforelse
         </x-table>
 
@@ -304,122 +316,8 @@
 </div>
 
 <!-- ========================================== -->
-<!-- MODAL: Detail Data Mahasiswa (Identik dengan Detail Prodi) -->
-<!-- ========================================== -->
-<div 
-    id="detailMahasiswaModal" 
-    class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/45 opacity-0 pointer-events-none transition-all duration-200 select-none"
-    role="dialog"
-    aria-modal="true"
-    aria-labelledby="detailMahasiswaModalTitle"
->
-    <div class="mahasiswa-modal-card relative bg-white rounded-[28px] p-8 max-w-[460px] w-full shadow-2xl text-left transform scale-95 transition-all duration-200 max-h-[92vh] overflow-y-auto">
-        <h3 id="detailMahasiswaModalTitle" class="text-xl font-bold text-gray-900 tracking-tight text-center mb-6">
-            Detail Data Mahasiswa
-        </h3>
-
-        <div class="space-y-4">
-            <!-- Field 1: Nama Mahasiswa -->
-            <div>
-                <label class="block text-xs font-bold text-gray-900 mb-1.5">Nama Mahasiswa</label>
-                <input 
-                    type="text" 
-                    id="viewMahasiswaNama" 
-                    readonly 
-                    class="w-full px-4 py-2.5 rounded-[10px] bg-white-form border-none text-sm font-medium text-gray-800 cursor-default select-none focus:outline-none"
-                >
-            </div>
-
-            <!-- Field 2: NIM -->
-            <div>
-                <label class="block text-xs font-bold text-gray-900 mb-1.5">NIM</label>
-                <input 
-                    type="text" 
-                    id="viewMahasiswaNim" 
-                    readonly 
-                    class="w-full px-4 py-2.5 rounded-[10px] bg-white-form border-none text-sm font-medium font-mono text-gray-800 cursor-default select-none focus:outline-none"
-                >
-            </div>
-
-            <!-- Field 3: Tahun Masuk -->
-            <div>
-                <label class="block text-xs font-bold text-gray-900 mb-1.5">Tahun Masuk</label>
-                <input 
-                    type="text" 
-                    id="viewMahasiswaTahun" 
-                    readonly 
-                    class="w-full px-4 py-2.5 rounded-[10px] bg-white-form border-none text-sm font-medium text-gray-800 cursor-default select-none focus:outline-none"
-                >
-            </div>
-
-            <!-- Field 4: Jenis Pendaftaran -->
-            <div>
-                <label class="block text-xs font-bold text-gray-900 mb-1.5">Jenis Pendaftaran</label>
-                <input 
-                    type="text" 
-                    id="viewMahasiswaJenis" 
-                    readonly 
-                    class="w-full px-4 py-2.5 rounded-[10px] bg-white-form border-none text-sm font-medium text-gray-800 cursor-default select-none focus:outline-none"
-                >
-            </div>
-
-            <!-- Field 5: Tanggal Kelulusan -->
-            <div>
-                <label class="block text-xs font-bold text-gray-900 mb-1.5">Tanggal Kelulusan</label>
-                <input 
-                    type="text" 
-                    id="viewMahasiswaKelulusan" 
-                    readonly 
-                    class="w-full px-4 py-2.5 rounded-[10px] bg-white-form border-none text-sm font-medium text-gray-800 cursor-default select-none focus:outline-none"
-                >
-            </div>
-
-            <!-- Field 6: Masa Studi -->
-            <div>
-                <label class="block text-xs font-bold text-gray-900 mb-1.5">Masa Studi</label>
-                <input 
-                    type="text" 
-                    id="viewMahasiswaMasaStudi" 
-                    readonly 
-                    class="w-full px-4 py-2.5 rounded-[10px] bg-white-form border-none text-sm font-medium text-gray-800 cursor-default select-none focus:outline-none"
-                >
-            </div>
-
-            <!-- Action Buttons: Hapus Data (Red), Edit Data (Yellow), OK (Navy) - Identik dengan Detail Prodi -->
-            <div class="grid grid-cols-3 gap-2.5 pt-4">
-                <button 
-                    type="button" 
-                    id="btnDetailHapusMahasiswa"
-                    class="w-full flex items-center justify-center gap-1.5 py-3 px-2 rounded-xl bg-[#C9352B] hover:bg-[#b02c23] text-white font-bold text-xs sm:text-sm transition cursor-pointer text-center"
-                >
-                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
-                    </svg>
-                    Hapus Data
-                </button>
-                <button 
-                    type="button" 
-                    id="btnDetailEditMahasiswa"
-                    class="w-full flex items-center justify-center gap-1.5 py-3 px-2 rounded-xl bg-[#EAB308] hover:bg-[#ca8a04] text-white font-bold text-xs sm:text-sm transition cursor-pointer text-center"
-                >
-                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10" />
-                    </svg>
-                    Edit Data
-                </button>
-                <button 
-                    type="button" 
-                    class="close-mahasiswa-modal w-full py-3 px-2 rounded-xl bg-additional hover:bg-[#01426c] text-white font-bold text-xs sm:text-sm transition cursor-pointer text-center"
-                >
-                    OK
-                </button>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- ========================================== -->
 <!-- MODAL: Update Mahasiswa -->
+
 <!-- ========================================== -->
 <div 
     id="editMahasiswaModal" 
@@ -642,7 +540,6 @@
             if (editJenis) editJenis.value = data.jenis || '';
             if (editKelulusan) editKelulusan.value = data.kelulusan || '';
             if (editMasaStudi) editMasaStudi.value = data.masaStudi || '48';
-
             showModal(editModal);
             setTimeout(() => editNama?.focus(), 100);
         }
@@ -661,80 +558,6 @@
             });
         });
 
-        // Detail Modal
-        const detailModal = document.getElementById('detailMahasiswaModal');
-        const viewNama = document.getElementById('viewMahasiswaNama');
-        const viewNim = document.getElementById('viewMahasiswaNim');
-        const viewTahun = document.getElementById('viewMahasiswaTahun');
-        const viewJenis = document.getElementById('viewMahasiswaJenis');
-        const viewKelulusan = document.getElementById('viewMahasiswaKelulusan');
-        const viewMasaStudi = document.getElementById('viewMahasiswaMasaStudi');
-        const btnDetailHapus = document.getElementById('btnDetailHapusMahasiswa');
-        const btnDetailEdit = document.getElementById('btnDetailEditMahasiswa');
-
-        let currentDetailData = null;
-
-        document.querySelectorAll('.open-detail-mahasiswa-btn').forEach(btn => {
-            btn.addEventListener('click', function () {
-                currentDetailData = {
-                    id: this.getAttribute('data-id'),
-                    actionUpdate: this.getAttribute('data-action-update'),
-                    actionDestroy: this.getAttribute('data-action-destroy'),
-                    nama: this.getAttribute('data-nama'),
-                    nim: this.getAttribute('data-nim'),
-                    tahun: this.getAttribute('data-tahun'),
-                    jenis: this.getAttribute('data-jenis'),
-                    kelulusan: this.getAttribute('data-kelulusan'),
-                    kelulusanRaw: this.getAttribute('data-kelulusan-raw'),
-                    masaStudi: this.getAttribute('data-masa-studi')
-                };
-
-                if (viewNama) viewNama.value = currentDetailData.nama || '-';
-                if (viewNim) viewNim.value = currentDetailData.nim || '-';
-                if (viewTahun) viewTahun.value = currentDetailData.tahun || '-';
-                if (viewJenis) viewJenis.value = currentDetailData.jenis || '-';
-                if (viewKelulusan) viewKelulusan.value = currentDetailData.kelulusan || '-';
-                if (viewMasaStudi) viewMasaStudi.value = (currentDetailData.masaStudi || '48') + ' Bulan';
-
-                showModal(detailModal);
-            });
-        });
-
-        // Trigger "Edit Data" from Detail Modal
-        if (btnDetailEdit) {
-            btnDetailEdit.addEventListener('click', function () {
-                if (!currentDetailData) return;
-                hideModal(detailModal);
-                setTimeout(() => {
-                    populateAndShowEdit({
-                        action: currentDetailData.actionUpdate,
-                        nama: currentDetailData.nama,
-                        nim: currentDetailData.nim,
-                        tahun: currentDetailData.tahun,
-                        jenis: currentDetailData.jenis,
-                        kelulusan: currentDetailData.kelulusanRaw,
-                        masaStudi: currentDetailData.masaStudi
-                    });
-                }, 150);
-            });
-        }
-
-        // Trigger "Hapus Data" from Detail Modal (using global openConfirmDeleteModal)
-        if (btnDetailHapus) {
-            btnDetailHapus.addEventListener('click', function () {
-                if (!currentDetailData) return;
-                hideModal(detailModal);
-
-                if (window.openConfirmDeleteModal) {
-                    window.openConfirmDeleteModal({
-                        action: currentDetailData.actionDestroy,
-                        title: 'Hapus Data Mahasiswa?',
-                        message: `Apakah Anda yakin ingin menghapus data mahasiswa ${currentDetailData.nama} (NIM: ${currentDetailData.nim})? Tindakan ini bersifat permanen dan data tidak dapat dikembalikan.`
-                    });
-                }
-            });
-        }
-
         // Close Buttons on all modals
         document.querySelectorAll('.close-mahasiswa-modal').forEach(btn => {
             btn.addEventListener('click', function () {
@@ -743,7 +566,7 @@
         });
 
         // Close on Backdrop Click
-        [createModal, editModal, detailModal].forEach(m => {
+        [createModal, editModal].forEach(m => {
             m?.addEventListener('click', function (e) {
                 if (e.target === m) hideModal(m);
             });
@@ -754,7 +577,6 @@
             if (e.key === 'Escape') {
                 hideModal(createModal);
                 hideModal(editModal);
-                hideModal(detailModal);
             }
         });
     });

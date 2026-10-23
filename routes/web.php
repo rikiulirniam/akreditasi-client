@@ -13,7 +13,6 @@ use App\Http\Controllers\PerguruanTinggiController;
 use App\Http\Controllers\PermissionController;
 use App\Http\Controllers\ProdiController;
 use App\Http\Controllers\RoleController;
-use App\Http\Controllers\StatusMahasiswaController;
 use App\Http\Controllers\TahunAkademikController;
 use App\Http\Controllers\UppsController;
 use App\Http\Controllers\UserController;
@@ -54,8 +53,10 @@ Route::middleware('auth.akademik')->group(function () {
 
     Route::resource('kelas', KelasController::class);
     Route::resource('mahasiswa', MahasiswaController::class);
+    Route::post('/mahasiswa/{mahasiswa}/status', [MahasiswaController::class, 'storeStatus'])->name('mahasiswa.status.store');
+    Route::put('/mahasiswa/{mahasiswa}/status/{statusId}', [MahasiswaController::class, 'updateStatus'])->name('mahasiswa.status.update');
+    Route::delete('/mahasiswa/{mahasiswa}/status/{statusId}', [MahasiswaController::class, 'destroyStatus'])->name('mahasiswa.status.destroy');
     Route::resource('kegiatan-mahasiswa', KegiatanMahasiswaController::class);
-    Route::resource('status-mahasiswa', StatusMahasiswaController::class);
     Route::put('/mata-kuliah-enrollment/{enrollmentId}/evidence', [MataKuliahController::class, 'updateEvidence'])->name('mata-kuliah.update-evidence');
     Route::resource('mata-kuliah', MataKuliahController::class);
     Route::resource('tahun-akademik', TahunAkademikController::class);
