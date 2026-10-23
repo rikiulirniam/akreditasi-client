@@ -365,6 +365,11 @@ class AkademikService
         return $this->get("upps/{$id}", [], $token);
     }
 
+    public function getUppsDetail(int|string $id, ?string $token = null): Response
+    {
+        return $this->getUppsById($id, $token);
+    }
+
     public function createUpps(array $data, ?string $token = null): Response
     {
         return $this->post('upps', $data, $token);
@@ -587,6 +592,11 @@ class AkademikService
     public function deleteMahasiswa(int|string $id, ?string $token = null): Response
     {
         return $this->delete("mahasiswa/{$id}", [], $token);
+    }
+
+    public function getJenisPrestasi(array $query = [], ?string $token = null): Response
+    {
+        return $this->get('jenis-prestasi', $query, $token);
     }
 
     /*
