@@ -203,18 +203,18 @@ class UppsController extends Controller
         $payload = array_merge($validated, ['id_upps' => (int) $id]);
         $response = $this->akademikService->createAnggotaUpps($payload);
 
-        if (!$response->successful()) {
+        if (! $response->successful()) {
             return redirect()->back()->withInput()->with('toast', [
                 'type' => 'error',
                 'title' => 'Gagal',
-                'message' => $response->json('message') ?? 'Gagal menambahkan anggota UPPS.'
+                'message' => $response->json('message') ?? 'Gagal menambahkan anggota UPPS.',
             ]);
         }
 
         return redirect()->back()->with('toast', [
             'type' => 'success',
             'title' => 'Berhasil',
-            'message' => 'Anggota UPPS berhasil ditambahkan.'
+            'message' => 'Anggota UPPS berhasil ditambahkan.',
         ]);
     }
 
@@ -228,18 +228,18 @@ class UppsController extends Controller
         $payload = array_merge($validated, ['id_upps' => (int) $id]);
         $response = $this->akademikService->updateAnggotaUpps($anggotaId, $payload);
 
-        if (!$response->successful()) {
+        if (! $response->successful()) {
             return redirect()->back()->withInput()->with('toast', [
                 'type' => 'error',
                 'title' => 'Gagal',
-                'message' => $response->json('message') ?? 'Gagal memperbarui data anggota.'
+                'message' => $response->json('message') ?? 'Gagal memperbarui data anggota.',
             ]);
         }
 
         return redirect()->back()->with('toast', [
             'type' => 'success',
             'title' => 'Berhasil',
-            'message' => 'Data anggota berhasil diperbarui.'
+            'message' => 'Data anggota berhasil diperbarui.',
         ]);
     }
 
@@ -247,19 +247,18 @@ class UppsController extends Controller
     {
         $response = $this->akademikService->deleteAnggotaUpps($anggotaId);
 
-        if (!$response->successful()) {
+        if (! $response->successful()) {
             return redirect()->back()->with('toast', [
                 'type' => 'error',
                 'title' => 'Gagal',
-                'message' => $response->json('message') ?? 'Gagal menghapus data anggota.'
+                'message' => $response->json('message') ?? 'Gagal menghapus data anggota.',
             ]);
         }
 
         return redirect()->back()->with('toast', [
             'type' => 'success',
             'title' => 'Berhasil',
-            'message' => 'Anggota berhasil dihapus.'
+            'message' => 'Anggota berhasil dihapus.',
         ]);
     }
-    
 }
