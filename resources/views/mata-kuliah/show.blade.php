@@ -204,6 +204,10 @@
                                 data-rata-rata-ipk="{{ $item['rata_rata_ipk'] }}"
                                 data-jumlah-mata-kuliah="{{ $item['jumlah_mata_kuliah'] }}"
                                 data-class-id="{{ $item['id'] }}"
+                                data-link-nilai="{{ $item['link_nilai'] }}"
+                                data-link-evidence="{{ $item['link_evidence'] }}"
+                                data-multiple-grade-links="{{ $item['has_multiple_grade_links'] ? '1' : '0' }}"
+                                data-multiple-evidence-links="{{ $item['has_multiple_evidence_links'] ? '1' : '0' }}"
                             >
                                 <x-icon.eye class="w-5 h-5" />
                             </button>
@@ -234,6 +238,18 @@
             <p><span class="font-bold">Tahun Akademik:</span> <span id="classDetailTahunAkademik"></span></p>
             <p><span class="font-bold">Rata-rata IPK Kelas:</span> <span id="classDetailRataRataIpk"></span></p>
             <p><span class="font-bold">Jumlah Mata Kuliah:</span> <span id="classDetailJumlahMataKuliah"></span> Mata Kuliah</p>
+            <p>
+                <span class="font-bold">Link Input Nilai:</span>
+                <a id="classDetailLinkNilai" class="hidden break-all text-primary underline" target="_blank" rel="noopener noreferrer"></a>
+                <span id="classDetailLinkNilaiEmpty">-</span>
+                <span id="classDetailLinkNilaiMultiple" class="hidden">Terdapat beberapa link berbeda</span>
+            </p>
+            <p>
+                <span class="font-bold">Link Input Evidence:</span>
+                <a id="classDetailLinkEvidence" class="hidden break-all text-primary underline" target="_blank" rel="noopener noreferrer"></a>
+                <span id="classDetailLinkEvidenceEmpty">-</span>
+                <span id="classDetailLinkEvidenceMultiple" class="hidden">Terdapat beberapa link berbeda</span>
+            </p>
         </div>
 
         <div class="grid grid-cols-2 gap-3 pt-5">
@@ -290,6 +306,7 @@
                         required
                         class="w-full rounded-lg bg-gray-200 px-4 py-2.5 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-primary/30"
                     >
+                    <p id="gradeLinkHint" class="mt-1 hidden text-xs text-amber-700" role="status"></p>
                     <div class="grid grid-cols-2 gap-3 pt-4">
                         <button
                             type="button"
@@ -340,6 +357,7 @@
                     required
                     class="w-full rounded-lg bg-gray-200 px-4 py-2.5 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-primary/30"
                 >
+                <p id="evidenceLinkHint" class="mt-1 hidden text-xs text-amber-700" role="status"></p>
             </div>
 
             <div class="grid grid-cols-2 gap-3 pt-1">
@@ -494,6 +512,9 @@
         const openGradeLinkModalBtn = document.getElementById('openGradeLinkModalBtn');
         const gradeLinkInput = document.getElementById('gradeLinkInput');
         const gradeLinkForm = document.getElementById('gradeLinkForm');
+        const gradeLinkHint = document.getElementById('gradeLinkHint');
+        const evidenceLinkHint = document.getElementById('evidenceLinkHint');
+        let selectedClassButton = null;
 
         function showDialog(dialog) {
             const card = dialog?.querySelector('.class-detail-card, .evidence-modal-card, .grade-link-modal-card');
@@ -515,6 +536,7 @@
 
         document.querySelectorAll('.open-class-detail-modal').forEach(button => {
             button.addEventListener('click', function () {
+                selectedClassButton = this;
                 document.getElementById('classDetailModalTitle').textContent = `Kelas ${this.dataset.kelas}`;
                 document.getElementById('classDetailAngkatan').textContent = this.dataset.angkatan;
                 document.getElementById('classDetailJumlahMahasiswa').textContent = this.dataset.jumlahMahasiswa;
@@ -522,6 +544,22 @@
                 document.getElementById('classDetailTahunAkademik').textContent = this.dataset.tahunAkademik;
                 document.getElementById('classDetailRataRataIpk').textContent = this.dataset.rataRataIpk;
                 document.getElementById('classDetailJumlahMataKuliah').textContent = this.dataset.jumlahMataKuliah;
+                const gradeLink = this.dataset.linkNilai ?? '';
+                const evidenceLink = this.dataset.linkEvidence ?? '';
+                const gradeLinkElement = document.getElementById('classDetailLinkNilai');
+                const evidenceLinkElement = document.getElementById('classDetailLinkEvidence');
+                gradeLinkElement.href = gradeLink || '#';
+                gradeLinkElement.textContent = gradeLink;
+                gradeLinkElement.classList.toggle('hidden', !gradeLink);
+                const multipleGradeLinks = this.dataset.multipleGradeLinks === '1';
+                document.getElementById('classDetailLinkNilaiEmpty').classList.toggle('hidden', Boolean(gradeLink) || multipleGradeLinks);
+                document.getElementById('classDetailLinkNilaiMultiple').classList.toggle('hidden', !multipleGradeLinks);
+                evidenceLinkElement.href = evidenceLink || '#';
+                evidenceLinkElement.textContent = evidenceLink;
+                evidenceLinkElement.classList.toggle('hidden', !evidenceLink);
+                const multipleEvidenceLinks = this.dataset.multipleEvidenceLinks === '1';
+                document.getElementById('classDetailLinkEvidenceEmpty').classList.toggle('hidden', Boolean(evidenceLink) || multipleEvidenceLinks);
+                document.getElementById('classDetailLinkEvidenceMultiple').classList.toggle('hidden', !multipleEvidenceLinks);
                 gradeLinkForm.action = gradeLinkUrlTemplate.replace('__CLASS_ID__', encodeURIComponent(this.dataset.classId));
                 evidenceForm.action = evidenceLinkUrlTemplate.replace('__CLASS_ID__', encodeURIComponent(this.dataset.classId));
                 openGradeLinkModalBtn.disabled = false;
@@ -532,14 +570,22 @@
 
         openEvidenceModalBtn?.addEventListener('click', function () {
             if (this.disabled) return;
-            evidenceLinkInput.value = '';
+            evidenceLinkInput.value = selectedClassButton?.dataset.linkEvidence ?? '';
+            evidenceLinkHint.textContent = selectedClassButton?.dataset.multipleEvidenceLinks === '1'
+                ? 'Terdapat beberapa link evidence berbeda di kelas ini. Isi link baru untuk menggantinya pada seluruh mahasiswa.'
+                : '';
+            evidenceLinkHint.classList.toggle('hidden', evidenceLinkHint.textContent === '');
             hideDialog(classDetailModal);
             showDialog(evidenceModal);
             evidenceLinkInput.focus();
         });
 
         document.getElementById('openGradeLinkModalBtn')?.addEventListener('click', function () {
-            gradeLinkInput.value = '';
+            gradeLinkInput.value = selectedClassButton?.dataset.linkNilai ?? '';
+            gradeLinkHint.textContent = selectedClassButton?.dataset.multipleGradeLinks === '1'
+                ? 'Terdapat beberapa link nilai berbeda di kelas ini. Isi link baru untuk menggantinya pada seluruh mahasiswa.'
+                : '';
+            gradeLinkHint.classList.toggle('hidden', gradeLinkHint.textContent === '');
             hideDialog(classDetailModal);
             showDialog(gradeLinkModal);
             gradeLinkInput.focus();
