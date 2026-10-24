@@ -691,14 +691,6 @@ class PendidikanController extends Controller
 
         $upper = strtoupper($raw);
 
-        if (str_contains($upper, 'SPESIALIS') || str_contains($upper, 'SP-') || str_starts_with($upper, 'SP')) {
-            return 'Spesialis';
-        }
-
-        if (str_contains($upper, 'PROFESI')) {
-            return 'Profesi';
-        }
-
         if (str_contains($upper, 'S3') || str_contains($upper, 'DOKTOR')) {
             return 'S3';
         }
@@ -708,7 +700,7 @@ class PendidikanController extends Controller
         }
 
         if (str_contains($upper, 'S1') || str_contains($upper, 'D4') || str_contains($upper, 'SARJANA')) {
-            return 'S1';
+            return 'D4/S1';
         }
 
         if (str_contains($upper, 'D3') || str_contains($upper, 'DIPLOMA 3') || str_contains($upper, 'D-3')) {
@@ -738,11 +730,9 @@ class PendidikanController extends Controller
     {
         return [
             'D3',
-            'S1',
+            'D4/S1',
             'S2',
             'S3',
-            'Profesi',
-            'Spesialis',
         ];
     }
 
