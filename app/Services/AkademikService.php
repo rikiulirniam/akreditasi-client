@@ -914,26 +914,6 @@ class AkademikService
     |==========================================================================
     */
 
-    public function getJenisPrestasiList(array $query = [], ?string $token = null): Response
-    {
-        return $this->get('jenis-prestasi', $query, $token);
-    }
-
-    public function createJenisPrestasi(array $data, ?string $token = null): Response
-    {
-        return $this->post('jenis-prestasi', $data, $token);
-    }
-
-    public function updateJenisPrestasi(int|string $id, array $data, ?string $token = null): Response
-    {
-        return $this->put("jenis-prestasi/{$id}", $data, $token);
-    }
-
-    public function deleteJenisPrestasi(int|string $id, ?string $token = null): Response
-    {
-        return $this->delete("jenis-prestasi/{$id}", [], $token);
-    }
-
     public function getNilaiMahasiswaById(int|string $id, ?string $token = null): Response
     {
         return $this->get("nilai-mahasiswa/{$id}", [], $token);
@@ -947,6 +927,7 @@ class AkademikService
     public function updateNilaiMahasiswaLinkEvidence(int|string $id, array $data, ?string $token = null): Response
     {
         return $this->patch("nilai-mahasiswa/{$id}/link-evidence", $data, $token);
+    }
     /*
     |==========================================================================
     | MODUL: KEMAHASISWAAN - STATUS MAHASISWA (/api/status-mahasiswa/*)
