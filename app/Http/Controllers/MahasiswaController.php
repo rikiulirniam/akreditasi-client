@@ -719,6 +719,14 @@ class MahasiswaController extends Controller
         $item['nama_kelas'] = $namaKelas ?? 'TI 2-A';
         $item['nama_angkatan'] = $namaAngkatan ?? (string) date('Y');
 
+        // Ensure nested keys exist for the view to find
+        if (! isset($item['kelas']) || ! is_array($item['kelas'])) {
+            $item['kelas'] = ['nama_kelas' => $item['nama_kelas']];
+        }
+        if (! isset($item['angkatan']) || ! is_array($item['angkatan'])) {
+            $item['angkatan'] = ['angkatan' => $item['nama_angkatan']];
+        }
+
         return $item;
     }
 

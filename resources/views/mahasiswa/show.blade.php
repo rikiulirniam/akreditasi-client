@@ -15,8 +15,8 @@
     $masaStudiTahun = round($masaStudi / 12, 1);
 
     $enrollmentId = $enrollmentDetail['id'] ?? null;
-    $kelasNama = $enrollmentDetail['kelas']['nama_kelas'] ?? $enrollmentDetail['nama_kelas'] ?? '-';
-    $angkatanNama = $enrollmentDetail['angkatan']['angkatan'] ?? $enrollmentDetail['angkatan'] ?? '-';
+    $kelasNama = $enrollmentDetail['kelas']['nama_kelas'] ?? $enrollmentDetail['kelas']['kelas'] ?? $enrollmentDetail['nama_kelas'] ?? '-';
+    $angkatanNama = $enrollmentDetail['angkatan']['angkatan'] ?? $enrollmentDetail['angkatan']['tahun'] ?? $enrollmentDetail['nama_angkatan'] ?? (is_scalar($enrollmentDetail['angkatan'] ?? null) ? $enrollmentDetail['angkatan'] : '-');
 
     // Latest status
     $latestStatus = collect($statusHistory)->sortByDesc('id')->first();
@@ -180,7 +180,17 @@
                             }
                         }
                     }
-                    $tahunAkademikLabel = $status['tahun_akademik']['tahun_akademik'] ?? ($status['tahun_akademik']['label'] ?? ($matchedTa['tahun_akademik'] ?? ($matchedTa['label'] ?? ($taId ? "ID #{$taId}" : '-'))));
+                    // Build label: API returns 'tahun' (e.g. 2024) + optional 'semester'
+                    $taSource = $status['tahun_akademik'] ?? $matchedTa ?? null;
+                    $tahunAkademikLabel = '-';
+                    if ($taSource && is_array($taSource)) {
+                        $taYear = $taSource['tahun'] ?? $taSource['tahun_akademik'] ?? $taSource['nama'] ?? '';
+                        $taSemester = $taSource['semester'] ?? '';
+                        $tahunAkademikLabel = trim($taYear . (!empty($taSemester) ? ' (' . $taSemester . ')' : ''));
+                    }
+                    if (empty($tahunAkademikLabel) || $tahunAkademikLabel === '-') {
+                        $tahunAkademikLabel = $taId ? "ID #{$taId}" : '-';
+                    }
                     $statusVal = $status['status'] ?? '-';
                     $createdAt = !empty($status['created_at']) ? \Carbon\Carbon::parse($status['created_at'])->format('d M Y') : '-';
                     $rowColor = match($statusVal) {
@@ -385,7 +395,11 @@
                         class="w-full px-4 py-2.5 rounded-[10px] bg-white-form border-none text-sm font-medium text-gray-900 focus:ring-2 focus:ring-additional/30 focus:outline-none appearance-none cursor-pointer">
                         <option value="">-- Tidak Dipilih --</option>
                         @foreach($tahunAkademikList as $ta)
-                            <option value="{{ $ta['id'] }}">{{ $ta['tahun_akademik'] ?? $ta['label'] ?? "ID {$ta['id']}" }}</option>
+                            @php
+                                $taLabel = trim(($ta['tahun'] ?? $ta['tahun_akademik'] ?? $ta['nama'] ?? '') . (!empty($ta['semester']) ? ' (' . $ta['semester'] . ')' : ''));
+                                if (empty($taLabel)) { $taLabel = "ID {$ta['id']}"; }
+                            @endphp
+                            <option value="{{ $ta['id'] }}">{{ $taLabel }}</option>
                         @endforeach
                     </select>
                     <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-gray-600">
@@ -472,7 +486,11 @@
                         class="w-full px-4 py-2.5 rounded-[10px] bg-white-form border-none text-sm font-medium text-gray-900 focus:ring-2 focus:ring-additional/30 focus:outline-none appearance-none cursor-pointer">
                         <option value="">-- Tidak Dipilih --</option>
                         @foreach($tahunAkademikList as $ta)
-                            <option value="{{ $ta['id'] }}">{{ $ta['tahun_akademik'] ?? $ta['label'] ?? "ID {$ta['id']}" }}</option>
+                            @php
+                                $taLabelEdit = trim(($ta['tahun'] ?? $ta['tahun_akademik'] ?? $ta['nama'] ?? '') . (!empty($ta['semester']) ? ' (' . $ta['semester'] . ')' : ''));
+                                if (empty($taLabelEdit)) { $taLabelEdit = "ID {$ta['id']}"; }
+                            @endphp
+                            <option value="{{ $ta['id'] }}">{{ $taLabelEdit }}</option>
                         @endforeach
                     </select>
                     <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-gray-600">
