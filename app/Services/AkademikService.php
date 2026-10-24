@@ -601,7 +601,7 @@ class AkademikService
         return $this->delete("mahasiswa/{$id}", [], $token);
     }
 
-    public function getJenisPrestasi(array $query = [], ?string $token = null): Response
+    public function getJenisPrestasiList(array $query = [], ?string $token = null): Response
     {
         return $this->get('jenis-prestasi', $query, $token);
     }

@@ -136,7 +136,6 @@
 
                 <!-- Kemahasiswaan -->
                 @php
-                    $isKemahasiswaanActive = request()->routeIs('angkatan.*') || request()->routeIs('kelas.*') || request()->routeIs('mahasiswa.*') || request()->routeIs('prestasi-mahasiswa.*');
                     $isKemahasiswaanActive = request()->routeIs('angkatan.*') || request()->routeIs('kelas.*') || request()->routeIs('mahasiswa.*') || request()->routeIs('kegiatan-mahasiswa.*') || request()->routeIs('kemahasiswaan.jenis-prestasi.*');
                 @endphp
                 <div>
