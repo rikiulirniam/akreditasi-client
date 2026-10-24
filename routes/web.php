@@ -4,6 +4,7 @@ use App\Http\Controllers\AngkatanController;
 use App\Http\Controllers\AngkatanKelasController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\KegiatanMahasiswaController;
 use App\Http\Controllers\KelasController;
 use App\Http\Controllers\KurikulumController;
 use App\Http\Controllers\MahasiswaController;
@@ -44,6 +45,10 @@ Route::middleware('auth.akademik')->group(function () {
     Route::middleware('permission:perguruan_tinggi.update')->put('/perguruan-tinggi/{id}', [PerguruanTinggiController::class, 'update'])->name('perguruan-tinggi.update');
     Route::middleware('permission:prodi')->resource('prodi', ProdiController::class);
     Route::middleware('permission:upps')->resource('upps', UppsController::class);
+    Route::get('/upps/{id}/anggota', [UppsController::class, 'anggota'])->name('upps.anggota');
+    Route::post('/upps/{id}/anggota', [UppsController::class, 'storeAnggota'])->name('upps.anggota.store');
+    Route::put('/upps/{id}/anggota/{anggotaId}', [UppsController::class, 'updateAnggota'])->name('upps.anggota.update');
+    Route::delete('/upps/{id}/anggota/{anggotaId}', [UppsController::class, 'destroyAnggota'])->name('upps.anggota.destroy');
 
     // ==========================================
     // MODUL PENGGUNA, PERAN, & HAK AKSES
@@ -68,6 +73,15 @@ Route::middleware('auth.akademik')->group(function () {
     Route::middleware('permission:jenis_prestasi.create')->post('/prestasi-mahasiswa/{prestasiId}/jenis', [PrestasiMahasiswaController::class, 'storeJenis'])->name('prestasi-mahasiswa.jenis.store');
     Route::middleware('permission:jenis_prestasi.update')->put('/prestasi-mahasiswa/{prestasiId}/jenis/{jenisId}', [PrestasiMahasiswaController::class, 'updateJenis'])->name('prestasi-mahasiswa.jenis.update');
     Route::middleware('permission:jenis_prestasi.delete')->delete('/prestasi-mahasiswa/{prestasiId}/jenis/{jenisId}', [PrestasiMahasiswaController::class, 'destroyJenis'])->name('prestasi-mahasiswa.jenis.destroy');
+    Route::post('/mahasiswa/{mahasiswa}/status', [MahasiswaController::class, 'storeStatus'])->name('mahasiswa.status.store');
+    Route::put('/mahasiswa/{mahasiswa}/status/{statusId}', [MahasiswaController::class, 'updateStatus'])->name('mahasiswa.status.update');
+    Route::delete('/mahasiswa/{mahasiswa}/status/{statusId}', [MahasiswaController::class, 'destroyStatus'])->name('mahasiswa.status.destroy');
+    Route::resource('kegiatan-mahasiswa', KegiatanMahasiswaController::class);
+
+    Route::get('/kemahasiswaan/jenis-prestasi', [MahasiswaController::class, 'jenisPrestasi'])->name('kemahasiswaan.jenis-prestasi.index');
+    Route::post('/kemahasiswaan/jenis-prestasi', [MahasiswaController::class, 'storeJenisPrestasi'])->name('kemahasiswaan.jenis-prestasi.store');
+    Route::put('/kemahasiswaan/jenis-prestasi/{id}', [MahasiswaController::class, 'updateJenisPrestasi'])->name('kemahasiswaan.jenis-prestasi.update');
+    Route::delete('/kemahasiswaan/jenis-prestasi/{id}', [MahasiswaController::class, 'destroyJenisPrestasi'])->name('kemahasiswaan.jenis-prestasi.destroy');
 
     // ==========================================
     // MODUL AKADEMIK, KURIKULUM, & MATA KULIAH

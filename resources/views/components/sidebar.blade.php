@@ -137,6 +137,7 @@
                 <!-- Kemahasiswaan -->
                 @php
                     $isKemahasiswaanActive = request()->routeIs('angkatan.*') || request()->routeIs('kelas.*') || request()->routeIs('mahasiswa.*') || request()->routeIs('prestasi-mahasiswa.*');
+                    $isKemahasiswaanActive = request()->routeIs('angkatan.*') || request()->routeIs('kelas.*') || request()->routeIs('mahasiswa.*') || request()->routeIs('kegiatan-mahasiswa.*') || request()->routeIs('kemahasiswaan.jenis-prestasi.*');
                 @endphp
                 <div>
                     <button type="button"
@@ -179,6 +180,14 @@
                         </a>
                         <a href="{{ route('prestasi-mahasiswa.index') }}"
                             class="flex items-center gap-2.5 py-2.5 px-3.5 rounded-xl text-sm font-semibold transition-all duration-150 {{ request()->routeIs('prestasi-mahasiswa.*') ? 'bg-white/20 text-white shadow-xs font-bold' : 'text-white/80 hover:text-white hover:bg-white/10' }}">
+                        <a href="{{ route('kegiatan-mahasiswa.index') }}"
+                            class="flex items-center gap-2.5 py-2.5 px-3.5 rounded-xl text-sm font-semibold transition-all duration-150 {{ request()->routeIs('kegiatan-mahasiswa.*') ? 'bg-white/20 text-white shadow-xs font-bold' : 'text-white/80 hover:text-white hover:bg-white/10' }}">
+                            <span
+                                class="w-1.5 h-1.5 rounded-full {{ request()->routeIs('kegiatan-mahasiswa.*') ? 'bg-secondary' : 'bg-white/40' }} shrink-0"></span>
+                            <span>Kegiatan Mahasiswa</span>
+                        </a>
+                        <a href="{{ route('kemahasiswaan.jenis-prestasi.index') }}"
+                            class="flex items-center gap-2.5 py-2.5 px-3.5 rounded-xl text-sm font-semibold transition-all duration-150 {{ request()->routeIs('kemahasiswaan.jenis-prestasi.*') ? 'bg-white/20 text-white shadow-xs font-bold' : 'text-white/80 hover:text-white hover:bg-white/10' }}">
                             <span 
                                 class="w-1.5 h-1.5 rounded-full {{ request()->routeIs('prestasi-mahasiswa.*') ? 'bg-secondary' : 'bg-white/40' }} shrink-0"></span>
                             <span>Prestasi Mahasiswa</span>
