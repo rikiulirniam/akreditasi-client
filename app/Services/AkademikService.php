@@ -37,6 +37,7 @@ class AkademikService
 
         $client = Http::acceptJson()
             ->asJson()
+            ->withoutVerifying() #kalau-commit-dihapus
             ->timeout(20);
 
         if (! empty($resolvedToken)) {
@@ -394,6 +395,37 @@ class AkademikService
 
     /*
     |==========================================================================
+    | MODUL: ANGGOTA UPPS (/api/anggota-upps/*)
+    |==========================================================================
+    */
+
+    public function getAnggotaUppsList(array $query = [], ?string $token = null): Response
+    {
+        return $this->get('anggota-upps', $query, $token);
+    }
+
+    public function getAnggotaUppsById(int|string $id, ?string $token = null): Response
+    {
+        return $this->get("anggota-upps/{$id}", [], $token);
+    }
+
+    public function createAnggotaUpps(array $data, ?string $token = null): Response
+    {
+        return $this->post('anggota-upps', $data, $token);
+    }
+
+    public function updateAnggotaUpps(int|string $id, array $data, ?string $token = null): Response
+    {
+        return $this->put("anggota-upps/{$id}", $data, $token);
+    }
+
+    public function deleteAnggotaUpps(int|string $id, ?string $token = null): Response
+    {
+        return $this->delete("anggota-upps/{$id}", [], $token);
+    }
+
+    /*
+    |==========================================================================
     | MODUL: AUTENTIKASI PENGGUNA (/api/auth/*)
     |==========================================================================
     */
@@ -599,11 +631,6 @@ class AkademikService
     public function deleteMahasiswa(int|string $id, ?string $token = null): Response
     {
         return $this->delete("mahasiswa/{$id}", [], $token);
-    }
-
-    public function getJenisPrestasiList(array $query = [], ?string $token = null): Response
-    {
-        return $this->get('jenis-prestasi', $query, $token);
     }
 
     public function getPrestasiMahasiswaList(array $query = [], ?string $token = null): Response
@@ -895,6 +922,8 @@ class AkademikService
     public function updateNilaiMahasiswaLinkEvidence(int|string $id, array $data, ?string $token = null): Response
     {
         return $this->patch("nilai-mahasiswa/{$id}/link-evidence", $data, $token);
+    }
+
     /*
     |==========================================================================
     | MODUL: KEMAHASISWAAN - STATUS MAHASISWA (/api/status-mahasiswa/*)
