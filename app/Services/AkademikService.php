@@ -882,6 +882,38 @@ class AkademikService
         return $this->get('nilai-mahasiswa', $query, $token);
     }
 
+        /*
+    |==========================================================================
+    | MODUL: ANGGOTA UPPS (/api/anggota-upps/*)
+    |==========================================================================
+    */
+
+    public function getAnggotaUppsList(array $query = [], ?string $token = null): Response
+    {
+        return $this->get('anggota-upps', $query, $token);
+    }
+
+    public function createAnggotaUpps(array $data, ?string $token = null): Response
+    {
+        return $this->post('anggota-upps', $data, $token);
+    }
+
+    public function updateAnggotaUpps(int|string $id, array $data, ?string $token = null): Response
+    {
+        return $this->put("anggota-upps/{$id}", $data, $token);
+    }
+
+    public function deleteAnggotaUpps(int|string $id, ?string $token = null): Response
+    {
+        return $this->delete("anggota-upps/{$id}", [], $token);
+    }
+
+    /*
+    |==========================================================================
+    | MODUL: JENIS PRESTASI (/api/jenis-prestasi/*)
+    |==========================================================================
+    */
+
     public function getNilaiMahasiswaById(int|string $id, ?string $token = null): Response
     {
         return $this->get("nilai-mahasiswa/{$id}", [], $token);
@@ -895,6 +927,7 @@ class AkademikService
     public function updateNilaiMahasiswaLinkEvidence(int|string $id, array $data, ?string $token = null): Response
     {
         return $this->patch("nilai-mahasiswa/{$id}/link-evidence", $data, $token);
+    }
     /*
     |==========================================================================
     | MODUL: KEMAHASISWAAN - STATUS MAHASISWA (/api/status-mahasiswa/*)
