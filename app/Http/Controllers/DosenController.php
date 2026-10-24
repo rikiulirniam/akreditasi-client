@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Services\TridharmaService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Illuminate\View\View;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use Symfony\Component\HttpFoundation\StreamedResponse;
@@ -405,6 +406,16 @@ class DosenController extends Controller
 
         $response = $this->tridharmaService->updateDosen($id, $payload);
         $body = $response->json();
+
+        Log::debug('Tridharma dosen update', [
+            'url' => rtrim((string) config('services.tridharma.base_url'), '/').'/dosen/'.$id,
+            'requested_status' => $payload['status_dosen'],
+            'http_status' => $response->status(),
+            'api_success' => $body['success'] ?? null,
+            'api_message' => $body['message'] ?? null,
+            'api_error_fields' => array_keys($body['errors'] ?? []),
+            'response_status' => data_get($body, 'data.status_dosen'),
+        ]);
 
         if ($response->successful() && ($body['success'] ?? true)) {
             return redirect()->route('dosen.index')->with('toast', [

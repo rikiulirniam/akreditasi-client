@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use Tests\TestCase;
 
 class DosenShowTest extends TestCase
@@ -262,6 +263,8 @@ class DosenShowTest extends TestCase
 
         $response->assertOk()
             ->assertSee('Belum ada data dosen')
+            ->assertSee('id="dosen-table" class="w-full table-fixed text-left border-collapse"', false)
+            ->assertSee('mt-7 min-w-0 overflow-x-hidden', false)
             ->assertSee('openImportModalBtnTable')
             ->assertSee('openCreateModalBtnTable')
             ->assertSee('Download Template Excel');
@@ -307,6 +310,60 @@ class DosenShowTest extends TestCase
         });
     }
 
+    public function test_jabatan_controls_are_only_visible_to_admin_and_reviewer(): void
+    {
+        Http::fake([
+            '*/dosen*' => Http::response([
+                'success' => true,
+                'data' => [
+                    'data' => [[
+                        'id_dosen' => 10,
+                        'nama_dosen' => 'Dosen Uji',
+                        'nidn' => '0012345678',
+                        'status_dosen' => 'DTPS',
+                        'email' => 'dosen@example.com',
+                        'id_jabatan' => 4,
+                        'id_pendidikan' => 6,
+                    ]],
+                    'total' => 1,
+                    'per_page' => 10,
+                    'current_page' => 1,
+                    'last_page' => 1,
+                ],
+            ]),
+            '*/jabatan-akademik*' => Http::response([
+                'data' => [['id_jabatan' => 4, 'nama_jabatan' => 'Lektor']],
+            ]),
+            '*/pendidikan*' => Http::response(['data' => []]),
+            '*/bidang-keahlian*' => Http::response(['data' => []]),
+        ]);
+
+        foreach (['Admin', 'Administrator', 'reviewer'] as $role) {
+            $response = $this->withSession([
+                'access_token' => 'dummy-token',
+                'user' => ['nama' => 'Pengguna', 'role' => $role],
+            ])->get(route('dosen.index'));
+
+            $response->assertOk()
+                ->assertSee('Jabatan Akademik')
+                ->assertSee('id="createJabatanSelect"', false)
+                ->assertSee('id="editJabatanSelect"', false)
+                ->assertSee('Lektor');
+        }
+
+        $response = $this->withSession([
+            'access_token' => 'dummy-token',
+            'user' => ['nama' => 'Kaprodi', 'role' => 'Kaprodi'],
+        ])->get(route('dosen.index'));
+
+        $response->assertOk()
+            ->assertDontSee('id="createJabatanSelect"', false)
+            ->assertDontSee('id="editJabatanSelect"', false)
+            ->assertSee('id="editJabatanPreserved"', false)
+            ->assertSee('data-id-jabatan="4"', false)
+            ->assertSee('data-id-pendidikan="6"', false);
+    }
+
     public function test_dosen_store_passes_dynamic_jabatan_and_pendidikan(): void
     {
         Http::fake([
@@ -341,6 +398,94 @@ class DosenShowTest extends TestCase
                 && ($data['id_pendidikan'] ?? null) === 3
                 && ($data['nama_dosen'] ?? null) === 'Dr. Hendra Gunawan';
         });
+    }
+
+    public function test_dosen_update_allows_missing_education_id(): void
+    {
+        Http::fake([
+            '*/dosen/10' => Http::response([
+                'success' => true,
+                'data' => ['id' => 10],
+            ], 200),
+        ]);
+
+        $response = $this->withSession([
+            'access_token' => 'dummy-token',
+            'user' => ['nama' => 'Kuwat', 'role' => 'Kaprodi'],
+        ])->put(route('dosen.update', 10), [
+            'nama_dosen' => 'Dr. Hendra Gunawan, M.T.',
+            'nidn' => '0029088401',
+            'status_dosen' => 'Tidak Tetap',
+            'email' => 'hendra.updated@example.com',
+        ]);
+
+        $response->assertRedirect(route('dosen.index'));
+
+        Http::assertSent(fn ($request): bool => $request->method() === 'PUT'
+            && str_contains($request->url(), '/dosen/10')
+            && ($request->data()['status_dosen'] ?? null) === 'Tidak Tetap'
+            && ($request->data()['id_pendidikan'] ?? null) === null);
+    }
+
+    public function test_dosen_update_preserves_existing_education_id_when_status_changes(): void
+    {
+        Http::fake([
+            '*/dosen/10' => Http::response([
+                'success' => true,
+                'data' => ['id' => 10],
+            ], 200),
+        ]);
+
+        $response = $this->withSession([
+            'access_token' => 'dummy-token',
+            'user' => ['nama' => 'Kuwat', 'role' => 'Kaprodi'],
+        ])->put(route('dosen.update', 10), [
+            'nama_dosen' => 'Dr. Hendra Gunawan, M.T.',
+            'nidn' => '0029088401',
+            'status_dosen' => 'Tidak Tetap',
+            'email' => 'hendra.updated@example.com',
+            'id_pendidikan' => 6,
+        ]);
+
+        $response->assertRedirect(route('dosen.index'));
+
+        Http::assertSent(fn ($request): bool => $request->method() === 'PUT'
+            && str_contains($request->url(), '/dosen/10')
+            && ($request->data()['status_dosen'] ?? null) === 'Tidak Tetap'
+            && ($request->data()['id_pendidikan'] ?? null) === 6);
+    }
+
+    public function test_dosen_update_logs_tridharma_response_without_sensitive_data(): void
+    {
+        Http::fake([
+            '*/dosen/10' => Http::response([
+                'success' => false,
+                'message' => 'Validasi gagal',
+                'errors' => ['status_dosen' => ['Status tidak valid']],
+                'data' => ['nama_dosen' => 'Jangan catat data ini'],
+            ], 422),
+        ]);
+
+        Log::shouldReceive('debug')
+            ->once()
+            ->with('Tridharma dosen update', \Mockery::on(fn (array $context): bool => $context['http_status'] === 422
+                && $context['requested_status'] === 'Tidak Tetap'
+                && $context['api_message'] === 'Validasi gagal'
+                && $context['api_error_fields'] === ['status_dosen']
+                && ! array_key_exists('api_data', $context)));
+
+        $response = $this->withSession([
+            'access_token' => 'dummy-token',
+            'user' => ['nama' => 'Kuwat', 'role' => 'Kaprodi'],
+        ])->put(route('dosen.update', 10), [
+            'nama_dosen' => 'Dr. Hendra Gunawan, M.T.',
+            'nidn' => '0029088401',
+            'status_dosen' => 'Tidak Tetap',
+            'email' => 'hendra.updated@example.com',
+            'id_pendidikan' => 1,
+        ]);
+
+        $response->assertRedirect();
     }
 
     public function test_dosen_update_passes_dynamic_jabatan_and_pendidikan(): void
