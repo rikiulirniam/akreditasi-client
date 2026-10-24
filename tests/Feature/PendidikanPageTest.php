@@ -72,14 +72,14 @@ class PendidikanPageTest extends TestCase
             ->assertSee('Tambah Pendidikan')
             ->assertDontSee('+ Tambah Pendidikan')
             // Verify clean jenjang options exist
-            ->assertSee('>S1<', false)
+            ->assertSee('>D4/S1<', false)
             ->assertSee('>S2<', false)
             ->assertSee('>S3<', false)
             ->assertSee('>D3<', false)
-            ->assertSee('>Profesi<', false)
-            ->assertSee('>Spesialis<', false)
-            // Verify duplicate/confusing variants are eliminated from option list
-            ->assertDontSee('>D4/S1<', false)
+            // Verify Profesi, Spesialis, and old S1 are eliminated from option list
+            ->assertDontSee('>Profesi<', false)
+            ->assertDontSee('>Spesialis<', false)
+            ->assertDontSee('>S1<', false)
             ->assertDontSee('>S2 Terapan<', false)
             ->assertDontSee('>S3 Terapan<', false);
     }
