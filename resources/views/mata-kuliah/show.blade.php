@@ -203,8 +203,7 @@
                                 data-tahun-akademik="{{ $item['tahun_akademik'] }}"
                                 data-rata-rata-ipk="{{ $item['rata_rata_ipk'] }}"
                                 data-jumlah-mata-kuliah="{{ $item['jumlah_mata_kuliah'] }}"
-                                data-evidence="{{ $item['evidence'] }}"
-                                data-evidence-action="{{ $item['enrollment_mata_kuliah_id'] ? route('mata-kuliah.update-evidence', $item['enrollment_mata_kuliah_id']) : '' }}"
+                                data-class-id="{{ $item['id'] }}"
                             >
                                 <x-icon.eye class="w-5 h-5" />
                             </button>
@@ -279,33 +278,34 @@
                 <label for="gradeLinkInput" class="mb-2 block text-xs font-bold text-gray-900">
                     Input Link Nilai
                 </label>
-                <input
-                    type="url"
-                    id="gradeLinkInput"
-                    maxlength="2048"
-                    placeholder="Masukkan Link"
-                    class="w-full rounded-lg bg-gray-200 px-4 py-2.5 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-primary/30"
-                >
-            </div>
-
-            <p id="gradeLinkNotice" class="hidden text-xs text-amber-700" role="status" aria-live="polite">
-                Tampilan saja. Link belum disimpan karena endpoint Input Nilai belum tersedia.
-            </p>
-
-            <div class="grid grid-cols-2 gap-3 pt-1">
-                <button
-                    type="button"
-                    class="close-grade-link-modal w-full rounded-lg bg-gray-200 px-4 py-2.5 text-sm font-bold text-gray-900 transition hover:bg-gray-300"
-                >
-                    Batal
-                </button>
-                <button
-                    type="button"
-                    id="saveGradeLinkBtn"
-                    class="w-full rounded-lg bg-primary px-4 py-2.5 text-sm font-bold text-white transition hover:bg-additional"
-                >
-                    Simpan
-                </button>
+                <form id="gradeLinkForm" action="" method="POST">
+                    @csrf
+                    @method('PATCH')
+                    <input
+                        type="url"
+                        name="link_nilai"
+                        id="gradeLinkInput"
+                        maxlength="2048"
+                        placeholder="Masukkan Link"
+                        required
+                        class="w-full rounded-lg bg-gray-200 px-4 py-2.5 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-primary/30"
+                    >
+                    <div class="grid grid-cols-2 gap-3 pt-4">
+                        <button
+                            type="button"
+                            class="close-grade-link-modal w-full rounded-lg bg-gray-200 px-4 py-2.5 text-sm font-bold text-gray-900 transition hover:bg-gray-300"
+                        >
+                            Batal
+                        </button>
+                        <button
+                            type="submit"
+                            id="saveGradeLinkBtn"
+                            class="w-full rounded-lg bg-primary px-4 py-2.5 text-sm font-bold text-white transition hover:bg-additional disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                            Simpan
+                        </button>
+                    </div>
+                </form>
             </div>
         </div>
     </div>
@@ -325,7 +325,7 @@
 
         <form id="evidenceForm" action="" method="POST" class="space-y-4">
             @csrf
-            @method('PUT')
+            @method('PATCH')
 
             <div>
                 <label for="evidenceLinkInput" class="mb-2 block text-xs font-bold text-gray-900">
@@ -333,7 +333,7 @@
                 </label>
                 <input
                     type="url"
-                    name="evidence"
+                    name="link_evidence"
                     id="evidenceLinkInput"
                     maxlength="2048"
                     placeholder="Masukkan Link"
@@ -483,14 +483,17 @@
 
 <script>
     document.addEventListener('DOMContentLoaded', function () {
+        const gradeLinkUrlTemplate = @json(route('mata-kuliah.update-grade-link', [$id, '__CLASS_ID__']));
+        const evidenceLinkUrlTemplate = @json(route('mata-kuliah.update-grade-evidence', [$id, '__CLASS_ID__']));
         const classDetailModal = document.getElementById('classDetailModal');
         const evidenceModal = document.getElementById('evidenceModal');
         const gradeLinkModal = document.getElementById('gradeLinkModal');
         const evidenceForm = document.getElementById('evidenceForm');
         const evidenceLinkInput = document.getElementById('evidenceLinkInput');
         const openEvidenceModalBtn = document.getElementById('openEvidenceModalBtn');
-        const gradeLinkNotice = document.getElementById('gradeLinkNotice');
+        const openGradeLinkModalBtn = document.getElementById('openGradeLinkModalBtn');
         const gradeLinkInput = document.getElementById('gradeLinkInput');
+        const gradeLinkForm = document.getElementById('gradeLinkForm');
 
         function showDialog(dialog) {
             const card = dialog?.querySelector('.class-detail-card, .evidence-modal-card, .grade-link-modal-card');
@@ -519,31 +522,29 @@
                 document.getElementById('classDetailTahunAkademik').textContent = this.dataset.tahunAkademik;
                 document.getElementById('classDetailRataRataIpk').textContent = this.dataset.rataRataIpk;
                 document.getElementById('classDetailJumlahMataKuliah').textContent = this.dataset.jumlahMataKuliah;
-                openEvidenceModalBtn.disabled = ! this.dataset.evidenceAction;
-                openEvidenceModalBtn.dataset.action = this.dataset.evidenceAction;
-                evidenceLinkInput.value = this.dataset.evidence;
+                gradeLinkForm.action = gradeLinkUrlTemplate.replace('__CLASS_ID__', encodeURIComponent(this.dataset.classId));
+                evidenceForm.action = evidenceLinkUrlTemplate.replace('__CLASS_ID__', encodeURIComponent(this.dataset.classId));
+                openGradeLinkModalBtn.disabled = false;
+                openEvidenceModalBtn.disabled = false;
                 showDialog(classDetailModal);
             });
         });
 
         openEvidenceModalBtn?.addEventListener('click', function () {
             if (this.disabled) return;
-            evidenceForm.action = this.dataset.action;
+            evidenceLinkInput.value = '';
             hideDialog(classDetailModal);
             showDialog(evidenceModal);
             evidenceLinkInput.focus();
         });
 
         document.getElementById('openGradeLinkModalBtn')?.addEventListener('click', function () {
-            gradeLinkNotice.classList.add('hidden');
+            gradeLinkInput.value = '';
             hideDialog(classDetailModal);
             showDialog(gradeLinkModal);
             gradeLinkInput.focus();
         });
 
-        document.getElementById('saveGradeLinkBtn')?.addEventListener('click', function () {
-            gradeLinkNotice.classList.remove('hidden');
-        });
 
         document.querySelectorAll('.close-class-detail-modal').forEach(button => {
             button.addEventListener('click', () => hideDialog(classDetailModal));

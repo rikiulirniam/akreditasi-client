@@ -10,6 +10,7 @@ use App\Http\Controllers\MahasiswaController;
 use App\Http\Controllers\MataKuliahController;
 use App\Http\Controllers\PerguruanTinggiController;
 use App\Http\Controllers\PermissionController;
+use App\Http\Controllers\PrestasiMahasiswaController;
 use App\Http\Controllers\ProdiController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\TahunAkademikController;
@@ -60,28 +61,33 @@ Route::middleware('auth.akademik')->group(function () {
     Route::middleware('permission:angkatan_kelas')->resource('angkatan-kelas', AngkatanKelasController::class)->only(['store', 'update', 'destroy']);
     Route::middleware('permission:kelas')->resource('kelas', KelasController::class);
     Route::middleware('permission:mahasiswa')->resource('mahasiswa', MahasiswaController::class);
+    Route::middleware('permission:prestasi_mahasiswa')->resource('prestasi-mahasiswa', PrestasiMahasiswaController::class)->only(['index', 'show', 'store', 'update', 'destroy']);
+    Route::middleware('permission:evidence_prestasi_mahasiswa.create')->post('/prestasi-mahasiswa/{prestasiId}/evidence', [PrestasiMahasiswaController::class, 'storeEvidence'])->name('prestasi-mahasiswa.evidence.store');
+    Route::middleware('permission:evidence_prestasi_mahasiswa.update')->put('/prestasi-mahasiswa/{prestasiId}/evidence/{evidenceId}', [PrestasiMahasiswaController::class, 'updateEvidence'])->name('prestasi-mahasiswa.evidence.update');
+    Route::middleware('permission:evidence_prestasi_mahasiswa.delete')->delete('/prestasi-mahasiswa/{prestasiId}/evidence/{evidenceId}', [PrestasiMahasiswaController::class, 'destroyEvidence'])->name('prestasi-mahasiswa.evidence.destroy');
+    Route::middleware('permission:jenis_prestasi.create')->post('/prestasi-mahasiswa/{prestasiId}/jenis', [PrestasiMahasiswaController::class, 'storeJenis'])->name('prestasi-mahasiswa.jenis.store');
+    Route::middleware('permission:jenis_prestasi.update')->put('/prestasi-mahasiswa/{prestasiId}/jenis/{jenisId}', [PrestasiMahasiswaController::class, 'updateJenis'])->name('prestasi-mahasiswa.jenis.update');
+    Route::middleware('permission:jenis_prestasi.delete')->delete('/prestasi-mahasiswa/{prestasiId}/jenis/{jenisId}', [PrestasiMahasiswaController::class, 'destroyJenis'])->name('prestasi-mahasiswa.jenis.destroy');
 
     // ==========================================
     // MODUL AKADEMIK, KURIKULUM, & MATA KULIAH
     // ==========================================
     Route::middleware('permission:mata_kuliah')->resource('mata-kuliah', MataKuliahController::class);
     Route::middleware('permission:mata_kuliah.update,enrollment_mata_kuliah.update')->put('/mata-kuliah-enrollment/{enrollmentId}/evidence', [MataKuliahController::class, 'updateEvidence'])->name('mata-kuliah.update-evidence');
+    Route::middleware('permission:mata_kuliah.update,enrollment_mata_kuliah.update')->patch('/mata-kuliah/{mataKuliahId}/kelas/{angkatanKelasId}/link-nilai', [MataKuliahController::class, 'updateNilaiLink'])->name('mata-kuliah.update-grade-link');
+    Route::middleware('permission:mata_kuliah.update,enrollment_mata_kuliah.update')->patch('/mata-kuliah/{mataKuliahId}/kelas/{angkatanKelasId}/link-evidence', [MataKuliahController::class, 'updateEvidenceLink'])->name('mata-kuliah.update-grade-evidence');
 
     Route::resource('kurikulum', KurikulumController::class);
     Route::put('kurikulum/{kurikulum}/cpl-mata-kuliah', [KurikulumController::class, 'updateMataKuliahCpl'])->name('kurikulum.update-mk-cpl');
-    
+
     Route::get('/tahun-akademik/{id}/kelas', [TahunAkademikController::class, 'daftarKelas'])->name('tahun-akademik.kelas');
     Route::get('/tahun-akademik/{id}/kelas/{kelasId}', [TahunAkademikController::class, 'detailKelas'])->name('tahun-akademik.detail-kelas');
-    
+
     Route::get('/upps/{id}/anggota', [UppsController::class, 'anggota'])->name('upps.anggota');
     Route::post('/upps/{id}/anggota', [UppsController::class, 'storeAnggota'])->name('upps.anggota.store');
     Route::put('/upps/{id}/anggota/{anggotaId}', [UppsController::class, 'updateAnggota'])->name('upps.anggota.update');
     Route::delete('/upps/{id}/anggota/{anggotaId}', [UppsController::class, 'destroyAnggota'])->name('upps.anggota.destroy');
 
-    Route::get('/kemahasiswaan/jenis-prestasi', [MahasiswaController::class, 'jenisPrestasi'])->name('kemahasiswaan.jenis-prestasi.index');
-    Route::post('/kemahasiswaan/jenis-prestasi', [MahasiswaController::class, 'storeJenisPrestasi'])->name('kemahasiswaan.jenis-prestasi.store');
-    Route::put('/kemahasiswaan/jenis-prestasi/{id}', [MahasiswaController::class, 'updateJenisPrestasi'])->name('kemahasiswaan.jenis-prestasi.update');
-    Route::delete('/kemahasiswaan/jenis-prestasi/{id}', [MahasiswaController::class, 'destroyJenisPrestasi'])->name('kemahasiswaan.jenis-prestasi.destroy');
     Route::middleware('permission:tahun_akademik')->resource('tahun-akademik', TahunAkademikController::class);
     Route::middleware('permission:tahun_akademik.read')->get('/tahun-akademik/{id}/kelas', [TahunAkademikController::class, 'daftarKelas'])->name('tahun-akademik.kelas');
     Route::middleware('permission:kelas.read')->get('/tahun-akademik/{id}/kelas/{kelasId}', [TahunAkademikController::class, 'detailKelas'])->name('tahun-akademik.detail-kelas');
