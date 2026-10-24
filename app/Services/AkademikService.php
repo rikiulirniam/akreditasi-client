@@ -909,6 +909,12 @@ class AkademikService
         return $this->get('nilai-mahasiswa', $query, $token);
     }
 
+    /*
+    |==========================================================================
+    | MODUL: JENIS PRESTASI (/api/jenis-prestasi/*)
+    |==========================================================================
+    */
+
     public function getNilaiMahasiswaById(int|string $id, ?string $token = null): Response
     {
         return $this->get("nilai-mahasiswa/{$id}", [], $token);
@@ -923,7 +929,6 @@ class AkademikService
     {
         return $this->patch("nilai-mahasiswa/{$id}/link-evidence", $data, $token);
     }
-
     /*
     |==========================================================================
     | MODUL: KEMAHASISWAAN - STATUS MAHASISWA (/api/status-mahasiswa/*)
