@@ -29,7 +29,7 @@
         }
     </style>
 </head>
-<body class="h-full font-sans antialiased text-black overflow-hidden">
+<body class="h-full font-sans antialiased text-black overflow-hidden {{ request()->routeIs('tenaga-kependidikan.*', 'tenaga-pendidikan.*') ? 'flow2-tendik' : '' }}">
     @php
         $currentUser = $user ?? session('user') ?? [
             'nama' => 'Kuwat',
@@ -57,10 +57,10 @@
         <div class="flex-1 flex flex-col min-w-0 h-full overflow-hidden">
             
             <!-- Topbar -->
-            <header class="shrink-0 min-h-24 bg-white px-4 sm:px-6 lg:px-[54px] py-3.5 flex items-center justify-between z-30">
+            <header class="shrink-0 min-h-20 bg-white px-4 sm:px-6 lg:px-[54px] pt-5 sm:pt-7 pb-3 flex items-center justify-between z-30">
                 
                 <!-- Left: Sidebar Toggle & Page Title -->
-                <div class="flex items-center gap-3 sm:gap-4">
+                <div class="flex items-center gap-3 sm:gap-5">
                     <!-- Mobile Hamburger Button -->
                     <button 
                         type="button" 
@@ -77,7 +77,7 @@
                     <button 
                         type="button" 
                         id="topbarSidebarToggleBtn" 
-                        class="hidden lg:flex p-1.5 -ml-1 text-primary hover:text-additional transition cursor-pointer" 
+                        class="hidden lg:flex p-1.5 -ml-1 text-primary hover:text-additional transition cursor-pointer self-start mt-1.5" 
                         aria-label="Toggle Sidebar"
                     >
                         <svg class="w-8 h-8 stroke-[2.5]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -87,30 +87,30 @@
 
                     <!-- Page Title & Subtitle -->
                     <div class="leading-tight">
-                        <h1 class="text-2xl sm:text-3xl lg:text-[44px] font-extrabold text-black tracking-tight leading-none flex items-center gap-1.5 flex-wrap">
+                        <h1 class="text-3xl sm:text-4xl lg:text-[44px] font-black text-black tracking-tight leading-tight">
                             @yield('title', $title ?? 'Dashboard')
                         </h1>
                         @hasSection('subtitle')
-                            <p class="text-sm sm:text-base lg:text-[20px] font-semibold text-black mt-1">
+                            <p class="text-sm sm:text-base lg:text-[16px] font-medium text-[#4B5563] mt-2 sm:mt-2.5">
                                 @yield('subtitle')
                             </p>
                         @endif
                     </div>
                 </div>
 
-                <!-- Right: Profile Pill -->
-                <div class="relative" id="profileDropdownContainer">
+                <!-- Right: Profile Pill & Dropdown (Aligned & Matching Prototype) -->
+                <div class="relative inline-block w-[220px] sm:w-[235px]" id="profileDropdownContainer">
+                    <!-- Closed State Button (Header Pill) -->
                     <button 
                         type="button" 
                         id="profileDropdownBtn"
-                        class="relative z-[51] flex items-center gap-2 rounded-md border border-primary bg-[#e5e5e5] px-2.5 py-1.5 text-primary shadow-sm transition duration-150 hover:bg-[#dcdcdc] active:scale-[0.99] sm:gap-2.5 sm:px-3"
-                        style="background-color: #e5e5e5;"
+                        class="w-full bg-[#EBF1F6] border-2 border-[#075B91] rounded-[18px] px-3.5 py-1.5 sm:px-4 sm:py-2 flex items-center gap-3 sm:gap-4 cursor-pointer shadow-xs hover:bg-[#e2eaf1] active:scale-[0.99] transition duration-150 select-none justify-between"
                         aria-expanded="false"
                         aria-haspopup="true"
                     >
                         <svg 
                             id="profileChevron" 
-                            class="h-4 w-4 shrink-0 text-primary stroke-[3] transition-transform duration-200 sm:h-[18px] sm:w-[18px]"
+                            class="w-4 h-4 sm:w-5 sm:h-5 text-[#075B91] stroke-[3] transition-transform duration-200 shrink-0" 
                             fill="none" 
                             viewBox="0 0 24 24" 
                             stroke="currentColor"
@@ -118,17 +118,19 @@
                             <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
                         </svg>
 
-                        <div class="text-left leading-tight">
-                            <span class="block whitespace-nowrap text-xs font-bold tracking-tight text-[#102b46] sm:text-[13px]">
+                        <!-- Middle: Greeting & Role -->
+                        <div class="text-left leading-tight flex-1 min-w-0 pr-1">
+                            <span class="block font-extrabold text-[13px] sm:text-[14px] text-black tracking-tight truncate">
                                 Halo, {{ explode(' ', $currentUser['nama'] ?? 'Kuwat')[0] }}
                             </span>
-                            <span class="block text-[10px] font-medium leading-tight text-gray-600">
+                            <span class="block text-[11px] sm:text-[11.5px] text-gray-600 font-medium truncate">
                                 {{ ucfirst(strtolower($currentUser['role'] ?? 'Kaprodi')) }}
                             </span>
                         </div>
 
-                        <div class="shrink-0 text-additional">
-                            <svg class="h-8 w-8 sm:h-[34px] sm:w-[34px]" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <!-- Right: Circle User Avatar Icon (Exact match to screenshot) -->
+                        <div class="shrink-0 text-[#075B91]">
+                            <svg class="w-8 h-8 sm:w-9 sm:h-9" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
                                 <circle cx="18" cy="18" r="15.5" stroke="currentColor" stroke-width="2.6"/>
                                 <circle cx="18" cy="14" r="4.5" stroke="currentColor" stroke-width="2.6"/>
                                 <path d="M9.5 28C10.8 23.5 14.1 21.5 18 21.5C21.9 21.5 25.2 23.5 26.5 28" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/>
@@ -136,45 +138,88 @@
                         </div>
                     </button>
 
-                    <!-- Dropdown Menu -->
+                    <!-- Expanded Profile Card (compact and exactly aligned) -->
                     <div 
                         id="profileDropdownMenu" 
-                        class="pointer-events-none absolute right-0 top-full z-50 w-full origin-top-right scale-95 transform rounded-b-md border border-t-0 border-primary bg-[#e5e5e5] py-1.5 opacity-0 shadow-lg transition-all duration-150"
-                        style="background-color: #e5e5e5;"
+                        class="absolute inset-x-0 top-0 w-full bg-[#EBF1F6] border-2 border-[#075B91] rounded-[18px] shadow-2xl z-50 overflow-hidden transform origin-top transition-all duration-150 opacity-0 scale-95 pointer-events-none select-none"
                         role="menu"
                     >
-                        <div class="border-b border-primary/20 px-3 py-1.5">
-                            <p class="truncate text-xs font-bold leading-tight text-[#102b46]">{{ $currentUser['nama'] ?? 'Kuwat' }}</p>
-                            <p class="truncate text-[10px] font-medium leading-tight text-gray-600">{{ ucfirst(strtolower($currentUser['role'] ?? 'Kaprodi')) }}</p>
-                        </div>
+                        <!-- Header Row (identical dimensions, click to close) -->
+                        <button 
+                            type="button" 
+                            id="profileDropdownCloseBtn"
+                            class="w-full bg-[#EBF1F6] px-3.5 py-1.5 sm:px-4 sm:py-2 flex items-center gap-3 sm:gap-4 cursor-pointer hover:bg-[#e2eaf1] transition select-none justify-between border-b border-[#075B91]/25"
+                            aria-label="Tutup Menu Profil"
+                        >
+                            <!-- Chevron UP -->
+                            <svg class="w-4 h-4 sm:w-5 sm:h-5 text-[#075B91] stroke-[3] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 15.75l7.5-7.5 7.5 7.5" />
+                            </svg>
+                            <!-- Greeting & Role -->
+                            <div class="text-left leading-tight flex-1 min-w-0 pr-1">
+                                <span class="block font-extrabold text-[13px] sm:text-[14px] text-black tracking-tight truncate">
+                                    Halo, {{ explode(' ', $currentUser['nama'] ?? 'Kuwat')[0] }}
+                                </span>
+                                <span class="block text-[11px] sm:text-[11.5px] text-gray-600 font-medium truncate">
+                                    {{ ucfirst(strtolower($currentUser['role'] ?? 'Kaprodi')) }}
+                                </span>
+                            </div>
+                            <!-- Avatar -->
+                            <div class="shrink-0 text-[#075B91]">
+                                <svg class="w-8 h-8 sm:w-9 sm:h-9" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <circle cx="18" cy="18" r="15.5" stroke="currentColor" stroke-width="2.6"/>
+                                    <circle cx="18" cy="14" r="4.5" stroke="currentColor" stroke-width="2.6"/>
+                                    <path d="M9.5 28C10.8 23.5 14.1 21.5 18 21.5C21.9 21.5 25.2 23.5 26.5 28" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/>
+                                </svg>
+                            </div>
+                        </button>
 
-                        <div class="space-y-0.5 p-1">
-                            <div class="flex items-center gap-2 rounded px-2 py-1.5 text-xs font-medium text-gray-800">
-                                <svg class="h-3.5 w-3.5 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 6h3m-1.5-1.5v3M6.75 9.75l-1.06-1.06m12.62 0-1.06 1.06M4.5 13.5h1.5m12 0h1.5M7.5 19.5l1.06-1.06m6.88 0 1.06 1.06M12 21v-1.5m0-12a6 6 0 1 0 0 12 6 6 0 0 0 0-12Z" />
-                                </svg>
-                                Pengaturan
+                        <!-- Body: Name block + Menu Items -->
+                        <div class="px-3.5 pt-2.5 pb-3">
+                            <!-- Full Name & Role (compact) -->
+                            <div class="mb-2.5">
+                                <p class="font-extrabold text-[13.5px] text-black tracking-tight leading-snug truncate">
+                                    {{ $currentUser['nama'] ?? 'Administrator Sistem' }}
+                                </p>
+                                <p class="text-[11px] text-black/60 font-medium">
+                                    {{ ucfirst(strtolower($currentUser['role'] ?? 'Administrator')) }}
+                                </p>
                             </div>
-                            <div class="flex items-center gap-2 rounded px-2 py-1.5 text-xs font-medium text-gray-800">
-                                <svg class="h-3.5 w-3.5 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M3 12h3l2-6 4 12 2-6h3l2 3h2" />
-                                </svg>
-                                Aktivitas
-                            </div>
-                            <form method="POST" action="{{ route('logout') }}">
-                                @csrf
-                                <button 
-                                    type="submit" 
-                                    class="flex w-full cursor-pointer items-center gap-2 rounded px-2 py-1.5 text-left text-xs font-medium transition hover:bg-white/60"
-                                    style="color: #dc2626;"
-                                    role="menuitem"
-                                >
-                                    <svg class="h-3.5 w-3.5" style="color: #dc2626;" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="M10 4H5.5A1.5 1.5 0 0 0 4 5.5v13A1.5 1.5 0 0 0 5.5 20H10M14 8l4 4-4 4m4-4H9" />
+
+                            <!-- Divider -->
+                            <div class="border-t border-[#075B91]/15 mb-2.5"></div>
+
+                            <!-- Menu Items -->
+                            <div class="space-y-2">
+                                <!-- Pengaturan -->
+                                <a href="#" class="flex items-center gap-2.5 text-black hover:text-[#075B91] transition group cursor-pointer" role="menuitem">
+                                    <svg class="w-4 h-4 text-gray-600 group-hover:text-[#075B91] stroke-[2.2] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.324.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 011.37.49l1.296 2.247a1.125 1.125 0 01-.26 1.431l-1.003.827c-.293.24-.438.613-.431.992a6.759 6.759 0 010 .255c-.007.378.138.75.43.99l1.005.828c.424.35.534.954.26 1.43l-1.298 2.247a1.125 1.125 0 01-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.57 6.57 0 01-.22.128c-.331.183-.581.495-.644.869l-.213 1.28c-.09.543-.56.941-1.11.941h-2.594c-.55 0-1.02-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 01-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 01-1.369-.49l-1.297-2.247a1.125 1.125 0 01.26-1.431l1.004-.827c.292-.24.437-.613.43-.992a6.932 6.932 0 010-.255c.007-.378-.138-.75-.43-.99l-1.004-.828a1.125 1.125 0 01-.26-1.43l1.297-2.247a1.125 1.125 0 011.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.087.22-.128.332-.183.582-.495.644-.869l.214-1.281z" />
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                                     </svg>
-                                    Keluar
-                                </button>
-                            </form>
+                                    <span class="text-[13px] font-semibold">Pengaturan</span>
+                                </a>
+
+                                <!-- Aktivitas -->
+                                <a href="#" class="flex items-center gap-2.5 text-black hover:text-[#075B91] transition group cursor-pointer" role="menuitem">
+                                    <svg class="w-4 h-4 text-gray-600 group-hover:text-[#075B91] stroke-[2.3] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12h3.75l2.25-6 4.5 12 3-7.5 1.5 3h4.5" />
+                                    </svg>
+                                    <span class="text-[13px] font-semibold">Aktivitas</span>
+                                </a>
+
+                                <!-- Keluar -->
+                                <form method="POST" action="{{ route('logout') }}" class="m-0 p-0">
+                                    @csrf
+                                    <button type="submit" class="w-full flex items-center gap-2.5 text-[#8B1D1D] hover:text-[#B91C1C] transition group cursor-pointer text-left" role="menuitem">
+                                        <svg class="w-4 h-4 shrink-0 fill-current text-[#8B1D1D] group-hover:text-[#B91C1C]" viewBox="0 0 24 24">
+                                            <path d="M5 3h10a2 2 0 0 1 2 2v3a1 1 0 1 1-2 0V5H5v14h10v-3a1 1 0 1 1 2 0v3a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/>
+                                            <path d="M14.293 8.293a1 1 0 0 1 1.414 0l3 3a1 1 0 0 1 0 1.414l-3 3a1 1 0 0 1-1.414-1.414L15.586 13H9a1 1 0 1 1 0-2h6.586l-1.293-1.293a1 1 0 0 1 0-1.414z"/>
+                                        </svg>
+                                        <span class="text-[13px] font-semibold">Keluar</span>
+                                    </button>
+                                </form>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -206,6 +251,7 @@
             const sidebarTexts = document.querySelectorAll('.sidebar-text');
             const sidebarChevrons = document.querySelectorAll('.sidebar-chevron');
             const submenuContainers = document.querySelectorAll('.submenu-container');
+            const sidebarExpandedWidth = document.body.classList.contains('flow2-tendik') ? 'w-[314px]' : 'w-[350px]';
 
             let isCollapsed = localStorage.getItem('sidebar_collapsed') === 'true';
 
@@ -219,14 +265,14 @@
 
             function applySidebarState() {
                 if (isCollapsed) {
-                    sidebar.classList.remove('w-[350px]', 'w-64');
+                    sidebar.classList.remove('w-[350px]', 'w-[314px]', 'w-64');
                     sidebar.classList.add('w-20', 'is-collapsed');
                     sidebarTexts.forEach(el => el.classList.add('hidden'));
                     sidebarChevrons.forEach(el => el.classList.add('hidden'));
                     submenuContainers.forEach(el => el.classList.add('hidden'));
                 } else {
                     sidebar.classList.remove('w-20', 'is-collapsed');
-                    sidebar.classList.add('w-[350px]');
+                    sidebar.classList.add(sidebarExpandedWidth);
                     sidebarTexts.forEach(el => el.classList.remove('hidden'));
                     sidebarChevrons.forEach(el => el.classList.remove('hidden'));
 
@@ -326,44 +372,62 @@
             // Profile Dropdown Elements
             const profileBtn = document.getElementById('profileDropdownBtn');
             const profileMenu = document.getElementById('profileDropdownMenu');
-            const profileChevron = document.getElementById('profileChevron');
+            const profileCloseBtn = document.getElementById('profileDropdownCloseBtn');
             let isDropdownOpen = false;
 
-            function toggleProfileDropdown() {
-                isDropdownOpen = !isDropdownOpen;
-                if (isDropdownOpen) {
+            function openProfileDropdown() {
+                isDropdownOpen = true;
+                if (profileMenu) {
                     profileMenu.classList.remove('opacity-0', 'scale-95', 'pointer-events-none');
                     profileMenu.classList.add('opacity-100', 'scale-100');
-                    profileBtn.classList.add('rounded-b-none');
-                    if (profileChevron) profileChevron.classList.add('rotate-180');
+                }
+                if (profileBtn) {
                     profileBtn.setAttribute('aria-expanded', 'true');
-                } else {
+                    profileBtn.classList.add('invisible');
+                }
+            }
+
+            function closeProfileDropdown() {
+                isDropdownOpen = false;
+                if (profileMenu) {
                     profileMenu.classList.remove('opacity-100', 'scale-100');
                     profileMenu.classList.add('opacity-0', 'scale-95', 'pointer-events-none');
-                    profileBtn.classList.remove('rounded-b-none');
-                    if (profileChevron) profileChevron.classList.remove('rotate-180');
+                }
+                if (profileBtn) {
                     profileBtn.setAttribute('aria-expanded', 'false');
+                    profileBtn.classList.remove('invisible');
                 }
             }
 
             if (profileBtn) {
                 profileBtn.addEventListener('click', function (e) {
                     e.stopPropagation();
-                    toggleProfileDropdown();
+                    if (isDropdownOpen) {
+                        closeProfileDropdown();
+                    } else {
+                        openProfileDropdown();
+                    }
+                });
+            }
+
+            if (profileCloseBtn) {
+                profileCloseBtn.addEventListener('click', function (e) {
+                    e.stopPropagation();
+                    closeProfileDropdown();
                 });
             }
 
             // Close on click outside
             document.addEventListener('click', function (e) {
                 if (isDropdownOpen && profileMenu && !profileMenu.contains(e.target) && !profileBtn.contains(e.target)) {
-                    toggleProfileDropdown();
+                    closeProfileDropdown();
                 }
             });
 
             // Close on Escape key
             document.addEventListener('keydown', function (e) {
                 if (e.key === 'Escape') {
-                    if (isDropdownOpen) toggleProfileDropdown();
+                    if (isDropdownOpen) closeProfileDropdown();
                     closeMobileSidebar();
                 }
             });

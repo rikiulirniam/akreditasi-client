@@ -58,6 +58,11 @@ class TridharmaService
         return "{$this->baseUrl}/{$trimmed}";
     }
 
+    protected function url(string $endpoint): string
+    {
+        return $this->buildUrl($endpoint);
+    }
+
     /*
     |--------------------------------------------------------------------------
     | Generic HTTP Request Helpers
@@ -138,7 +143,38 @@ class TridharmaService
 
     /*
     |==========================================================================
-    | MODUL: SERTIFIKASI & TENDIK (/api/sertifikasi/*, /api/tendik/*)
+    | MODUL: TENDIK (/api/tendik/*)
+    |==========================================================================
+    */
+
+    public function getTendikList(array $query = [], ?string $token = null): Response
+    {
+        return $this->get('tendik', $query, $token);
+    }
+
+    public function getTendik(int|string $id, ?string $token = null): Response
+    {
+        return $this->get("tendik/{$id}", [], $token);
+    }
+
+    public function createTendik(array $data, ?string $token = null): Response
+    {
+        return $this->post('tendik', $data, $token);
+    }
+
+    public function updateTendik(int|string $id, array $data, ?string $token = null): Response
+    {
+        return $this->put("tendik/{$id}", $data, $token);
+    }
+
+    public function deleteTendik(int|string $id, ?string $token = null): Response
+    {
+        return $this->delete("tendik/{$id}", [], $token);
+    }
+
+    /*
+    |==========================================================================
+    | MODUL: SERTIFIKASI (/api/sertifikasi/*)
     |==========================================================================
     */
 
@@ -152,9 +188,43 @@ class TridharmaService
         return $this->get("sertifikasi/{$id}", [], $token);
     }
 
-    public function createSertifikasi(array $data, ?string $token = null): Response
+    public function getSertifikasi(int|string $id, ?string $token = null): Response
     {
-        return $this->post('sertifikasi', $data, $token);
+        return $this->getSertifikasiById($id, $token);
+    }
+
+    public function createSertifikasi(array $data, ?UploadedFile $evidenceFile = null, bool $asMultipart = false, ?string $token = null): Response
+    {
+        if ($evidenceFile === null && ! $asMultipart) {
+            return $this->post('sertifikasi', $data, $token);
+        }
+
+        $resolvedToken = $token ?? $this->token ?? (string) session('access_token');
+        $client = Http::acceptJson()->timeout(30);
+
+        if (! empty($resolvedToken)) {
+            $client = $client->withToken($resolvedToken);
+        }
+
+        $multipart = [];
+        foreach ($data as $name => $value) {
+            if ($value !== null && $value !== '') {
+                $multipart[] = [
+                    'name' => $name,
+                    'contents' => (string) $value,
+                ];
+            }
+        }
+
+        if ($evidenceFile !== null) {
+            $multipart[] = [
+                'name' => 'evidence_file',
+                'contents' => fopen($evidenceFile->getRealPath(), 'rb'),
+                'filename' => $evidenceFile->getClientOriginalName(),
+            ];
+        }
+
+        return $client->send('POST', $this->buildUrl('sertifikasi'), ['multipart' => $multipart]);
     }
 
     public function updateSertifikasi(int|string $id, array $data, ?string $token = null): Response
@@ -165,11 +235,6 @@ class TridharmaService
     public function deleteSertifikasi(int|string $id, ?string $token = null): Response
     {
         return $this->delete("sertifikasi/{$id}", [], $token);
-    }
-
-    public function getTendikList(array $query = [], ?string $token = null): Response
-    {
-        return $this->get('tendik', $query, $token);
     }
 
     /*
@@ -186,6 +251,26 @@ class TridharmaService
     public function getPendidikanList(array $query = [], ?string $token = null): Response
     {
         return $this->get('pendidikan', $query, $token);
+    }
+
+    public function getPendidikanById(int|string $id, ?string $token = null): Response
+    {
+        return $this->get("pendidikan/{$id}", [], $token);
+    }
+
+    public function createPendidikan(array $data, ?string $token = null): Response
+    {
+        return $this->post('pendidikan', $data, $token);
+    }
+
+    public function updatePendidikan(int|string $id, array $data, ?string $token = null): Response
+    {
+        return $this->put("pendidikan/{$id}", $data, $token);
+    }
+
+    public function deletePendidikan(int|string $id, ?string $token = null): Response
+    {
+        return $this->delete("pendidikan/{$id}", [], $token);
     }
 
     public function getBidangKeahlianList(array $query = [], ?string $token = null): Response

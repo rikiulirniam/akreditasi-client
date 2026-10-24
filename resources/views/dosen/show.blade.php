@@ -3,7 +3,7 @@
 @section('meta_title', 'Detail Dosen')
 
 @section('title')
-    <a href="{{ route('dosen.index') }}" class="hover:underline text-black">Dosen</a>
+    <a href="{{ route('dosen.index') }}" class="text-black">Dosen</a>
     <span class="text-black font-semibold mx-1.5">&gt;</span>
     <span>Detail dosen</span>
 @endsection
@@ -213,13 +213,13 @@
             </div>
 
             {{-- Tombol Tambah Pendidikan (footer full-width flush) --}}
-            <button type="button"
+            <a href="{{ route('pendidikan.index', ['id_dosen' => $dosen['id']]) }}"
                 class="w-full bg-[#012650] hover:bg-[#01568D] py-3 px-4 text-white text-center flex items-center justify-center gap-2 transition duration-150 cursor-pointer">
                 <svg class="w-5 h-5 text-white shrink-0" viewBox="0 0 20 20" fill="currentColor">
                     <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm.75-11.25a.75.75 0 00-1.5 0v2.5h-2.5a.75.75 0 000 1.5h2.5v2.5a.75.75 0 001.5 0v-2.5h2.5a.75.75 0 000-1.5h-2.5v-2.5z" clip-rule="evenodd" />
                 </svg>
                 <span class="text-sm sm:text-base font-normal tracking-wide">Tambah Pendidikan</span>
-            </button>
+            </a>
         </div>
 
         {{-- CARD 4: Luaran (HKI + Luaran + Buku) --}}
