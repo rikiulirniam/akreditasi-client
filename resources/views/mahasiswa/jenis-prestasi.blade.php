@@ -1,148 +1,299 @@
 @extends('layouts.app')
 
-@section('title', 'Jenis Prestasi Mahasiswa')
+@section('title', 'Jenis Prestasi')
 
 @section('content')
-<style>
-    .table-container div,
-    .table-container table {
-        overflow-x: hidden !important;
-        scrollbar-width: none !important;
-        -ms-overflow-style: none !important;
-    }
-    .table-container div::-webkit-scrollbar {
-        display: none !important;
-    }
-</style>
+<div class="space-y-6">
+    <div class="space-y-4">
+        <!-- Top Action Bar: Search Input & Tambah Jenis Prestasi Button -->
+        <div class="flex items-center justify-between gap-3">
+            <div class="relative flex-1 max-w-sm">
+                <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-gray-400">
+                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
+                    </svg>
+                </span>
+                <x-input 
+                    type="text" 
+                    id="searchJenisPrestasiInput"
+                    placeholder="Cari..." 
+                    class="pl-10 text-xs"
+                />
+            </div>
+            <div>
+                <button 
+                    type="button" 
+                    id="openCreateJenisPrestasiModalBtn"
+                    class="inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-primary text-white text-sm font-bold shadow-sm hover:bg-additional transition cursor-pointer"
+                >
+                    <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                    </svg>
+                    Tambah Jenis Prestasi
+                </button>
+            </div>
+        </div>
 
-<div class="space-y-6 w-full max-w-full overflow-hidden table-container">
-    <div class="flex items-center justify-between">
-        <h2 class="text-xl font-bold text-gray-900 tracking-tight">
-            Jenis Prestasi
-        </h2>
-        @if(!empty($jenisPrestasiList) && count($jenisPrestasiList) > 0)
-            <button type="button" onclick="openAddModal()" class="inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-primary text-white text-sm font-bold shadow-sm hover:bg-additional transition cursor-pointer">
-                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-                </svg>
-                Tambah Jenis Prestasi
-            </button>
-        @endif
+        <!-- Table: Data Jenis Prestasi -->
+        <x-table>
+            <x-slot:header>
+                <x-table.th class="w-16">No</x-table.th>
+                <x-table.th>Nama Jenis / Kategori Prestasi</x-table.th>
+                <x-table.th class="w-28 text-right">Action</x-table.th>
+            </x-slot:header>
+
+            @forelse($jenisPrestasiList as $index => $item)
+                @php
+                    $id = $item['id'] ?? 0;
+                    $namaJenis = $item['jenis'] ?? $item['nama_jenis'] ?? $item['kategori'] ?? '-';
+                @endphp
+                <x-table.row class="jenis-prestasi-row">
+                    <!-- No -->
+                    <x-table.cell class="text-gray-500 font-medium w-16">
+                        {{ $index + 1 }}
+                    </x-table.cell>
+
+                    <!-- Nama Jenis / Kategori Prestasi -->
+                    <x-table.cell>
+                        <span class="font-extrabold text-sm text-gray-900 tracking-tight jenis-text">
+                            {{ $namaJenis }}
+                        </span>
+                    </x-table.cell>
+
+                    <!-- Action (Edit & Delete) -->
+                    <x-table.cell class="w-28">
+                        <div class="flex items-center justify-end gap-2.5">
+                            <!-- Edit Button -->
+                            <button 
+                                type="button" 
+                                class="open-edit-jenis-prestasi-btn text-[#F59E0B] hover:text-[#D97706] transition p-1 cursor-pointer"
+                                title="Edit Jenis Prestasi"
+                                data-id="{{ $id }}"
+                                data-jenis="{{ $namaJenis }}"
+                                data-action="{{ route('kemahasiswaan.jenis-prestasi.update', $id) }}"
+                            >
+                                <x-icon.edit class="w-5 h-5" />
+                            </button>
+
+                            <!-- Delete Button -->
+                            <button 
+                                type="button" 
+                                class="text-[#DC2626] hover:text-[#B91C1C] transition p-1 cursor-pointer"
+                                title="Hapus Jenis Prestasi"
+                                data-confirm-delete
+                                data-action="{{ route('kemahasiswaan.jenis-prestasi.destroy', $id) }}"
+                                data-title="Hapus Jenis Prestasi?"
+                                data-message="Apakah Anda yakin ingin menghapus data jenis prestasi '{{ $namaJenis }}'? Tindakan ini bersifat permanen."
+                            >
+                                <x-icon.delete class="w-5 h-5" />
+                            </button>
+                        </div>
+                    </x-table.cell>
+                </x-table.row>
+            @empty
+                <x-table.empty colspan="3" message="Belum ada data jenis prestasi" submessage="Silakan klik tombol Tambah Jenis Prestasi untuk membuat data baru." />
+            @endforelse
+        </x-table>
     </div>
-
-    @if(empty($jenisPrestasiList) || count($jenisPrestasiList) === 0)
-        <!-- ========================================== -->
-        <!-- EMPTY STATE CARD (JIKA BELUM ADA DATA)     -->
-        <!-- ========================================== -->
-        <div class="w-full bg-[#F8F9FA] border border-gray-200/80 rounded-[28px] p-12 sm:p-20 text-center my-6 min-h-[400px] flex flex-col items-center justify-center">
-            <p class="text-base sm:text-lg font-medium text-gray-800 leading-relaxed max-w-md mx-auto mb-6">
-                Kamu belum ada data Jenis Prestasi,<br>silahkan tekan tombol tambah untuk Tambah Jenis Prestasi.
-            </p>
-            <button type="button" onclick="openAddModal()" class="inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-2xl bg-primary hover:bg-additional text-white font-bold text-sm shadow-md transition cursor-pointer">
-                <svg class="w-5 h-5 stroke-[2.5]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v6m3-3H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                <span>Tambah Jenis Prestasi</span>
-            </button>
-        </div>
-    @else
-        <!-- ========================================== -->
-        <!-- TABEL KATEGORI JENIS PRESTASI             -->
-        <!-- ========================================== -->
-        <div class="w-full rounded-2xl border border-gray-200 overflow-hidden">
-            <x-table class="w-full table-fixed">
-                <x-slot:header>
-                    <x-table.th class="w-[10%] text-center">No</x-table.th>
-                    <x-table.th class="w-[70%]">Nama Jenis / Kategori Prestasi</x-table.th>
-                    <x-table.th class="w-[20%] text-center">Action</x-table.th>
-                </x-slot:header>
-
-                @foreach($jenisPrestasiList as $item)
-                    @php
-                        $id = $item['id'] ?? 0;
-                        $namaJenis = $item['jenis'] ?? $item['nama_jenis'] ?? $item['kategori'] ?? '-';
-                    @endphp
-                    <x-table.row>
-                        <x-table.cell class="text-gray-500 font-medium text-center">{{ $loop->iteration }}.</x-table.cell>
-                        <x-table.cell>
-                            <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold {{ strtolower($namaJenis) === 'akademik' ? 'bg-blue-50 text-blue-700 border border-blue-200' : 'bg-purple-50 text-purple-700 border border-purple-200' }}">
-                                {{ $namaJenis }}
-                            </span>
-                        </x-table.cell>
-                        <x-table.cell class="text-center">
-                            <div class="flex items-center justify-center gap-2">
-                                <!-- 1. EDIT (Pensil Kuning) -->
-                                <button type="button" onclick='openEditModal(@json($item), "{{ $namaJenis }}")' class="text-amber-500 hover:text-amber-600 p-1 cursor-pointer" title="Edit">
-                                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" />
-                                    </svg>
-                                </button>
-
-                                <!-- 2. HAPUS (Tong Sampah Merah) -->
-                                <form action="{{ route('kemahasiswaan.jenis-prestasi.destroy', ['id' => $id]) }}" method="POST" onsubmit="return confirm('Apakah Anda yakin ingin menghapus Jenis Prestasi ini?');">
-                                    @csrf
-                                    @method('DELETE')
-                                    <button type="submit" class="text-rose-500 hover:text-rose-600 p-1 cursor-pointer" title="Hapus">
-                                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                            <path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
-                                        </svg>
-                                    </button>
-                                </form>
-                            </div>
-                        </x-table.cell>
-                    </x-table.row>
-                @endforeach
-            </x-table>
-        </div>
-    @endif
 </div>
 
 <!-- ========================================== -->
-<!-- MODAL: Tambah / Edit Jenis Prestasi        -->
+<!-- MODAL: Tambahkan Jenis Prestasi           -->
 <!-- ========================================== -->
-<div id="formJenisPrestasiModal" class="fixed inset-0 z-50 hidden bg-black/45 backdrop-blur-xs flex items-center justify-center p-4">
-    <div class="bg-white rounded-[28px] max-w-[420px] w-full p-8 shadow-2xl space-y-5 text-left transform transition-all">
-        <h3 id="modalTitle" class="text-xl font-bold text-gray-900 tracking-tight text-center">Tambah Jenis Prestasi</h3>
-        <form id="jenisPrestasiForm" method="POST" action="{{ route('kemahasiswaan.jenis-prestasi.store') }}" class="space-y-4">
-            @csrf
-            <input type="hidden" name="_method" id="formMethod" value="POST">
+<div 
+    id="createJenisPrestasiModal" 
+    class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/45 opacity-0 pointer-events-none transition-all duration-200 select-none"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="createJenisPrestasiModalTitle"
+>
+    <div class="jenis-prestasi-modal-card relative bg-white rounded-[28px] p-8 max-w-[460px] w-full shadow-2xl text-left transform scale-95 transition-all duration-200 max-h-[92vh] overflow-y-auto">
+        <h3 id="createJenisPrestasiModalTitle" class="text-xl font-bold text-gray-900 tracking-tight text-center mb-6">
+            Tambahkan Jenis Prestasi
+        </h3>
 
+        <form action="{{ route('kemahasiswaan.jenis-prestasi.store') }}" method="POST" class="space-y-4">
+            @csrf
+
+            <!-- Field: Nama Jenis / Kategori -->
             <div>
-                <label class="block text-xs font-bold text-gray-900 mb-1.5">Nama Jenis / Kategori</label>
-                <input type="text" name="jenis" id="inputJenis" required placeholder="Contoh: Akademik / Non-Akademik" class="w-full px-4 py-2.5 rounded-[10px] bg-gray-100 border-none text-sm font-medium text-gray-900 focus:ring-2 focus:ring-primary/30 focus:outline-none">
+                <label for="createJenisInput" class="block text-xs font-bold text-gray-900 mb-1.5">
+                    Nama Jenis / Kategori
+                </label>
+                <input 
+                    type="text" 
+                    name="jenis" 
+                    id="createJenisInput" 
+                    placeholder="Contoh: Akademik / Non-Akademik" 
+                    required 
+                    class="w-full px-4 py-2.5 rounded-[10px] bg-white-form border-none text-sm font-medium text-gray-900 focus:ring-2 focus:ring-additional/30 focus:outline-none placeholder:text-gray-500"
+                >
             </div>
 
+            <!-- Modal Action Buttons (Batal & Simpan) -->
             <div class="grid grid-cols-2 gap-4 pt-4">
-                <button type="button" onclick="closeFormModal()" class="w-full py-3 px-6 rounded-xl bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold text-sm transition cursor-pointer text-center">Batal</button>
-                <button type="submit" class="w-full py-3 px-6 rounded-xl bg-primary hover:bg-additional text-white font-bold text-sm shadow-sm transition cursor-pointer text-center">Simpan</button>
+                <button 
+                    type="button" 
+                    class="close-jenis-prestasi-modal w-full py-3 px-6 rounded-xl bg-white-form hover:bg-gray-300 text-black font-bold text-sm transition cursor-pointer text-center"
+                >
+                    Batal
+                </button>
+                <button 
+                    type="submit" 
+                    class="w-full py-3 px-6 rounded-xl bg-additional hover:bg-[#01426c] text-white font-bold text-sm shadow-sm transition cursor-pointer text-center"
+                >
+                    Simpan
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- ========================================== -->
+<!-- MODAL: Perbarui Jenis Prestasi            -->
+<!-- ========================================== -->
+<div 
+    id="editJenisPrestasiModal" 
+    class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/45 opacity-0 pointer-events-none transition-all duration-200 select-none"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="editJenisPrestasiModalTitle"
+>
+    <div class="jenis-prestasi-modal-card relative bg-white rounded-[28px] p-8 max-w-[460px] w-full shadow-2xl text-left transform scale-95 transition-all duration-200 max-h-[92vh] overflow-y-auto">
+        <h3 id="editJenisPrestasiModalTitle" class="text-xl font-bold text-gray-900 tracking-tight text-center mb-6">
+            Perbarui Jenis Prestasi
+        </h3>
+
+        <form id="editJenisPrestasiForm" action="" method="POST" class="space-y-4">
+            @csrf
+            @method('PUT')
+
+            <!-- Field: Kategori -->
+            <div>
+                <label for="editJenisInput" class="block text-xs font-bold text-gray-900 mb-1.5">
+                    Kategori Prestasi
+                </label>
+                <input 
+                    type="text" 
+                    name="jenis" 
+                    id="editJenisInput" 
+                    placeholder="Contoh: Akademik / Non-Akademik" 
+                    required 
+                    class="w-full px-4 py-2.5 rounded-[10px] bg-white-form border-none text-sm font-medium text-gray-900 focus:ring-2 focus:ring-additional/30 focus:outline-none placeholder:text-gray-500"
+                >
+            </div>
+
+            <!-- Modal Action Buttons (Batal & Perbarui) -->
+            <div class="grid grid-cols-2 gap-4 pt-4">
+                <button 
+                    type="button" 
+                    class="close-jenis-prestasi-modal w-full py-3 px-6 rounded-xl bg-white-form hover:bg-gray-300 text-black font-bold text-sm transition cursor-pointer text-center"
+                >
+                    Batal
+                </button>
+                <button 
+                    type="submit" 
+                    class="w-full py-3 px-6 rounded-xl bg-additional hover:bg-[#01426c] text-white font-bold text-sm shadow-sm transition cursor-pointer text-center"
+                >
+                    Perbarui
+                </button>
             </div>
         </form>
     </div>
 </div>
 
 <script>
-    const storeUrl = "{{ route('kemahasiswaan.jenis-prestasi.store') }}";
-    const updateBaseUrl = "{{ url('/kemahasiswaan/jenis-prestasi') }}";
+    document.addEventListener('DOMContentLoaded', function () {
+        // Table Search Filtering
+        const searchInput = document.getElementById('searchJenisPrestasiInput');
+        const rows = document.querySelectorAll('.jenis-prestasi-row');
 
-    function openAddModal() {
-        document.getElementById('modalTitle').innerText = 'Tambah Jenis Prestasi';
-        document.getElementById('jenisPrestasiForm').action = storeUrl;
-        document.getElementById('formMethod').value = 'POST';
-        document.getElementById('inputJenis').value = '';
-        document.getElementById('formJenisPrestasiModal').classList.remove('hidden');
-    }
+        if (searchInput) {
+            searchInput.addEventListener('input', function () {
+                const keyword = this.value.toLowerCase().trim();
+                rows.forEach(row => {
+                    const jenis = row.querySelector('.jenis-text')?.textContent.toLowerCase() || '';
+                    const match = !keyword || jenis.includes(keyword);
+                    row.style.display = match ? '' : 'none';
+                });
+            });
+        }
 
-    function openEditModal(item, namaJenis) {
-        const id = item.id || 0;
-        document.getElementById('modalTitle').innerText = 'Perbarui Jenis Prestasi';
-        document.getElementById('jenisPrestasiForm').action = updateBaseUrl + '/' + id;
-        document.getElementById('formMethod').value = 'PUT';
-        document.getElementById('inputJenis').value = namaJenis !== '-' ? namaJenis : '';
-        document.getElementById('formJenisPrestasiModal').classList.remove('hidden');
-    }
+        // Modal Helpers
+        function showModal(modalEl) {
+            if (!modalEl) return;
+            const card = modalEl.querySelector('.jenis-prestasi-modal-card');
+            modalEl.classList.remove('opacity-0', 'pointer-events-none');
+            modalEl.classList.add('opacity-100');
+            if (card) {
+                card.classList.remove('scale-95');
+                card.classList.add('scale-100');
+            }
+        }
 
-    function closeFormModal() {
-        document.getElementById('formJenisPrestasiModal').classList.add('hidden');
-    }
+        function hideModal(modalEl) {
+            if (!modalEl) return;
+            const card = modalEl.querySelector('.jenis-prestasi-modal-card');
+            modalEl.classList.remove('opacity-100');
+            modalEl.classList.add('opacity-0', 'pointer-events-none');
+            if (card) {
+                card.classList.remove('scale-100');
+                card.classList.add('scale-95');
+            }
+        }
+
+        // Create Modal
+        const createModal = document.getElementById('createJenisPrestasiModal');
+        const openCreateBtn = document.getElementById('openCreateJenisPrestasiModalBtn');
+        const createJenisInput = document.getElementById('createJenisInput');
+
+        if (openCreateBtn) {
+            openCreateBtn.addEventListener('click', function () {
+                if (createJenisInput) createJenisInput.value = '';
+                showModal(createModal);
+                setTimeout(() => createJenisInput?.focus(), 100);
+            });
+        }
+
+        // Edit Modal
+        const editModal = document.getElementById('editJenisPrestasiModal');
+        const editForm = document.getElementById('editJenisPrestasiForm');
+        const editJenisInput = document.getElementById('editJenisInput');
+
+        document.querySelectorAll('.open-edit-jenis-prestasi-btn').forEach(btn => {
+            btn.addEventListener('click', function () {
+                const action = this.getAttribute('data-action');
+                const jenis = this.getAttribute('data-jenis');
+
+                if (editForm) editForm.action = action;
+                if (editJenisInput) editJenisInput.value = jenis || '';
+
+                showModal(editModal);
+                setTimeout(() => editJenisInput?.focus(), 100);
+            });
+        });
+
+        // Close Buttons
+        document.querySelectorAll('.close-jenis-prestasi-modal').forEach(btn => {
+            btn.addEventListener('click', function () {
+                hideModal(this.closest('[role="dialog"]'));
+            });
+        });
+
+        // Close on Backdrop Click
+        [createModal, editModal].forEach(m => {
+            m?.addEventListener('click', function (e) {
+                if (e.target === m) hideModal(m);
+            });
+        });
+
+        // Close on Escape Key
+        document.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape') {
+                hideModal(createModal);
+                hideModal(editModal);
+            }
+        });
+    });
 </script>
 @endsection

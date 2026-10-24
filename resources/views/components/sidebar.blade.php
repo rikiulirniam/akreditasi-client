@@ -136,7 +136,7 @@
 
                 <!-- Kemahasiswaan -->
                 @php
-                    $isKemahasiswaanActive = request()->routeIs('angkatan.*') || request()->routeIs('kelas.*') || request()->routeIs('mahasiswa.*');
+                    $isKemahasiswaanActive = request()->routeIs('angkatan.*') || request()->routeIs('kelas.*') || request()->routeIs('mahasiswa.*') || request()->routeIs('kemahasiswaan.jenis-prestasi.*');
                 @endphp
                 <div>
                     <button type="button"
