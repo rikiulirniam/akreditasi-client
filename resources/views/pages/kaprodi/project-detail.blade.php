@@ -87,13 +87,16 @@
     </div>
 
     @php
-        // Ambil data dari API atau gunakan fallback lengkap 9 kriteria
-        $apiC1 = !empty($apiKriteria[0]) ? $apiKriteria[0] : null;
+        // Ambil data kriteria 1 (Visi, Misi, Tujuan, dan Strategi) dari API jika ada
+        $apiC1 = collect($apiKriteria ?? [])->first(function ($item) {
+            $nama = strtolower($item['nama_kriteria'] ?? '');
+            return str_contains($nama, 'visi') || str_contains($nama, 'vmts');
+        });
 
         $kriteriaList = [
             [
-                'code' => $apiC1['kode_kriteria'] ?? 'C1',
-                'name' => $apiC1['nama_kriteria'] ?? 'Visi, Misi, Tujuan, dan Strategi',
+                'code' => 'C1',
+                'name' => !empty($apiC1['nama_kriteria']) ? $apiC1['nama_kriteria'] : 'Visi, Misi, Tujuan, dan Strategi',
                 'isOpen' => true,
                 'subkriteria' => [
                     [
