@@ -357,7 +357,7 @@
 
                     {{-- Data Master Akreditasi --}}
                     @php
-                        $isMasterActive = request()->routeIs('akreditasi.superadmin.lembaga_akreditasi', 'akreditasi.superadmin.instrumen', 'akreditasi.superadmin.kriteria', 'akreditasi.superadmin.subkriteria', 'akreditasi.superadmin.indikator', 'akreditasi.superadmin.rubrik', 'akreditasi.superadmin.bobot', 'akreditasi.superadmin.detail_bobot', 'akreditasi.superadmin.standar_spmi');
+                        $isMasterActive = request()->routeIs('akreditasi.superadmin.lembaga_akreditasi', 'akreditasi.superadmin.instrumen', 'akreditasi.superadmin.kriteria', 'akreditasi.superadmin.subkriteria', 'akreditasi.superadmin.indikator', 'akreditasi.superadmin.rubrik', 'akreditasi.superadmin.standar_spmi');
                     @endphp
                     <div>
                         <button type="button"
@@ -380,8 +380,8 @@
                             class="submenu-container {{ $isMasterActive ? '' : 'hidden' }} pl-10 pr-2 pt-1 pb-1 space-y-1.5">
                             @if (Route::has('akreditasi.superadmin.lembaga_akreditasi'))
                             <a href="{{ route('akreditasi.superadmin.lembaga_akreditasi') }}"
-                                class="flex items-center gap-2.5 py-2.5 px-3.5 rounded-xl text-sm font-semibold transition-all duration-150 {{ request()->routeIs('akreditasi.superadmin.lembaga_akreditasi', 'akreditasi.superadmin.instrumen', 'akreditasi.superadmin.kriteria', 'akreditasi.superadmin.subkriteria', 'akreditasi.superadmin.indikator', 'akreditasi.superadmin.rubrik', 'akreditasi.superadmin.bobot', 'akreditasi.superadmin.detail_bobot') ? 'bg-white/20 text-white shadow-xs font-bold' : 'text-white/80 hover:text-white hover:bg-white/10' }}">
-                                <span class="w-1.5 h-1.5 rounded-full {{ request()->routeIs('akreditasi.superadmin.lembaga_akreditasi', 'akreditasi.superadmin.instrumen', 'akreditasi.superadmin.kriteria', 'akreditasi.superadmin.subkriteria', 'akreditasi.superadmin.indikator', 'akreditasi.superadmin.rubrik', 'akreditasi.superadmin.bobot', 'akreditasi.superadmin.detail_bobot') ? 'bg-secondary' : 'bg-white/40' }} shrink-0"></span>
+                                class="flex items-center gap-2.5 py-2.5 px-3.5 rounded-xl text-sm font-semibold transition-all duration-150 {{ request()->routeIs('akreditasi.superadmin.lembaga_akreditasi', 'akreditasi.superadmin.instrumen', 'akreditasi.superadmin.kriteria', 'akreditasi.superadmin.subkriteria', 'akreditasi.superadmin.indikator', 'akreditasi.superadmin.rubrik') ? 'bg-white/20 text-white shadow-xs font-bold' : 'text-white/80 hover:text-white hover:bg-white/10' }}">
+                                <span class="w-1.5 h-1.5 rounded-full {{ request()->routeIs('akreditasi.superadmin.lembaga_akreditasi', 'akreditasi.superadmin.instrumen', 'akreditasi.superadmin.kriteria', 'akreditasi.superadmin.subkriteria', 'akreditasi.superadmin.indikator', 'akreditasi.superadmin.rubrik') ? 'bg-secondary' : 'bg-white/40' }} shrink-0"></span>
                                 <span class="truncate">Instrumen Akreditasi</span>
                             </a>
                             @endif

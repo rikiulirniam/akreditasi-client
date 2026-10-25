@@ -1,6 +1,5 @@
 <?php
 
-use App\Http\Controllers\Akreditasi\Superadmin\BobotController;
 use App\Http\Controllers\Akreditasi\Superadmin\BuktiDokumenController;
 use App\Http\Controllers\Akreditasi\Superadmin\DashboardController as SuperadminDashboard;
 use App\Http\Controllers\Akreditasi\Superadmin\IndikatorController;
@@ -63,7 +62,6 @@ Route::middleware('auth.akademik')->group(function () {
         Route::delete('/project/{id}', [KaprodiController::class, 'destroyProject'])->name('project.destroy');
         Route::get('/project/detail/{id?}', [KaprodiController::class, 'projectDetail'])->name('project.detail');
 
-        // Route Plotting Tim Akreditasi
         Route::get('/plotting', [KaprodiController::class, 'plotting'])->name('plotting');
     });
 
@@ -105,29 +103,58 @@ Route::middleware('auth.akademik')->group(function () {
 
 Route::prefix('pages')->name('akreditasi.superadmin.')->group(function () {
     Route::get('/superadmin', [SuperadminDashboard::class, 'index'])->name('dashboard');
-    Route::get('/superadmin/dashboard', [SuperadminDashboard::class, 'index'])->name('dashboard');
+    Route::get('/superadmin/dashboard', [SuperadminDashboard::class, 'index']);
 
-    Route::get('/superadmin/instrumen', [InstrumenController::class, 'index'])->name('instrumen');
-    Route::post('/superadmin/instrumen', [InstrumenController::class, 'store'])->name('instrumen.store');
-
+    // Master Data Akreditasi - Level 1: Lembaga
     Route::get('/superadmin/lembaga-akreditasi', [LembagaAkreditasiController::class, 'index'])->name('lembaga_akreditasi');
     Route::post('/superadmin/lembaga-akreditasi', [LembagaAkreditasiController::class, 'store'])->name('lembaga_akreditasi.store');
     Route::put('/superadmin/lembaga-akreditasi/{id}', [LembagaAkreditasiController::class, 'update'])->name('lembaga_akreditasi.update');
     Route::delete('/superadmin/lembaga-akreditasi/{id}', [LembagaAkreditasiController::class, 'destroy'])->name('lembaga_akreditasi.destroy');
 
-    Route::get('/superadmin/kriteria', [KriteriaController::class, 'index'])->name('kriteria');
-    Route::post('/superadmin/kriteria', [KriteriaController::class, 'store'])->name('kriteria.store');
+    // Master Data Akreditasi - Level 2: Detail Lembaga -> Daftar Instrumen
+    Route::get('/superadmin/lembaga-akreditasi/{lembagaId}', [InstrumenController::class, 'index'])->name('instrumen');
+    Route::post('/superadmin/lembaga-akreditasi/{lembagaId}/instrumen', [InstrumenController::class, 'store'])->name('instrumen.store');
+    Route::put('/superadmin/lembaga-akreditasi/{lembagaId}/instrumen/{instrumenId}', [InstrumenController::class, 'update'])->name('instrumen.update');
+    Route::delete('/superadmin/lembaga-akreditasi/{lembagaId}/instrumen/{instrumenId}', [InstrumenController::class, 'destroy'])->name('instrumen.destroy');
+    Route::get('/superadmin/instrumen', function () {
+        return redirect()->route('akreditasi.superadmin.lembaga_akreditasi');
+    });
 
-    Route::get('/superadmin/subkriteria', [SubkriteriaController::class, 'index'])->name('subkriteria');
+    // Master Data Akreditasi - Level 3: Detail Instrumen -> Daftar Kriteria
+    Route::get('/superadmin/lembaga-akreditasi/{lembagaId}/instrumen/{instrumenId}', [KriteriaController::class, 'index'])->name('kriteria');
+    Route::post('/superadmin/lembaga-akreditasi/{lembagaId}/instrumen/{instrumenId}/kriteria', [KriteriaController::class, 'store'])->name('kriteria.store');
+    Route::put('/superadmin/lembaga-akreditasi/{lembagaId}/instrumen/{instrumenId}/kriteria/{kriteriaId}', [KriteriaController::class, 'update'])->name('kriteria.update');
+    Route::delete('/superadmin/lembaga-akreditasi/{lembagaId}/instrumen/{instrumenId}/kriteria/{kriteriaId}', [KriteriaController::class, 'destroy'])->name('kriteria.destroy');
+    Route::get('/superadmin/kriteria', function () {
+        return redirect()->route('akreditasi.superadmin.lembaga_akreditasi');
+    });
 
-    Route::get('/superadmin/indikator', [IndikatorController::class, 'index'])->name('indikator');
-    Route::post('/superadmin/indikator', [IndikatorController::class, 'store'])->name('indikator.store');
+    // Master Data Akreditasi - Level 4: Detail Kriteria -> Daftar Subkriteria
+    Route::get('/superadmin/lembaga-akreditasi/{lembagaId}/instrumen/{instrumenId}/kriteria/{kriteriaId}', [SubkriteriaController::class, 'index'])->name('subkriteria');
+    Route::post('/superadmin/lembaga-akreditasi/{lembagaId}/instrumen/{instrumenId}/kriteria/{kriteriaId}/subkriteria', [SubkriteriaController::class, 'store'])->name('subkriteria.store');
+    Route::put('/superadmin/lembaga-akreditasi/{lembagaId}/instrumen/{instrumenId}/kriteria/{kriteriaId}/subkriteria/{subkriteriaId}', [SubkriteriaController::class, 'update'])->name('subkriteria.update');
+    Route::delete('/superadmin/lembaga-akreditasi/{lembagaId}/instrumen/{instrumenId}/kriteria/{kriteriaId}/subkriteria/{subkriteriaId}', [SubkriteriaController::class, 'destroy'])->name('subkriteria.destroy');
+    Route::get('/superadmin/subkriteria', function () {
+        return redirect()->route('akreditasi.superadmin.lembaga_akreditasi');
+    });
 
-    Route::get('/superadmin/rubrik', [RubrikController::class, 'index'])->name('rubrik');
-    Route::post('/superadmin/rubrik', [RubrikController::class, 'store'])->name('rubrik.store');
+    // Master Data Akreditasi - Level 5: Detail Subkriteria -> Daftar Indikator
+    Route::get('/superadmin/lembaga-akreditasi/{lembagaId}/instrumen/{instrumenId}/kriteria/{kriteriaId}/subkriteria/{subkriteriaId}', [IndikatorController::class, 'index'])->name('indikator');
+    Route::post('/superadmin/lembaga-akreditasi/{lembagaId}/instrumen/{instrumenId}/kriteria/{kriteriaId}/subkriteria/{subkriteriaId}/indikator', [IndikatorController::class, 'store'])->name('indikator.store');
+    Route::put('/superadmin/lembaga-akreditasi/{lembagaId}/instrumen/{instrumenId}/kriteria/{kriteriaId}/subkriteria/{subkriteriaId}/indikator/{indikatorId}', [IndikatorController::class, 'update'])->name('indikator.update');
+    Route::delete('/superadmin/lembaga-akreditasi/{lembagaId}/instrumen/{instrumenId}/kriteria/{kriteriaId}/subkriteria/{subkriteriaId}/indikator/{indikatorId}', [IndikatorController::class, 'destroy'])->name('indikator.destroy');
+    Route::get('/superadmin/indikator', function () {
+        return redirect()->route('akreditasi.superadmin.lembaga_akreditasi');
+    });
 
-    Route::get('/superadmin/bobot', [BobotController::class, 'index'])->name('bobot');
-    Route::get('/superadmin/detail-bobot', [BobotController::class, 'detail'])->name('detail_bobot');
+    // Master Data Akreditasi - Level 6: Detail Indikator -> Daftar Rubrik
+    Route::get('/superadmin/lembaga-akreditasi/{lembagaId}/instrumen/{instrumenId}/kriteria/{kriteriaId}/subkriteria/{subkriteriaId}/indikator/{indikatorId}', [RubrikController::class, 'index'])->name('rubrik');
+    Route::post('/superadmin/lembaga-akreditasi/{lembagaId}/instrumen/{instrumenId}/kriteria/{kriteriaId}/subkriteria/{subkriteriaId}/indikator/{indikatorId}/rubrik', [RubrikController::class, 'store'])->name('rubrik.store');
+    Route::put('/superadmin/lembaga-akreditasi/{lembagaId}/instrumen/{instrumenId}/kriteria/{kriteriaId}/subkriteria/{subkriteriaId}/indikator/{indikatorId}/rubrik/{rubrikId}', [RubrikController::class, 'update'])->name('rubrik.update');
+    Route::delete('/superadmin/lembaga-akreditasi/{lembagaId}/instrumen/{instrumenId}/kriteria/{kriteriaId}/subkriteria/{subkriteriaId}/indikator/{indikatorId}/rubrik/{rubrikId}', [RubrikController::class, 'destroy'])->name('rubrik.destroy');
+    Route::get('/superadmin/rubrik', function () {
+        return redirect()->route('akreditasi.superadmin.lembaga_akreditasi');
+    });
 
     Route::get('/superadmin/standar-spmi', [StandarSpmiController::class, 'index'])->name('standar_spmi');
     Route::post('/superadmin/standar-spmi', [StandarSpmiController::class, 'store'])->name('standar_spmi.store');
