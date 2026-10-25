@@ -12,6 +12,7 @@ use App\Http\Controllers\MataKuliahController;
 use App\Http\Controllers\PerguruanTinggiController;
 use App\Http\Controllers\PermissionController;
 use App\Http\Controllers\ProdiController;
+use App\Http\Controllers\ReviewerController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\SpmiController;
 use App\Http\Controllers\TahunAkademikController;
@@ -39,6 +40,10 @@ Route::get('/auth/google/callback', [AuthController::class, 'handleGoogleCallbac
 Route::middleware('auth.akademik')->group(function () {
     Route::post('/auth/refresh-token', [AuthController::class, 'refreshToken'])->name('auth.refresh-token');
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+    Route::get('/reviewer/dashboard', [ReviewerController::class, 'dashboard'])->name('reviewer.dashboard');
+    Route::get('/reviewer/penilaian', [ReviewerController::class, 'assessments'])->name('reviewer.assessments');
+    Route::get('/reviewer/penilaian/{projectId}', [ReviewerController::class, 'assessmentDetail'])->name('reviewer.assessment-detail');
+    Route::post('/reviewer/penilaian/{projectId}/indikator/{indicatorId}', [ReviewerController::class, 'saveAssessment'])->name('reviewer.assessment-save');
 
     Route::prefix('kaprodi')->name('kaprodi.')->group(function () {
         Route::get('/dashboard', function () {
