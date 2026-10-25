@@ -36,6 +36,20 @@ Route::middleware('auth.akademik')->group(function () {
     Route::post('/auth/refresh-token', [AuthController::class, 'refreshToken'])->name('auth.refresh-token');
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
+    Route::prefix('kaprodi')->name('kaprodi.')->group(function () {
+        Route::get('/dashboard', function () {
+            return view('pages.kaprodi.dashboard');
+        })->name('dashboard');
+
+        Route::get('/project', function () {
+            return view('pages.kaprodi.project');
+        })->name('project');
+
+        Route::get('/project/detail', function () {
+            return view('pages.kaprodi.project-detail');
+        })->name('project.detail');
+    });
+
     Route::get('/perguruan-tinggi', [PerguruanTinggiController::class, 'index'])->name('perguruan-tinggi.index');
     Route::put('/perguruan-tinggi/{id}', [PerguruanTinggiController::class, 'update'])->name('perguruan-tinggi.update');
 
@@ -58,5 +72,4 @@ Route::middleware('auth.akademik')->group(function () {
 
     Route::resource('kurikulum', KurikulumController::class);
     Route::put('kurikulum/{kurikulum}/cpl-mata-kuliah', [KurikulumController::class, 'updateMataKuliahCpl'])->name('kurikulum.update-mk-cpl');
-
 });
