@@ -180,4 +180,37 @@ class SertifikasiTendikSyncTest extends TestCase
         $sertifikasiResp->assertOk()
             ->assertDontSee('AWS-303');
     }
+
+    public function test_filling_sertifikasi_form_with_tendik_redirects_back_to_tendik_detail_page(): void
+    {
+        Http::fake([
+            'https://tridharma.fayra.my.id/api/tendik/55' => Http::response([
+                'success' => true,
+                'data' => [
+                    'id_tendik' => 55,
+                    'nama_tendik' => 'Budi Santoso',
+                ],
+            ], 200),
+            'https://tridharma.fayra.my.id/api/sertifikasi' => Http::response([
+                'success' => true,
+                'code' => 201,
+                'message' => 'Sertifikasi berhasil ditambahkan.',
+                'data' => ['id' => 505],
+            ], 201),
+        ]);
+
+        $response = $this->withSession(['access_token' => 'mock-jwt-token'])
+            ->post(route('sertifikasi.store'), [
+                'owner_type' => 'tendik',
+                'owner_id' => 55,
+                'redirect_to' => route('tenaga-pendidikan.show', 55),
+                'jenis_sertifikasi' => 'Sertifikat Scrum Master',
+                'bidang_studi' => 'Manajemen Proyek',
+                'lembaga_penerbit' => 'Scrum Alliance',
+                'status_sertifikasi' => 'Aktif',
+                'tahun_sertifikasi' => '2025-02-01',
+            ]);
+
+        $response->assertRedirect(route('tenaga-pendidikan.show', 55));
+    }
 }

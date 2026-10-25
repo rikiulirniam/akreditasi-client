@@ -26,7 +26,13 @@
 
 <div class="space-y-5 pb-8">
     <nav class="flex items-center gap-2 text-sm text-gray-600" aria-label="Breadcrumb">
-        <a href="{{ route('sertifikasi.index') }}" class="hover:text-primary">Sertifikasi</a>
+        @if($ownerTypeValue === 'tendik' && $ownerIdValue)
+            <a href="{{ route('tenaga-pendidikan.show', $ownerIdValue) }}" class="hover:text-primary">Tenaga Pendidikan</a>
+            <span aria-hidden="true">›</span>
+            <a href="{{ route('sertifikasi.index', ['tipe_pemilik' => 'tendik', 'id_tendik' => $ownerIdValue]) }}" class="hover:text-primary">Sertifikasi</a>
+        @else
+            <a href="{{ route('sertifikasi.index') }}" class="hover:text-primary">Sertifikasi</a>
+        @endif
         <span aria-hidden="true">›</span>
         <span class="font-semibold text-gray-900">{{ $pageTitle }}</span>
     </nav>
@@ -42,6 +48,12 @@
             @csrf
             @if($isEditing)
                 @method('PUT')
+            @endif
+
+            @if($ownerTypeValue === 'tendik' && $ownerIdValue)
+                <input type="hidden" name="redirect_to" value="{{ route('tenaga-pendidikan.show', $ownerIdValue) }}">
+            @elseif(request()->query('redirect_to'))
+                <input type="hidden" name="redirect_to" value="{{ request()->query('redirect_to') }}">
             @endif
 
             @if(($ownerOptionsError ?? null) || $errors->any())
@@ -193,7 +205,7 @@
             </div>
 
             <div class="flex flex-col-reverse justify-end gap-3 pt-4 sm:flex-row">
-                <a href="{{ route('sertifikasi.index') }}" class="inline-flex min-w-36 items-center justify-center rounded-lg bg-white-form px-6 py-3 text-sm font-bold text-gray-900 transition hover:bg-gray-300">
+                <a href="{{ ($ownerTypeValue === 'tendik' && $ownerIdValue) ? route('tenaga-pendidikan.show', $ownerIdValue) : route('sertifikasi.index') }}" class="inline-flex min-w-36 items-center justify-center rounded-lg bg-white-form px-6 py-3 text-sm font-bold text-gray-900 transition hover:bg-gray-300">
                     Kembali
                 </a>
                 <button type="submit" class="inline-flex min-w-36 items-center justify-center rounded-lg bg-additional px-6 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-primary">

@@ -230,6 +230,15 @@ class SertifikasiController extends Controller
         }
 
         if ($this->successfulResponse($response)) {
+            $redirectUrl = $request->input('redirect_to');
+            if ($redirectUrl) {
+                return redirect($redirectUrl)->with('toast', [
+                    'type' => 'success',
+                    'title' => 'Berhasil',
+                    'message' => $this->responseMessage($response, 'Sertifikasi berhasil ditambahkan.'),
+                ]);
+            }
+
             return redirect()->route('sertifikasi.index')->with('toast', [
                 'type' => 'success',
                 'title' => 'Berhasil',
@@ -277,11 +286,15 @@ class SertifikasiController extends Controller
             return $this->indexError($this->responseMessage($response, 'Data sertifikasi tidak ditemukan.'));
         }
 
+        $certData = $response->json('data', []);
+        $ownerType = ! empty($certData['id_tendik']) ? 'tendik' : (! empty($certData['id_dosen']) ? 'dosen' : '');
+        $ownerId = $certData['id_tendik'] ?? $certData['id_dosen'] ?? '';
+
         return view('sertifikasi.form', [
-            'certification' => $response->json('data', []),
+            'certification' => $certData,
             'isEditing' => true,
-            'ownerType' => '',
-            'ownerId' => '',
+            'ownerType' => $ownerType,
+            'ownerId' => $ownerId,
             'isDosen' => $this->isAuthenticatedDosen(),
         ]);
     }
@@ -305,6 +318,15 @@ class SertifikasiController extends Controller
         }
 
         if ($this->successfulResponse($response)) {
+            $redirectUrl = $request->input('redirect_to');
+            if ($redirectUrl) {
+                return redirect($redirectUrl)->with('toast', [
+                    'type' => 'success',
+                    'title' => 'Berhasil',
+                    'message' => $this->responseMessage($response, 'Sertifikasi berhasil diperbarui.'),
+                ]);
+            }
+
             return redirect()->route('sertifikasi.index')->with('toast', [
                 'type' => 'success',
                 'title' => 'Berhasil',
