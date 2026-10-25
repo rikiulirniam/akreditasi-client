@@ -5,7 +5,17 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
-    <title>@yield('title', $title ?? 'Dashboard') - Portal Akreditasi</title>
+    @php
+        $rawMeta = trim((string) $__env->yieldContent('meta_title'));
+        if ($rawMeta === '') {
+            $rawMeta = trim((string) $__env->yieldContent('browser-title'));
+        }
+        if ($rawMeta === '') {
+            $rawMeta = trim(preg_replace('/\s+/', ' ', html_entity_decode(strip_tags((string) $__env->yieldContent('title', $title ?? 'Dashboard')))));
+        }
+        $pageTitle = $rawMeta !== '' ? $rawMeta : 'Portal Akreditasi';
+    @endphp
+    <title>{{ $pageTitle }} - Portal Akreditasi</title>
 
     <!-- Scripts and Styles -->
     @vite(['resources/css/app.css', 'resources/js/app.js'])
@@ -29,10 +39,10 @@
         }
     </style>
 </head>
-<body class="h-full font-sans antialiased text-black overflow-hidden">
+<body class="h-full font-sans antialiased text-black overflow-hidden {{ request()->routeIs('tenaga-kependidikan.*', 'tenaga-pendidikan.*') ? 'flow2-tendik' : '' }}">
     @php
         $currentUser = $user ?? session('user') ?? [
-            'nama' => 'Kuwat',
+            'nama' => 'Kuwat Santoso',
             'email' => 'kuwat@example.com',
             'role' => 'Kaprodi',
         ];
@@ -57,10 +67,10 @@
         <div class="flex-1 flex flex-col min-w-0 h-full overflow-hidden">
             
             <!-- Topbar -->
-            <header class="shrink-0 h-20 bg-white border-b border-[#EAEAEA] px-4 sm:px-6 lg:px-8 flex items-center justify-between shadow-xs z-30">
+            <header class="shrink-0 min-h-20 bg-white px-4 sm:px-6 lg:px-[54px] pt-5 sm:pt-7 pb-4 sm:pb-5 flex items-center justify-between z-30">
                 
                 <!-- Left: Sidebar Toggle & Page Title -->
-                <div class="flex items-center gap-3 sm:gap-4">
+                <div class="flex items-center gap-3 sm:gap-5">
                     <!-- Mobile Hamburger Button -->
                     <button 
                         type="button" 
@@ -68,42 +78,48 @@
                         class="lg:hidden p-2 rounded-xl text-primary hover:bg-gray-100 transition cursor-pointer" 
                         aria-label="Buka Menu"
                     >
-                        <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
                         </svg>
                     </button>
 
-                    <!-- Desktop Collapse Button in Topbar -->
+                    <!-- Desktop Collapse Button in Topbar (styled as navy hamburger matching screenshot) -->
                     <button 
                         type="button" 
                         id="topbarSidebarToggleBtn" 
-                        class="hidden lg:flex p-2 rounded-xl text-primary hover:bg-gray-100 transition cursor-pointer" 
+                        class="hidden lg:flex p-1.5 -ml-1 text-primary hover:text-additional transition cursor-pointer self-start mt-1.5" 
                         aria-label="Toggle Sidebar"
                     >
-                        <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <svg class="w-8 h-8 stroke-[2.5]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
                         </svg>
                     </button>
 
-                    <!-- Page Title -->
-                    <h1 class="text-lg sm:text-2xl font-extrabold text-primary tracking-tight">
-                        @yield('title', $title ?? 'Dashboard')
-                    </h1>
+                    <!-- Page Title & Subtitle -->
+                    <div>
+                        <h1 class="text-3xl sm:text-4xl lg:text-[44px] font-black text-black tracking-tight leading-tight flex items-center gap-1.5 flex-wrap">
+                            @yield('title', $title ?? 'Dashboard')
+                        </h1>
+                        @hasSection('subtitle')
+                            <p class="text-sm sm:text-base lg:text-[16px] font-medium text-[#4B5563] mt-2 sm:mt-2.5">
+                                @yield('subtitle')
+                            </p>
+                        @endif
+                    </div>
                 </div>
 
-                <!-- Right: Profile Pill (Matches User Attached Image) -->
-                <div class="relative" id="profileDropdownContainer">
+                <!-- Right: Profile Pill (Matches User Reference Image) -->
+                <div class="relative w-[215px]" id="profileDropdownContainer">
                     <button 
                         type="button" 
                         id="profileDropdownBtn"
-                        class="bg-white-form border-2 border-primary rounded-2xl px-3.5 py-1.5 sm:px-4 sm:py-2 flex items-center gap-3 sm:gap-4 cursor-pointer shadow-xs hover:brightness-95 active:scale-[0.99] transition duration-150 select-none"
+                        class="w-full bg-[#E5E5E5] border-2 border-[#3A5675] rounded-[16px] px-3.5 py-2 flex items-center justify-between cursor-pointer select-none transition-all duration-200"
                         aria-expanded="false"
                         aria-haspopup="true"
                     >
-                        <!-- Left: Chevron Down -->
                         <svg 
                             id="profileChevron" 
-                            class="w-4 h-4 sm:w-5 sm:h-5 text-primary stroke-[3] transition-transform duration-200" 
+                            class="w-4 h-4 text-[#012650] stroke-[3] transition-transform duration-300 shrink-0" 
                             fill="none" 
                             viewBox="0 0 24 24" 
                             stroke="currentColor"
@@ -112,53 +128,69 @@
                         </svg>
 
                         <!-- Middle: Greeting & Role -->
-                        <div class="text-left leading-tight">
-                            <span class="block font-bold text-xs sm:text-sm text-black tracking-tight">
-                                Halo, {{ explode(' ', $currentUser['nama'] ?? 'Kuwat')[0] }}
+                        <div class="text-left leading-tight min-w-0 flex-1 px-2.5">
+                            <span class="block font-bold text-[13.5px] text-black tracking-tight truncate">
+                                Halo, {{ $currentUser['nama'] ?? 'Kuwat' }}
                             </span>
-                            <span class="block text-[11px] sm:text-xs text-black/80 font-medium capitalize">
-                                {{ strtolower($currentUser['role'] ?? 'Kaprodi') }}
+                            <span class="block text-[11px] text-[#656565] font-semibold truncate">
+                                {{ ucfirst(strtolower($currentUser['role'] ?? 'Kaprodi')) }}
                             </span>
                         </div>
 
-                        <!-- Right: Circle User Avatar Icon (Exact line art matching attached image) -->
-                        <div class="shrink-0 text-primary">
-                            <svg class="w-8 h-8 sm:w-9 sm:h-9" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                <circle cx="18" cy="18" r="15.5" stroke="currentColor" stroke-width="2.6"/>
+                        <!-- Right: Circle User Avatar Icon (Blue on white circular background matching photo 1) -->
+                        <div class="shrink-0 w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-white flex items-center justify-center text-[#01568D]">
+                            <svg class="w-full h-full" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <circle cx="18" cy="18" r="16.5" stroke="currentColor" stroke-width="2.6"/>
                                 <circle cx="18" cy="14" r="4.5" stroke="currentColor" stroke-width="2.6"/>
                                 <path d="M9.5 28C10.8 23.5 14.1 21.5 18 21.5C21.9 21.5 25.2 23.5 26.5 28" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/>
                             </svg>
                         </div>
                     </button>
 
-                    <!-- Dropdown Menu -->
+                    <!-- Dropdown Menu (Drops down below the button, not overlaying/nimpa) -->
                     <div 
                         id="profileDropdownMenu" 
-                        class="absolute right-0 mt-2 w-60 rounded-2xl bg-white border border-[#EAEAEA] shadow-xl py-2 z-50 transform origin-top-right transition-all duration-150 opacity-0 scale-95 pointer-events-none"
                         role="menu"
+                        aria-label="Menu Profil"
                     >
-                        <!-- User Info Header -->
-                        <div class="px-4 py-2.5 border-b border-gray-100">
-                            <p class="text-[11px] text-gray-form uppercase tracking-wider font-semibold">Akun Aktif</p>
-                            <p class="text-sm font-bold text-primary truncate mt-0.5">{{ $currentUser['nama'] ?? 'Kuwat' }}</p>
-                            <p class="text-xs text-gray-500 truncate">{{ $currentUser['email'] ?? '-' }}</p>
-                        </div>
+                        <div class="px-4 pt-3.5 pb-4 space-y-3.5 select-none">
+                            <!-- User Full Name & Role -->
+                            <div class="text-left leading-tight">
+                                <p class="text-[15px] font-bold text-black tracking-tight">{{ $currentUser['nama'] ?? 'Kuwat Santoso' }}</p>
+                                <p class="text-[12px] font-normal text-gray-700 mt-0.5">{{ ucfirst(strtolower($currentUser['role'] ?? 'Kaprodi')) }}</p>
+                            </div>
 
-                        <!-- Logout Action -->
-                        <div class="p-1.5">
-                            <form method="POST" action="{{ route('logout') }}">
-                                @csrf
-                                <button 
-                                    type="submit" 
-                                    class="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-semibold text-rose-600 hover:bg-rose-50 transition cursor-pointer text-left"
-                                    role="menuitem"
-                                >
-                                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15M12 9l-3 3m0 0l3 3m-3-3h12.75" />
+                            <!-- Menu Items -->
+                            <div class="space-y-3 pt-1">
+                                <!-- Pengaturan -->
+                                <a href="#" class="flex items-center gap-3 text-[14px] font-medium text-black hover:text-[#01568D] transition group" role="menuitem">
+                                    <svg class="w-4 h-4 text-gray-800 group-hover:text-[#01568D] shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <circle cx="12" cy="12" r="3"></circle>
+                                        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
                                     </svg>
-                                    Logout
-                                </button>
-                            </form>
+                                    <span>Pengaturan</span>
+                                </a>
+
+                                <!-- Aktivitas -->
+                                <a href="#" class="flex items-center gap-3 text-[14px] font-medium text-black hover:text-[#01568D] transition group" role="menuitem">
+                                    <svg class="w-4 h-4 text-gray-800 group-hover:text-[#01568D] shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                        <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+                                    </svg>
+                                    <span>Aktivitas</span>
+                                </a>
+
+                                <!-- Keluar -->
+                                <form method="POST" action="{{ route('logout') }}" class="m-0 p-0">
+                                    @csrf
+                                    <button type="submit" class="w-full flex items-center gap-3 text-[14px] font-medium text-[#8B1E1E] hover:text-red-800 transition cursor-pointer text-left" role="menuitem">
+                                        <svg class="w-4 h-4 text-[#8B1E1E] fill-current shrink-0" viewBox="0 0 24 24">
+                                            <path d="M5 3h10a2 2 0 0 1 2 2v3a1 1 0 0 1-2 0V5H5v14h10v-3a1 1 0 0 1 2 0v3a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/>
+                                            <path d="M14.293 8.293a1 1 0 0 1 1.414 0l3 3a1 1 0 0 1 0 1.414l-3 3a1 1 0 0 1-1.414-1.414L15.586 13H9a1 1 0 0 1 0-2h6.586l-1.293-1.293a1 1 0 0 1 0-1.414z"/>
+                                        </svg>
+                                        <span>Keluar</span>
+                                    </button>
+                                </form>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -166,7 +198,7 @@
             </header>
 
             <!-- Main Page Content -->
-            <main class="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 pb-12">
+            <main class="flex-1 overflow-y-auto px-4 sm:px-6 lg:px-[54px] py-4 pb-12">
                 {{ $slot ?? '' }}
                 @yield('content')
             </main>
@@ -190,6 +222,7 @@
             const sidebarTexts = document.querySelectorAll('.sidebar-text');
             const sidebarChevrons = document.querySelectorAll('.sidebar-chevron');
             const submenuContainers = document.querySelectorAll('.submenu-container');
+            const sidebarExpandedWidth = 'w-[350px]';
 
             let isCollapsed = localStorage.getItem('sidebar_collapsed') === 'true';
 
@@ -202,16 +235,15 @@
             });
 
             function applySidebarState() {
-                if (!sidebar) return;
                 if (isCollapsed) {
-                    sidebar.classList.remove('w-64');
+                    sidebar.classList.remove('w-[350px]', 'w-64');
                     sidebar.classList.add('w-20', 'is-collapsed');
                     sidebarTexts.forEach(el => el.classList.add('hidden'));
                     sidebarChevrons.forEach(el => el.classList.add('hidden'));
                     submenuContainers.forEach(el => el.classList.add('hidden'));
                 } else {
                     sidebar.classList.remove('w-20', 'is-collapsed');
-                    sidebar.classList.add('w-64');
+                    sidebar.classList.add(sidebarExpandedWidth);
                     sidebarTexts.forEach(el => el.classList.remove('hidden'));
                     sidebarChevrons.forEach(el => el.classList.remove('hidden'));
 
@@ -271,7 +303,7 @@
                 } else {
                     if (sidebar) {
                         sidebar.classList.remove('w-20', 'is-collapsed');
-                        sidebar.classList.add('w-64');
+                        sidebar.classList.add('w-[350px]');
                     }
                     sidebarTexts.forEach(el => el.classList.remove('hidden'));
                     sidebarChevrons.forEach(el => el.classList.remove('hidden'));
@@ -309,44 +341,59 @@
             });
 
             // Profile Dropdown Elements
+            const profileContainer = document.getElementById('profileDropdownContainer');
             const profileBtn = document.getElementById('profileDropdownBtn');
-            const profileMenu = document.getElementById('profileDropdownMenu');
             const profileChevron = document.getElementById('profileChevron');
             let isDropdownOpen = false;
 
-            function toggleProfileDropdown() {
-                isDropdownOpen = !isDropdownOpen;
-                if (isDropdownOpen) {
-                    profileMenu.classList.remove('opacity-0', 'scale-95', 'pointer-events-none');
-                    profileMenu.classList.add('opacity-100', 'scale-100');
-                    if (profileChevron) profileChevron.classList.add('rotate-180');
+            function openProfileDropdown() {
+                isDropdownOpen = true;
+                if (profileContainer) {
+                    profileContainer.classList.add('is-open');
+                }
+                if (profileBtn) {
                     profileBtn.setAttribute('aria-expanded', 'true');
-                } else {
-                    profileMenu.classList.remove('opacity-100', 'scale-100');
-                    profileMenu.classList.add('opacity-0', 'scale-95', 'pointer-events-none');
-                    if (profileChevron) profileChevron.classList.remove('rotate-180');
+                }
+                if (profileChevron) {
+                    profileChevron.classList.add('rotate-180');
+                }
+            }
+
+            function closeProfileDropdown() {
+                isDropdownOpen = false;
+                if (profileContainer) {
+                    profileContainer.classList.remove('is-open');
+                }
+                if (profileBtn) {
                     profileBtn.setAttribute('aria-expanded', 'false');
+                }
+                if (profileChevron) {
+                    profileChevron.classList.remove('rotate-180');
                 }
             }
 
             if (profileBtn) {
                 profileBtn.addEventListener('click', function (e) {
                     e.stopPropagation();
-                    toggleProfileDropdown();
+                    if (isDropdownOpen) {
+                        closeProfileDropdown();
+                    } else {
+                        openProfileDropdown();
+                    }
                 });
             }
 
             // Close on click outside
             document.addEventListener('click', function (e) {
-                if (isDropdownOpen && profileMenu && !profileMenu.contains(e.target) && !profileBtn.contains(e.target)) {
-                    toggleProfileDropdown();
+                if (isDropdownOpen && profileContainer && !profileContainer.contains(e.target)) {
+                    closeProfileDropdown();
                 }
             });
 
             // Close on Escape key
             document.addEventListener('keydown', function (e) {
                 if (e.key === 'Escape') {
-                    if (isDropdownOpen) toggleProfileDropdown();
+                    if (isDropdownOpen) closeProfileDropdown();
                     closeMobileSidebar();
                 }
             });
@@ -402,5 +449,6 @@
             }
         });
     </script>
+    @stack('scripts')
 </body>
 </html>

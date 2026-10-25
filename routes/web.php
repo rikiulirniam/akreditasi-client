@@ -4,18 +4,22 @@ use App\Http\Controllers\AngkatanController;
 use App\Http\Controllers\AngkatanKelasController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\DosenController;
 use App\Http\Controllers\KegiatanMahasiswaController;
 use App\Http\Controllers\KelasController;
 use App\Http\Controllers\KurikulumController;
 use App\Http\Controllers\MahasiswaController;
 use App\Http\Controllers\MataKuliahController;
 use App\Http\Controllers\NilaiMahasiswaController;
+use App\Http\Controllers\PendidikanController;
 use App\Http\Controllers\PerguruanTinggiController;
 use App\Http\Controllers\PermissionController;
 use App\Http\Controllers\PrestasiMahasiswaController;
 use App\Http\Controllers\ProdiController;
 use App\Http\Controllers\RoleController;
+use App\Http\Controllers\SertifikasiController;
 use App\Http\Controllers\TahunAkademikController;
+use App\Http\Controllers\TenagaKependidikanController;
 use App\Http\Controllers\UppsController;
 use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
@@ -110,4 +114,47 @@ Route::middleware('auth.akademik')->group(function () {
     Route::middleware('permission:nilai_mahasiswa.delete')->delete('/nilai-mahasiswa/{id}', [NilaiMahasiswaController::class, 'destroy'])->name('nilai-mahasiswa.destroy');
     Route::middleware('permission:nilai_mahasiswa.read')->get('/nilai-mahasiswa/khs/{mahasiswaId}', [NilaiMahasiswaController::class, 'khs'])->name('nilai-mahasiswa.khs');
     Route::middleware('permission:nilai_mahasiswa.read')->get('/nilai-mahasiswa/transkrip/{mahasiswaId}', [NilaiMahasiswaController::class, 'transkrip'])->name('nilai-mahasiswa.transkrip');
+
+    // ==========================================
+    // MODUL DOSEN & SDM
+    // ==========================================
+    Route::get('/dosen/template', [DosenController::class, 'template'])->name('dosen.template');
+    Route::post('/dosen/import', [DosenController::class, 'import'])->name('dosen.import');
+    Route::resource('dosen', DosenController::class);
+
+    // Modul Sertifikasi
+    Route::get('/sertifikasi', [SertifikasiController::class, 'index'])->name('sertifikasi.index');
+    Route::get('/sertifikasi/create', [SertifikasiController::class, 'create'])->name('sertifikasi.create');
+    Route::post('/sertifikasi', [SertifikasiController::class, 'store'])->name('sertifikasi.store');
+    Route::get('/sertifikasi/{sertifikasi}/edit', [SertifikasiController::class, 'edit'])->whereNumber('sertifikasi')->name('sertifikasi.edit');
+    Route::put('/sertifikasi/{sertifikasi}', [SertifikasiController::class, 'update'])->whereNumber('sertifikasi')->name('sertifikasi.update');
+    Route::delete('/sertifikasi/{sertifikasi}', [SertifikasiController::class, 'destroy'])->whereNumber('sertifikasi')->name('sertifikasi.destroy');
+    Route::get('/sertifikasi/{sertifikasi}', [SertifikasiController::class, 'show'])->whereNumber('sertifikasi')->name('sertifikasi.show');
+
+    // Modul Tenaga Kependidikan
+    Route::resource('tenaga-kependidikan', TenagaKependidikanController::class);
+    Route::get('/tenaga-pendidikan', [TenagaKependidikanController::class, 'index'])->name('tenaga-pendidikan.index');
+    Route::get('/tenaga-pendidikan/{tenaga_kependidikan}', [TenagaKependidikanController::class, 'show'])->name('tenaga-pendidikan.show');
+    Route::post('/tenaga-pendidikan/{tendikId}/sertifikasi', [TenagaKependidikanController::class, 'storeSertifikasi'])->name('tenaga-pendidikan.sertifikasi.store');
+    Route::put('/tenaga-pendidikan/{tendikId}/sertifikasi/{sertifikasiId}', [TenagaKependidikanController::class, 'updateSertifikasi'])->name('tenaga-pendidikan.sertifikasi.update');
+    Route::delete('/tenaga-pendidikan/{tendikId}/sertifikasi/{sertifikasiId}', [TenagaKependidikanController::class, 'destroySertifikasi'])->name('tenaga-pendidikan.sertifikasi.destroy');
+    Route::post('/tenaga-kependidikan/{tendikId}/sertifikasi', [TenagaKependidikanController::class, 'storeSertifikasi'])->name('tenaga-kependidikan.sertifikasi.store');
+    Route::delete('/tenaga-kependidikan/{tendikId}/sertifikasi/{sertifikasiId}', [TenagaKependidikanController::class, 'destroySertifikasi'])->name('tenaga-kependidikan.sertifikasi.destroy');
+    Route::get('/tenaga-kependidikan/{tendikId}/sertifikasi', function ($tendikId) {
+        return redirect()->route('sertifikasi.index', ['tipe_pemilik' => 'tendik', 'id_tendik' => $tendikId]);
+    })->name('tenaga-kependidikan.sertifikasi.index');
+    Route::get('/tenaga-pendidikan/{tendikId}/sertifikasi', function ($tendikId) {
+        return redirect()->route('sertifikasi.index', ['tipe_pemilik' => 'tendik', 'id_tendik' => $tendikId]);
+    })->name('tenaga-pendidikan.sertifikasi.index');
+    Route::get('/tenaga-kependidikan/{tendikId}/pendidikan', function ($tendikId) {
+        return redirect()->route('pendidikan.index', ['id_tendik' => $tendikId]);
+    })->name('tenaga-kependidikan.pendidikan.index');
+    Route::get('/tenaga-pendidikan/{tendikId}/pendidikan', function ($tendikId) {
+        return redirect()->route('pendidikan.index', ['id_tendik' => $tendikId]);
+    })->name('tenaga-pendidikan.pendidikan.index');
+    Route::post('/tenaga-kependidikan/{tendikId}/pendidikan', [TenagaKependidikanController::class, 'storePendidikan'])->name('tenaga-kependidikan.pendidikan.store');
+    Route::post('/tenaga-pendidikan/{tendikId}/pendidikan', [TenagaKependidikanController::class, 'storePendidikan'])->name('tenaga-pendidikan.pendidikan.store');
+
+    // Modul Pendidikan
+    Route::resource('pendidikan', PendidikanController::class);
 });

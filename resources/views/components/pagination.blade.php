@@ -6,6 +6,8 @@
     'lastPage' => 1,
     'from' => null,
     'to' => null,
+    'alwaysShow' => false,
+    'showTotal' => true,
 ])
 
 @php
@@ -55,18 +57,17 @@
     }
 @endphp
 
-<div class="flex flex-col sm:flex-row items-center justify-between gap-3 pt-3 text-xs text-gray-700">
+<div class="flex flex-col sm:flex-row items-center justify-between gap-3 pt-4 text-xs sm:text-[13px] text-black">
     <div>
         @if($total > 0)
-            <span>Menampilkan {{ $fromFormatted }}–{{ $toFormatted }} dari {{ $total }}</span>
+            <span>Menampilkan {{ $fromFormatted }}–{{ $toFormatted }}{{ $showTotal ? ' dari ' . $total : ' Data' }}</span>
         @else
             <span>Menampilkan 0 dari 0 data</span>
         @endif
     </div>
 
-    @if($lastPage > 1)
+    @if($lastPage > 1 || ($alwaysShow && $total > 0))
         <div class="flex items-center gap-1.5">
-            {{-- Previous Page Link --}}
             @if($currentPage > 1)
                 <a 
                     href="{{ $buildUrl($currentPage - 1) }}" 
@@ -85,7 +86,6 @@
                 </span>
             @endif
 
-            {{-- First page if far --}}
             @if($startPage > 1)
                 <a href="{{ $buildUrl(1) }}" class="px-1.5 py-0.5 font-medium text-gray-700 hover:text-primary transition">1</a>
                 @if($startPage > 2)
@@ -93,10 +93,9 @@
                 @endif
             @endif
 
-            {{-- Numbered Page Links --}}
             @for($p = $startPage; $p <= $endPage; $p++)
                 @if($p === $currentPage)
-                    <span class="w-6 h-6 rounded-full bg-primary text-white flex items-center justify-center font-bold text-xs shadow-xs">
+                    <span class="w-6 h-6 rounded-full bg-[#01568D] text-white flex items-center justify-center font-bold text-xs shadow-xs">
                         {{ $p }}
                     </span>
                 @else
@@ -106,7 +105,6 @@
                 @endif
             @endfor
 
-            {{-- Last page if far --}}
             @if($endPage < $lastPage)
                 @if($endPage < $lastPage - 1)
                     <span class="px-1 text-gray-400">...</span>
@@ -114,7 +112,6 @@
                 <a href="{{ $buildUrl($lastPage) }}" class="px-1.5 py-0.5 font-medium text-gray-700 hover:text-primary transition">{{ $lastPage }}</a>
             @endif
 
-            {{-- Next Page Link --}}
             @if($currentPage < $lastPage)
                 <a 
                     href="{{ $buildUrl($currentPage + 1) }}" 
