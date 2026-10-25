@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Services\AkreditasiService;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class LaporanAkhirController extends Controller
 {
@@ -20,6 +21,7 @@ class LaporanAkhirController extends Controller
         $selectedYear = (int) $request->query('tahun', 2026);
         $project = 'Akreditasi LAM INFOKOM D4 TRK 2027';
         $statusProject = 'Dinilai';
+        $projectsList = [];
 
         // Muat project akreditasi dari Akreditasi API jika ada
         try {
@@ -27,6 +29,7 @@ class LaporanAkhirController extends Controller
             if ($projectRes->successful()) {
                 $projects = $projectRes->json('data');
                 if (is_array($projects) && ! empty($projects)) {
+                    $projectsList = $projects;
                     $activeProj = $projects[0];
                     $project = $activeProj['nama_project'] ?? $project;
                     $statusProject = ucfirst($activeProj['status_project'] ?? $statusProject);
@@ -61,6 +64,7 @@ class LaporanAkhirController extends Controller
         return view('pages.kaprodi.laporan-akhir', [
             'project' => $project,
             'statusProject' => $statusProject,
+            'projects' => $projectsList,
             'selectedYear' => $selectedYear,
             'summaryKesiapan' => $summaryKesiapan,
             'rekapKriteria' => $rekapKriteria,
@@ -118,5 +122,71 @@ class LaporanAkhirController extends Controller
         }
 
         return $defaultKriteria;
+    }
+
+    /**
+     * Download rekap laporan akhir dalam berbagai format (CSV/Excel, Word).
+     */
+    public function download(Request $request): StreamedResponse
+    {
+        $selectedYear = (int) $request->query('tahun', 2026);
+        $format = strtolower((string) $request->query('format', 'excel'));
+        $project = (string) $request->query('project', 'Akreditasi LAM INFOKOM D4 TRK 2027');
+
+        $rekapKriteria = $this->loadRekapKriteriaFromApi();
+
+        if ($format === 'excel' || $format === 'csv') {
+            $filename = "Laporan_Akhir_Akreditasi_{$selectedYear}.csv";
+
+            return response()->streamDownload(function () use ($selectedYear, $project, $rekapKriteria) {
+                $handle = fopen('php://output', 'w');
+                // UTF-8 BOM
+                fprintf($handle, chr(0xEF).chr(0xBB).chr(0xBF));
+
+                fputcsv($handle, ['LAPORAN AKHIR AKREDITASI PROGRAM STUDI']);
+                fputcsv($handle, ['Program Studi', 'D4 Teknologi Rekayasa Komputer']);
+                fputcsv($handle, ['Tahun Audit', $selectedYear]);
+                fputcsv($handle, ['Project', $project]);
+                fputcsv($handle, ['Tanggal Unduh', date('d/m/Y H:i')]);
+                fputcsv($handle, []);
+
+                fputcsv($handle, ['Kode Kriteria', 'Nama Kriteria', 'Skor', 'Target', 'Status']);
+                foreach ($rekapKriteria as $item) {
+                    fputcsv($handle, [
+                        $item['kode'],
+                        $item['nama'],
+                        $item['skor'],
+                        $item['target'],
+                        $item['tercapai'] ? 'Tercapai' : 'Di Bawah Target',
+                    ]);
+                }
+
+                fclose($handle);
+            }, $filename, [
+                'Content-Type' => 'text/csv; charset=UTF-8',
+            ]);
+        }
+
+        // Format Word (.doc)
+        $filename = "Laporan_Akhir_Akreditasi_{$selectedYear}.doc";
+
+        return response()->streamDownload(function () use ($selectedYear, $project, $rekapKriteria) {
+            echo "<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>";
+            echo "<head><meta charset='utf-8'><title>Laporan Akhir</title>";
+            echo '<style>body { font-family: Calibri, Arial, sans-serif; font-size: 11pt; color: #1e293b; } table { width: 100%; border-collapse: collapse; margin-top: 10px; } th, td { border: 1px solid #cbd5e1; padding: 6px 10px; } th { background-color: #002347; color: #fff; font-weight: bold; }</style>';
+            echo '</head><body>';
+            echo "<h2 style='color: #002347;'>LAPORAN AKHIR AKREDITASI PROGRAM STUDI</h2>";
+            echo '<p><strong>Program Studi:</strong> D4 Teknologi Rekayasa Komputer<br>';
+            echo "<strong>Tahun Audit:</strong> {$selectedYear} | <strong>Project:</strong> {$project}</p>";
+            echo '<h3>Rekap Skor per Kriteria</h3>';
+            echo "<table><tr style='background-color:#002347; color:#fff;'><th>Kode</th><th>Kriteria</th><th>Skor</th><th>Target</th><th>Status</th></tr>";
+            foreach ($rekapKriteria as $item) {
+                $status = $item['tercapai'] ? 'Tercapai' : 'Di Bawah Target';
+                echo "<tr><td>{$item['kode']}</td><td>{$item['nama']}</td><td>{$item['skor']}</td><td>{$item['target']}</td><td>{$status}</td></tr>";
+            }
+            echo '</table></body></html>';
+        }, $filename, [
+            'Content-Type' => 'application/msword; charset=UTF-8',
+        ]);
     }
 }

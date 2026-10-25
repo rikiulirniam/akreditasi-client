@@ -217,6 +217,56 @@ class AkreditasiService
     }
 
     /**
+     * Mengambil daftar master subkriteria.
+     *
+     * @param  array<string, mixed>  $query
+     */
+    public function getSubkriterias(array $query = []): Response
+    {
+        return $this->get('/master/subkriteria', $query);
+    }
+
+    /**
+     * Mengambil detail subkriteria berdasarkan ID atau daftar subkriteria jika param array.
+     */
+    public function getSubkriteria(int|string|array $idOrQuery = []): Response
+    {
+        if (is_array($idOrQuery)) {
+            return $this->getSubkriterias($idOrQuery);
+        }
+
+        return $this->get("/master/subkriteria/{$idOrQuery}");
+    }
+
+    /**
+     * Menambahkan subkriteria baru.
+     *
+     * @param  array<string, mixed>  $data
+     */
+    public function createSubkriteria(array $data): Response
+    {
+        return $this->post('/master/subkriteria', $data);
+    }
+
+    /**
+     * Memperbarui data subkriteria.
+     *
+     * @param  array<string, mixed>  $data
+     */
+    public function updateSubkriteria(int|string $id, array $data): Response
+    {
+        return $this->put("/master/subkriteria/{$id}", $data);
+    }
+
+    /**
+     * Menghapus subkriteria.
+     */
+    public function deleteSubkriteria(int|string $id): Response
+    {
+        return $this->delete("/master/subkriteria/{$id}");
+    }
+
+    /**
      * Mengambil master versi instrumen akreditasi.
      */
     public function getVersiInstrumen(array $query = []): Response
