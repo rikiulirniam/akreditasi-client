@@ -5,83 +5,11 @@
 @section('content')
 
 @php
-    $stats = [
-        [
-            'label' => 'Total Pengguna',
-            'value' => 5,
-            'note' => '4 akun aktif',
-            'iconBg' => 'bg-sky-100',
-            'iconColor' => 'text-sky-800',
-            'icon' => 'M16 11a4 4 0 1 0-8 0 4 4 0 0 0 8 0ZM4 21v-2a8 8 0 0 1 16 0v2',
-            'dot' => 'bg-sky-600',
-        ],
-        [
-            'label' => 'Aktivitas Hari Ini',
-            'value' => 28,
-            'note' => 'Aktivitas sistem normal',
-            'iconBg' => 'bg-emerald-100',
-            'iconColor' => 'text-emerald-800',
-            'icon' => 'M9 12h6m-6 4h6m2 5H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5.6L19 9v10a2 2 0 0 1-2 2Z',
-            'dot' => 'bg-emerald-600',
-        ],
-        [
-            'label' => 'Project Aktif',
-            'value' => 0,
-            'note' => '0 Total Project',
-            'iconBg' => 'bg-rose-100',
-            'iconColor' => 'text-rose-800',
-            'icon' => 'M12 9v4m0 4h.01M10 3h4l8 15H2L10 3Z',
-            'dot' => 'bg-rose-500',
-        ],
-        [
-            'label' => 'Instrumen Aktif',
-            'value' => 5,
-            'note' => '720 indikator tersedia',
-            'iconBg' => 'bg-amber-100',
-            'iconColor' => 'text-amber-800',
-            'icon' => 'M12 8v4m0 4h.01M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z',
-            'dot' => 'bg-amber-500',
-        ],
-    ];
-
-    $prioritas = [
-        [
-            'kode' => 'C1.1.1',
-            'judul' => 'Ketersediaan dokumen formal — kejelasan & kerealistisan',
-            'deadline' => '19 Okt 2026',
-            'status' => 'Belum diisi',
-        ],
-        [
-            'kode' => 'C1.1.2',
-            'judul' => 'Tingkat ketercapaian target — kejelasan & kerealistisan',
-            'deadline' => '22 Okt 2026',
-            'status' => 'Belum diisi',
-        ],
-        [
-            'kode' => 'C1.2.1',
-            'judul' => 'Rasio dan kecukupan — mekanisme penyusunan &',
-            'deadline' => '25 Okt 2026',
-            'status' => 'Belum diisi',
-        ],
-        [
-            'kode' => 'C1.2.2',
-            'judul' => 'Monitoring dan evaluasi berkala — mekanisme penyusunan &',
-            'deadline' => '28 Okt 2026',
-            'status' => 'Belum diisi',
-        ],
-        [
-            'kode' => 'C2.1.1',
-            'judul' => 'Tingkat ketercapaian target — sistem tata',
-            'deadline' => '31 Okt 2026',
-            'status' => 'Belum diisi',
-        ],
-    ];
-
-    $totalIndikator = 12;
-    $indikatorTerisi = 0;
-    $persentase = $totalIndikator > 0
-        ? round(($indikatorTerisi / $totalIndikator) * 100)
-        : 0;
+    $stats = $stats ?? [];
+    $prioritas = $prioritas ?? [];
+    $totalIndikator = $totalIndikator ?? 0;
+    $indikatorTerisi = $indikatorTerisi ?? 0;
+    $persentase = $persentase ?? 0;
 @endphp
 
 <div class="space-y-6">
@@ -202,7 +130,7 @@
 
         {{-- Daftar Indikator --}}
         <div id="daftar-prioritas" class="divide-y divide-gray-100">
-            @foreach ($prioritas as $item)
+            @forelse ($prioritas as $item)
                 <a
                     href="{{ route('akreditasi.superadmin.kriteria') }}"
                     class="group flex flex-col gap-3 px-5 py-4 transition hover:bg-gray-50 sm:flex-row sm:items-center sm:justify-between sm:px-6"
@@ -233,7 +161,11 @@
                         </svg>
                     </div>
                 </a>
-            @endforeach
+            @empty
+                <div class="p-8 text-center text-sm text-gray-500 font-medium">
+                    Belum ada indikator atau tugas pengisian yang terdaftar.
+                </div>
+            @endforelse
         </div>
     </section>
 

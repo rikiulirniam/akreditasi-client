@@ -122,51 +122,21 @@
                     <x-table.th class="w-24 text-right">Aksi</x-table.th>
                 </x-slot:header>
 
-                @php
-                    $rubrik = [
-                        [
-                            'skor' => '4',
-                            'deskripsi' => 'Sangat baik, seluruh kriteria terpenuhi dan terbukti konsisten',
-                            'bobot' => '4'
-                        ],
-                        [
-                            'skor' => '3',
-                            'deskripsi' => 'Baik, sebagian besar kriteria terpenuhi dengan bukti lengkap',
-                            'bobot' => '3'
-                        ],
-                        [
-                            'skor' => '2',
-                            'deskripsi' => 'Cukup, sebagian terlaksana namun bukti belum lengkap',
-                            'bobot' => '2'
-                        ],
-                        [
-                            'skor' => '1',
-                            'deskripsi' => 'Kurang, hanya sebagian kecil terpenuhi',
-                            'bobot' => '1'
-                        ],
-                        [
-                            'skor' => '0',
-                            'deskripsi' => 'Tidak ada bukti pendukung yang relevan',
-                            'bobot' => '0'
-                        ],
-                    ];
-                @endphp
-
-                @foreach ($rubrik as $item)
+                @forelse ($rubriks ?? [] as $item)
                     <x-table.row>
                         <x-table.cell>
                             <span class="inline-flex items-center justify-center w-8 h-8 rounded-xl bg-primary/10 text-primary font-bold text-sm">
-                                {{ $item['skor'] }}
+                                {{ $item['skor'] ?? '-' }}
                             </span>
                         </x-table.cell>
                         <x-table.cell>
                             <span class="font-medium text-sm text-gray-900 leading-relaxed">
-                                {{ $item['deskripsi'] }}
+                                {{ $item['deskripsi_rubrik'] ?? ($item['deskripsi_kondisi'] ?? ($item['deskripsi'] ?? '-')) }}
                             </span>
                         </x-table.cell>
                         <x-table.cell>
                             <span class="font-semibold text-sm text-gray-800">
-                                {{ $item['bobot'] }}
+                                {{ $item['skor'] ?? '-' }}
                             </span>
                         </x-table.cell>
                         <x-table.cell class="w-24 text-right">
@@ -177,7 +147,13 @@
                             </button>
                         </x-table.cell>
                     </x-table.row>
-                @endforeach
+                @empty
+                    <x-table.row>
+                        <x-table.cell colspan="4" class="py-8 text-center text-sm font-medium text-gray-500">
+                            Belum ada opsi rubrik penilaian yang tersimpan.
+                        </x-table.cell>
+                    </x-table.row>
+                @endforelse
             </x-table>
         </div>
     </section>

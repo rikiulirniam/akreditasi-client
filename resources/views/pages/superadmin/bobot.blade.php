@@ -121,35 +121,26 @@
                     <x-table.th class="w-24 text-right">Aksi</x-table.th>
                 </x-slot:header>
 
-                @php
-                    $bobot = array_fill(0, 5, [
-                        'indikator' => 'C1.1.1',
-                        'jenis' => 'APS untuk Pemenuhan Syarat Minimum',
-                        'jenjang' => 'Sarjana Terapan',
-                        'nilai' => '2.0'
-                    ]);
-                @endphp
-
-                @foreach ($bobot as $item)
+                @forelse ($bobots ?? [] as $item)
                     <x-table.row>
                         <x-table.cell>
                             <span class="font-mono font-bold text-sm text-primary tracking-tight">
-                                {{ $item['indikator'] }}
+                                {{ $item['indikator_kode'] ?? ($item['indikator'] ?? 'IND') }}
                             </span>
                         </x-table.cell>
                         <x-table.cell>
                             <span class="font-semibold text-sm text-gray-900">
-                                {{ $item['jenis'] }}
+                                {{ $item['jenis_nama'] ?? ($item['jenis'] ?? 'APS') }}
                             </span>
                         </x-table.cell>
                         <x-table.cell>
                             <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-gray-100 text-gray-700">
-                                {{ $item['jenjang'] }}
+                                {{ $item['jenjang_nama'] ?? ($item['jenjang'] ?? 'Sarjana Terapan') }}
                             </span>
                         </x-table.cell>
                         <x-table.cell>
                             <span class="font-mono font-bold text-sm text-gray-900">
-                                {{ $item['nilai'] }}
+                                {{ $item['nilai_bobot'] ?? ($item['nilai'] ?? '0.00') }}
                             </span>
                         </x-table.cell>
                         <x-table.cell class="w-24 text-right">
@@ -160,7 +151,13 @@
                             </button>
                         </x-table.cell>
                     </x-table.row>
-                @endforeach
+                @empty
+                    <x-table.row>
+                        <x-table.cell colspan="5" class="py-8 text-center text-sm font-medium text-gray-500">
+                            Belum ada konfigurasi nilai bobot penilaian.
+                        </x-table.cell>
+                    </x-table.row>
+                @endforelse
             </x-table>
         </div>
     </section>

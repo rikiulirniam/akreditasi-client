@@ -57,64 +57,31 @@
                 <x-table.th class="w-28 text-right">Aksi</x-table.th>
             </x-slot:header>
 
-            @php
-                $standarSpmiList = [
-                    [
-                        'kode' => 'STD-PND-01',
-                        'nama' => 'Standar Kompetensi Lulusan',
-                        'kategori' => 'Pendidikan',
-                        'versi' => '2024 / v2',
-                        'status' => 'Aktif',
-                    ],
-                    [
-                        'kode' => 'STD-PND-02',
-                        'nama' => 'Standar Isi Pembelajaran',
-                        'kategori' => 'Pendidikan',
-                        'versi' => '2024 / v2',
-                        'status' => 'Aktif',
-                    ],
-                    [
-                        'kode' => 'STD-PLT-01',
-                        'nama' => 'Standar Hasil Penelitian',
-                        'kategori' => 'Penelitian',
-                        'versi' => '2024 / v1',
-                        'status' => 'Aktif',
-                    ],
-                    [
-                        'kode' => 'STD-PGM-01',
-                        'nama' => 'Standar Hasil Pengabdian kepada Masyarakat',
-                        'kategori' => 'Pengabdian',
-                        'versi' => '2024 / v1',
-                        'status' => 'Aktif',
-                    ],
-                ];
-            @endphp
-
-            @foreach ($standarSpmiList as $std)
+            @forelse ($standars ?? [] as $std)
                 <x-table.row>
                     <x-table.cell>
                         <span class="font-mono font-bold text-sm text-primary tracking-tight">
-                            {{ $std['kode'] }}
+                            {{ $std['kode_standar'] ?? ($std['kode'] ?? '-') }}
                         </span>
                     </x-table.cell>
                     <x-table.cell>
                         <span class="font-semibold text-sm text-gray-900">
-                            {{ $std['nama'] }}
+                            {{ $std['nama_standar'] ?? ($std['nama'] ?? '-') }}
                         </span>
                     </x-table.cell>
                     <x-table.cell>
                         <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-gray-100 text-gray-700">
-                            {{ $std['kategori'] }}
+                            {{ $std['kategori'] ?? 'SPMI' }}
                         </span>
                     </x-table.cell>
                     <x-table.cell>
                         <span class="text-sm font-medium text-gray-700">
-                            {{ $std['versi'] }}
+                            {{ $std['deskripsi'] ?? ($std['pernyataan_standar'] ?? 'Standar Mutu') }}
                         </span>
                     </x-table.cell>
                     <x-table.cell>
                         <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800">
-                            {{ $std['status'] }}
+                            Aktif
                         </span>
                     </x-table.cell>
                     <x-table.cell class="w-28 text-right">
@@ -128,7 +95,13 @@
                         </div>
                     </x-table.cell>
                 </x-table.row>
-            @endforeach
+            @empty
+                <x-table.row>
+                    <x-table.cell colspan="6" class="py-8 text-center text-sm font-medium text-gray-500">
+                        Belum ada standar mutu SPMI yang terdaftar.
+                    </x-table.cell>
+                </x-table.row>
+            @endforelse
         </x-table>
     </div>
 

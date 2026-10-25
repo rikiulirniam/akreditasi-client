@@ -88,36 +88,27 @@
         <div class="bg-white rounded-2xl border border-[#EAEAEA] shadow-xs overflow-hidden">
             <x-table>
                 <x-slot:header>
-                    <x-table.th class="w-36">UID</x-table.th>
+                    <x-table.th class="w-36">ID / UID</x-table.th>
                     <x-table.th>Jenis Instrumen</x-table.th>
                     <x-table.th class="w-48">Jenjang</x-table.th>
                     <x-table.th class="w-24 text-right">Aksi</x-table.th>
                 </x-slot:header>
 
-                @php
-                    $instrumens = [
-                        ['uid' => 'INS-001', 'jenis' => 'APS untuk Pemenuhan Syarat Minimum Program Studi Baru', 'jenjang' => 'Sarjana Terapan'],
-                        ['uid' => 'INS-002', 'jenis' => 'APS untuk Perolehan Status Terakreditasi', 'jenjang' => 'Sarjana Terapan'],
-                        ['uid' => 'INS-003', 'jenis' => 'APS untuk Status Terakreditasi Unggul', 'jenjang' => 'Sarjana'],
-                        ['uid' => 'INS-004', 'jenis' => 'Kriteria Unggul LAM INFOKOM 2.1', 'jenjang' => 'Sarjana Terapan'],
-                    ];
-                @endphp
-
-                @foreach ($instrumens as $item)
+                @forelse ($instrumens ?? [] as $item)
                     <x-table.row>
                         <x-table.cell>
                             <span class="font-mono font-bold text-sm text-primary tracking-tight">
-                                {{ $item['uid'] }}
+                                INS-{{ str_pad($item['id'] ?? 1, 3, '0', STR_PAD_LEFT) }}
                             </span>
                         </x-table.cell>
                         <x-table.cell>
                             <span class="font-semibold text-sm text-gray-900">
-                                {{ $item['jenis'] }}
+                                {{ $item['jenis_instrumen']['nama_jenis'] ?? ($item['jenis'] ?? 'Instrumen Akreditasi') }}
                             </span>
                         </x-table.cell>
                         <x-table.cell>
                             <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-gray-100 text-gray-700">
-                                {{ $item['jenjang'] }}
+                                {{ $item['jenjang']['nama_jenjang'] ?? ($item['jenjang'] ?? 'Semua Jenjang') }}
                             </span>
                         </x-table.cell>
                         <x-table.cell class="w-24 text-right">
@@ -128,7 +119,13 @@
                             </button>
                         </x-table.cell>
                     </x-table.row>
-                @endforeach
+                @empty
+                    <x-table.row>
+                        <x-table.cell colspan="4" class="py-8 text-center text-sm font-medium text-gray-500">
+                            Belum ada instrumen yang terdaftar. Tambahkan instrumen melalui tombol di atas.
+                        </x-table.cell>
+                    </x-table.row>
+                @endforelse
             </x-table>
         </div>
     </section>

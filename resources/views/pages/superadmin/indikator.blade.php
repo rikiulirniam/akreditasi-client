@@ -109,43 +109,26 @@
                     <x-table.th class="w-24 text-right">Aksi</x-table.th>
                 </x-slot:header>
 
-                @php
-                    $indikator = [
-                        [
-                            'standar' => 'STD-PND-01',
-                            'kode' => 'C1.1.1',
-                            'deskripsi' => 'Ketersediaan dokumen formal — kejelasan & kerealistisan vmts',
-                            'parameter' => 'Kelengkapan, konsistensi, dan ketercapaian ketersediaan dokumen formal — kejelasan & kerealistisan vmts.',
-                        ],
-                        [
-                            'standar' => 'STD-PND-01',
-                            'kode' => 'C1.1.2',
-                            'deskripsi' => 'Tingkat ketercapaian target — kejelasan & kerealistisan vmts',
-                            'parameter' => 'Kelengkapan, konsistensi, dan ketercapaian tingkat ketercapaian target — kejelasan & kerealistisan vmts.',
-                        ],
-                    ];
-                @endphp
-
-                @foreach ($indikator as $item)
+                @forelse ($indikators ?? [] as $item)
                     <x-table.row>
                         <x-table.cell>
                             <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-gray-100 text-gray-700 font-mono">
-                                {{ $item['standar'] }}
+                                {{ $item['subkriteria']['kode_subkriteria'] ?? ($item['standar'] ?? 'SK') }}
                             </span>
                         </x-table.cell>
                         <x-table.cell>
                             <span class="font-mono font-bold text-sm text-primary tracking-tight">
-                                {{ $item['kode'] }}
+                                {{ $item['kode_indikator'] ?? ($item['kode'] ?? '-') }}
                             </span>
                         </x-table.cell>
                         <x-table.cell>
                             <span class="font-semibold text-sm text-gray-900 leading-relaxed">
-                                {{ $item['deskripsi'] }}
+                                {{ $item['deskripsi_indikator'] ?? ($item['deskripsi'] ?? '-') }}
                             </span>
                         </x-table.cell>
                         <x-table.cell class="w-1/3">
                             <span class="text-sm text-gray-600 leading-relaxed">
-                                {{ $item['parameter'] }}
+                                {{ $item['parameter_penilaian'] ?? ($item['parameter'] ?? '-') }}
                             </span>
                         </x-table.cell>
                         <x-table.cell class="w-24 text-right">
@@ -156,7 +139,13 @@
                             </button>
                         </x-table.cell>
                     </x-table.row>
-                @endforeach
+                @empty
+                    <x-table.row>
+                        <x-table.cell colspan="5" class="py-8 text-center text-sm font-medium text-gray-500">
+                            Belum ada indikator yang terdaftar di server akreditasi.
+                        </x-table.cell>
+                    </x-table.row>
+                @endforelse
             </x-table>
         </div>
     </section>

@@ -111,26 +111,7 @@
 
 {{-- Script JS Manajemen Dokumen --}}
 <script>
-    let dokumenList = [
-        {
-            id: 1,
-            nama: "SK Rencana Strategis Fakultas 2020-2024",
-            indikator: "C1.1.1",
-            jenis: "Dokumen Kebijakan",
-            masaBerlaku: "31 Des 2024",
-            status: "Berlaku",
-            url: "https://drive.google.com/contoh-sk-renstra"
-        },
-        {
-            id: 2,
-            nama: "SOP Penyusunan & Sosialisasi VMTS",
-            indikator: "C1.1.2",
-            jenis: "Dokumen Prosedur",
-            masaBerlaku: "15 Agu 2025",
-            status: "Berlaku",
-            url: "https://drive.google.com/contoh-sop-vmts"
-        }
-    ];
+    let dokumenList = @json($dokumens ?? []);
 
     function renderTabel() {
         const tbody = document.getElementById('tabelDokumenBody');

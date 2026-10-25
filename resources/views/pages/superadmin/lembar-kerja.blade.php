@@ -37,31 +37,14 @@
 
     {{-- Grid Kartu Indikator --}}
     <div class="grid grid-cols-1 gap-5 md:grid-cols-2">
-        @php
-            $listIndikator = [
-                ['kode' => 'C1.1.1', 'desc' => 'Ketersediaan dokumen formal — kejelasan & kerealistisan VMTS', 'deadline' => '21 Okt 2026'],
-                ['kode' => 'C1.1.2', 'desc' => 'Tingkat ketercapaian target — kejelasan & kerealistisan VMTS', 'deadline' => '24 Okt 2026'],
-                ['kode' => 'C1.2.1', 'desc' => 'Rasio dan kecukupan — mekanisme penyusunan & sosialisasi', 'deadline' => '27 Okt 2026'],
-                ['kode' => 'C1.2.2', 'desc' => 'Monitoring dan evaluasi berkala — mekanisme penyusunan & sosialisasi', 'deadline' => '30 Okt 2026'],
-                ['kode' => 'C2.1.1', 'desc' => 'Tingkat ketercapaian target — sistem tata pamong', 'deadline' => '2 Nov 2026'],
-                ['kode' => 'C2.1.2', 'desc' => 'Rasio dan kecukupan — sistem tata pamong', 'deadline' => '5 Nov 2026'],
-                ['kode' => 'C2.2.1', 'desc' => 'Monitoring dan evaluasi berkala — kerja sama tridharma', 'deadline' => '8 Nov 2026'],
-                ['kode' => 'C2.2.2', 'desc' => 'Ketersediaan dokumen formal — kerja sama tridharma', 'deadline' => '11 Nov 2026'],
-                ['kode' => 'C3.1.1', 'desc' => 'Rasio dan kecukupan — kualitas input mahasiswa', 'deadline' => '14 Nov 2026'],
-                ['kode' => 'C3.1.2', 'desc' => 'Monitoring dan evaluasi berkala — kualitas input mahasiswa', 'deadline' => '17 Nov 2026'],
-                ['kode' => 'C3.2.1', 'desc' => 'Ketersediaan dokumen formal — layanan kemahasiswaan', 'deadline' => '20 Nov 2026'],
-                ['kode' => 'C3.2.2', 'desc' => 'Tingkat ketercapaian target — layanan kemahasiswaan', 'deadline' => '23 Nov 2026'],
-            ];
-        @endphp
-
-        @foreach ($listIndikator as $item)
+        @forelse ($indikators ?? [] as $item)
         <div class="card-item relative flex flex-col justify-between rounded-2xl border border-[#EAEAEA] bg-white p-6 shadow-xs transition hover:shadow-md">
             <div>
                 <div class="flex items-center justify-between">
-                    <span class="rounded-xl bg-primary/10 px-3 py-1 font-mono text-xs sm:text-sm font-bold text-primary">{{ $item['kode'] }}</span>
-                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-gray-100 text-gray-600">Belum diisi</span>
+                    <span class="rounded-xl bg-primary/10 px-3 py-1 font-mono text-xs sm:text-sm font-bold text-primary">{{ $item['kode_indikator'] ?? ($item['kode'] ?? 'IND') }}</span>
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-gray-100 text-gray-600">Draft</span>
                 </div>
-                <p class="mt-4 text-sm sm:text-base font-semibold text-gray-900 leading-relaxed">{{ $item['desc'] }}</p>
+                <p class="mt-4 text-sm sm:text-base font-semibold text-gray-900 leading-relaxed">{{ $item['deskripsi_indikator'] ?? ($item['nama_indikator'] ?? ($item['desc'] ?? '-')) }}</p>
             </div>
 
             <div class="mt-6 flex items-center justify-between border-t border-gray-100 pt-4 text-xs font-medium text-gray-500">
@@ -69,12 +52,16 @@
                     <svg class="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                     </svg>
-                    0 dokumen bukti
+                    {{ count($item['rubriks'] ?? []) }} opsi rubrik
                 </span>
-                <span>Deadline: {{ $item['deadline'] }}</span>
+                <span>Standar: {{ $item['subkriteria']['kode_subkriteria'] ?? 'SPMI' }}</span>
             </div>
         </div>
-        @endforeach
+        @empty
+            <div class="col-span-full rounded-2xl border border-dashed border-gray-300 bg-white p-12 text-center text-sm font-medium text-gray-500">
+                Belum ada data lembar kerja indikator yang terdaftar.
+            </div>
+        @endforelse
     </div>
 
 </div>

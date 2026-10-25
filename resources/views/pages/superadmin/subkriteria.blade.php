@@ -102,29 +102,21 @@
                     <x-table.th class="w-24 text-right">Aksi</x-table.th>
                 </x-slot:header>
 
-                @php
-                    $subkriteria = array_fill(0, 5, [
-                        'kode' => 'C1.1',
-                        'nama' => 'Kejelasan & kerealistisan VMTS',
-                        'link' => '-'
-                    ]);
-                @endphp
-
-                @foreach ($subkriteria as $item)
+                @forelse ($subkriterias ?? [] as $item)
                     <x-table.row>
                         <x-table.cell>
                             <span class="font-mono font-bold text-sm text-primary tracking-tight">
-                                {{ $item['kode'] }}
+                                {{ $item['kode_subkriteria'] ?? ($item['kode'] ?? '-') }}
                             </span>
                         </x-table.cell>
                         <x-table.cell>
                             <span class="font-semibold text-sm text-gray-900">
-                                {{ $item['nama'] }}
+                                {{ $item['nama_subkriteria'] ?? ($item['nama'] ?? '-') }}
                             </span>
                         </x-table.cell>
                         <x-table.cell>
                             <span class="text-sm text-gray-500 font-medium">
-                                {{ $item['link'] }}
+                                {{ $item['kriteria']['kode_kriteria'] ?? 'Kriteria' }}
                             </span>
                         </x-table.cell>
                         <x-table.cell class="w-24 text-right">
@@ -135,7 +127,13 @@
                             </button>
                         </x-table.cell>
                     </x-table.row>
-                @endforeach
+                @empty
+                    <x-table.row>
+                        <x-table.cell colspan="4" class="py-8 text-center text-sm font-medium text-gray-500">
+                            Belum ada subkriteria yang terdaftar.
+                        </x-table.cell>
+                    </x-table.row>
+                @endforelse
             </x-table>
         </div>
     </section>
