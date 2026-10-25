@@ -154,13 +154,11 @@ class SpmiController extends Controller
      */
     protected function loadTemuanAmiFromApi(int $year): array
     {
-        $default = $this->getDefaultTemuanAmi();
-
         try {
             $response = $this->akreditasiService->getSpmiAudits(['tahun' => $year]);
             if ($response->successful()) {
-                $apiData = $response->json('data');
-                if (is_array($apiData) && ! empty($apiData)) {
+                $apiData = $response->json('data') ?? [];
+                if (is_array($apiData)) {
                     $mapped = [];
                     foreach ($apiData as $item) {
                         $statusTindak = $item['status_tindak_lanjut'] ?? null;
@@ -204,10 +202,10 @@ class SpmiController extends Controller
                 }
             }
         } catch (\Throwable $e) {
-            // Fallback ke default
+            // Abaikan kesalahan koneksi
         }
 
-        return $default;
+        return [];
     }
 
     /**
