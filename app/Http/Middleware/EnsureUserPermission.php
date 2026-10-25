@@ -136,6 +136,7 @@ class EnsureUserPermission
                 'cpl.create', 'cpl.update', 'cpl.delete',
                 'mata_kuliah_cpl.create', 'mata_kuliah_cpl.update', 'mata_kuliah_cpl.delete',
                 'enrollment_mata_kuliah.update',
+                'nilai_mahasiswa.create', 'nilai_mahasiswa.update', 'nilai_mahasiswa.delete',
             ],
             'OPERATOR' => [
                 '*.read',
@@ -147,10 +148,11 @@ class EnsureUserPermission
                 'angkatan.create', 'angkatan.update', 'angkatan.delete',
                 'angkatan_kelas.create', 'angkatan_kelas.update', 'angkatan_kelas.delete',
                 'tahun_akademik.create', 'tahun_akademik.update', 'tahun_akademik.delete',
+                'nilai_mahasiswa.create', 'nilai_mahasiswa.update', 'nilai_mahasiswa.delete',
             ],
             'DOSEN' => [
                 '*.read',
-                'nilai_mahasiswa.create', 'nilai_mahasiswa.update',
+                'nilai_mahasiswa.create', 'nilai_mahasiswa.update', 'nilai_mahasiswa.delete',
                 'enrollment_mata_kuliah.update',
             ],
             default => ['*.read'],
