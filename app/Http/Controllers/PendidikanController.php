@@ -139,7 +139,31 @@ class PendidikanController extends Controller
                 $selectedTendik = ['id' => $idTendik, 'nama' => 'Tenaga Kependidikan #'.$idTendik];
             }
 
-            // Retrieve local qualifications for this Tendik
+            // Sync initial API pendidikan into Kualifikasi if not yet tracked
+            $apiPendidikan = $tendikApiRecord['pendidikan'] ?? null;
+            if (is_array($apiPendidikan) && (! empty($apiPendidikan['universitas']) || ! empty($apiPendidikan['jenjang']))) {
+                try {
+                    $apiJenjang = (string) ($apiPendidikan['jenjang'] ?? '');
+                    $alreadyTracked = Kualifikasi::withTrashed()
+                        ->where('tendik_api_id', $idTendik)
+                        ->where('jenjang', $apiJenjang)
+                        ->exists();
+
+                    if (! $alreadyTracked) {
+                        Kualifikasi::create([
+                            'tendik_api_id' => $idTendik,
+                            'gelar' => (string) ($apiPendidikan['gelar'] ?? self::defaultGelarForJenjang($apiJenjang)),
+                            'jenjang' => $apiJenjang,
+                            'institusi' => (string) ($apiPendidikan['universitas'] ?? $apiPendidikan['institusi'] ?? ''),
+                            'program_studi' => (string) ($apiPendidikan['program_studi'] ?? ''),
+                            'tahun_lulus' => (string) ($apiPendidikan['tahun_lulus'] ?? ''),
+                        ]);
+                    }
+                } catch (\Throwable) {
+                }
+            }
+
+            // Retrieve all local qualifications for this Tendik
             try {
                 $localKualifikasis = Kualifikasi::where('tendik_api_id', $idTendik)->orderBy('id')->get();
             } catch (\Throwable) {
@@ -147,30 +171,16 @@ class PendidikanController extends Controller
             }
 
             $allItems = [];
-            if ($localKualifikasis->isNotEmpty()) {
-                foreach ($localKualifikasis as $q) {
-                    $allItems[] = [
-                        'id' => $q->id,
-                        'id_pendidikan' => $q->id,
-                        'universitas' => $q->institusi,
-                        'program_studi' => $q->program_studi,
-                        'jenjang' => $q->jenjang,
-                        'tahun_lulus' => $q->tahun_lulus,
-                        'gelar' => $q->gelar,
-                        'is_local' => true,
-                    ];
-                }
-            } elseif ($tendikApiRecord && isset($tendikApiRecord['pendidikan']) && is_array($tendikApiRecord['pendidikan']) && (! empty($tendikApiRecord['pendidikan']['universitas']) || ! empty($tendikApiRecord['pendidikan']['jenjang']))) {
-                $p = $tendikApiRecord['pendidikan'];
+            foreach ($localKualifikasis as $q) {
                 $allItems[] = [
-                    'id' => $p['id_pendidikan'] ?? $p['id'] ?? 1,
-                    'id_pendidikan' => $p['id_pendidikan'] ?? $p['id'] ?? 1,
-                    'universitas' => $p['universitas'] ?? $p['institusi'] ?? '',
-                    'program_studi' => $p['program_studi'] ?? '',
-                    'jenjang' => $p['jenjang'] ?? '',
-                    'tahun_lulus' => $p['tahun_lulus'] ?? '',
-                    'gelar' => $p['gelar'] ?? '',
-                    'is_local' => false,
+                    'id' => $q->id,
+                    'id_pendidikan' => $q->id,
+                    'universitas' => $q->institusi,
+                    'program_studi' => $q->program_studi,
+                    'jenjang' => $q->jenjang,
+                    'tahun_lulus' => $q->tahun_lulus,
+                    'gelar' => $q->gelar,
+                    'is_local' => true,
                 ];
             }
 

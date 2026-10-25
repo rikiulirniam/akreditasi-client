@@ -13,6 +13,7 @@ class PendidikanTendikSyncTest extends TestCase
 
     public function test_tendik_without_local_records_shows_api_education_on_both_pages(): void
     {
+        $this->withoutExceptionHandling();
         Http::fake([
             'https://tridharma.fayra.my.id/api/tendik/99' => Http::response([
                 'success' => true,
@@ -32,7 +33,13 @@ class PendidikanTendikSyncTest extends TestCase
                     ],
                 ],
             ], 200),
-            'https://tridharma.fayra.my.id/api/tendik*' => Http::response([
+            'https://tridharma.fayra.my.id/api/tendik?*' => Http::response([
+                'success' => true,
+                'data' => [
+                    ['id_tendik' => 99, 'nama_tendik' => 'Putri Aulya'],
+                ],
+            ], 200),
+            'https://tridharma.fayra.my.id/api/tendik' => Http::response([
                 'success' => true,
                 'data' => [
                     ['id_tendik' => 99, 'nama_tendik' => 'Putri Aulya'],
@@ -156,5 +163,95 @@ class PendidikanTendikSyncTest extends TestCase
             ->assertSee('Universitas Indonesia')
             ->assertSee('Ilmu Komputer')
             ->assertSee('2015');
+    }
+
+    public function test_adding_education_adds_to_existing_education_and_does_not_replace(): void
+    {
+        Http::fake([
+            'https://tridharma.fayra.my.id/api/tendik/99' => Http::response([
+                'success' => true,
+                'data' => [
+                    'id_tendik' => 99,
+                    'nama_tendik' => 'Putri Aulya',
+                    'jabatan_tendik' => 'Staff IT',
+                    'nip' => '199501012022012001',
+                    'kualifikasi' => 'D4/S1',
+                    'pendidikan' => [
+                        'id_pendidikan' => 88,
+                        'universitas' => 'Universitas Diponegoro',
+                        'program_studi' => 'Teknik Informatika',
+                        'jenjang' => 'D4/S1',
+                        'tahun_lulus' => 2021,
+                        'gelar' => 'S.Kom',
+                    ],
+                ],
+            ], 200),
+            'https://tridharma.fayra.my.id/api/tendik?*' => Http::response([
+                'success' => true,
+                'data' => [
+                    ['id_tendik' => 99, 'nama_tendik' => 'Putri Aulya'],
+                ],
+            ], 200),
+            'https://tridharma.fayra.my.id/api/tendik' => Http::response([
+                'success' => true,
+                'data' => [
+                    ['id_tendik' => 99, 'nama_tendik' => 'Putri Aulya'],
+                ],
+            ], 200),
+            'https://tridharma.fayra.my.id/api/pendidikan*' => Http::response([
+                'success' => true,
+                'data' => [
+                    'id_pendidikan' => 999,
+                    'universitas' => 'Universitas Diponegoro',
+                    'program_studi' => 'Teknik Informatika',
+                    'jenjang' => 'S2',
+                    'tahun_lulus' => 2026,
+                ],
+            ], 201),
+            'https://tridharma.fayra.my.id/api/dosen*' => Http::response([
+                'success' => true,
+                'data' => [],
+            ], 200),
+            'https://tridharma.fayra.my.id/api/sertifikasi*' => Http::response([
+                'success' => true,
+                'data' => [],
+            ], 200),
+        ]);
+
+        // Add S2 education for tendik 99
+        $storeResp = $this->withSession(['access_token' => 'mock-jwt-token'])
+            ->post(route('pendidikan.store'), [
+                'universitas' => 'Universitas Diponegoro',
+                'program_studi' => 'Teknik Informatika',
+                'jenjang' => 'S2',
+                'tahun_lulus' => 2026,
+                'id_tendik' => 99,
+            ]);
+
+        $storeResp->assertRedirect(route('pendidikan.index', ['id_tendik' => 99]));
+
+        // Visit Page 1: MUST see both S2 (2026) AND original D4/S1 (2021)
+        $pendidikanResp = $this->withSession(['access_token' => 'mock-jwt-token'])
+            ->get(route('pendidikan.index', ['id_tendik' => 99]));
+
+        $pendidikanResp->assertOk()
+            ->assertSee('Universitas Diponegoro')
+            ->assertSee('Teknik Informatika')
+            ->assertSee('S2')
+            ->assertSee('2026')
+            ->assertSee('D4/S1')
+            ->assertSee('2021');
+
+        // Visit Page 2: MUST also see both S2 (2026) AND D4/S1 (2021)
+        $detailResp = $this->withSession(['access_token' => 'mock-jwt-token'])
+            ->get(route('tenaga-kependidikan.show', 99));
+
+        $detailResp->assertOk()
+            ->assertSee('S.Kom')
+            ->assertSee('D4/S1')
+            ->assertSee('2021')
+            ->assertSee('M.Kom')
+            ->assertSee('S2')
+            ->assertSee('2026');
     }
 }

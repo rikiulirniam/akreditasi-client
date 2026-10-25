@@ -193,6 +193,35 @@ class TenagaKependidikanController extends Controller
             'jenjang.required' => 'Jenjang pendidikan wajib dipilih.',
         ]);
 
+        // Preserve initial API education in Kualifikasi before adding new
+        try {
+            $tendikResp = $this->tridharmaService->getTendik($tendikId);
+            if ($tendikResp->successful()) {
+                $apiP = $tendikResp->json('data.pendidikan', []);
+                if (is_array($apiP) && (! empty($apiP['universitas']) || ! empty($apiP['jenjang']))) {
+                    $apiJenjang = (string) ($apiP['jenjang'] ?? '');
+                    if ($apiJenjang !== $validated['jenjang']) {
+                        $alreadyTracked = Kualifikasi::withTrashed()
+                            ->where('tendik_api_id', (int) $tendikId)
+                            ->where('jenjang', $apiJenjang)
+                            ->exists();
+
+                        if (! $alreadyTracked) {
+                            Kualifikasi::create([
+                                'tendik_api_id' => (int) $tendikId,
+                                'gelar' => (string) ($apiP['gelar'] ?? ($apiJenjang === 'S3' ? 'Dr' : ($apiJenjang === 'S2' ? 'M.Kom' : 'S.Kom'))),
+                                'jenjang' => $apiJenjang,
+                                'institusi' => (string) ($apiP['universitas'] ?? $apiP['institusi'] ?? ''),
+                                'program_studi' => (string) ($apiP['program_studi'] ?? ''),
+                                'tahun_lulus' => (string) ($apiP['tahun_lulus'] ?? ''),
+                            ]);
+                        }
+                    }
+                }
+            }
+        } catch (\Throwable) {
+        }
+
         Kualifikasi::create([
             'tendik_api_id' => (int) $tendikId,
             'tenaga_kependidikan_id' => null,
@@ -370,7 +399,6 @@ class TenagaKependidikanController extends Controller
             $response = $this->tridharmaService->createSertifikasi(
                 $payload,
                 $request->file('evidence_file'),
-                asMultipart: true,
             );
 
             if ($response->status() === 401) {
@@ -643,6 +671,30 @@ class TenagaKependidikanController extends Controller
     private function mergeKualifikasi(array $record, array $tendik, int $tendikApiId): array
     {
         $fromApi = $this->qualificationCards($record, $tendik);
+
+        // Sync initial API pendidikan to Kualifikasi if not yet tracked
+        $apiPendidikan = $record['pendidikan'] ?? null;
+        if (is_array($apiPendidikan) && (! empty($apiPendidikan['universitas']) || ! empty($apiPendidikan['jenjang']))) {
+            try {
+                $apiJenjang = (string) ($apiPendidikan['jenjang'] ?? '');
+                $alreadyTracked = Kualifikasi::withTrashed()
+                    ->where('tendik_api_id', $tendikApiId)
+                    ->where('jenjang', $apiJenjang)
+                    ->exists();
+
+                if (! $alreadyTracked) {
+                    Kualifikasi::create([
+                        'tendik_api_id' => $tendikApiId,
+                        'gelar' => (string) ($apiPendidikan['gelar'] ?? ($apiJenjang === 'S3' ? 'Dr' : ($apiJenjang === 'S2' ? 'M.Kom' : 'S.Kom'))),
+                        'jenjang' => $apiJenjang,
+                        'institusi' => (string) ($apiPendidikan['universitas'] ?? $apiPendidikan['institusi'] ?? ''),
+                        'program_studi' => (string) ($apiPendidikan['program_studi'] ?? ''),
+                        'tahun_lulus' => (string) ($apiPendidikan['tahun_lulus'] ?? ''),
+                    ]);
+                }
+            } catch (\Throwable) {
+            }
+        }
 
         try {
             $fromDb = Kualifikasi::where('tendik_api_id', $tendikApiId)
