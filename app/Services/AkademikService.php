@@ -4,6 +4,7 @@ namespace App\Services;
 
 use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Http\Client\Response;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Http;
 
 class AkademikService
@@ -37,6 +38,7 @@ class AkademikService
 
         $client = Http::acceptJson()
             ->asJson()
+            ->withoutVerifying() // kalau-commit-dihapus
             ->timeout(20);
 
         if (! empty($resolvedToken)) {
@@ -78,6 +80,11 @@ class AkademikService
         return $this->sendRequest('put', $endpoint, $data, $token);
     }
 
+    public function patch(string $endpoint, array $data = [], ?string $token = null): Response
+    {
+        return $this->sendRequest('patch', $endpoint, $data, $token);
+    }
+
     public function delete(string $endpoint, array $data = [], ?string $token = null): Response
     {
         return $this->sendRequest('delete', $endpoint, $data, $token);
@@ -92,6 +99,7 @@ class AkademikService
         $response = match (strtolower($method)) {
             'post' => $client->post($url, $params),
             'put' => $client->put($url, $params),
+            'patch' => $client->patch($url, $params),
             'delete' => $client->delete($url, $params),
             default => $client->get($url, $params),
         };
@@ -136,6 +144,7 @@ class AkademikService
                         return match (strtolower($method)) {
                             'post' => $retryClient->post($url, $params),
                             'put' => $retryClient->put($url, $params),
+                            'patch' => $retryClient->patch($url, $params),
                             'delete' => $retryClient->delete($url, $params),
                             default => $retryClient->get($url, $params),
                         };
@@ -365,6 +374,11 @@ class AkademikService
         return $this->get("upps/{$id}", [], $token);
     }
 
+    public function getUppsDetail(int|string $id, ?string $token = null): Response
+    {
+        return $this->getUppsById($id, $token);
+    }
+
     public function createUpps(array $data, ?string $token = null): Response
     {
         return $this->post('upps', $data, $token);
@@ -378,6 +392,37 @@ class AkademikService
     public function deleteUpps(int|string $id, ?string $token = null): Response
     {
         return $this->delete("upps/{$id}", [], $token);
+    }
+
+    /*
+    |==========================================================================
+    | MODUL: ANGGOTA UPPS (/api/anggota-upps/*)
+    |==========================================================================
+    */
+
+    public function getAnggotaUppsList(array $query = [], ?string $token = null): Response
+    {
+        return $this->get('anggota-upps', $query, $token);
+    }
+
+    public function getAnggotaUppsById(int|string $id, ?string $token = null): Response
+    {
+        return $this->get("anggota-upps/{$id}", [], $token);
+    }
+
+    public function createAnggotaUpps(array $data, ?string $token = null): Response
+    {
+        return $this->post('anggota-upps', $data, $token);
+    }
+
+    public function updateAnggotaUpps(int|string $id, array $data, ?string $token = null): Response
+    {
+        return $this->put("anggota-upps/{$id}", $data, $token);
+    }
+
+    public function deleteAnggotaUpps(int|string $id, ?string $token = null): Response
+    {
+        return $this->delete("anggota-upps/{$id}", [], $token);
     }
 
     /*
@@ -468,9 +513,9 @@ class AkademikService
         return $this->get('kelas', $query, $token);
     }
 
-    public function getKelasById(int|string $id, ?string $token = null): Response
+    public function getKelasById(int|string $id, array $query = [], ?string $token = null): Response
     {
-        return $this->get("kelas/{$id}", [], $token);
+        return $this->get("kelas/{$id}", $query, $token);
     }
 
     public function createKelas(array $data, ?string $token = null): Response
@@ -486,6 +531,16 @@ class AkademikService
     public function deleteKelas(int|string $id, ?string $token = null): Response
     {
         return $this->delete("kelas/{$id}", [], $token);
+    }
+
+    public function getMahasiswaByKelasId(int|string $kelasId, array $query = [], ?string $token = null): Response
+    {
+        return $this->get("kelas/{$kelasId}/mahasiswa", $query, $token);
+    }
+
+    public function getMataKuliahByKelasId(int|string $kelasId, array $query = [], ?string $token = null): Response
+    {
+        return $this->get("kelas/{$kelasId}/mata-kuliah", $query, $token);
     }
     /*
         |==========================================================================
@@ -577,5 +632,455 @@ class AkademikService
     public function deleteMahasiswa(int|string $id, ?string $token = null): Response
     {
         return $this->delete("mahasiswa/{$id}", [], $token);
+    }
+
+    public function getPrestasiMahasiswaList(array $query = [], ?string $token = null): Response
+    {
+        return $this->get('prestasi-mahasiswa', $query, $token);
+    }
+
+    public function getPrestasiMahasiswaById(int|string $id, ?string $token = null): Response
+    {
+        return $this->get("prestasi-mahasiswa/{$id}", [], $token);
+    }
+
+    public function createPrestasiMahasiswa(array $data, ?string $token = null): Response
+    {
+        return $this->post('prestasi-mahasiswa', $data, $token);
+    }
+
+    public function updatePrestasiMahasiswa(int|string $id, array $data, ?string $token = null): Response
+    {
+        return $this->put("prestasi-mahasiswa/{$id}", $data, $token);
+    }
+
+    public function deletePrestasiMahasiswa(int|string $id, ?string $token = null): Response
+    {
+        return $this->delete("prestasi-mahasiswa/{$id}", [], $token);
+    }
+
+    public function getEvidencePrestasiMahasiswaList(array $query = [], ?string $token = null): Response
+    {
+        return $this->get('evidence-prestasi-mahasiswa', $query, $token);
+    }
+
+    public function getEvidencePrestasiMahasiswaById(int|string $id, ?string $token = null): Response
+    {
+        return $this->get("evidence-prestasi-mahasiswa/{$id}", [], $token);
+    }
+
+    public function createEvidencePrestasiMahasiswa(array $data, ?string $token = null): Response
+    {
+        return $this->post('evidence-prestasi-mahasiswa', $data, $token);
+    }
+
+    public function updateEvidencePrestasiMahasiswa(int|string $id, array $data, ?string $token = null): Response
+    {
+        return $this->put("evidence-prestasi-mahasiswa/{$id}", $data, $token);
+    }
+
+    public function deleteEvidencePrestasiMahasiswa(int|string $id, ?string $token = null): Response
+    {
+        return $this->delete("evidence-prestasi-mahasiswa/{$id}", [], $token);
+    }
+
+    public function getJenisPrestasiList(array $query = [], ?string $token = null): Response
+    {
+        return $this->get('jenis-prestasi', $query, $token);
+    }
+
+    public function getJenisPrestasiById(int|string $id, ?string $token = null): Response
+    {
+        return $this->get("jenis-prestasi/{$id}", [], $token);
+    }
+
+    public function createJenisPrestasi(array $data, ?string $token = null): Response
+    {
+        return $this->post('jenis-prestasi', $data, $token);
+    }
+
+    public function updateJenisPrestasi(int|string $id, array $data, ?string $token = null): Response
+    {
+        return $this->put("jenis-prestasi/{$id}", $data, $token);
+    }
+
+    public function deleteJenisPrestasi(int|string $id, ?string $token = null): Response
+    {
+        return $this->delete("jenis-prestasi/{$id}", [], $token);
+    }
+
+    /*
+    |==========================================================================
+    | MODUL: KURIKULUM (/api/kurikulum/*)
+    |==========================================================================
+    */
+
+    public function getKurikulumList(array $query = [], ?string $token = null): Response
+    {
+        return $this->get('kurikulum', $query, $token);
+    }
+
+    public function getKurikulumById(int|string $id, ?string $token = null): Response
+    {
+        return $this->get("kurikulum/{$id}", [], $token);
+    }
+
+    public function createKurikulum(array $data, ?string $token = null): Response
+    {
+        return $this->post('kurikulum', $data, $token);
+    }
+
+    public function updateKurikulum(int|string $id, array $data, ?string $token = null): Response
+    {
+        return $this->put("kurikulum/{$id}", $data, $token);
+    }
+
+    public function deleteKurikulum(int|string $id, ?string $token = null): Response
+    {
+        return $this->delete("kurikulum/{$id}", [], $token);
+    }
+
+    public function getMataKuliahByKurikulumId(int|string $kurikulumId, array $query = [], ?string $token = null): Response
+    {
+        return $this->get("kurikulum/{$kurikulumId}/mata-kuliah", $query, $token);
+    }
+
+    /*
+    |==========================================================================
+    | MODUL: CPL (/api/cpl/*)
+    |==========================================================================
+    */
+
+    public function getCplList(array $query = [], ?string $token = null): Response
+    {
+        return $this->get('cpl', $query, $token);
+    }
+
+    public function getCplById(int|string $id, ?string $token = null): Response
+    {
+        return $this->get("cpl/{$id}", [], $token);
+    }
+
+    public function createCpl(array $data, ?string $token = null): Response
+    {
+        return $this->post('cpl', $data, $token);
+    }
+
+    public function updateCpl(int|string $id, array $data, ?string $token = null): Response
+    {
+        return $this->put("cpl/{$id}", $data, $token);
+    }
+
+    public function deleteCpl(int|string $id, ?string $token = null): Response
+    {
+        return $this->delete("cpl/{$id}", [], $token);
+    }
+
+    /*
+    |==========================================================================
+    | MODUL: MATA KULIAH (/api/mata-kuliah/*)
+    |==========================================================================
+    */
+
+    public function getMataKuliahList(array $query = [], ?string $token = null): Response
+    {
+        return $this->get('mata-kuliah', $query, $token);
+    }
+
+    public function getMataKuliahById(int|string $id, ?string $token = null): Response
+    {
+        return $this->get("mata-kuliah/{$id}", [], $token);
+    }
+
+    public function getCplByMataKuliahId(int|string $mataKuliahId, ?string $token = null): Response
+    {
+        return $this->get("mata-kuliah/{$mataKuliahId}/cpl", [], $token);
+    }
+
+    public function syncMataKuliahCpl(int|string $mataKuliahId, array $cplIds, ?string $token = null): Response
+    {
+        return $this->post("mata-kuliah/{$mataKuliahId}/cpl/sync", ['cpl_ids' => $cplIds], $token);
+    }
+
+    public function createMataKuliah(array $data, ?string $token = null): Response
+    {
+        return $this->post('mata-kuliah', $data, $token);
+    }
+
+    public function updateMataKuliah(int|string $id, array $data, ?string $token = null): Response
+    {
+        return $this->put("mata-kuliah/{$id}", $data, $token);
+    }
+
+    public function deleteMataKuliah(int|string $id, ?string $token = null): Response
+    {
+        return $this->delete("mata-kuliah/{$id}", [], $token);
+    }
+
+    /*
+    |==========================================================================
+    | MODUL: KEMAHASISWAAN - KEGIATAN MAHASISWA (/api/kegiatan-mahasiswa/*)
+    |==========================================================================
+    */
+
+    public function getKegiatanMahasiswaList(array $query = [], ?string $token = null): Response
+    {
+        return $this->get('kegiatan-mahasiswa', $query, $token);
+    }
+
+    public function getKegiatanMahasiswaById(int|string $id, ?string $token = null): Response
+    {
+        return $this->get("kegiatan-mahasiswa/{$id}", [], $token);
+    }
+
+    public function createKegiatanMahasiswa(array $data, ?string $token = null): Response
+    {
+        return $this->post('kegiatan-mahasiswa', $data, $token);
+    }
+
+    public function updateKegiatanMahasiswa(int|string $id, array $data, ?string $token = null): Response
+    {
+        return $this->put("kegiatan-mahasiswa/{$id}", $data, $token);
+    }
+
+    public function deleteKegiatanMahasiswa(int|string $id, ?string $token = null): Response
+    {
+        return $this->delete("kegiatan-mahasiswa/{$id}", [], $token);
+    }
+
+    /*
+    |==========================================================================
+    | MODUL: KEMAHASISWAAN - ENROLLMENT KELAS (/api/enrollment-kelas/*)
+    |==========================================================================
+    */
+
+    public function getEnrollmentKelasList(array $query = [], ?string $token = null): Response
+    {
+        return $this->get('enrollment-kelas', $query, $token);
+    }
+
+    public function getEnrollmentKelasById(int|string $id, ?string $token = null): Response
+    {
+        return $this->get("enrollment-kelas/{$id}", [], $token);
+    }
+
+    public function createEnrollmentKelas(array $data, ?string $token = null): Response
+    {
+        return $this->post('enrollment-kelas', $data, $token);
+    }
+
+    public function updateEnrollmentKelas(int|string $id, array $data, ?string $token = null): Response
+    {
+        return $this->put("enrollment-kelas/{$id}", $data, $token);
+    }
+
+    public function deleteEnrollmentKelas(int|string $id, ?string $token = null): Response
+    {
+        return $this->delete("enrollment-kelas/{$id}", [], $token);
+    }
+
+    /*
+    |==========================================================================
+    | MODUL: ENROLLMENT MATA KULIAH & NILAI
+    |==========================================================================
+    */
+
+    public function getEnrollmentMataKuliahList(array $query = [], ?string $token = null): Response
+    {
+        return $this->get('enrollment-mata-kuliah', $query, $token);
+    }
+
+    public function getEnrollmentMataKuliahById(int|string $id, ?string $token = null): Response
+    {
+        return $this->get("enrollment-mata-kuliah/{$id}", [], $token);
+    }
+
+    public function updateEnrollmentMataKuliah(int|string $id, array $data, ?string $token = null): Response
+    {
+        return $this->put("enrollment-mata-kuliah/{$id}", $data, $token);
+    }
+
+    public function getMataKuliahAngkatanKelasList(array $query = [], ?string $token = null): Response
+    {
+        return $this->get('mata-kuliah-angkatan-kelas', $query, $token);
+    }
+
+    /*
+    |==========================================================================
+    | MODUL: NILAI MAHASISWA & AKADEMIK (/api/nilai-mahasiswa/* & /api/mahasiswa/{id}/khs|transkrip)
+    |==========================================================================
+    */
+
+    public function getNilaiMahasiswaList(array $query = [], ?string $token = null): Response
+    {
+        return $this->get('nilai-mahasiswa', $query, $token);
+    }
+
+    public function getNilaiMahasiswaById(int|string $id, ?string $token = null): Response
+    {
+        return $this->get("nilai-mahasiswa/{$id}", [], $token);
+    }
+
+    public function createNilaiMahasiswa(array $data, ?string $token = null): Response
+    {
+        return $this->post('nilai-mahasiswa', $data, $token);
+    }
+
+    public function batchCreateNilaiMahasiswa(array $data, ?string $token = null): Response
+    {
+        return $this->post('nilai-mahasiswa/batch', $data, $token);
+    }
+
+    public function updateNilaiMahasiswa(int|string $id, array $data, ?string $token = null): Response
+    {
+        return $this->put("nilai-mahasiswa/{$id}", $data, $token);
+    }
+
+    public function deleteNilaiMahasiswa(int|string $id, ?string $token = null): Response
+    {
+        return $this->delete("nilai-mahasiswa/{$id}", [], $token);
+    }
+
+    public function updateNilaiMahasiswaLinkNilai(int|string $id, array $data, ?string $token = null): Response
+    {
+        return $this->patch("nilai-mahasiswa/{$id}/link-nilai", $data, $token);
+    }
+
+    public function updateNilaiMahasiswaLinkEvidence(int|string $id, array $data, ?string $token = null): Response
+    {
+        return $this->patch("nilai-mahasiswa/{$id}/link-evidence", $data, $token);
+    }
+
+    public function downloadNilaiMahasiswaTemplate(array $query = [], ?string $token = null): Response
+    {
+        $resolvedToken = $token ?? $this->token ?? (string) session('access_token');
+        $url = $this->buildUrl('nilai-mahasiswa/template');
+
+        $client = Http::withoutVerifying()->timeout(30);
+        if (! empty($resolvedToken)) {
+            $client = $client->withToken($resolvedToken);
+        }
+
+        $response = $client->get($url, $query);
+
+        if ($response->status() === 401 && ! empty($resolvedToken)) {
+            try {
+                $refreshResponse = $this->refreshAuthToken($resolvedToken);
+                $body = $refreshResponse->json();
+                if ($refreshResponse->successful() && ($body['success'] ?? false) === true) {
+                    $newAccessToken = $body['data']['authorization']['access_token'] ?? null;
+                    if ($newAccessToken) {
+                        session()->put('access_token', $newAccessToken);
+
+                        return Http::withoutVerifying()
+                            ->timeout(30)
+                            ->withToken($newAccessToken)
+                            ->get($url, $query);
+                    }
+                }
+            } catch (\Throwable $e) {
+                // Return original response
+            }
+        }
+
+        return $response;
+    }
+
+    public function importNilaiMahasiswa(mixed $file, array $data = [], ?string $token = null): Response
+    {
+        $resolvedToken = $token ?? $this->token ?? (string) session('access_token');
+        $url = $this->buildUrl('nilai-mahasiswa/import');
+
+        $makeRequest = function ($authToken) use ($url, $file, $data) {
+            $client = Http::acceptJson()
+                ->withoutVerifying()
+                ->timeout(120);
+
+            if (! empty($authToken)) {
+                $client = $client->withToken($authToken);
+            }
+
+            if ($file instanceof UploadedFile) {
+                $client = $client->attach(
+                    'file',
+                    file_get_contents($file->getRealPath()),
+                    $file->getClientOriginalName()
+                );
+            } elseif (is_string($file) && file_exists($file)) {
+                $client = $client->attach(
+                    'file',
+                    file_get_contents($file),
+                    basename($file)
+                );
+            }
+
+            return $client->post($url, $data);
+        };
+
+        $response = $makeRequest($resolvedToken);
+
+        if ($response->status() === 401 && ! empty($resolvedToken)) {
+            try {
+                $refreshResponse = $this->refreshAuthToken($resolvedToken);
+                $body = $refreshResponse->json();
+                if ($refreshResponse->successful() && ($body['success'] ?? false) === true) {
+                    $newAccessToken = $body['data']['authorization']['access_token'] ?? null;
+                    if ($newAccessToken) {
+                        session()->put('access_token', $newAccessToken);
+
+                        return $makeRequest($newAccessToken);
+                    }
+                }
+            } catch (\Throwable $e) {
+                // Return original response
+            }
+        }
+
+        return $response;
+    }
+
+    public function getKhsMahasiswa(int|string $mahasiswaId, array $query = [], ?string $token = null): Response
+    {
+        return $this->get("mahasiswa/{$mahasiswaId}/khs", $query, $token);
+    }
+
+    public function getTranskripMahasiswa(int|string $mahasiswaId, array $query = [], ?string $token = null): Response
+    {
+        return $this->get("mahasiswa/{$mahasiswaId}/transkrip", $query, $token);
+    }
+
+    public function getRingkasanAkademikMahasiswa(int|string $mahasiswaId, ?string $token = null): Response
+    {
+        return $this->get("mahasiswa/{$mahasiswaId}/ringkasan-akademik", [], $token);
+    }
+    /*
+    |==========================================================================
+    | MODUL: KEMAHASISWAAN - STATUS MAHASISWA (/api/status-mahasiswa/*)
+    |==========================================================================
+    */
+
+    public function getStatusMahasiswaList(array $query = [], ?string $token = null): Response
+    {
+        return $this->get('status-mahasiswa', $query, $token);
+    }
+
+    public function getStatusMahasiswaById(int|string $id, ?string $token = null): Response
+    {
+        return $this->get("status-mahasiswa/{$id}", [], $token);
+    }
+
+    public function createStatusMahasiswa(array $data, ?string $token = null): Response
+    {
+        return $this->post('status-mahasiswa', $data, $token);
+    }
+
+    public function updateStatusMahasiswa(int|string $id, array $data, ?string $token = null): Response
+    {
+        return $this->put("status-mahasiswa/{$id}", $data, $token);
+    }
+
+    public function deleteStatusMahasiswa(int|string $id, ?string $token = null): Response
+    {
+        return $this->delete("status-mahasiswa/{$id}", [], $token);
     }
 }
