@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Master Data Rubrik - ' . ($indikator['kode_indikator'] ?? 'Indikator'))
+@section('title', 'Master Data Rubrik')
 
 @section('content')
 <div class="space-y-6">
@@ -19,40 +19,30 @@
     @endif
 
     {{-- Breadcrumbs --}}
-    <nav class="flex text-xs sm:text-sm font-medium text-gray-500 overflow-x-auto py-1" aria-label="Breadcrumb">
-        <ol class="inline-flex items-center space-x-1 sm:space-x-2 whitespace-nowrap">
+    <nav class="flex text-xs sm:text-sm font-medium text-gray-500 py-1" aria-label="Breadcrumb">
+        <ol class="inline-flex flex-wrap items-center gap-y-1">
             <li class="inline-flex items-center">
                 <a href="{{ route('akreditasi.superadmin.lembaga_akreditasi') }}" class="hover:text-primary transition font-medium">Master Data Akreditasi</a>
             </li>
-            <li>
-                <div class="flex items-center">
-                    <span class="mx-1 text-gray-400">/</span>
-                    <a href="{{ route('akreditasi.superadmin.instrumen', $lembagaId) }}" class="hover:text-primary transition font-medium">{{ $lembaga['nama_lembaga'] ?? 'Lembaga' }}</a>
-                </div>
+            <li class="inline-flex items-center">
+                <span class="mx-1 text-gray-400">/</span>
+                <a href="{{ route('akreditasi.superadmin.instrumen', $lembagaId) }}" class="hover:text-primary transition font-medium">{{ $lembaga['nama_lembaga'] ?? 'Lembaga' }}</a>
             </li>
-            <li>
-                <div class="flex items-center">
-                    <span class="mx-1 text-gray-400">/</span>
-                    <a href="{{ route('akreditasi.superadmin.kriteria', ['lembagaId' => $lembagaId, 'instrumenId' => $instrumenId]) }}" class="hover:text-primary transition font-medium">{{ $instrumenTitle }}</a>
-                </div>
+            <li class="inline-flex items-center">
+                <span class="mx-1 text-gray-400">/</span>
+                <a href="{{ route('akreditasi.superadmin.kriteria', ['lembagaId' => $lembagaId, 'instrumenId' => $instrumenId]) }}" class="hover:text-primary transition font-medium">{{ $instrumenTitle }}</a>
             </li>
-            <li>
-                <div class="flex items-center">
-                    <span class="mx-1 text-gray-400">/</span>
-                    <a href="{{ route('akreditasi.superadmin.subkriteria', ['lembagaId' => $lembagaId, 'instrumenId' => $instrumenId, 'kriteriaId' => $kriteriaId]) }}" class="hover:text-primary transition font-medium">{{ $kriteria['kode_kriteria'] ?? 'Kriteria' }}</a>
-                </div>
+            <li class="inline-flex items-center">
+                <span class="mx-1 text-gray-400">/</span>
+                <a href="{{ route('akreditasi.superadmin.subkriteria', ['lembagaId' => $lembagaId, 'instrumenId' => $instrumenId, 'kriteriaId' => $kriteriaId]) }}" class="hover:text-primary transition font-medium">{{ $kriteria['kode_kriteria'] ?? 'Kriteria' }}</a>
             </li>
-            <li>
-                <div class="flex items-center">
-                    <span class="mx-1 text-gray-400">/</span>
-                    <a href="{{ route('akreditasi.superadmin.indikator', ['lembagaId' => $lembagaId, 'instrumenId' => $instrumenId, 'kriteriaId' => $kriteriaId, 'subkriteriaId' => $subkriteriaId]) }}" class="hover:text-primary transition font-medium">{{ $subkriteria['kode_subkriteria'] ?? 'Subkriteria' }}</a>
-                </div>
+            <li class="inline-flex items-center">
+                <span class="mx-1 text-gray-400">/</span>
+                <a href="{{ route('akreditasi.superadmin.indikator', ['lembagaId' => $lembagaId, 'instrumenId' => $instrumenId, 'kriteriaId' => $kriteriaId, 'subkriteriaId' => $subkriteriaId]) }}" class="hover:text-primary transition font-medium">{{ $subkriteria['kode_subkriteria'] ?? 'Subkriteria' }}</a>
             </li>
-            <li aria-current="page">
-                <div class="flex items-center">
-                    <span class="mx-1 text-gray-400">/</span>
-                    <span class="font-bold text-gray-800">{{ ($indikator['kode_indikator'] ?? 'Indikator') . ' - ' . \Illuminate\Support\Str::limit($indikator['deskripsi_indikator'] ?? '', 35) }}</span>
-                </div>
+            <li class="inline-flex items-center" aria-current="page">
+                <span class="mx-1 text-gray-400">/</span>
+                <span class="font-bold text-gray-800">{{ ($indikator['kode_indikator'] ?? 'Indikator') . ' - ' . \Illuminate\Support\Str::limit($indikator['deskripsi_indikator'] ?? '', 35) }}</span>
             </li>
         </ol>
     </nav>

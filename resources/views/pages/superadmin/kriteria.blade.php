@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Master Data Kriteria - ' . $instrumenTitle)
+@section('title', 'Master Data Kriteria')
 
 @section('content')
 <div class="space-y-6">
@@ -19,22 +19,18 @@
     @endif
 
     {{-- Breadcrumbs --}}
-    <nav class="flex text-xs sm:text-sm font-medium text-gray-500 overflow-x-auto py-1" aria-label="Breadcrumb">
-        <ol class="inline-flex items-center space-x-1 sm:space-x-2 whitespace-nowrap">
+    <nav class="flex text-xs sm:text-sm font-medium text-gray-500 py-1" aria-label="Breadcrumb">
+        <ol class="inline-flex flex-wrap items-center gap-y-1">
             <li class="inline-flex items-center">
                 <a href="{{ route('akreditasi.superadmin.lembaga_akreditasi') }}" class="hover:text-primary transition font-medium">Master Data Akreditasi</a>
             </li>
-            <li>
-                <div class="flex items-center">
-                    <span class="mx-1 text-gray-400">/</span>
-                    <a href="{{ route('akreditasi.superadmin.instrumen', $lembagaId) }}" class="hover:text-primary transition font-medium">{{ $lembaga['nama_lembaga'] ?? 'Lembaga' }}</a>
-                </div>
+            <li class="inline-flex items-center">
+                <span class="mx-1 text-gray-400">/</span>
+                <a href="{{ route('akreditasi.superadmin.instrumen', $lembagaId) }}" class="hover:text-primary transition font-medium">{{ $lembaga['nama_lembaga'] ?? 'Lembaga' }}</a>
             </li>
-            <li aria-current="page">
-                <div class="flex items-center">
-                    <span class="mx-1 text-gray-400">/</span>
-                    <span class="font-bold text-gray-800">{{ $instrumenTitle }}</span>
-                </div>
+            <li class="inline-flex items-center" aria-current="page">
+                <span class="mx-1 text-gray-400">/</span>
+                <span class="font-bold text-gray-800">{{ $instrumenTitle }}</span>
             </li>
         </ol>
     </nav>
@@ -105,8 +101,8 @@
                 </x-slot:header>
 
                 @forelse ($kriterias ?? [] as $item)
-                    <x-table.row 
-                        onclick="if (!event.target.closest('button, form, a')) { window.location.href='{{ route('akreditasi.superadmin.subkriteria', ['lembagaId' => $lembagaId, 'instrumenId' => $instrumenId, 'kriteriaId' => $item['id']]) }}'; }" 
+                    <x-table.row
+                        onclick="if (!event.target.closest('button, form, a')) { window.location.href='{{ route('akreditasi.superadmin.subkriteria', ['lembagaId' => $lembagaId, 'instrumenId' => $instrumenId, 'kriteriaId' => $item['id']]) }}'; }"
                         class="cursor-pointer hover:bg-sky-50/60 transition-colors group"
                     >
                         <x-table.cell>
@@ -127,8 +123,8 @@
                         <x-table.cell class="w-32 text-right">
                             <div class="flex items-center justify-end gap-1" onclick="event.stopPropagation()">
                                 <!-- Edit Icon (Yellow) -->
-                                <button 
-                                    type="button" 
+                                <button
+                                    type="button"
                                     class="text-[#F59E0B] hover:text-[#D97706] transition p-1.5 rounded-lg hover:bg-amber-50 cursor-pointer"
                                     title="Edit Kriteria"
                                     onclick="openEditKriteriaModal({{ json_encode($item) }})"
@@ -137,8 +133,8 @@
                                 </button>
 
                                 <!-- Delete Icon (Red) -->
-                                <button 
-                                    type="button" 
+                                <button
+                                    type="button"
                                     class="text-[#DC2626] hover:text-[#B91C1C] transition p-1.5 rounded-lg hover:bg-rose-50 cursor-pointer"
                                     title="Hapus Kriteria"
                                     data-confirm-delete
@@ -150,7 +146,7 @@
                                 </button>
 
                                 <!-- Arrow icon -->
-                                <a 
+                                <a
                                     href="{{ route('akreditasi.superadmin.subkriteria', ['lembagaId' => $lembagaId, 'instrumenId' => $instrumenId, 'kriteriaId' => $item['id']]) }}"
                                     class="inline-flex p-1.5 text-primary hover:text-additional transition-all"
                                     title="Lihat Subkriteria"

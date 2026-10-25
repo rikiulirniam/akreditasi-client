@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Master Data Instrumen')
+@section('title', 'Master Data Lembaga Akreditasi')
 
 @section('content')
 <div class="space-y-6">
@@ -19,8 +19,8 @@
     @endif
 
     {{-- Breadcrumbs --}}
-    <nav class="flex text-xs sm:text-sm font-medium text-gray-500 overflow-x-auto py-1" aria-label="Breadcrumb">
-        <ol class="inline-flex items-center space-x-1 sm:space-x-2 whitespace-nowrap">
+    <nav class="flex text-xs sm:text-sm font-medium text-gray-500 py-1" aria-label="Breadcrumb">
+        <ol class="inline-flex flex-wrap items-center gap-y-1">
             <li class="inline-flex items-center" aria-current="page">
                 <span class="font-bold text-gray-800">Master Data Akreditasi</span>
             </li>
