@@ -32,11 +32,22 @@ class MahasiswaController extends Controller
     {
         $page = max(1, (int) $request->query('page', 1));
         $perPage = max(1, (int) $request->query('per_page', 10));
+        $search = trim((string) $request->query('search', ''));
+        $statusFilter = trim((string) $request->query('status', ''));
+        $tahunFilter = trim((string) $request->query('tahun', ''));
+        $jenisFilter = trim((string) $request->query('jenis', ''));
 
-        $response = $this->akademikService->getMahasiswaList([
-            'page' => $page,
-            'per_page' => $perPage,
-        ]);
+        $hasFilter = ($search !== '' || $statusFilter !== '' || $tahunFilter !== '' || $jenisFilter !== '');
+
+        $apiParams = [
+            'page' => $hasFilter ? 1 : $page,
+            'per_page' => $hasFilter ? 500 : $perPage,
+        ];
+        if ($search !== '') {
+            $apiParams['search'] = $search;
+        }
+
+        $response = $this->akademikService->getMahasiswaList($apiParams);
 
         if ($response->status() === 401) {
             return redirect()->route('login')->with('toast', [
@@ -69,10 +80,12 @@ class MahasiswaController extends Controller
 
         // Merge custom session items if any (for smooth resilience)
         $customMahasiswa = session('custom_mahasiswa_list', []);
-        if (is_array($customMahasiswa) && ! empty($customMahasiswa)) {
-            $deletedIds = session('deleted_mahasiswa_ids', []);
+        $deletedIds = session('deleted_mahasiswa_ids', []);
+        if (! empty($deletedIds)) {
             $mahasiswaList = array_values(array_filter($mahasiswaList, fn ($item) => ! in_array($item['id'] ?? null, $deletedIds)));
+        }
 
+        if (is_array($customMahasiswa) && ! empty($customMahasiswa)) {
             foreach ($customMahasiswa as $customItem) {
                 $foundIdx = null;
                 foreach ($mahasiswaList as $idx => $existingItem) {
@@ -87,34 +100,6 @@ class MahasiswaController extends Controller
                     array_unshift($mahasiswaList, $customItem);
                 }
             }
-        }
-
-        // Setup pagination data
-        if ($apiPagination && is_array($apiPagination)) {
-            $pagination = [
-                'total' => (int) ($apiPagination['total'] ?? count($mahasiswaList)),
-                'per_page' => (int) ($apiPagination['per_page'] ?? $perPage),
-                'current_page' => (int) ($apiPagination['current_page'] ?? $page),
-                'last_page' => (int) ($apiPagination['last_page'] ?? 1),
-                'from' => $apiPagination['from'] ?? (($page - 1) * $perPage + 1),
-                'to' => $apiPagination['to'] ?? min($page * $perPage, (int) ($apiPagination['total'] ?? count($mahasiswaList))),
-            ];
-        } else {
-            $total = count($mahasiswaList);
-            $lastPage = max(1, (int) ceil($total / $perPage));
-            $currentPage = max(1, min($page, $lastPage));
-            $offset = ($currentPage - 1) * $perPage;
-            $pagedList = array_slice($mahasiswaList, $offset, $perPage);
-
-            $pagination = [
-                'total' => $total,
-                'per_page' => $perPage,
-                'current_page' => $currentPage,
-                'last_page' => $lastPage,
-                'from' => $total > 0 ? $offset + 1 : 0,
-                'to' => min($offset + $perPage, $total),
-            ];
-            $mahasiswaList = $pagedList;
         }
 
         // Fetch enrollment list to get latest status for each mahasiswa
@@ -165,6 +150,13 @@ class MahasiswaController extends Controller
             // Silently fall through to default years
         }
 
+        // Ensure all years from existing mahasiswa records are present in options
+        foreach ($mahasiswaList as $m) {
+            if (! empty($m['tahun_masuk'])) {
+                $tahunOptions[] = (int) $m['tahun_masuk'];
+            }
+        }
+
         // Ensure default years if empty
         if (empty($tahunOptions)) {
             $currentYear = (int) date('Y');
@@ -174,6 +166,85 @@ class MahasiswaController extends Controller
         } else {
             rsort($tahunOptions);
             $tahunOptions = array_values(array_unique($tahunOptions));
+        }
+
+        // Apply filters if requested
+        if ($hasFilter) {
+            if ($search !== '') {
+                $kw = mb_strtolower($search);
+                $mahasiswaList = array_values(array_filter($mahasiswaList, function ($item) use ($kw) {
+                    $nama = mb_strtolower((string) ($item['nama_mahasiswa'] ?? $item['nama'] ?? ''));
+                    $nim = mb_strtolower((string) ($item['nim_display'] ?? $item['nim'] ?? ''));
+                    $thn = mb_strtolower((string) ($item['tahun_masuk'] ?? ''));
+
+                    return str_contains($nama, $kw) || str_contains($nim, $kw) || str_contains($thn, $kw);
+                }));
+            }
+
+            if ($statusFilter !== '') {
+                $stLower = mb_strtolower($statusFilter);
+                $mahasiswaList = array_values(array_filter($mahasiswaList, function ($item) use ($stLower) {
+                    return mb_strtolower((string) ($item['status_terkini'] ?? '')) === $stLower;
+                }));
+            }
+
+            if ($tahunFilter !== '') {
+                $mahasiswaList = array_values(array_filter($mahasiswaList, function ($item) use ($tahunFilter) {
+                    return (string) ($item['tahun_masuk'] ?? '') === (string) $tahunFilter;
+                }));
+            }
+
+            if ($jenisFilter !== '') {
+                $jnLower = mb_strtolower($jenisFilter);
+                $mahasiswaList = array_values(array_filter($mahasiswaList, function ($item) use ($jnLower) {
+                    return mb_strtolower((string) ($item['jenis_pendaftaran'] ?? '')) === $jnLower;
+                }));
+            }
+
+            // Paginate filtered results
+            $total = count($mahasiswaList);
+            $lastPage = max(1, (int) ceil($total / $perPage));
+            $currentPage = max(1, min($page, $lastPage));
+            $offset = ($currentPage - 1) * $perPage;
+            $pagedList = array_slice($mahasiswaList, $offset, $perPage);
+
+            $pagination = [
+                'total' => $total,
+                'per_page' => $perPage,
+                'current_page' => $currentPage,
+                'last_page' => $lastPage,
+                'from' => $total > 0 ? $offset + 1 : 0,
+                'to' => min($offset + $perPage, $total),
+            ];
+            $mahasiswaList = $pagedList;
+        } else {
+            // Setup pagination data for non-filtered view
+            if ($apiPagination && is_array($apiPagination)) {
+                $pagination = [
+                    'total' => (int) ($apiPagination['total'] ?? count($mahasiswaList)),
+                    'per_page' => (int) ($apiPagination['per_page'] ?? $perPage),
+                    'current_page' => (int) ($apiPagination['current_page'] ?? $page),
+                    'last_page' => (int) ($apiPagination['last_page'] ?? 1),
+                    'from' => $apiPagination['from'] ?? (($page - 1) * $perPage + 1),
+                    'to' => $apiPagination['to'] ?? min($page * $perPage, (int) ($apiPagination['total'] ?? count($mahasiswaList))),
+                ];
+            } else {
+                $total = count($mahasiswaList);
+                $lastPage = max(1, (int) ceil($total / $perPage));
+                $currentPage = max(1, min($page, $lastPage));
+                $offset = ($currentPage - 1) * $perPage;
+                $pagedList = array_slice($mahasiswaList, $offset, $perPage);
+
+                $pagination = [
+                    'total' => $total,
+                    'per_page' => $perPage,
+                    'current_page' => $currentPage,
+                    'last_page' => $lastPage,
+                    'from' => $total > 0 ? $offset + 1 : 0,
+                    'to' => min($offset + $perPage, $total),
+                ];
+                $mahasiswaList = $pagedList;
+            }
         }
 
         $jenisPendaftaranOptions = [
@@ -190,6 +261,11 @@ class MahasiswaController extends Controller
             'pagination' => $pagination,
             'tahunOptions' => $tahunOptions,
             'jenisPendaftaranOptions' => $jenisPendaftaranOptions,
+            'statusOptions' => self::STATUS_OPTIONS,
+            'search' => $search,
+            'selectedStatus' => $statusFilter,
+            'selectedTahun' => $tahunFilter,
+            'selectedJenis' => $jenisFilter,
         ]);
     }
 
