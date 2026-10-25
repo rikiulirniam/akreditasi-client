@@ -1,11 +1,25 @@
 @extends('layouts.app')
 
-@section('browser-title', 'Pendidikan')
+@section('meta_title', 'Pendidikan')
 
-@section('title', 'Pendidikan')
+@section('title')
+    @if($selectedTendik)
+        <span class="inline-flex items-center gap-2.5 sm:gap-3.5 flex-wrap">
+            <a href="{{ route('tenaga-kependidikan.show', $selectedTendik['id']) }}" class="hover:text-additional transition text-black">Tenaga Kependidikan</a>
+            <svg class="w-5 h-5 sm:w-7 sm:h-7 stroke-[3] text-black shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" />
+            </svg>
+            <span>Pendidikan</span>
+        </span>
+    @else
+        Pendidikan
+    @endif
+@endsection
 
 @section('subtitle')
-    @if(!$apiError)
+    @if($selectedTendik)
+        {{ $selectedTendik['nama'] }}
+    @elseif(!$apiError)
         @if($isDosen ?? false)
             Riwayat Pendidikan Saya &bull; {{ number_format((int) ($pagination['total'] ?? 0), 0, ',', '.') }} Data ditemukan
         @else
@@ -72,28 +86,6 @@
                     <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" />
                 </svg>
                 <span>Kembali ke Detail Dosen</span>
-            </a>
-        </div>
-    @elseif($selectedTendik)
-        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 bg-[#EBF5FB] border border-[#BCE1F5] rounded-xl px-5 py-3.5 shadow-xs">
-            <div class="flex items-center gap-3">
-                <div class="w-9 h-9 rounded-full bg-[#01568D] text-white flex items-center justify-center shrink-0">
-                    <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
-                    </svg>
-                </div>
-                <div>
-                    <span class="text-xs font-semibold uppercase tracking-wider text-[#01568D]">Konteks Tenaga Kependidikan</span>
-                    <h3 class="text-sm sm:text-base font-bold text-gray-900 leading-tight">
-                        {{ $selectedTendik['nama'] }}
-                    </h3>
-                </div>
-            </div>
-            <a href="{{ route('tenaga-kependidikan.show', $selectedTendik['id']) }}" class="inline-flex items-center gap-2 text-xs sm:text-sm font-bold text-[#01568D] hover:text-[#012650] hover:underline transition self-start sm:self-center">
-                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" />
-                </svg>
-                <span>Kembali ke Detail Tendik</span>
             </a>
         </div>
     @endif
@@ -172,7 +164,7 @@
             @endif
         </div>
 
-        {{-- Button Tambah Pendidikan (Matching user's preferred label) --}}
+        {{-- Button Tambah Pendidikan --}}
         <button 
             type="button" 
             id="openCreateModalBtn"
@@ -191,11 +183,11 @@
     <x-table id="pendidikan-table" class="!border-collapse !border-spacing-0 text-left text-[13px]">
         <x-slot:header>
             <x-table.th class="!rounded-none !bg-white !px-3 !py-2.5 !text-center !text-[13px] !font-bold border-y border-gray-300 w-12">No</x-table.th>
-            <x-table.th class="!rounded-none !bg-white !px-4 !py-2.5 !text-[13px] !font-bold border-y border-gray-300">Universitas</x-table.th>
-            <x-table.th class="!rounded-none !bg-white !px-4 !py-2.5 !text-[13px] !font-bold border-y border-gray-300">Program Studi</x-table.th>
-            <x-table.th class="!rounded-none !bg-white !px-4 !py-2.5 !text-[13px] !font-bold border-y border-gray-300">Jenjang</x-table.th>
-            <x-table.th class="!rounded-none !bg-white !px-4 !py-2.5 !text-[13px] !font-bold border-y border-gray-300">Tahun Lulus</x-table.th>
-            <x-table.th class="!rounded-none !bg-white !px-4 !py-2.5 !text-center !text-[13px] !font-bold border-y border-gray-300 w-28">Action</x-table.th>
+            <x-table.th class="!rounded-none !bg-white !px-4 !py-2.5 !text-left !text-[13px] !font-bold border-y border-gray-300">Universitas</x-table.th>
+            <x-table.th class="!rounded-none !bg-white !px-4 !py-2.5 !text-left !text-[13px] !font-bold border-y border-gray-300">Program Studi</x-table.th>
+            <x-table.th class="!rounded-none !bg-white !px-4 !py-2.5 !text-left !text-[13px] !font-bold border-y border-gray-300">Jenjang</x-table.th>
+            <x-table.th class="!rounded-none !bg-white !px-4 !py-2.5 !text-left !text-[13px] !font-bold border-y border-gray-300">Tahun Lulus</x-table.th>
+            <x-table.th class="!rounded-none !bg-white !px-4 !py-2.5 !text-center !text-[13px] !font-bold border-y border-gray-300 w-28">Aksi</x-table.th>
         </x-slot:header>
 
         @forelse($pendidikanList as $index => $item)
@@ -210,9 +202,9 @@
             @endphp
             <x-table.row class="bg-white transition-colors hover:bg-gray-50/50" data-row-id="{{ $pendidikanId }}">
                 <x-table.cell class="!rounded-none !border-x-0 border-y border-gray-300 !px-3 !py-3.5 text-center text-sm font-medium text-gray-900">
-                    {{ $startNumber + $index }}.
+                    {{ $startNumber + $index }}
                 </x-table.cell>
-                <x-table.cell class="!rounded-none !border-x-0 border-y border-gray-300 !px-4 !py-3.5 !text-sm font-semibold text-gray-900">
+                <x-table.cell class="!rounded-none !border-x-0 border-y border-gray-300 !px-4 !py-3.5 !text-sm font-semibold text-gray-900 text-left">
                     <div>{{ $universitas }}</div>
                     @if(!$isDosen && $dosenCount !== null && $dosenCount > 0)
                         <div class="text-[11px] font-normal text-gray-500 mt-0.5">
@@ -220,13 +212,13 @@
                         </div>
                     @endif
                 </x-table.cell>
-                <x-table.cell class="!rounded-none !border-x-0 border-y border-gray-300 !px-4 !py-3.5 !text-sm text-gray-900 font-medium">
+                <x-table.cell class="!rounded-none !border-x-0 border-y border-gray-300 !px-4 !py-3.5 !text-sm text-gray-900 font-medium text-left">
                     {{ $programStudi }}
                 </x-table.cell>
-                <x-table.cell class="!rounded-none !border-x-0 border-y border-gray-300 !px-4 !py-3.5 !text-sm font-semibold text-gray-900">
+                <x-table.cell class="!rounded-none !border-x-0 border-y border-gray-300 !px-4 !py-3.5 !text-sm font-semibold text-gray-900 text-left">
                     {{ $jenjang }}
                 </x-table.cell>
-                <x-table.cell class="!rounded-none !border-x-0 border-y border-gray-300 !px-4 !py-3.5 !text-sm text-gray-900 font-medium">
+                <x-table.cell class="!rounded-none !border-x-0 border-y border-gray-300 !px-4 !py-3.5 !text-sm text-gray-900 font-medium text-left">
                     {{ $tahunLulus }}
                 </x-table.cell>
                 <x-table.cell class="!rounded-none !border-x-0 border-y border-gray-300 !px-4 !py-3.5">
@@ -501,6 +493,9 @@
         <form action="#" method="POST" class="space-y-4" id="editPendidikanForm">
             @csrf
             @method('PUT')
+            @if($idTendik)
+                <input type="hidden" name="id_tendik" value="{{ $idTendik }}">
+            @endif
 
             {{-- Field 1: Universitas --}}
             <div>

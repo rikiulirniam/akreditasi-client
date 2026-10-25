@@ -87,6 +87,12 @@ Route::middleware('auth.akademik')->group(function () {
     Route::delete('/tenaga-pendidikan/{tendikId}/sertifikasi/{sertifikasiId}', [TenagaKependidikanController::class, 'destroySertifikasi'])->name('tenaga-pendidikan.sertifikasi.destroy');
     Route::post('/tenaga-kependidikan/{tendikId}/sertifikasi', [TenagaKependidikanController::class, 'storeSertifikasi'])->name('tenaga-kependidikan.sertifikasi.store');
     Route::delete('/tenaga-kependidikan/{tendikId}/sertifikasi/{sertifikasiId}', [TenagaKependidikanController::class, 'destroySertifikasi'])->name('tenaga-kependidikan.sertifikasi.destroy');
+    Route::get('/tenaga-kependidikan/{tendikId}/pendidikan', function ($tendikId) {
+        return redirect()->route('pendidikan.index', ['id_tendik' => $tendikId]);
+    })->name('tenaga-kependidikan.pendidikan.index');
+    Route::get('/tenaga-pendidikan/{tendikId}/pendidikan', function ($tendikId) {
+        return redirect()->route('pendidikan.index', ['id_tendik' => $tendikId]);
+    })->name('tenaga-pendidikan.pendidikan.index');
     Route::post('/tenaga-kependidikan/{tendikId}/pendidikan', [TenagaKependidikanController::class, 'storePendidikan'])->name('tenaga-kependidikan.pendidikan.store');
     Route::post('/tenaga-pendidikan/{tendikId}/pendidikan', [TenagaKependidikanController::class, 'storePendidikan'])->name('tenaga-pendidikan.pendidikan.store');
 

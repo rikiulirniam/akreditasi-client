@@ -213,7 +213,9 @@
 
                 <!-- SDM -->
                 @php
-                    $isSdmActive = request()->routeIs('dosen.*') || request()->routeIs('tenaga-kependidikan.*') || request()->routeIs('tenaga-pendidikan.*') || request()->routeIs('sertifikasi.*');
+                    $isTendikPage = request()->routeIs('tenaga-kependidikan.*') || request()->routeIs('tenaga-pendidikan.*') || (request()->routeIs('pendidikan.*') && (request()->filled('id_tendik') || !empty($selectedTendik)));
+                    $isDosenPage = request()->routeIs('dosen.*') || (request()->routeIs('pendidikan.*') && !empty($isDosen)) || (request()->routeIs('pendidikan.*') && (request()->filled('id_dosen') || !empty($selectedDosen)));
+                    $isSdmActive = $isDosenPage || $isTendikPage || request()->routeIs('sertifikasi.*');
                 @endphp
                 <div>
                     <button 
@@ -236,12 +238,12 @@
                     <div id="submenu-sdm" 
                         data-is-active="{{ $isSdmActive ? 'true' : 'false' }}"
                         class="submenu-container {{ $isSdmActive ? '' : 'hidden' }} pl-10 pr-2 pt-1 pb-1 space-y-1.5">
-                        <a href="{{ route('dosen.index') }}" class="flex items-center gap-2.5 py-2.5 px-3.5 rounded-xl text-sm font-semibold transition-all duration-150 {{ request()->routeIs('dosen.*') ? 'bg-white/20 text-white shadow-xs font-bold' : 'text-white/80 hover:text-white hover:bg-white/10' }}">
-                            <span class="w-1.5 h-1.5 rounded-full {{ request()->routeIs('dosen.*') ? 'bg-secondary' : 'bg-white/40' }} shrink-0"></span>
+                        <a href="{{ route('dosen.index') }}" class="flex items-center gap-2.5 py-2.5 px-3.5 rounded-xl text-sm font-semibold transition-all duration-150 {{ $isDosenPage ? 'bg-white/20 text-white shadow-xs font-bold' : 'text-white/80 hover:text-white hover:bg-white/10' }}">
+                            <span class="w-1.5 h-1.5 rounded-full {{ $isDosenPage ? 'bg-secondary' : 'bg-white/40' }} shrink-0"></span>
                             <span>Dosen</span>
                         </a>
-                        <a href="{{ route('tenaga-kependidikan.index') }}" class="flex items-center gap-2.5 py-2.5 px-3.5 rounded-xl text-sm font-semibold transition-all duration-150 {{ (request()->routeIs('tenaga-kependidikan.*') || request()->routeIs('tenaga-pendidikan.*')) ? 'bg-white/20 text-white shadow-xs font-bold' : 'text-white/80 hover:text-white hover:bg-white/10' }}">
-                            <span class="w-1.5 h-1.5 rounded-full {{ (request()->routeIs('tenaga-kependidikan.*') || request()->routeIs('tenaga-pendidikan.*')) ? 'bg-secondary' : 'bg-white/40' }} shrink-0"></span>
+                        <a href="{{ route('tenaga-kependidikan.index') }}" class="flex items-center gap-2.5 py-2.5 px-3.5 rounded-xl text-sm font-semibold transition-all duration-150 {{ $isTendikPage ? 'bg-white/20 text-white shadow-xs font-bold' : 'text-white/80 hover:text-white hover:bg-white/10' }}">
+                            <span class="w-1.5 h-1.5 rounded-full {{ $isTendikPage ? 'bg-secondary' : 'bg-white/40' }} shrink-0"></span>
                             <span>Tenaga Kependidikan</span>
                         </a>
                         <a href="{{ route('sertifikasi.index') }}" class="flex items-center gap-2.5 py-2.5 px-3.5 rounded-xl text-sm font-semibold transition-all duration-150 {{ request()->routeIs('sertifikasi.*') ? 'bg-white/20 text-white shadow-xs font-bold' : 'text-white/80 hover:text-white hover:bg-white/10' }}">

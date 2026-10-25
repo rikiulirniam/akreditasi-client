@@ -722,4 +722,4 @@ class AkademikService
     {
         return $this->delete("cpl/{$id}", [], $token);
     }
-}    
+}

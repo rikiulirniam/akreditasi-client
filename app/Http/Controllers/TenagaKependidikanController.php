@@ -647,20 +647,39 @@ class TenagaKependidikanController extends Controller
         try {
             $fromDb = Kualifikasi::where('tendik_api_id', $tendikApiId)
                 ->orderBy('id')
-                ->get()
-                ->map(fn (Kualifikasi $q) => [
+                ->get();
+
+            if ($fromDb->isNotEmpty()) {
+                $jenjangRank = [
+                    'SMA' => 1, 'SMK' => 1,
+                    'D1' => 2, 'D2' => 3, 'D3' => 4,
+                    'D4' => 5, 'S1' => 5, 'D4/S1' => 5,
+                    'PROFESI' => 6,
+                    'S2' => 7, 'S2 TERAPAN' => 7,
+                    'S3' => 8, 'S3 TERAPAN' => 8,
+                ];
+
+                return $fromDb->map(fn (Kualifikasi $q) => [
+                    'id' => $q->id,
                     'gelar' => (string) ($q->gelar ?? $q->jenjang ?? ''),
                     'jenjang' => (string) ($q->jenjang ?? ''),
                     'institusi' => (string) ($q->institusi ?? ''),
+                    'universitas' => (string) ($q->institusi ?? ''),
                     'program_studi' => (string) ($q->program_studi ?? ''),
                     'tahun_lulus' => (string) ($q->tahun_lulus ?? ''),
                 ])
-                ->all();
+                    ->sortBy(function ($item) use ($jenjangRank) {
+                        $norm = strtoupper(trim((string) ($item['jenjang'] ?? '')));
+
+                        return $jenjangRank[$norm] ?? 99;
+                    })
+                    ->values()
+                    ->all();
+            }
         } catch (\Throwable) {
-            $fromDb = [];
         }
 
-        return array_merge($fromApi, $fromDb);
+        return $fromApi;
     }
 
     /** @return array<int, array<string, mixed>> */

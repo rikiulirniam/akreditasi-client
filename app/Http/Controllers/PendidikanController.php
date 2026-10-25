@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Kualifikasi;
 use App\Services\TridharmaService;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\Response;
@@ -105,6 +106,113 @@ class PendidikanController extends Controller
                 'selectedTendik' => null,
                 'isDosen' => true,
                 'authDosen' => $authDosen,
+                'apiError' => null,
+            ]);
+        }
+
+        // If viewing education for a specific Tendik (from Tendik Detail page or filter)
+        if ($idTendik !== null) {
+            $selectedTendik = null;
+            $tendikApiRecord = null;
+            foreach ($tendikOptions as $tendik) {
+                if ($tendik['id'] === $idTendik) {
+                    $selectedTendik = $tendik;
+                    break;
+                }
+            }
+
+            try {
+                $singleTendikResp = $this->tridharmaService->getTendik($idTendik);
+                if ($singleTendikResp->successful()) {
+                    $tendikApiRecord = $singleTendikResp->json('data', []);
+                    if ($selectedTendik === null) {
+                        $selectedTendik = [
+                            'id' => (int) ($tendikApiRecord['id_tendik'] ?? $idTendik),
+                            'nama' => (string) ($tendikApiRecord['nama_tendik'] ?? $tendikApiRecord['nama'] ?? 'Tenaga Kependidikan #'.$idTendik),
+                        ];
+                    }
+                }
+            } catch (\Throwable) {
+            }
+
+            if ($selectedTendik === null) {
+                $selectedTendik = ['id' => $idTendik, 'nama' => 'Tenaga Kependidikan #'.$idTendik];
+            }
+
+            // Retrieve local qualifications for this Tendik
+            try {
+                $localKualifikasis = Kualifikasi::where('tendik_api_id', $idTendik)->orderBy('id')->get();
+            } catch (\Throwable) {
+                $localKualifikasis = collect();
+            }
+
+            $allItems = [];
+            if ($localKualifikasis->isNotEmpty()) {
+                foreach ($localKualifikasis as $q) {
+                    $allItems[] = [
+                        'id' => $q->id,
+                        'id_pendidikan' => $q->id,
+                        'universitas' => $q->institusi,
+                        'program_studi' => $q->program_studi,
+                        'jenjang' => $q->jenjang,
+                        'tahun_lulus' => $q->tahun_lulus,
+                        'gelar' => $q->gelar,
+                        'is_local' => true,
+                    ];
+                }
+            } elseif ($tendikApiRecord && isset($tendikApiRecord['pendidikan']) && is_array($tendikApiRecord['pendidikan']) && (! empty($tendikApiRecord['pendidikan']['universitas']) || ! empty($tendikApiRecord['pendidikan']['jenjang']))) {
+                $p = $tendikApiRecord['pendidikan'];
+                $allItems[] = [
+                    'id' => $p['id_pendidikan'] ?? $p['id'] ?? 1,
+                    'id_pendidikan' => $p['id_pendidikan'] ?? $p['id'] ?? 1,
+                    'universitas' => $p['universitas'] ?? $p['institusi'] ?? '',
+                    'program_studi' => $p['program_studi'] ?? '',
+                    'jenjang' => $p['jenjang'] ?? '',
+                    'tahun_lulus' => $p['tahun_lulus'] ?? '',
+                    'gelar' => $p['gelar'] ?? '',
+                    'is_local' => false,
+                ];
+            }
+
+            // Apply search filter if specified
+            if ($search !== '') {
+                $allItems = array_values(array_filter($allItems, function (array $item) use ($search) {
+                    $univ = (string) ($item['universitas'] ?? '');
+                    $prodi = (string) ($item['program_studi'] ?? '');
+                    $jenjang = (string) ($item['jenjang'] ?? '');
+
+                    return stripos($univ, $search) !== false
+                        || stripos($prodi, $search) !== false
+                        || stripos($jenjang, $search) !== false;
+                }));
+            }
+
+            // Apply jenjang filter if specified
+            if ($selectedJenjang !== '') {
+                $allItems = array_values(array_filter($allItems, fn (array $item) => $this->matchesJenjang($item['jenjang'] ?? '', $selectedJenjang)));
+            }
+
+            $total = count($allItems);
+            $pagination = [
+                'total' => $total,
+                'per_page' => $perPage,
+                'current_page' => 1,
+                'last_page' => 1,
+                'from' => $total > 0 ? 1 : 0,
+                'to' => $total,
+            ];
+
+            return view('pendidikan.index', [
+                'pendidikanList' => $allItems,
+                'pagination' => $pagination,
+                'filters' => $filters,
+                'jenjangOptions' => $this->defaultJenjangOptions(),
+                'dosenOptions' => $dosenOptions,
+                'tendikOptions' => $tendikOptions,
+                'selectedDosen' => null,
+                'selectedTendik' => $selectedTendik,
+                'isDosen' => false,
+                'authDosen' => null,
                 'apiError' => null,
             ]);
         }
@@ -362,6 +470,20 @@ class PendidikanController extends Controller
             }
         }
 
+        if ($idTendik) {
+            try {
+                Kualifikasi::create([
+                    'tendik_api_id' => $idTendik,
+                    'gelar' => $request->input('gelar') ?: self::defaultGelarForJenjang($normalizedJenjang),
+                    'jenjang' => $normalizedJenjang,
+                    'institusi' => trim($validated['universitas']),
+                    'program_studi' => trim($validated['program_studi']),
+                    'tahun_lulus' => (string) $validated['tahun_lulus'],
+                ]);
+            } catch (\Throwable) {
+            }
+        }
+
         if ($request->expectsJson() || $request->ajax()) {
             return response()->json([
                 'success' => true,
@@ -379,6 +501,24 @@ class PendidikanController extends Controller
 
     public function show(int $id): JsonResponse|RedirectResponse
     {
+        try {
+            $localQ = Kualifikasi::find($id);
+            if ($localQ) {
+                return response()->json([
+                    'success' => true,
+                    'data' => [
+                        'id' => $localQ->id,
+                        'id_pendidikan' => $localQ->id,
+                        'universitas' => $localQ->institusi,
+                        'program_studi' => $localQ->program_studi,
+                        'jenjang' => $localQ->jenjang,
+                        'tahun_lulus' => (int) $localQ->tahun_lulus,
+                    ],
+                ]);
+            }
+        } catch (\Throwable) {
+        }
+
         $isDosen = $this->isAuthenticatedDosen();
         $authDosen = $isDosen ? $this->getAuthenticatedDosenData() : null;
 
@@ -430,17 +570,6 @@ class PendidikanController extends Controller
 
     public function update(Request $request, int $id): JsonResponse|RedirectResponse
     {
-        $isDosen = $this->isAuthenticatedDosen();
-        $authDosen = $isDosen ? $this->getAuthenticatedDosenData() : null;
-
-        // Restriction: Dosen can ONLY edit their own pendidikan
-        if ($isDosen && $authDosen) {
-            $myPendidikanId = $authDosen['id_pendidikan'] ?? null;
-            if ($myPendidikanId !== null && (int) $myPendidikanId !== $id) {
-                return $this->errorResponse($request, 'Anda hanya dapat mengubah data pendidikan milik Anda sendiri.', null, 403);
-            }
-        }
-
         $validated = $request->validate([
             'universitas' => ['required', 'string', 'max:255'],
             'program_studi' => ['required', 'string', 'max:255'],
@@ -458,6 +587,44 @@ class PendidikanController extends Controller
         ]);
 
         $normalizedJenjang = self::normalizeJenjang($validated['jenjang']);
+
+        try {
+            $localQ = Kualifikasi::find($id);
+            if ($localQ) {
+                $localQ->update([
+                    'jenjang' => $normalizedJenjang,
+                    'institusi' => trim($validated['universitas']),
+                    'program_studi' => trim($validated['program_studi']),
+                    'tahun_lulus' => (string) $validated['tahun_lulus'],
+                ]);
+
+                if ($request->expectsJson() || $request->ajax()) {
+                    return response()->json([
+                        'success' => true,
+                        'message' => 'Data pendidikan berhasil diperbarui.',
+                        'data' => $localQ,
+                    ]);
+                }
+
+                return redirect()->route('pendidikan.index', request()->only(['id_dosen', 'id_tendik']))->with('toast', [
+                    'type' => 'success',
+                    'title' => 'Berhasil',
+                    'message' => 'Data pendidikan berhasil diperbarui.',
+                ]);
+            }
+        } catch (\Throwable) {
+        }
+
+        $isDosen = $this->isAuthenticatedDosen();
+        $authDosen = $isDosen ? $this->getAuthenticatedDosenData() : null;
+
+        // Restriction: Dosen can ONLY edit their own pendidikan
+        if ($isDosen && $authDosen) {
+            $myPendidikanId = $authDosen['id_pendidikan'] ?? null;
+            if ($myPendidikanId !== null && (int) $myPendidikanId !== $id) {
+                return $this->errorResponse($request, 'Anda hanya dapat mengubah data pendidikan milik Anda sendiri.', null, 403);
+            }
+        }
 
         $payload = [
             'universitas' => trim($validated['universitas']),
@@ -538,6 +705,27 @@ class PendidikanController extends Controller
 
     public function destroy(Request $request, int $id): JsonResponse|RedirectResponse
     {
+        try {
+            $localQ = Kualifikasi::find($id);
+            if ($localQ) {
+                $localQ->delete();
+
+                if ($request->expectsJson() || $request->ajax()) {
+                    return response()->json([
+                        'success' => true,
+                        'message' => 'Data pendidikan berhasil dihapus.',
+                    ]);
+                }
+
+                return redirect()->route('pendidikan.index', request()->only(['id_dosen', 'id_tendik']))->with('toast', [
+                    'type' => 'success',
+                    'title' => 'Berhasil Dihapus',
+                    'message' => 'Data pendidikan berhasil dihapus.',
+                ]);
+            }
+        } catch (\Throwable) {
+        }
+
         $isDosen = $this->isAuthenticatedDosen();
         $authDosen = $isDosen ? $this->getAuthenticatedDosenData() : null;
 
@@ -585,6 +773,25 @@ class PendidikanController extends Controller
             'title' => 'Berhasil Dihapus',
             'message' => 'Data pendidikan berhasil dihapus.',
         ]);
+    }
+
+    public static function defaultGelarForJenjang(string $jenjang): string
+    {
+        $j = strtoupper(trim($jenjang));
+        if ($j === 'S3') {
+            return 'Dr';
+        }
+        if ($j === 'S2') {
+            return 'M.Kom';
+        }
+        if (str_contains($j, 'S1') || str_contains($j, 'D4')) {
+            return 'S.Kom';
+        }
+        if (str_contains($j, 'D3')) {
+            return 'A.Md';
+        }
+
+        return 'S.Kom';
     }
 
     /**

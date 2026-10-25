@@ -67,41 +67,16 @@
 
             {{-- Daftar kualifikasi — scrollable, mengisi ruang tersisa --}}
             <div class="flex-1 overflow-y-auto divide-y divide-[#BAC7D5] px-4 sm:px-5">
-                @php
-                    $displayKualifikasis = count($kualifikasis) > 0 ? $kualifikasis : [
-                        [
-                            'gelar' => 'Dr',
-                            'jenjang' => 'S3',
-                            'institusi' => 'Politeknik Negeri Semarang',
-                            'program_studi' => 'Teknik Informatika',
-                            'tahun_lulus' => '2026',
-                        ],
-                        [
-                            'gelar' => 'Dr',
-                            'jenjang' => 'S3',
-                            'institusi' => 'Politeknik Negeri Semarang',
-                            'program_studi' => 'Teknik Informatika',
-                            'tahun_lulus' => '2026',
-                        ],
-                        [
-                            'gelar' => 'Dr',
-                            'jenjang' => 'S3',
-                            'institusi' => 'Politeknik Negeri Semarang',
-                            'program_studi' => 'Teknik Informatika',
-                            'tahun_lulus' => '2026',
-                        ],
-                    ];
-                @endphp
-                @foreach($displayKualifikasis as $qualification)
+                @forelse($kualifikasis as $qualification)
                     @php
                         $rawJenjang = !empty($qualification['jenjang']) ? $qualification['jenjang'] : '';
                         $rawGelar   = !empty($qualification['gelar']) ? $qualification['gelar'] : '';
                         $isJenjangCode = in_array(strtoupper($rawGelar), ['D3', 'D4', 'S1', 'D4/S1', 'S2', 'S3', 'PROFESI']);
-                        $jenjang   = $rawJenjang !== '' ? $rawJenjang : ($isJenjangCode ? $rawGelar : 'S3');
-                        $gelar     = ($rawGelar !== '' && ! $isJenjangCode) ? $rawGelar : 'Dr';
-                        $institusi = !empty($qualification['institusi']) ? $qualification['institusi'] : 'Politeknik Negeri Semarang';
-                        $prodi     = !empty($qualification['program_studi']) ? $qualification['program_studi'] : ($tenagaKependidikan['bidang_keahlian'] ?: 'Teknik Informatika');
-                        $tahun     = !empty($qualification['tahun_lulus']) ? $qualification['tahun_lulus'] : '2026';
+                        $jenjang   = $rawJenjang !== '' ? $rawJenjang : ($isJenjangCode ? $rawGelar : '');
+                        $gelar     = ($rawGelar !== '' && ! $isJenjangCode) ? $rawGelar : ($jenjang === 'S3' ? 'Dr' : ($jenjang === 'S2' ? 'M.Kom' : ($jenjang === 'D4/S1' || $jenjang === 'S1' ? 'S.Kom' : '')));
+                        $institusi = !empty($qualification['institusi']) ? $qualification['institusi'] : (!empty($qualification['universitas']) ? $qualification['universitas'] : '');
+                        $prodi     = !empty($qualification['program_studi']) ? $qualification['program_studi'] : '';
+                        $tahun     = !empty($qualification['tahun_lulus']) ? $qualification['tahun_lulus'] : '';
                     @endphp
                     <article class="flex items-center gap-3.5 py-4">
                         <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#FFC400] text-black shadow-xs">
@@ -111,30 +86,45 @@
                         </span>
                         <div class="min-w-0 flex-1 leading-snug">
                             <div class="flex items-center gap-2">
-                                <span class="text-base font-bold text-black">{{ $gelar }}</span>
-                                <span class="rounded-full bg-[#002B49] px-2.5 py-0.5 text-xs font-bold text-[#FFC400]">{{ $jenjang }}</span>
+                                @if($gelar !== '')
+                                    <span class="text-base font-bold text-black">{{ $gelar }}</span>
+                                @endif
+                                @if($jenjang !== '')
+                                    <span class="rounded-full bg-[#002B49] px-2.5 py-0.5 text-xs font-bold text-[#FFC400]">{{ $jenjang }}</span>
+                                @endif
                             </div>
-                            <p class="truncate text-xs font-normal text-gray-700 mt-0.5">{{ $institusi }}</p>
-                            <p class="truncate text-xs font-bold text-black mt-0.5">
-                                {{ $prodi }} - Lulus {{ $tahun }}
-                            </p>
+                            @if($institusi !== '')
+                                <p class="truncate text-xs font-normal text-gray-700 mt-0.5">{{ $institusi }}</p>
+                            @endif
+                            @if($prodi !== '' || $tahun !== '')
+                                <p class="truncate text-xs font-bold text-black mt-0.5">
+                                    {{ $prodi }}{{ ($prodi !== '' && $tahun !== '') ? ' - Lulus '.$tahun : ($tahun !== '' ? 'Lulus '.$tahun : '') }}
+                                </p>
+                            @endif
                         </div>
                     </article>
-                @endforeach
+                @empty
+                    <div class="flex flex-col items-center justify-center py-8 text-center text-gray-500">
+                        <svg class="w-8 h-8 text-gray-400 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" />
+                        </svg>
+                        <p class="text-xs font-medium text-gray-600">Belum ada data kualifikasi</p>
+                        <p class="text-[11px] text-gray-400 mt-0.5">Klik 'Tambah Pendidikan' di bawah untuk menambahkan</p>
+                    </div>
+                @endforelse
             </div>
 
-            {{-- Tombol Tambah Pendidikan --}}
-            <button
-                type="button"
-                id="openAddPendidikanModalBtn"
-                class="w-full bg-[#002B49] hover:bg-[#003B66] h-[44px] px-4 text-white text-center flex items-center justify-center gap-2 transition duration-150 cursor-pointer shrink-0"
+            {{-- Tombol Tambah Pendidikan — mengarah ke halaman Pendidikan --}}
+            <a
+                href="{{ route('pendidikan.index', ['id_tendik' => $tenagaKependidikan['id']]) }}"
+                class="w-full bg-[#002B49] hover:bg-[#003B66] h-[44px] px-4 text-white text-center flex items-center justify-center gap-2 transition duration-150 shrink-0"
                 title="Tambah Pendidikan"
             >
                 <svg class="w-4 h-4 text-white shrink-0" viewBox="0 0 20 20" fill="currentColor">
                     <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm.75-11.25a.75.75 0 00-1.5 0v2.5h-2.5a.75.75 0 000 1.5h2.5v2.5a.75.75 0 001.5 0v-2.5h2.5a.75.75 0 000-1.5h-2.5v-2.5z" clip-rule="evenodd" />
                 </svg>
                 <span class="text-xs sm:text-sm font-medium tracking-wide">Tambah Pendidikan</span>
-            </button>
+            </a>
         </section>
     </div>
 
