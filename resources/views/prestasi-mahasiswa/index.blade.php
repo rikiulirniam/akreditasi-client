@@ -159,7 +159,7 @@
             <span id="prestasiStepTwoIndicator" class="flex h-6 w-6 items-center justify-center rounded-full bg-gray-300 text-xs font-bold text-gray-700">2</span>
         </div>
 
-        <form id="prestasiForm" action="{{ route('prestasi-mahasiswa.store') }}" method="POST" enctype="multipart/form-data" class="space-y-3">
+        <form id="prestasiForm" action="{{ route('prestasi-mahasiswa.store') }}" method="POST" class="space-y-3">
             @csrf
             <input type="hidden" name="_method" id="prestasiFormMethod" value="POST">
 
@@ -218,8 +218,8 @@
                     <input id="prestasiTahunInput" type="number" name="tahun" min="1900" max="2100" value="{{ date('Y') }}" required class="w-full rounded-md bg-gray-200 px-4 py-2.5 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-primary/30">
                 </div>
                 <div>
-                    <label for="prestasiCertificateInput" class="mb-1 block text-xs font-bold text-gray-900">Sertifikat (PDF/JPG/PNG, maks. 10 MB)</label>
-                    <input id="prestasiCertificateInput" type="file" name="certificate" accept=".pdf,.jpg,.jpeg,.png" required class="w-full rounded-md bg-gray-200 px-3 py-2 text-sm text-gray-700 file:mr-3 file:rounded file:border-0 file:bg-gray-300 file:px-3 file:py-1.5 file:text-xs file:font-semibold">
+                    <label for="prestasiEvidenceInput" class="mb-1 block text-xs font-bold text-gray-900">Link Sertifikat</label>
+                    <input id="prestasiEvidenceInput" type="url" name="evidence" maxlength="2048" required placeholder="https://contoh.com/sertifikat" class="w-full rounded-md bg-gray-200 px-4 py-2.5 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-primary/30">
                 </div>
                 <div class="grid grid-cols-2 gap-3 pt-4">
                     <button type="button" id="backPrestasiWizardBtn" class="w-full rounded-md bg-gray-200 px-5 py-2.5 text-sm font-bold text-gray-900 transition hover:bg-gray-300">Kembali</button>
