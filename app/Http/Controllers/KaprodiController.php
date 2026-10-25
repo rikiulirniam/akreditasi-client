@@ -57,7 +57,7 @@ class KaprodiController extends Controller
                     'kode' => $k['kode_kriteria'] ?? '',
                     'persen' => $subCount > 0 ? min(100, $subCount * 25) : 0,
                     'bar_color' => 'bg-additional',
-                    'terisi' => "{$subCount}/" . max(4, $subCount),
+                    'terisi' => "{$subCount}/".max(4, $subCount),
                     'status' => $subCount > 0 ? 'Berjalan' : 'Tertinggal',
                     'badge' => $subCount > 0 ? 'bg-sky-50 text-additional border-sky-100' : 'bg-amber-50 text-amber-600 border-amber-100',
                 ];
@@ -205,7 +205,7 @@ class KaprodiController extends Controller
 
             return redirect()->route('kaprodi.project')->with('error', $errMsg);
         } catch (\Throwable $e) {
-            return redirect()->route('kaprodi.project')->with('error', 'Terjadi kesalahan sistem: ' . $e->getMessage());
+            return redirect()->route('kaprodi.project')->with('error', 'Terjadi kesalahan sistem: '.$e->getMessage());
         }
     }
 
@@ -222,7 +222,7 @@ class KaprodiController extends Controller
 
             return redirect()->route('kaprodi.project')->with('error', $response->json('message') ?? 'Gagal menghapus project.');
         } catch (\Throwable $e) {
-            return redirect()->route('kaprodi.project')->with('error', 'Terjadi kesalahan sistem: ' . $e->getMessage());
+            return redirect()->route('kaprodi.project')->with('error', 'Terjadi kesalahan sistem: '.$e->getMessage());
         }
     }
 
