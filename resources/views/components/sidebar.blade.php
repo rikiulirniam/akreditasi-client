@@ -22,28 +22,7 @@
         <div class="flex-1 bg-primary rounded-t-[27px] px-3.5 py-5 overflow-y-auto overflow-x-hidden">
 
             <nav class="space-y-3" aria-label="Menu Utama">
-                @php
-                    $sidebarUser = session('user', []);
-                    $reviewerRole = strtolower((string) (($sidebarUser['role'] ?? null) ?: ($sidebarUser['role_name'] ?? '')));
-                    $isReviewerRole = str_contains($reviewerRole, 'reviewer');
-                @endphp
 
-                @if ($isReviewerRole)
-                    <a href="{{ route('reviewer.dashboard') }}"
-                        class="sidebar-link w-full flex items-center gap-3.5 px-3.5 py-3 rounded-2xl text-sm font-semibold transition-all duration-150 {{ request()->routeIs('reviewer.dashboard') ? 'bg-additional text-secondary shadow-xs' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
-                        <svg class="w-5 h-5 shrink-0 fill-current" viewBox="0 0 24 24" aria-hidden="true">
-                            <path d="M4 4h6v6H4V4zm10 0h6v6h-6V4zM4 14h6v6H4v-6zm10 0h6v6h-6v-6z" />
-                        </svg>
-                        <span class="sidebar-text truncate">Dashboard</span>
-                    </a>
-                    <a href="{{ route('reviewer.assessments') }}"
-                        class="sidebar-link w-full flex items-center gap-3.5 px-3.5 py-3 rounded-2xl text-sm font-semibold transition-all duration-150 {{ request()->routeIs('reviewer.assessments') ? 'bg-additional text-secondary shadow-xs' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
-                        <svg class="w-5 h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 6.75h12m-12 5.25h12m-12 5.25h12M3.75 6.75h.008v.008H3.75V6.75zm0 5.25h.008v.008H3.75V12zm0 5.25h.008v.008H3.75v-.008z" />
-                        </svg>
-                        <span class="sidebar-text truncate">Penilaian</span>
-                    </a>
-                @else
                 <!-- Dashboard -->
                 <div>
                     <a href="{{ route('dashboard') }}"
@@ -100,7 +79,6 @@
                         </a>
                     </div>
                 </div>
-
                 <!-- Data Perguruan Tinggi -->
                 @php
                     $isPtActive = request()->routeIs('perguruan-tinggi.*') || request()->routeIs('upps.*') || request()->routeIs('prodi.*') || request()->routeIs('program-studi.*') || request()->routeIs('tahun-akademik.*') || request()->routeIs('kurikulum.*');
@@ -155,7 +133,7 @@
 
                 <!-- Kemahasiswaan -->
                 @php
-                    $isKemahasiswaanActive = request()->routeIs('angkatan.*') || request()->routeIs('kelas.*') || request()->routeIs('mahasiswa.*');
+                    $isKemahasiswaanActive = request()->routeIs('angkatan.*') || request()->routeIs('kelas.*') || request()->routeIs('mahasiswa.*') || request()->routeIs('kegiatan-mahasiswa.*') || request()->routeIs('prestasi-mahasiswa.*') || request()->routeIs('kemahasiswaan.jenis-prestasi.*');
                 @endphp
                 <div>
                     <button type="button"
@@ -195,6 +173,18 @@
                             <span
                                 class="w-1.5 h-1.5 rounded-full {{ request()->routeIs('mahasiswa.*') ? 'bg-secondary' : 'bg-white/40' }} shrink-0"></span>
                             <span>Data Mahasiswa</span>
+                        </a>
+                        <a href="{{ Route::has('kegiatan-mahasiswa.index') ? route('kegiatan-mahasiswa.index') : '#' }}"
+                            class="flex items-center gap-2.5 py-2.5 px-3.5 rounded-xl text-sm font-semibold transition-all duration-150 {{ request()->routeIs('kegiatan-mahasiswa.*') ? 'bg-white/20 text-white shadow-xs font-bold' : 'text-white/80 hover:text-white hover:bg-white/10' }}">
+                            <span
+                                class="w-1.5 h-1.5 rounded-full {{ request()->routeIs('kegiatan-mahasiswa.*') ? 'bg-secondary' : 'bg-white/40' }} shrink-0"></span>
+                            <span>Kegiatan Mahasiswa</span>
+                        </a>
+                        <a href="{{ Route::has('prestasi-mahasiswa.index') ? route('prestasi-mahasiswa.index') : '#' }}"
+                            class="flex items-center gap-2.5 py-2.5 px-3.5 rounded-xl text-sm font-semibold transition-all duration-150 {{ request()->routeIs('prestasi-mahasiswa.*') ? 'bg-white/20 text-white shadow-xs font-bold' : 'text-white/80 hover:text-white hover:bg-white/10' }}">
+                            <span 
+                                class="w-1.5 h-1.5 rounded-full {{ request()->routeIs('prestasi-mahasiswa.*') ? 'bg-secondary' : 'bg-white/40' }} shrink-0"></span>
+                            <span>Prestasi Mahasiswa</span>
                         </a>
                     </div>
                 </div>
@@ -243,7 +233,6 @@
                     </a>
                 </div>
 
-                @endif
             </nav>
         </div>
     </div>

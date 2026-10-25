@@ -59,11 +59,7 @@ class ReviewerDashboardTest extends TestCase
             ->assertSee('Halo, Kuwat!')
             ->assertSee('Akreditasi Teknik Informatika')
             ->assertSee('Project ditugaskan')
-            ->assertSee('53%')
-            ->assertSee(route('reviewer.dashboard'), false)
-            ->assertSee(route('reviewer.assessments'), false)
-            ->assertDontSee(route('users.index'), false)
-            ->assertDontSee(route('prodi.index'), false);
+            ->assertSee('53%');
 
         Http::assertSent(fn (HttpRequest $request): bool => $request->url() === 'https://akreditasi.example.test/api/reviewer/projects'
             && $request->hasHeader('Authorization', 'Bearer reviewer-token'));
