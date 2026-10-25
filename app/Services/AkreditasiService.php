@@ -315,6 +315,16 @@ class AkreditasiService
     }
 
     /**
+     * Alias untuk getLembagaAkreditasi.
+     *
+     * @param  array<string, mixed>  $query
+     */
+    public function getLembaga(array $query = []): Response
+    {
+        return $this->getLembagaAkreditasi($query);
+    }
+
+    /**
      * Mengambil detail lembaga akreditasi.
      */
     public function getLembagaAkreditasiDetail(int|string $id): Response

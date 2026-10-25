@@ -204,93 +204,7 @@
         <div class="py-3 px-6 bg-gray-50/60 border-t border-gray-100 text-gray-500 text-xs font-medium">
             {{ count($projects) }} baris project dari API
         </div>
-    @else
-        <div id="data-state" class="bg-white rounded-2xl border border-[#EAEAEA] shadow-xs overflow-hidden mt-6">
-            <x-table>
-                <x-slot:header>
-                    <x-table.th class="w-56">Nama Project</x-table.th>
-                    <x-table.th class="w-32">Jenjang</x-table.th>
-                    <x-table.th class="w-36">Jenis</x-table.th>
-                    <x-table.th class="w-28">Instrumen</x-table.th>
-                    <x-table.th class="w-24">Tahun</x-table.th>
-                    <x-table.th class="w-32">Status</x-table.th>
-                    <x-table.th class="w-28 text-right">Action</x-table.th>
-                </x-slot:header>
-
-                @foreach ($projects as $project)
-                    <x-table.row>
-                        <!-- Program Studi / Nama Project -->
-                        <x-table.cell>
-                            <div class="flex flex-col">
-                                <span class="text-primary font-bold text-sm tracking-tight">{{ $project['nama_project'] ?? '-' }}</span>
-                                <span class="text-gray-500 text-xs font-semibold uppercase mt-0.5">
-                                    {{ $project['versi_instrumen']['lembaga']['nama_lembaga'] ?? 'LAM INFOKOM' }}
-                                </span>
-                            </div>
-                        </x-table.cell>
-
-                        <!-- Jenjang -->
-                        <x-table.cell>
-                            <span class="text-gray-800 text-sm font-medium">
-                                {{ $project['jenjang']['nama_jenjang'] ?? 'S1' }}
-                            </span>
-                        </x-table.cell>
-
-                        <!-- Jenis -->
-                        <x-table.cell>
-                            <span class="text-gray-800 text-sm font-medium">
-                                {{ $project['jenis_instrumen']['nama_jenis'] ?? 'APS' }}
-                            </span>
-                        </x-table.cell>
-
-                        <!-- Instrumen -->
-                        <x-table.cell>
-                            <span class="text-gray-800 text-sm font-medium font-mono">
-                                v{{ $project['versi_instrumen']['nomor_versi'] ?? '2.1' }}
-                            </span>
-                        </x-table.cell>
-
-                        <!-- Tahun -->
-                        <x-table.cell>
-                            <span class="text-gray-800 text-sm font-medium">
-                                {{ $project['tahun_target_submit'] ?? ($project['tahun_akreditasi'] ?? '2026') }}
-                            </span>
-                        </x-table.cell>
-
-                        <!-- Status -->
-                        <x-table.cell>
-                            <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold {{ ($project['status_project'] ?? $project['status'] ?? '') === 'selesai' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800' }}">
-                                {{ ucfirst((string) ($project['status_project'] ?? $project['status'] ?? 'Draft')) }}
-                            </span>
-                        </x-table.cell>
-
-                        <!-- Action -->
-                        <x-table.cell class="text-right">
-                            <div class="flex items-center justify-end gap-3">
-                                <a href="{{ route('kaprodi.project.detail', ['id' => $project['id']]) }}" class="text-additional hover:text-primary text-sm font-bold transition-colors">Detail ›</a>
-                                <form action="{{ route('kaprodi.project.destroy', $project['id']) }}" method="POST" onsubmit="return confirm('Apakah Anda yakin ingin menghapus project ini?');" class="inline">
-                                    @csrf
-                                    @method('DELETE')
-                                    <button 
-                                        type="submit" 
-                                        class="text-red-500 hover:text-red-700 p-1 transition-colors cursor-pointer" 
-                                        title="Hapus Data"
-                                    >
-                                        <x-icon.delete class="w-4 h-4" />
-                                    </button>
-                                </form>
-                            </div>
-                        </x-table.cell>
-                    </x-table.row>
-                @endforeach
-            </x-table>
-            
-            <!-- Table Footer Counter -->
-            <div class="py-3 px-6 bg-gray-50/60 border-t border-gray-100 text-gray-500 text-xs font-medium">
-                {{ count($projects) }} baris project
-            </div>
-        </div>
-    @endif
+    </div>
 
 </div>
 
@@ -376,8 +290,7 @@
                     </div>
                     <div>
                         <label for="inputJenjang" class="block text-xs font-bold text-gray-800 mb-1.5">Jenjang</label>
-                        <x-input 
-                            type="select" 
+                        <select 
                             name="id_jenjang"
                             id="inputJenjang"
                             class="block w-full rounded-xl border border-gray-200 bg-gray-50 p-3 text-sm text-gray-900 focus:border-primary focus:bg-white focus:outline-none focus:ring-1 focus:ring-primary"
