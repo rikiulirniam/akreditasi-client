@@ -23,7 +23,7 @@
     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
             <h1 class="text-2xl font-extrabold text-primary tracking-tight leading-tight">Dashboard Project Akreditasi</h1>
-            <p class="text-xs sm:text-sm text-[#5A6E85] mt-1">Kelola dan pantau pengajuan akreditasi program studi Anda.</p>
+            <p class="text-xs sm:text-sm text-[#5A6E85] mt-1">Kelola dan pantau pengajuan akreditasi program studi Anda dari sistem akreditasi terintegrasi.</p>
         </div>
         <button 
             type="button" 
@@ -69,7 +69,9 @@
         <div class="bg-white rounded-2xl border border-[#EAEAEA] p-5 flex flex-col justify-center shadow-xs">
             <div class="text-gray-500 text-xs font-bold tracking-wider uppercase mb-2">Rata-rata Kelengkapan</div>
             <div class="flex items-center gap-2.5">
-                <span id="stat-kelengkapan" class="text-primary text-[28px] font-extrabold leading-none">—</span>
+                <span id="stat-kelengkapan" class="text-primary text-[28px] font-extrabold leading-none">
+                    {{ $stats['rata_kelengkapan'] ?? '—' }}
+                </span>
             </div>
         </div>
 
@@ -77,19 +79,130 @@
         <div class="bg-white rounded-2xl border border-[#EAEAEA] p-5 flex flex-col justify-center shadow-xs">
             <div class="text-gray-500 text-xs font-bold tracking-wider uppercase mb-2">Instrumen Aktif</div>
             <div class="flex items-center gap-2.5">
-                <span id="stat-instrumen" class="text-primary text-[28px] font-extrabold leading-none">2.1</span>
+                <span id="stat-instrumen" class="text-primary text-[28px] font-extrabold leading-none">
+                    {{ $stats['instrumen_aktif'] ?? '2.1' }}
+                </span>
             </div>
         </div>
     </div>
 
-    <!-- TABEL DATA PROJECT DARI API -->
-    @if (empty($projects))
-        <div id="empty-state" class="w-full bg-white rounded-2xl border border-[#EAEAEA] shadow-xs p-10 mt-6">
-            <x-table.empty 
-                colspan="8"
-                message="Belum ada project akreditasi"
-                submessage="Buat project pertama untuk memuat instrumen LAM INFOKOM secara otomatis."
-            />
+    @php
+        $hasProjects = ! empty($projects) && count($projects) > 0;
+    @endphp
+
+    <!-- STATE 1: KOSONG (JIKA BELUM ADA DATA DARI API) -->
+    <div id="empty-state" class="w-full bg-white rounded-2xl border border-[#EAEAEA] shadow-xs p-10 mt-6 {{ $hasProjects ? 'hidden' : '' }}">
+        <x-table.empty 
+            colspan="8"
+            message="Belum ada project akreditasi di server"
+            submessage="Klik tombol '+ Project Baru' untuk membuat project akreditasi pertama Anda."
+        />
+    </div>
+
+    <!-- STATE 2: ADA DATA (TABEL DARI API MENGGUNAKAN X-TABLE) -->
+    <div id="data-state" class="{{ $hasProjects ? '' : 'hidden' }} bg-white rounded-2xl border border-[#EAEAEA] shadow-xs overflow-hidden mt-6">
+        <x-table>
+            <x-slot:header>
+                <x-table.th class="w-48">Program Studi</x-table.th>
+                <x-table.th class="w-32">Jenjang</x-table.th>
+                <x-table.th class="w-28">Jenis</x-table.th>
+                <x-table.th class="w-28">Instrumen</x-table.th>
+                <x-table.th class="w-24">Tahun</x-table.th>
+                <x-table.th class="w-40">Kelengkapan</x-table.th>
+                <x-table.th class="w-16">Nilai</x-table.th>
+                <x-table.th class="w-28 text-right">Action</x-table.th>
+            </x-slot:header>
+
+            @foreach($projects as $item)
+                @php
+                    $id = $item['id'] ?? null;
+                    $namaProject = $item['nama_project'] ?? 'Project Akreditasi';
+                    $versiNomor = $item['versi_instrumen']['nomor_versi'] ?? '2.1';
+                    $jenjangNama = $item['jenjang']['nama_jenjang'] ?? 'Sarjana Terapan';
+                    $jenisNama = $item['jenis_instrumen']['nama_jenis'] ?? ($item['status_project'] ?? 'APS');
+                    $tahunSubmit = $item['tahun_target_submit'] ?? '2026';
+                @endphp
+                <x-table.row>
+                    <!-- Program Studi -->
+                    <x-table.cell>
+                        <div class="flex flex-col">
+                            <span class="text-primary font-bold text-sm tracking-tight">{{ $namaProject }}</span>
+                            <span class="text-gray-400 text-[10px] font-semibold uppercase mt-0.5">LAM INFOKOM · v{{ $versiNomor }}</span>
+                        </div>
+                    </x-table.cell>
+
+                    <!-- Jenjang -->
+                    <x-table.cell>
+                        <span class="text-gray-700 text-xs font-medium">{{ $jenjangNama }}</span>
+                    </x-table.cell>
+
+                    <!-- Jenis -->
+                    <x-table.cell>
+                        <span class="text-gray-700 text-xs font-medium">{{ $jenisNama }}</span>
+                    </x-table.cell>
+
+                    <!-- Instrumen -->
+                    <x-table.cell>
+                        <span class="text-gray-700 text-xs font-medium">v{{ $versiNomor }}</span>
+                    </x-table.cell>
+
+                    <!-- Tahun -->
+                    <x-table.cell>
+                        <span class="text-gray-700 text-xs font-medium">{{ $tahunSubmit }}</span>
+                    </x-table.cell>
+
+                    <!-- Kelengkapan -->
+                    <x-table.cell>
+                        <div class="flex items-center gap-2.5">
+                            <div class="w-20 h-2 bg-slate-100 rounded-full overflow-hidden">
+                                <div class="h-full bg-additional w-0 transition-all duration-300"></div>
+                            </div>
+                            <span class="text-gray-500 text-xs font-medium">0/36</span>
+                        </div>
+                    </x-table.cell>
+
+                    <!-- Nilai -->
+                    <x-table.cell>
+                        <span class="text-primary text-xs font-bold">0</span>
+                    </x-table.cell>
+
+                    <!-- Action -->
+                    <x-table.cell class="text-right">
+                        <div class="flex items-center justify-end gap-3">
+                            <a 
+                                href="{{ route('kaprodi.project.detail', $id) }}" 
+                                class="text-additional hover:text-primary text-xs font-bold transition-colors"
+                            >
+                                Detail ›
+                            </a>
+
+                            @if($id)
+                                <form 
+                                    action="{{ route('kaprodi.project.destroy', $id) }}" 
+                                    method="POST" 
+                                    onsubmit="return confirm('Apakah Anda yakin ingin menghapus project ini dari server?');"
+                                    class="inline"
+                                >
+                                    @csrf
+                                    @method('DELETE')
+                                    <button 
+                                        type="submit" 
+                                        class="text-red-500 hover:text-red-700 p-1 transition-colors cursor-pointer" 
+                                        title="Hapus Data"
+                                    >
+                                        <x-icon.delete class="w-4 h-4" />
+                                    </button>
+                                </form>
+                            @endif
+                        </div>
+                    </x-table.cell>
+                </x-table.row>
+            @endforeach
+        </x-table>
+        
+        <!-- Table Footer Counter -->
+        <div class="py-3 px-6 bg-gray-50/60 border-t border-gray-100 text-gray-500 text-xs font-medium">
+            {{ count($projects) }} baris project dari API
         </div>
     @else
         <div id="data-state" class="bg-white rounded-2xl border border-[#EAEAEA] shadow-xs overflow-hidden mt-6">
@@ -199,17 +312,21 @@
         <form id="formProject" action="{{ route('kaprodi.project.store') }}" method="POST">
             @csrf
             
+            <!-- Hidden Foreign Key IDs untuk API -->
+            <input type="hidden" name="id_prodi" value="1">
+            <input type="hidden" name="id_jenis_instrumen" id="hiddenJenisInstrumen" value="1">
+            
             <!-- STEP 1: PARAMETER -->
             <div id="step-1" class="block space-y-4">
                 <div>
                     <label for="inputNama" class="block text-xs font-bold text-gray-800 mb-1.5">Nama Project <span class="text-red-500">*</span></label>
-                    <input 
+                    <x-input 
                         type="text" 
                         name="nama_project"
                         id="inputNama" 
+                        placeholder="Contoh: Akreditasi Prodi D4 Rekayasa Perangkat Lunak 2026" 
                         required
-                        placeholder="Contoh: Akreditasi Program Studi RPL 2026" 
-                        class="block w-full rounded-xl border border-gray-200 bg-gray-50 p-3 text-sm text-gray-900 focus:border-primary focus:bg-white focus:outline-none focus:ring-1 focus:ring-primary"
+                        class="text-xs"
                     />
                 </div>
 
@@ -259,7 +376,8 @@
                     </div>
                     <div>
                         <label for="inputJenjang" class="block text-xs font-bold text-gray-800 mb-1.5">Jenjang</label>
-                        <select 
+                        <x-input 
+                            type="select" 
                             name="id_jenjang"
                             id="inputJenjang"
                             class="block w-full rounded-xl border border-gray-200 bg-gray-50 p-3 text-sm text-gray-900 focus:border-primary focus:bg-white focus:outline-none focus:ring-1 focus:ring-primary"

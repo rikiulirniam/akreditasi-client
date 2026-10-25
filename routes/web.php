@@ -57,14 +57,14 @@ Route::middleware('auth.akademik')->group(function () {
     Route::post('/reviewer/penilaian/{projectId}/indikator/{indicatorId}', [ReviewerController::class, 'saveAssessment'])->name('reviewer.assessment-save');
 
     Route::prefix('kaprodi')->name('kaprodi.')->group(function () {
-        Route::get('/dashboard', function () {
-            return view('pages.kaprodi.dashboard');
-        })->name('dashboard');
-
-        Route::get('/project', [KaprodiProjectController::class, 'index'])->name('project');
-        Route::post('/project', [KaprodiProjectController::class, 'store'])->name('project.store');
-        Route::delete('/project/{id}', [KaprodiProjectController::class, 'destroy'])->name('project.destroy');
-        Route::get('/project/detail', [KaprodiProjectController::class, 'detail'])->name('project.detail');
+        Route::get('/dashboard', [KaprodiController::class, 'dashboard'])->name('dashboard');
+        Route::get('/project', [KaprodiController::class, 'project'])->name('project');
+        Route::post('/project', [KaprodiController::class, 'storeProject'])->name('project.store');
+        Route::delete('/project/{id}', [KaprodiController::class, 'destroyProject'])->name('project.destroy');
+        Route::get('/project/detail/{id?}', [KaprodiController::class, 'projectDetail'])->name('project.detail');
+        
+        // Route Plotting Tim Akreditasi
+        Route::get('/plotting', [KaprodiController::class, 'plotting'])->name('plotting');
     });
 
     Route::get('/perguruan-tinggi', [PerguruanTinggiController::class, 'index'])->name('perguruan-tinggi.index');
@@ -97,7 +97,6 @@ Route::middleware('auth.akademik')->group(function () {
     Route::post('/spmi/tindak-lanjut', [SpmiController::class, 'storeTindakLanjut'])->name('spmi.tindak-lanjut.store');
 
     Route::get('/laporan-akhir', [LaporanAkhirController::class, 'index'])->name('laporan-akhir.index');
-
 });
 
 // =====================================================================
