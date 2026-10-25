@@ -4,7 +4,7 @@
 
 @section('title')
     <span class="inline-flex items-center gap-2.5 sm:gap-3.5 flex-wrap">
-        <a href="{{ route('tenaga-kependidikan.index') }}" class="hover:text-additional transition text-black">Tenaga Kependidikan</a>
+        <a href="{{ route('tenaga-kependidikan.index') }}" class="hover:text-additional transition text-black">Tenaga Pendidikan</a>
         <svg class="w-5 h-5 sm:w-7 sm:h-7 stroke-[3] text-black shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
             <path stroke-linecap="round" stroke-linejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" />
         </svg>
@@ -15,18 +15,18 @@
 @section('subtitle', $tenagaKependidikan['nama'])
 
 @section('content')
-<div class="space-y-2.5 pb-2">
+<div class="space-y-4 pb-2">
     @if($detailApiError)
         <div class="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-xs font-medium text-amber-900" role="alert">
             {{ $detailApiError }}
         </div>
     @endif
 
-    {{-- Top Grid: Identitas + Kualifikasi — sama tinggi, min 380px --}}
+    {{-- Top Grid: Identitas + Riwayat Pendidikan --}}
     <div class="grid grid-cols-1 items-stretch gap-5 lg:grid-cols-12" style="min-height: 420px;">
 
         {{-- Identitas --}}
-        <section class="overflow-hidden rounded-[7px] bg-[#EEF3F7] lg:col-span-7 flex flex-col" aria-label="Identitas tenaga kependidikan">
+        <section class="overflow-hidden rounded-[8px] bg-[#EEF3F7] lg:col-span-8 flex flex-col" aria-label="Identitas tenaga kependidikan">
             <div class="px-6 pt-6 pb-0">
                 <h2 class="text-2xl font-bold leading-tight text-black sm:text-[26px]">
                     {{ $tenagaKependidikan['nama'] ?: 'Nama belum tersedia' }}
@@ -55,46 +55,44 @@
                 </div>
             </div>
 
-            {{-- Spacer: mengisi sisa tinggi agar card sepanjang Kualifikasi --}}
+            {{-- Spacer: mengisi sisa tinggi agar card sepanjang Riwayat Pendidikan --}}
             <div class="flex-1"></div>
         </section>
 
-        {{-- Kualifikasi --}}
-        <section class="overflow-hidden rounded-[8px] bg-[#EEF3F7] lg:col-span-5 flex flex-col shadow-xs" aria-labelledby="qualificationHeading">
-            <div class="flex h-[47px] items-center justify-center bg-[#002B49] px-5 shrink-0">
-                <h3 id="qualificationHeading" class="text-base font-semibold text-white tracking-wide">Kualifikasi</h3>
+        {{-- Riwayat Pendidikan --}}
+        <section class="overflow-hidden rounded-[8px] bg-[#EEF3F7] lg:col-span-4 flex flex-col shadow-xs" aria-labelledby="qualificationHeading">
+            <div class="flex h-[47px] items-center justify-start bg-[#002B49] px-5 shrink-0">
+                <h3 id="qualificationHeading" class="text-base font-semibold text-white tracking-wide">Riwayat Pendidikan</h3>
             </div>
 
-            {{-- Daftar kualifikasi — scrollable, mengisi ruang tersisa --}}
+            {{-- Daftar riwayat pendidikan --}}
             <div class="flex-1 overflow-y-auto divide-y divide-[#BAC7D5] px-4 sm:px-5">
                 @forelse($kualifikasis as $qualification)
                     @php
                         $rawJenjang = !empty($qualification['jenjang']) ? $qualification['jenjang'] : '';
                         $rawGelar   = !empty($qualification['gelar']) ? $qualification['gelar'] : '';
                         $isJenjangCode = in_array(strtoupper($rawGelar), ['D3', 'D4', 'S1', 'D4/S1', 'S2', 'S3', 'PROFESI']);
-                        $jenjang   = $rawJenjang !== '' ? $rawJenjang : ($isJenjangCode ? $rawGelar : '');
+                        $jenjang   = $rawJenjang !== '' ? $rawJenjang : ($isJenjangCode ? $rawGelar : 'S1');
                         $gelar     = ($rawGelar !== '' && ! $isJenjangCode) ? $rawGelar : ($jenjang === 'S3' ? 'Dr' : ($jenjang === 'S2' ? 'M.Kom' : ($jenjang === 'D4/S1' || $jenjang === 'S1' ? 'S.Kom' : '')));
                         $institusi = !empty($qualification['institusi']) ? $qualification['institusi'] : (!empty($qualification['universitas']) ? $qualification['universitas'] : '');
                         $prodi     = !empty($qualification['program_studi']) ? $qualification['program_studi'] : '';
                         $tahun     = !empty($qualification['tahun_lulus']) ? $qualification['tahun_lulus'] : '';
                     @endphp
-                    <article class="flex items-center gap-3.5 py-4">
-                        <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#FFC400] text-black shadow-xs">
-                            <svg class="h-6 w-6 fill-current text-black" viewBox="0 0 24 24" aria-hidden="true">
+                    <article class="flex items-center gap-3.5 py-3.5">
+                        <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#FFC400] text-black">
+                            <svg class="h-5 w-5 fill-current text-black" viewBox="0 0 24 24" aria-hidden="true">
                                 <path d="M12 3 1 9l11 6 9-4.91V17h2V9L12 3Zm-7 10.18v4L12 21l7-3.82v-4L12 17l-7-3.82Z"/>
                             </svg>
                         </span>
                         <div class="min-w-0 flex-1 leading-snug">
-                            <div class="flex items-center gap-2">
+                            <div class="flex items-center gap-1.5">
+                                <span class="inline-flex items-center rounded bg-[#002B49] px-2 py-0.5 text-[10px] sm:text-xs font-bold text-white">{{ $jenjang }}</span>
                                 @if($gelar !== '')
-                                    <span class="text-base font-bold text-black">{{ $gelar }}</span>
-                                @endif
-                                @if($jenjang !== '')
-                                    <span class="rounded-full bg-[#002B49] px-2.5 py-0.5 text-xs font-bold text-[#FFC400]">{{ $jenjang }}</span>
+                                    <span class="sr-only">{{ $gelar }}</span>
                                 @endif
                             </div>
                             @if($institusi !== '')
-                                <p class="truncate text-xs font-normal text-gray-700 mt-0.5">{{ $institusi }}</p>
+                                <p class="truncate text-xs font-normal text-gray-700 mt-1">{{ $institusi }}</p>
                             @endif
                             @if($prodi !== '' || $tahun !== '')
                                 <p class="truncate text-xs font-bold text-black mt-0.5">
@@ -108,7 +106,7 @@
                         <svg class="w-8 h-8 text-gray-400 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" />
                         </svg>
-                        <p class="text-xs font-medium text-gray-600">Belum ada data kualifikasi</p>
+                        <p class="text-xs font-medium text-gray-600">Belum ada data riwayat pendidikan</p>
                         <p class="text-[11px] text-gray-400 mt-0.5">Klik 'Tambah Pendidikan' di bawah untuk menambahkan</p>
                     </div>
                 @endforelse
@@ -117,26 +115,26 @@
             {{-- Tombol Tambah Pendidikan — mengarah ke halaman Pendidikan --}}
             <a
                 href="{{ route('pendidikan.index', ['id_tendik' => $tenagaKependidikan['id']]) }}"
-                class="w-full bg-[#002B49] hover:bg-[#003B66] h-[44px] px-4 text-white text-center flex items-center justify-center gap-2 transition duration-150 shrink-0"
+                class="w-full bg-[#002B49] hover:bg-[#003B66] h-[40px] px-4 text-white text-center flex items-center justify-center gap-2 transition duration-150 shrink-0"
                 title="Tambah Pendidikan"
             >
                 <svg class="w-4 h-4 text-white shrink-0" viewBox="0 0 20 20" fill="currentColor">
                     <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm.75-11.25a.75.75 0 00-1.5 0v2.5h-2.5a.75.75 0 000 1.5h2.5v2.5a.75.75 0 001.5 0v-2.5h2.5a.75.75 0 000-1.5h-2.5v-2.5z" clip-rule="evenodd" />
                 </svg>
-                <span class="text-xs sm:text-sm font-medium tracking-wide">Tambah Pendidikan</span>
+                <span class="text-xs font-medium tracking-wide">Tambah Pendidikan</span>
             </a>
         </section>
     </div>
 
     {{-- Sertifikasi --}}
-    <section class="overflow-hidden rounded-[7px] bg-white border-2 border-[#002B49]" aria-labelledby="certificationHeading">
-        <div class="flex h-[47px] items-center justify-between bg-[#012650] px-4 sm:px-6">
-            <h3 id="certificationHeading" class="text-sm font-semibold text-white tracking-wide">Sertifikasi</h3>
-            {{-- Tombol Tambah Sertifikasi — aktif, belum ada popup --}}
+    <section class="overflow-hidden rounded-[8px] bg-[#EEF3F7]" aria-labelledby="certificationHeading">
+        <div class="flex h-[47px] items-center justify-between bg-[#002B49] px-4 sm:px-6">
+            <h3 id="certificationHeading" class="text-base font-semibold text-white tracking-wide">Sertifikasi</h3>
+            {{-- Tombol Tambah Sertifikasi --}}
             <button
                 type="button"
                 id="openAddSertifikasiModalBtn"
-                class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-[6px] bg-[#01568D] hover:bg-[#0170B8] text-white text-xs font-semibold transition shadow-sm cursor-pointer"
+                class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-[6px] bg-[#00629B] hover:bg-[#005180] text-white text-xs font-semibold transition shadow-sm cursor-pointer"
             >
                 <svg class="w-3.5 h-3.5" viewBox="0 0 20 20" fill="currentColor">
                     <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm.75-11.25a.75.75 0 00-1.5 0v2.5h-2.5a.75.75 0 000 1.5h2.5v2.5a.75.75 0 001.5 0v-2.5h2.5a.75.75 0 000-1.5h-2.5v-2.5z" clip-rule="evenodd" />
@@ -151,7 +149,7 @@
 
         @if(count($sertifikasis) > 0)
             {{-- List sertifikasi — setiap baris full-width, dipisah border --}}
-            <div class="divide-y divide-[#D1D5DB]">
+            <div class="divide-y divide-[#BAC7D5]">
                 @foreach($sertifikasis as $sertifikasi)
                     @php
                         $tahunSertifikasi = $sertifikasi['tahun_sertifikasi'] ?? null;
@@ -162,7 +160,6 @@
                         $isExpired = \Illuminate\Support\Str::lower($status) === 'kadaluarsa'
                                   || \Illuminate\Support\Str::lower($status) === 'expired';
                     @endphp
-                    {{-- Clickable — popup belum aktif --}}
                     <button
                         type="button"
                         class="w-full text-left px-4 sm:px-6 py-3 cursor-pointer hover:bg-black/[0.03] transition focus:outline-none"
@@ -190,8 +187,8 @@
                 @endforeach
             </div>
         @else
-            <div class="flex py-14 items-center justify-center text-center">
-                <p class="text-3xl font-bold text-black sm:text-[36px]">Belum ada sertifikasi</p>
+            <div class="flex py-28 sm:py-36 items-center justify-center text-center">
+                <p class="text-3xl sm:text-4xl lg:text-[40px] font-bold text-black tracking-tight">Belum ada sertifikasi</p>
             </div>
         @endif
     </section>

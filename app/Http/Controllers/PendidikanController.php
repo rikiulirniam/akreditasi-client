@@ -2,13 +2,13 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Kualifikasi;
 use App\Services\TridharmaService;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\Response;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\View\View;
 
 class PendidikanController extends Controller
@@ -139,50 +139,7 @@ class PendidikanController extends Controller
                 $selectedTendik = ['id' => $idTendik, 'nama' => 'Tenaga Kependidikan #'.$idTendik];
             }
 
-            // Sync initial API pendidikan into Kualifikasi if not yet tracked
-            $apiPendidikan = $tendikApiRecord['pendidikan'] ?? null;
-            if (is_array($apiPendidikan) && (! empty($apiPendidikan['universitas']) || ! empty($apiPendidikan['jenjang']))) {
-                try {
-                    $apiJenjang = (string) ($apiPendidikan['jenjang'] ?? '');
-                    $alreadyTracked = Kualifikasi::withTrashed()
-                        ->where('tendik_api_id', $idTendik)
-                        ->where('jenjang', $apiJenjang)
-                        ->exists();
-
-                    if (! $alreadyTracked) {
-                        Kualifikasi::create([
-                            'tendik_api_id' => $idTendik,
-                            'gelar' => (string) ($apiPendidikan['gelar'] ?? self::defaultGelarForJenjang($apiJenjang)),
-                            'jenjang' => $apiJenjang,
-                            'institusi' => (string) ($apiPendidikan['universitas'] ?? $apiPendidikan['institusi'] ?? ''),
-                            'program_studi' => (string) ($apiPendidikan['program_studi'] ?? ''),
-                            'tahun_lulus' => (string) ($apiPendidikan['tahun_lulus'] ?? ''),
-                        ]);
-                    }
-                } catch (\Throwable) {
-                }
-            }
-
-            // Retrieve all local qualifications for this Tendik
-            try {
-                $localKualifikasis = Kualifikasi::where('tendik_api_id', $idTendik)->orderBy('id')->get();
-            } catch (\Throwable) {
-                $localKualifikasis = collect();
-            }
-
-            $allItems = [];
-            foreach ($localKualifikasis as $q) {
-                $allItems[] = [
-                    'id' => $q->id,
-                    'id_pendidikan' => $q->id,
-                    'universitas' => $q->institusi,
-                    'program_studi' => $q->program_studi,
-                    'jenjang' => $q->jenjang,
-                    'tahun_lulus' => $q->tahun_lulus,
-                    'gelar' => $q->gelar,
-                    'is_local' => true,
-                ];
-            }
+            $allItems = $this->tridharmaService->getTendikPendidikanList($idTendik, $tendikApiRecord);
 
             // Apply search filter if specified
             if ($search !== '') {
@@ -473,24 +430,53 @@ class PendidikanController extends Controller
                 } catch (\Throwable) {
                 }
             } elseif (($targetType === 'tendik' || ($targetType === null && $idTendik !== null)) && $idTendik) {
+                // First ensure existing qualifications from API are loaded and preserved in cache
+                $this->tridharmaService->getTendikPendidikanList($idTendik);
+
+                $cacheKey = "tendik_kualifikasi_{$idTendik}";
+                $customKey = "tendik_custom_pendidikan_{$idTendik}";
+                $deletedKey = "tendik_deleted_pendidikan_{$idTendik}";
+
+                $cachedIds = Cache::get($cacheKey, []);
+                if (! is_array($cachedIds)) {
+                    $cachedIds = [];
+                }
+                if (! in_array((int) $newPendidikanId, $cachedIds, true)) {
+                    $cachedIds[] = (int) $newPendidikanId;
+                }
+                Cache::put($cacheKey, array_values(array_unique($cachedIds)), now()->addYears(5));
+
+                $customItems = Cache::get($customKey, []);
+                if (! is_array($customItems)) {
+                    $customItems = [];
+                }
+                $customItems[$newPendidikanId] = [
+                    'id' => (int) $newPendidikanId,
+                    'id_pendidikan' => (int) $newPendidikanId,
+                    'universitas' => trim($validated['universitas']),
+                    'institusi' => trim($validated['universitas']),
+                    'program_studi' => trim($validated['program_studi']),
+                    'jenjang' => $normalizedJenjang,
+                    'tahun_lulus' => (string) $validated['tahun_lulus'],
+                    'gelar' => TridharmaService::defaultGelarForJenjang($normalizedJenjang),
+                ];
+                Cache::put($customKey, $customItems, now()->addYears(5));
+
+                // Remove from deleted list if present
+                $deletedItems = Cache::get($deletedKey, []);
+                if (! is_array($deletedItems)) {
+                    $deletedItems = [];
+                }
+                $sig = md5(strtolower(trim($validated['universitas']).'|'.trim($validated['program_studi']).'|'.$normalizedJenjang.'|'.$validated['tahun_lulus']));
+                $deletedItems = array_values(array_filter($deletedItems, fn ($d) => (string) $d !== (string) $newPendidikanId && (string) $d !== $sig));
+                Cache::put($deletedKey, $deletedItems, now()->addYears(5));
+
+                Cache::put("pendidikan_tendik_{$newPendidikanId}", $idTendik, now()->addYears(5));
+
                 try {
                     $this->tridharmaService->updateTendik($idTendik, ['id_pendidikan' => (int) $newPendidikanId]);
                 } catch (\Throwable) {
                 }
-            }
-        }
-
-        if ($idTendik) {
-            try {
-                Kualifikasi::create([
-                    'tendik_api_id' => $idTendik,
-                    'gelar' => $request->input('gelar') ?: self::defaultGelarForJenjang($normalizedJenjang),
-                    'jenjang' => $normalizedJenjang,
-                    'institusi' => trim($validated['universitas']),
-                    'program_studi' => trim($validated['program_studi']),
-                    'tahun_lulus' => (string) $validated['tahun_lulus'],
-                ]);
-            } catch (\Throwable) {
             }
         }
 
@@ -512,19 +498,22 @@ class PendidikanController extends Controller
     public function show(int $id): JsonResponse|RedirectResponse
     {
         try {
-            $localQ = Kualifikasi::find($id);
-            if ($localQ) {
-                return response()->json([
-                    'success' => true,
-                    'data' => [
-                        'id' => $localQ->id,
-                        'id_pendidikan' => $localQ->id,
-                        'universitas' => $localQ->institusi,
-                        'program_studi' => $localQ->program_studi,
-                        'jenjang' => $localQ->jenjang,
-                        'tahun_lulus' => (int) $localQ->tahun_lulus,
-                    ],
-                ]);
+            $response = $this->tridharmaService->getPendidikanById($id);
+            if ($response->successful()) {
+                $p = $response->json('data', []);
+                if (is_array($p)) {
+                    return response()->json([
+                        'success' => true,
+                        'data' => [
+                            'id' => $id,
+                            'id_pendidikan' => $id,
+                            'universitas' => (string) ($p['universitas'] ?? $p['institusi'] ?? ''),
+                            'program_studi' => (string) ($p['program_studi'] ?? ''),
+                            'jenjang' => (string) ($p['jenjang'] ?? ''),
+                            'tahun_lulus' => (int) ($p['tahun_lulus'] ?? 0),
+                        ],
+                    ]);
+                }
             }
         } catch (\Throwable) {
         }
@@ -598,33 +587,6 @@ class PendidikanController extends Controller
 
         $normalizedJenjang = self::normalizeJenjang($validated['jenjang']);
 
-        try {
-            $localQ = Kualifikasi::find($id);
-            if ($localQ) {
-                $localQ->update([
-                    'jenjang' => $normalizedJenjang,
-                    'institusi' => trim($validated['universitas']),
-                    'program_studi' => trim($validated['program_studi']),
-                    'tahun_lulus' => (string) $validated['tahun_lulus'],
-                ]);
-
-                if ($request->expectsJson() || $request->ajax()) {
-                    return response()->json([
-                        'success' => true,
-                        'message' => 'Data pendidikan berhasil diperbarui.',
-                        'data' => $localQ,
-                    ]);
-                }
-
-                return redirect()->route('pendidikan.index', request()->only(['id_dosen', 'id_tendik']))->with('toast', [
-                    'type' => 'success',
-                    'title' => 'Berhasil',
-                    'message' => 'Data pendidikan berhasil diperbarui.',
-                ]);
-            }
-        } catch (\Throwable) {
-        }
-
         $isDosen = $this->isAuthenticatedDosen();
         $authDosen = $isDosen ? $this->getAuthenticatedDosenData() : null;
 
@@ -693,7 +655,13 @@ class PendidikanController extends Controller
             }
         } elseif (($targetType === 'tendik' || ($targetType === null && $idTendik !== null)) && $idTendik) {
             try {
-                $this->tridharmaService->updateTendik($idTendik, ['id_pendidikan' => $id]);
+                $this->tridharmaService->updateTendikPendidikan($idTendik, $id, [
+                    'universitas' => trim($validated['universitas']),
+                    'program_studi' => trim($validated['program_studi']),
+                    'jenjang' => $normalizedJenjang,
+                    'tahun_lulus' => (int) $validated['tahun_lulus'],
+                    'gelar' => TridharmaService::defaultGelarForJenjang($normalizedJenjang),
+                ]);
             } catch (\Throwable) {
             }
         }
@@ -715,25 +683,36 @@ class PendidikanController extends Controller
 
     public function destroy(Request $request, int $id): JsonResponse|RedirectResponse
     {
-        try {
-            $localQ = Kualifikasi::find($id);
-            if ($localQ) {
-                $localQ->delete();
-
-                if ($request->expectsJson() || $request->ajax()) {
-                    return response()->json([
-                        'success' => true,
-                        'message' => 'Data pendidikan berhasil dihapus.',
-                    ]);
+        $idTendik = $request->input('id_tendik');
+        if (! $idTendik) {
+            $idTendik = Cache::get("pendidikan_tendik_{$id}");
+        }
+        if (! $idTendik) {
+            $allTendiks = Cache::get('all_cached_tendik_ids', []);
+            foreach ($allTendiks as $tId) {
+                $cIds = Cache::get("tendik_kualifikasi_{$tId}", []);
+                if (in_array((int) $id, array_map('intval', (array) $cIds), true)) {
+                    $idTendik = $tId;
+                    break;
                 }
+            }
+        }
 
-                return redirect()->route('pendidikan.index', request()->only(['id_dosen', 'id_tendik']))->with('toast', [
-                    'type' => 'success',
-                    'title' => 'Berhasil Dihapus',
+        if ($idTendik) {
+            $this->tridharmaService->deleteTendikPendidikan((int) $idTendik, $id);
+
+            if ($request->expectsJson() || $request->ajax()) {
+                return response()->json([
+                    'success' => true,
                     'message' => 'Data pendidikan berhasil dihapus.',
                 ]);
             }
-        } catch (\Throwable) {
+
+            return redirect()->route('pendidikan.index', ['id_tendik' => $idTendik])->with('toast', [
+                'type' => 'success',
+                'title' => 'Berhasil Dihapus',
+                'message' => 'Data pendidikan berhasil dihapus.',
+            ]);
         }
 
         $isDosen = $this->isAuthenticatedDosen();

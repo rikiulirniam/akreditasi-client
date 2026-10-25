@@ -160,11 +160,11 @@
             <div class="tendik-flow-table">
                 <x-table>
                     <x-slot:header>
-                        <x-table.th class="w-[5%] text-center">No</x-table.th>
-                        <x-table.th class="w-[23%] text-center">Nama</x-table.th>
-                        <x-table.th class="w-[21%] text-center">NIP</x-table.th>
-                        <x-table.th class="w-[19%] text-center">Jabatan</x-table.th>
-                        <x-table.th class="w-[18%] text-center">Kualifikasi</x-table.th>
+                        <x-table.th class="w-[5%] text-left">No</x-table.th>
+                        <x-table.th class="w-[23%] text-left">Nama</x-table.th>
+                        <x-table.th class="w-[21%] text-left">NIP</x-table.th>
+                        <x-table.th class="w-[19%] text-left">Jabatan</x-table.th>
+                        <x-table.th class="w-[18%] text-left">Kualifikasi</x-table.th>
                         <x-table.th class="w-[14%] text-center">Action</x-table.th>
                     </x-slot:header>
 
@@ -173,21 +173,21 @@
                             $rowNumber = $index + 1 + (($tenagaKependidikan->currentPage() - 1) * $tenagaKependidikan->perPage());
                         @endphp
                         <x-table.row class="tendik-row">
-                            <x-table.cell class="text-black font-normal w-[5%] text-center">
+                            <x-table.cell class="text-black font-normal w-[5%] text-left">
                                 <span class="row-number-text">{{ $rowNumber }}.</span>
                             </x-table.cell>
-                            <x-table.cell class="w-[23%] text-center">
+                            <x-table.cell class="w-[23%] text-left">
                                 <span class="text-[14px] font-medium text-black">
                                     {{ $item['nama'] }}
                                 </span>
                             </x-table.cell>
-                            <x-table.cell class="w-[21%] whitespace-nowrap text-center">
+                            <x-table.cell class="w-[21%] whitespace-nowrap text-left">
                                 <span class="text-[14px] font-normal text-black">{{ $item['nip'] }}</span>
                             </x-table.cell>
-                            <x-table.cell class="w-[19%] text-[14px] font-normal text-black text-center">
+                            <x-table.cell class="w-[19%] text-[14px] font-normal text-black text-left">
                                 {{ $item['jabatan'] }}
                             </x-table.cell>
-                            <x-table.cell class="w-[18%] text-[14px] font-normal text-black text-center">
+                            <x-table.cell class="w-[18%] text-[14px] font-normal text-black text-left">
                                 {{ $item['kualifikasi'] }}
                             </x-table.cell>
                             <x-table.cell class="w-[14%] text-center">

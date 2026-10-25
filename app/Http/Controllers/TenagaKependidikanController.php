@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Kualifikasi;
 use App\Services\TenagaKependidikanService;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\Response;
@@ -11,6 +10,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
 use Illuminate\View\View;
 
@@ -193,40 +193,10 @@ class TenagaKependidikanController extends Controller
             'jenjang.required' => 'Jenjang pendidikan wajib dipilih.',
         ]);
 
-        // Preserve initial API education in Kualifikasi before adding new
-        try {
-            $tendikResp = $this->tridharmaService->getTendik($tendikId);
-            if ($tendikResp->successful()) {
-                $apiP = $tendikResp->json('data.pendidikan', []);
-                if (is_array($apiP) && (! empty($apiP['universitas']) || ! empty($apiP['jenjang']))) {
-                    $apiJenjang = (string) ($apiP['jenjang'] ?? '');
-                    if ($apiJenjang !== $validated['jenjang']) {
-                        $alreadyTracked = Kualifikasi::withTrashed()
-                            ->where('tendik_api_id', (int) $tendikId)
-                            ->where('jenjang', $apiJenjang)
-                            ->exists();
-
-                        if (! $alreadyTracked) {
-                            Kualifikasi::create([
-                                'tendik_api_id' => (int) $tendikId,
-                                'gelar' => (string) ($apiP['gelar'] ?? ($apiJenjang === 'S3' ? 'Dr' : ($apiJenjang === 'S2' ? 'M.Kom' : 'S.Kom'))),
-                                'jenjang' => $apiJenjang,
-                                'institusi' => (string) ($apiP['universitas'] ?? $apiP['institusi'] ?? ''),
-                                'program_studi' => (string) ($apiP['program_studi'] ?? ''),
-                                'tahun_lulus' => (string) ($apiP['tahun_lulus'] ?? ''),
-                            ]);
-                        }
-                    }
-                }
-            }
-        } catch (\Throwable) {
-        }
-
-        Kualifikasi::create([
-            'tendik_api_id' => (int) $tendikId,
-            'tenaga_kependidikan_id' => null,
-            'gelar' => $validated['gelar'] ?? null,
+        $this->tridharmaService->storeTendikPendidikan((int) $tendikId, [
             'jenjang' => $validated['jenjang'],
+            'gelar' => $validated['gelar'] ?? null,
+            'universitas' => $validated['institusi'] ?? null,
             'institusi' => $validated['institusi'] ?? null,
             'program_studi' => $validated['program_studi'] ?? null,
             'tahun_lulus' => $validated['tahun_lulus'] ?? null,
@@ -662,7 +632,7 @@ class TenagaKependidikanController extends Controller
     }
 
     /**
-     * Merge kualifikasi from API record with locally-stored rows (linked via tendik_api_id).
+     * Merge kualifikasi from API record with all cached extra pendidikan IDs (stored via cache).
      *
      * @param  array<string, mixed>  $record
      * @param  array<string, mixed>  $tendik
@@ -670,68 +640,7 @@ class TenagaKependidikanController extends Controller
      */
     private function mergeKualifikasi(array $record, array $tendik, int $tendikApiId): array
     {
-        $fromApi = $this->qualificationCards($record, $tendik);
-
-        // Sync initial API pendidikan to Kualifikasi if not yet tracked
-        $apiPendidikan = $record['pendidikan'] ?? null;
-        if (is_array($apiPendidikan) && (! empty($apiPendidikan['universitas']) || ! empty($apiPendidikan['jenjang']))) {
-            try {
-                $apiJenjang = (string) ($apiPendidikan['jenjang'] ?? '');
-                $alreadyTracked = Kualifikasi::withTrashed()
-                    ->where('tendik_api_id', $tendikApiId)
-                    ->where('jenjang', $apiJenjang)
-                    ->exists();
-
-                if (! $alreadyTracked) {
-                    Kualifikasi::create([
-                        'tendik_api_id' => $tendikApiId,
-                        'gelar' => (string) ($apiPendidikan['gelar'] ?? ($apiJenjang === 'S3' ? 'Dr' : ($apiJenjang === 'S2' ? 'M.Kom' : 'S.Kom'))),
-                        'jenjang' => $apiJenjang,
-                        'institusi' => (string) ($apiPendidikan['universitas'] ?? $apiPendidikan['institusi'] ?? ''),
-                        'program_studi' => (string) ($apiPendidikan['program_studi'] ?? ''),
-                        'tahun_lulus' => (string) ($apiPendidikan['tahun_lulus'] ?? ''),
-                    ]);
-                }
-            } catch (\Throwable) {
-            }
-        }
-
-        try {
-            $fromDb = Kualifikasi::where('tendik_api_id', $tendikApiId)
-                ->orderBy('id')
-                ->get();
-
-            if ($fromDb->isNotEmpty()) {
-                $jenjangRank = [
-                    'SMA' => 1, 'SMK' => 1,
-                    'D1' => 2, 'D2' => 3, 'D3' => 4,
-                    'D4' => 5, 'S1' => 5, 'D4/S1' => 5,
-                    'PROFESI' => 6,
-                    'S2' => 7, 'S2 TERAPAN' => 7,
-                    'S3' => 8, 'S3 TERAPAN' => 8,
-                ];
-
-                return $fromDb->map(fn (Kualifikasi $q) => [
-                    'id' => $q->id,
-                    'gelar' => (string) ($q->gelar ?? $q->jenjang ?? ''),
-                    'jenjang' => (string) ($q->jenjang ?? ''),
-                    'institusi' => (string) ($q->institusi ?? ''),
-                    'universitas' => (string) ($q->institusi ?? ''),
-                    'program_studi' => (string) ($q->program_studi ?? ''),
-                    'tahun_lulus' => (string) ($q->tahun_lulus ?? ''),
-                ])
-                    ->sortBy(function ($item) use ($jenjangRank) {
-                        $norm = strtoupper(trim((string) ($item['jenjang'] ?? '')));
-
-                        return $jenjangRank[$norm] ?? 99;
-                    })
-                    ->values()
-                    ->all();
-            }
-        } catch (\Throwable) {
-        }
-
-        return $fromApi;
+        return $this->tridharmaService->getTendikPendidikanList($tendikApiId, $record);
     }
 
     /** @return array<int, array<string, mixed>> */
