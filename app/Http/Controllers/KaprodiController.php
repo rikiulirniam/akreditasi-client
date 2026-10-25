@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Services\AkademikService;
 use App\Services\AkreditasiService;
+use Illuminate\Http\Client\Response;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -21,13 +22,29 @@ class KaprodiController extends Controller
     }
 
     /**
+     * Helper untuk mengekstrak array data dari response API atau return langsung jika sudah array.
+     */
+    protected function extractData(mixed $response, mixed $default = []): mixed
+    {
+        if ($response instanceof Response) {
+            return $response->successful() ? ($response->json('data') ?? $default) : $default;
+        }
+
+        if (is_array($response)) {
+            return $response;
+        }
+
+        return $default;
+    }
+
+    /**
      * Tampilkan halaman Dashboard Kaprodi.
      */
     public function dashboard(Request $request): View
     {
         // 1. Ambil data kriteria dari API
-        $rawKriteria = $this->akreditasiService->getKriteria();
-        $rawIndikator = $this->akreditasiService->getIndikator();
+        $rawKriteria = $this->extractData($this->akreditasiService->getKriteria());
+        $rawIndikator = $this->extractData($this->akreditasiService->getIndikator());
 
         // Siapkan monitoring pengisian kriteria
         $kriteriaProgress = [];
@@ -92,10 +109,10 @@ class KaprodiController extends Controller
         }
 
         // 2. Ambil data Audit SPMI dari API
-        $spmiAuditList = $this->akreditasiService->getSpmiAudit();
+        $spmiAuditList = $this->extractData($this->akreditasiService->getSpmiAudit());
 
         // 3. Ambil data Self Assessment dari API
-        $selfAssessment = $this->akreditasiService->getSelfAssessment();
+        $selfAssessment = $this->extractData($this->akreditasiService->getSelfAssessment());
 
         return view('pages.kaprodi.dashboard', [
             'kriteriaProgress' => $kriteriaProgress,
@@ -111,11 +128,11 @@ class KaprodiController extends Controller
     public function project(Request $request): View
     {
         // 1. Ambil daftar project akreditasi dari API
-        $projects = $this->akreditasiService->getProjects();
+        $projects = $this->extractData($this->akreditasiService->getProjects());
 
         // 2. Ambil master data lembaga dan versi instrumen untuk modal tambah
-        $lembagaList = $this->akreditasiService->getLembaga();
-        $versiList = $this->akreditasiService->getVersiInstrumen();
+        $lembagaList = $this->extractData($this->akreditasiService->getLembaga());
+        $versiList = $this->extractData($this->akreditasiService->getVersiInstrumen());
 
         // 3. Hitung statistik
         $currentYear = (int) date('Y');
@@ -172,21 +189,24 @@ class KaprodiController extends Controller
             'status_project' => $request->input('status_project', 'draft'),
         ];
 
-        $res = $this->akreditasiService->createProject($payload);
-
-        if ($res['success']) {
-            return redirect()->route('kaprodi.project')->with('success', 'Project akreditasi berhasil dibuat!');
-        }
-
-        $errMsg = $res['message'] ?? 'Gagal membuat project akreditasi.';
-        if (! empty($res['errors'])) {
-            $firstErr = collect($res['errors'])->flatten()->first();
-            if ($firstErr) {
-                $errMsg .= " ({$firstErr})";
+        try {
+            $response = $this->akreditasiService->createProject($payload);
+            if ($response->successful()) {
+                return redirect()->route('kaprodi.project')->with('success', 'Project akreditasi berhasil dibuat!');
             }
-        }
 
-        return redirect()->route('kaprodi.project')->with('error', $errMsg);
+            $errMsg = $response->json('message') ?? 'Gagal membuat project akreditasi.';
+            if (! empty($response->json('errors'))) {
+                $firstErr = collect($response->json('errors'))->flatten()->first();
+                if ($firstErr) {
+                    $errMsg .= " ({$firstErr})";
+                }
+            }
+
+            return redirect()->route('kaprodi.project')->with('error', $errMsg);
+        } catch (\Throwable $e) {
+            return redirect()->route('kaprodi.project')->with('error', 'Terjadi kesalahan sistem: ' . $e->getMessage());
+        }
     }
 
     /**
@@ -194,13 +214,16 @@ class KaprodiController extends Controller
      */
     public function destroyProject($id): RedirectResponse
     {
-        $res = $this->akreditasiService->deleteProject($id);
+        try {
+            $response = $this->akreditasiService->deleteProject($id);
+            if ($response->successful()) {
+                return redirect()->route('kaprodi.project')->with('success', 'Project akreditasi berhasil dihapus.');
+            }
 
-        if ($res['success']) {
-            return redirect()->route('kaprodi.project')->with('success', 'Project akreditasi berhasil dihapus.');
+            return redirect()->route('kaprodi.project')->with('error', $response->json('message') ?? 'Gagal menghapus project.');
+        } catch (\Throwable $e) {
+            return redirect()->route('kaprodi.project')->with('error', 'Terjadi kesalahan sistem: ' . $e->getMessage());
         }
-
-        return redirect()->route('kaprodi.project')->with('error', $res['message'] ?? 'Gagal menghapus project.');
     }
 
     /**
@@ -211,12 +234,12 @@ class KaprodiController extends Controller
         $project = null;
 
         if ($id) {
-            $project = $this->akreditasiService->getProject($id);
+            $project = $this->extractData($this->akreditasiService->getProject($id), null);
         }
 
         if (! $project) {
             // Ambil project pertama yang ada dari API jika ID tidak diberikan
-            $allProjects = $this->akreditasiService->getProjects();
+            $allProjects = $this->extractData($this->akreditasiService->getProjects());
             $project = $allProjects[0] ?? [
                 'id' => 1,
                 'nama_project' => 'Sarjana Terapan Test',
@@ -228,8 +251,8 @@ class KaprodiController extends Controller
         }
 
         // Ambil data kriteria dan indikator dari API
-        $rawKriteria = $this->akreditasiService->getKriteria();
-        $rawIndikator = $this->akreditasiService->getIndikator();
+        $rawKriteria = $this->extractData($this->akreditasiService->getKriteria());
+        $rawIndikator = $this->extractData($this->akreditasiService->getIndikator());
 
         return view('pages.kaprodi.project-detail', [
             'project' => $project,
@@ -243,10 +266,10 @@ class KaprodiController extends Controller
      */
     public function plotting(Request $request): View
     {
-        $projects = $this->akreditasiService->getProjects();
-        $rawKriteria = $this->akreditasiService->getKriteria();
-        $rawIndikator = $this->akreditasiService->getIndikator();
-        $mappingTim = $this->akreditasiService->getMappingTim();
+        $projects = $this->extractData($this->akreditasiService->getProjects());
+        $rawKriteria = $this->extractData($this->akreditasiService->getKriteria());
+        $rawIndikator = $this->extractData($this->akreditasiService->getIndikator());
+        $mappingTim = $this->extractData($this->akreditasiService->getMappingTim());
 
         return view('pages.kaprodi.plotting', [
             'projects' => $projects,

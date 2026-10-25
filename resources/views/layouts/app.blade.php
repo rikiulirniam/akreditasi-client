@@ -191,16 +191,8 @@
             const sidebarChevrons = document.querySelectorAll('.sidebar-chevron');
             const submenuContainers = document.querySelectorAll('.submenu-container');
 
-            let isCollapsed = localStorage.getItem('sidebar_collapsed') === 'true';
-
-            // Track open submenus so they remain open when expanded
-            const openSubmenus = new Set();
-            submenuContainers.forEach(container => {
-                if (container.getAttribute('data-is-active') === 'true' || !container.classList.contains('hidden')) {
-                    openSubmenus.add(container.id);
-                }
-            });
-
+            let isCollapsed = false;
+            localStorage.setItem('sidebar_collapsed', 'false');
             function applySidebarState() {
                 if (!sidebar) return;
                 if (isCollapsed) {

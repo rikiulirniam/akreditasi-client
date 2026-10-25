@@ -15,7 +15,14 @@ class AkreditasiService
 
     public function __construct(?string $baseUrl = null, ?string $token = null)
     {
-        $this->baseUrl = rtrim($baseUrl ?? (string) config('services.akreditasi.base_url', 'https://akreditasi.fayra.my.id/api/v1'), '/');
+        $url = rtrim($baseUrl ?? (string) config('services.akreditasi.base_url', 'https://akreditasi.fayra.my.id/api/v1'), '/');
+
+        // Normalisasi URL untuk memastikan endpoint mengarah ke /api/v1
+        if (! str_contains($url, '/api/v1')) {
+            $url .= '/api/v1';
+        }
+
+        $this->baseUrl = $url;
         $this->token = $token;
     }
 
@@ -38,6 +45,7 @@ class AkreditasiService
 
         $client = Http::acceptJson()
             ->asJson()
+            ->withoutVerifying()
             ->timeout(20);
 
         if (! empty($resolvedToken)) {
@@ -86,79 +94,28 @@ class AkreditasiService
         return $this->sendRequest('delete', $endpoint, $data, $token);
     }
 
-    protected function sendRequest(string $method, string $endpoint, array $payload = [], ?string $token = null): Response
+    protected function sendRequest(string $method, string $endpoint, array $params = [], ?string $token = null): Response
     {
+        $resolvedToken = $token ?? $this->token ?? (string) session('access_token');
         $url = $this->buildUrl($endpoint);
-        $client = $this->http($token);
+
+        $client = $this->http($resolvedToken);
 
         try {
             return match (strtolower($method)) {
-                'get' => $client->get($url, $payload),
-                'post' => $client->post($url, $payload),
-                'put' => $client->put($url, $payload),
-                'delete' => $client->delete($url, $payload),
-                default => throw new \InvalidArgumentException("Metode HTTP [{$method}] tidak didukung."),
+                'post' => $client->post($url, $params),
+                'put' => $client->put($url, $params),
+                'delete' => $client->delete($url, $params),
+                default => $client->get($url, $params),
             };
         } catch (\Throwable $e) {
-            Log::error("AkreditasiService {$method} error on {$url}: {$e->getMessage()}");
+            Log::warning('Akreditasi API Request Failed: '.$e->getMessage(), [
+                'method' => $method,
+                'url' => $url,
+            ]);
+
             throw $e;
         }
-    }
-
-    /*
-    |--------------------------------------------------------------------------
-    | Project Akreditasi Endpoints
-    |--------------------------------------------------------------------------
-    */
-
-    public function getProjects(array $query = [], ?string $token = null): array
-    {
-        try {
-            $response = $this->get('/projects', $query, $token);
-            if ($response->successful()) {
-                return $response->json('data') ?? [];
-            }
-        } catch (\Throwable $e) {
-            Log::error("Gagal mengambil data projects: {$e->getMessage()}");
-        }
-
-        return [];
-    }
-
-    public function getProject(int|string $id, ?string $token = null): ?array
-    {
-        try {
-            $response = $this->get("/projects/{$id}", [], $token);
-            if ($response->successful()) {
-                return $response->json('data') ?? null;
-            }
-        } catch (\Throwable $e) {
-            Log::error("Gagal mengambil detail project {$id}: {$e->getMessage()}");
-        }
-
-        return null;
-    }
-
-    public function createProject(array $payload, ?string $token = null): array
-    {
-        $response = $this->post('/projects', $payload, $token);
-        return [
-            'success' => $response->successful(),
-            'status' => $response->status(),
-            'data' => $response->json('data'),
-            'message' => $response->json('message') ?? 'Terjadi kesalahan saat membuat project.',
-            'errors' => $response->json('errors'),
-        ];
-    }
-
-    public function deleteProject(int|string $id, ?string $token = null): array
-    {
-        $response = $this->delete("/projects/{$id}", [], $token);
-        return [
-            'success' => $response->successful(),
-            'status' => $response->status(),
-            'message' => $response->json('message') ?? 'Project berhasil dihapus.',
-        ];
     }
 
     /*
@@ -167,107 +124,217 @@ class AkreditasiService
     |--------------------------------------------------------------------------
     */
 
-    public function getLembaga(array $query = [], ?string $token = null): array
+    /**
+     * Mengambil daftar master indikator akreditasi.
+     */
+    public function getIndikators(array $query = []): Response
     {
-        try {
-            $response = $this->get('/master/lembaga-akreditasi', $query, $token);
-            if ($response->successful()) {
-                return $response->json('data') ?? [];
-            }
-        } catch (\Throwable $e) {
-            Log::error("Gagal mengambil data lembaga akreditasi: {$e->getMessage()}");
-        }
-
-        return [];
+        return $this->get('/master/indikator', $query);
     }
 
-    public function getVersiInstrumen(array $query = [], ?string $token = null): array
+    /**
+     * Mengambil detail indikator berdasarkan ID atau daftar indikator jika param array.
+     */
+    public function getIndikator(int|string|array $idOrQuery = []): Response
     {
-        try {
-            $response = $this->get('/master/versi-instrumen', $query, $token);
-            if ($response->successful()) {
-                return $response->json('data') ?? [];
-            }
-        } catch (\Throwable $e) {
-            Log::error("Gagal mengambil data versi instrumen: {$e->getMessage()}");
+        if (is_array($idOrQuery)) {
+            return $this->getIndikators($idOrQuery);
         }
 
-        return [];
+        return $this->get("/master/indikator/{$idOrQuery}");
     }
 
-    public function getKriteria(array $query = [], ?string $token = null): array
+    /**
+     * Mengambil daftar master kriteria.
+     */
+    public function getKriteria(array $query = []): Response
     {
-        try {
-            $response = $this->get('/master/kriteria', $query, $token);
-            if ($response->successful()) {
-                return $response->json('data') ?? [];
-            }
-        } catch (\Throwable $e) {
-            Log::error("Gagal mengambil data kriteria: {$e->getMessage()}");
-        }
-
-        return [];
+        return $this->get('/master/kriteria', $query);
     }
 
-    public function getIndikator(array $query = [], ?string $token = null): array
+    /**
+     * Mengambil detail kriteria berdasarkan ID.
+     */
+    public function getKriteriaDetail(int|string $id): Response
     {
-        try {
-            $response = $this->get('/master/indikator', $query, $token);
-            if ($response->successful()) {
-                return $response->json('data') ?? [];
-            }
-        } catch (\Throwable $e) {
-            Log::error("Gagal mengambil data indikator: {$e->getMessage()}");
-        }
-
-        return [];
+        return $this->get("/master/kriteria/{$id}");
     }
 
-    public function getMappingTim(array $query = [], ?string $token = null): array
+    /**
+     * Mengambil master versi instrumen akreditasi.
+     */
+    public function getVersiInstrumen(array $query = []): Response
     {
-        try {
-            $response = $this->get('/mapping-tim', $query, $token);
-            if ($response->successful()) {
-                return $response->json('data') ?? [];
-            }
-        } catch (\Throwable $e) {
-            Log::error("Gagal mengambil data mapping tim: {$e->getMessage()}");
-        }
+        return $this->get('/master/versi-instrumen', $query);
+    }
 
-        return [];
+    /**
+     * Mengambil master lembaga akreditasi (LAM INFOKOM, BAN-PT, dll).
+     */
+    public function getLembagaAkreditasi(array $query = []): Response
+    {
+        return $this->get('/master/lembaga-akreditasi', $query);
+    }
+
+    /**
+     * Alias untuk getLembagaAkreditasi.
+     */
+    public function getLembaga(array $query = []): Response
+    {
+        return $this->getLembagaAkreditasi($query);
+    }
+
+    /**
+     * Mengambil master rubrik penilaian.
+     */
+    public function getRubriks(array $query = []): Response
+    {
+        return $this->get('/master/rubrik', $query);
+    }
+
+    /**
+     * Mengambil master standar mutu.
+     */
+    public function getStandarMutu(array $query = []): Response
+    {
+        return $this->get('/master/standar-mutu', $query);
     }
 
     /*
     |--------------------------------------------------------------------------
-    | SPMI & Self Assessment Endpoints
+    | Project Akreditasi Endpoints
     |--------------------------------------------------------------------------
     */
 
-    public function getSpmiAudit(array $query = [], ?string $token = null): array
+    /**
+     * Mengambil daftar project akreditasi.
+     */
+    public function getProjects(array $query = []): Response
     {
-        try {
-            $response = $this->get('/spmi-audit', $query, $token);
-            if ($response->successful()) {
-                return $response->json('data') ?? [];
-            }
-        } catch (\Throwable $e) {
-            Log::error("Gagal mengambil data SPMI audit: {$e->getMessage()}");
-        }
-
-        return [];
+        return $this->get('/projects', $query);
     }
 
-    public function getSelfAssessment(array $query = [], ?string $token = null): array
+    /**
+     * Mengambil detail project akreditasi.
+     */
+    public function getProject(int|string $id): Response
     {
-        try {
-            $response = $this->get('/self-assessment', $query, $token);
-            if ($response->successful()) {
-                return $response->json('data') ?? [];
-            }
-        } catch (\Throwable $e) {
-            Log::error("Gagal mengambil data self assessment: {$e->getMessage()}");
+        return $this->get("/projects/{$id}");
+    }
+
+    /**
+     * Membuat project akreditasi baru.
+     */
+    public function createProject(array $data): Response
+    {
+        return $this->post('/projects', $data);
+    }
+
+    /**
+     * Menghapus project akreditasi.
+     */
+    public function deleteProject(int|string $id): Response
+    {
+        return $this->delete("/projects/{$id}");
+    }
+
+    /**
+     * Menyimpan pembagian tugas tim per indikator untuk project.
+     */
+    public function saveMappingTim(int|string $projectId, array $data): Response
+    {
+        return $this->post("/projects/{$projectId}/mapping-tim", $data);
+    }
+
+    /**
+     * Mengambil daftar mapping tim.
+     */
+    public function getMappingTim(array $query = []): Response
+    {
+        return $this->get('/mapping-tim', $query);
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Self Assessment Endpoints
+    |--------------------------------------------------------------------------
+    */
+
+    /**
+     * Mengambil daftar penilaian mandiri (Self Assessment).
+     */
+    public function getSelfAssessments(array $query = []): Response
+    {
+        return $this->get('/self-assessment', $query);
+    }
+
+    /**
+     * Mengambil detail atau daftar penilaian mandiri.
+     */
+    public function getSelfAssessment(int|string|array $idOrQuery = []): Response
+    {
+        if (is_array($idOrQuery)) {
+            return $this->getSelfAssessments($idOrQuery);
         }
 
-        return [];
+        return $this->get("/self-assessment/{$idOrQuery}");
+    }
+
+    /**
+     * Menyimpan atau memperbarui penilaian mandiri (Self Assessment).
+     */
+    public function saveSelfAssessment(array $data): Response
+    {
+        return $this->post('/self-assessment', $data);
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | SPMI - Audit Mutu Internal Endpoints
+    |--------------------------------------------------------------------------
+    */
+
+    /**
+     * Mengambil daftar temuan audit SPMI.
+     */
+    public function getSpmiAudits(array $query = []): Response
+    {
+        return $this->get('/spmi-audit', $query);
+    }
+
+    /**
+     * Mengambil detail temuan audit SPMI atau daftar jika parameter array.
+     */
+    public function getSpmiAudit(int|string|array $idOrQuery = []): Response
+    {
+        if (is_array($idOrQuery)) {
+            return $this->getSpmiAudits($idOrQuery);
+        }
+
+        return $this->get("/spmi-audit/{$idOrQuery}");
+    }
+
+    /**
+     * Membuat temuan audit SPMI baru.
+     */
+    public function createSpmiAudit(array $data): Response
+    {
+        return $this->post('/spmi-audit', $data);
+    }
+
+    /**
+     * Memperbarui data audit SPMI.
+     */
+    public function updateSpmiAudit(int|string $id, array $data): Response
+    {
+        return $this->put("/spmi-audit/{$id}", $data);
+    }
+
+    /**
+     * Memperbarui tindak lanjut temuan audit SPMI.
+     */
+    public function updateTindakLanjutSpmi(int|string $id, array $data): Response
+    {
+        return $this->put("/spmi-audit/{$id}/tindak-lanjut", $data);
     }
 }
