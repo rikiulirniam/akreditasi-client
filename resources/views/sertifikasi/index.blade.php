@@ -46,7 +46,7 @@
                 <input type="hidden" name="{{ $key }}" value="{{ $value }}">
             @endforeach
             <div class="flex flex-1 flex-wrap items-center gap-2">
-                <div class="group flex h-[38px] w-[248px] max-w-full shrink-0 overflow-hidden rounded-md border border-primary bg-white-form p-[2px]">
+                <div class="group flex h-[34px] w-[248px] max-w-full shrink-0 overflow-hidden rounded-md border border-primary bg-white-form p-[2px]">
                     <label class="sr-only" for="sertifikasi-search">Cari sertifikasi</label>
                     <input
                         id="sertifikasi-search"
@@ -65,9 +65,9 @@
 
                 <input type="hidden" name="tahun_sertifikasi" value="{{ $selectedYear }}" id="sertifikasi-year-value">
                 <div class="relative">
-                    <button type="button" class="flex h-[38px] w-[140px] shrink-0 items-center justify-between overflow-hidden rounded-md border border-primary bg-white-form text-left text-[11px] text-gray-900" data-filter-trigger aria-expanded="false" aria-controls="sertifikasi-year-menu">
+                    <button type="button" class="flex h-[34px] w-[140px] shrink-0 items-center justify-between overflow-hidden rounded-md border border-primary bg-white-form text-left text-[11px] text-gray-900" data-filter-trigger aria-expanded="false" aria-controls="sertifikasi-year-menu">
                         <span class="min-w-0 flex-1 truncate px-2">{{ $selectedYear !== '' ? $selectedYear : 'Tahun Sertifikasi' }}</span>
-                        <span class="mx-[2px] my-[2px] flex h-[30px] w-7 shrink-0 items-center justify-center rounded-[5px] border border-primary bg-[#ffc800]">
+                        <span class="mx-[2px] my-[2px] flex h-[26px] w-7 shrink-0 items-center justify-center rounded-[5px] border border-primary bg-[#ffc800]">
                             <svg class="h-4 w-4 transition-transform" data-filter-chevron fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="m6 9 6 6 6-6" />
                             </svg>
@@ -83,9 +83,9 @@
 
                 <input type="hidden" name="status_sertifikasi" value="{{ $selectedStatus }}" id="sertifikasi-status-value">
                 <div class="relative">
-                    <button type="button" class="flex h-[38px] w-[150px] shrink-0 items-center justify-between overflow-hidden rounded-md border border-primary bg-white-form text-left text-[11px] text-gray-900" data-filter-trigger aria-expanded="false" aria-controls="sertifikasi-status-menu">
+                    <button type="button" class="flex h-[34px] w-[150px] shrink-0 items-center justify-between overflow-hidden rounded-md border border-primary bg-white-form text-left text-[11px] text-gray-900" data-filter-trigger aria-expanded="false" aria-controls="sertifikasi-status-menu">
                         <span class="min-w-0 flex-1 truncate px-2">{{ $selectedStatus !== '' ? $selectedStatus : 'Status Sertifikasi' }}</span>
-                        <span class="mx-[2px] my-[2px] flex h-[30px] w-7 shrink-0 items-center justify-center rounded-[5px] border border-primary bg-[#ffc800]">
+                        <span class="mx-[2px] my-[2px] flex h-[26px] w-7 shrink-0 items-center justify-center rounded-[5px] border border-primary bg-[#ffc800]">
                             <svg class="h-4 w-4 transition-transform" data-filter-chevron fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="m6 9 6 6 6-6" />
                             </svg>
@@ -100,7 +100,7 @@
                 </div>
             </div>
 
-            <a href="{{ $createUrl }}" class="inline-flex h-[38px] shrink-0 items-center justify-center gap-1.5 rounded-md bg-additional px-3 text-xs font-bold text-white transition hover:bg-primary">
+            <a href="{{ $createUrl }}" class="inline-flex h-[34px] shrink-0 items-center justify-center gap-1.5 rounded-md bg-additional px-3 text-xs font-bold text-white transition hover:bg-primary">
                 <span class="inline-flex h-3.5 w-3.5 items-center justify-center rounded-full bg-white text-additional">
                     <svg class="h-2.5 w-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M12 5v14m7-7H5" />
@@ -112,17 +112,19 @@
 
             <x-table id="sertifikasi-table" class="!border-collapse !border-spacing-0 text-left text-[13px]">
                 <x-slot:header>
-                    <x-table.th class="!rounded-none !bg-white !px-3 !py-2.5 !text-center !text-[13px] !font-medium border-y border-gray-300">No</x-table.th>
-                    <x-table.th class="!rounded-none !bg-white !px-4 !py-2.5 !text-[13px] !font-medium border-y border-gray-300">Jenis Sertifikasi</x-table.th>
-                    <x-table.th class="!rounded-none !bg-white !px-4 !py-2.5 !text-[13px] !font-medium border-y border-gray-300">Nomor Sertifikasi</x-table.th>
-                    <x-table.th class="!rounded-none !bg-white !px-4 !py-2.5 !text-[13px] !font-medium border-y border-gray-300">Status Sertifikasi</x-table.th>
-                    <x-table.th class="!rounded-none !bg-white !px-4 !py-2.5 !text-[13px] !font-medium border-y border-gray-300">Tahun Sertifikasi</x-table.th>
-                    <x-table.th class="!rounded-none !bg-white !px-4 !py-2.5 !text-center !text-[13px] !font-medium border-y border-gray-300">Action</x-table.th>
+                    <x-table.th class="!rounded-none !bg-white !px-3 !py-2.5 !text-center !text-[13px] !font-bold border-y border-gray-300">No</x-table.th>
+                    <x-table.th class="!rounded-none !bg-white !px-4 !py-2.5 !text-[13px] !font-bold border-y border-gray-300">Jenis Sertifikasi</x-table.th>
+                    <x-table.th class="!rounded-none !bg-white !px-4 !py-2.5 !text-[13px] !font-bold border-y border-gray-300">Nomor Sertifikasi</x-table.th>
+                    <x-table.th class="!rounded-none !bg-white !px-4 !py-2.5 !text-[13px] !font-bold border-y border-gray-300">Status Sertifikasi</x-table.th>
+                    <x-table.th class="!rounded-none !bg-white !px-4 !py-2.5 !text-[13px] !font-bold border-y border-gray-300">Tahun Sertifikasi</x-table.th>
+                    <x-table.th class="!rounded-none !bg-white !px-4 !py-2.5 !text-center !text-[13px] !font-bold border-y border-gray-300">Action</x-table.th>
                 </x-slot:header>
 
                 @foreach($certifications as $index => $certification)
                     @php
                         $certificationId = $certification['id'] ?? $certification['id_sertifikasi'] ?? null;
+                        $certificationType = trim((string) ($certification['jenis_sertifikasi'] ?? '-'));
+                        $certificationTypeLines = array_chunk(preg_split('/\s+/', $certificationType) ?: [], 2);
                         $status = $certification['status_sertifikasi'] ?? '-';
                         $year = $certification['tahun_sertifikasi'] ?? '-';
                         $year = preg_match('/^\d{4}/', (string) $year) ? substr((string) $year, 0, 4) : $year;
@@ -130,7 +132,9 @@
                     <x-table.row class="bg-white transition-colors hover:bg-gray-50/40">
                         <x-table.cell class="!rounded-none !border-x-0 border-y border-gray-300 !px-3 !py-3.5 text-center text-sm text-gray-900">{{ $startNumber + $index }}.</x-table.cell>
                         <x-table.cell class="!rounded-none !border-x-0 border-y border-gray-300 !px-4 !py-3.5 !text-sm font-medium leading-[1.2] text-gray-900">
-                            {{ $certification['jenis_sertifikasi'] ?? '-' }}
+                            @foreach($certificationTypeLines as $line)
+                                <span class="block break-words">{{ implode(' ', $line) }}</span>
+                            @endforeach
                         </x-table.cell>
                         <x-table.cell class="!rounded-none !border-x-0 border-y border-gray-300 !px-4 !py-3.5 !text-sm text-gray-900">{{ $certification['nomor_sertifikat'] ?? '-' }}</x-table.cell>
                         <x-table.cell class="!rounded-none !border-x-0 border-y border-gray-300 !px-4 !py-3.5 !text-sm">

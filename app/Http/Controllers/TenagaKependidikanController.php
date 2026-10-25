@@ -69,24 +69,24 @@ class TenagaKependidikanController extends Controller
                 ->all();
 
             $standardOptions = [
+                ['id' => 4, 'id_pendidikan' => 4, 'jenjang' => 'D4/S1'],
                 ['id' => 1, 'id_pendidikan' => 1, 'jenjang' => 'S2'],
                 ['id' => 3, 'id_pendidikan' => 3, 'jenjang' => 'S3'],
-                ['id' => 4, 'id_pendidikan' => 4, 'jenjang' => 'D4/S1'],
             ];
 
-            // Merge API items with standard options so S2, S3, D4/S1 are always present, matching reference
+            // Merge API items with standard options so D4/S1, S2, S3 are always present, ordered D4/S1 to S3
             $pendidikan = collect($apiPendidikan)
                 ->concat($standardOptions)
                 ->unique(fn (array $item) => Str::lower($item['jenjang']))
                 ->sortBy(function (array $item) {
                     $val = Str::lower($item['jenjang']);
-                    if ($val === 's2') {
+                    if ($val === 'd4/s1' || $val === 's1' || $val === 'd4' || Str::startsWith($val, 's1') || Str::startsWith($val, 'd4')) {
                         return 1;
                     }
-                    if ($val === 's3') {
+                    if ($val === 's2' || Str::startsWith($val, 's2')) {
                         return 2;
                     }
-                    if ($val === 'd4/s1' || $val === 's1' || $val === 'd4') {
+                    if ($val === 's3' || Str::startsWith($val, 's3')) {
                         return 3;
                     }
 
@@ -95,9 +95,15 @@ class TenagaKependidikanController extends Controller
                 ->values()
                 ->all();
 
-            $pendidikanById = collect($pendidikan)->mapWithKeys(fn (array $item) => [
+            $apiPendidikanById = collect($apiPendidikan)->mapWithKeys(fn (array $item) => [
                 (string) ($item['id'] ?? '') => (string) ($item['jenjang'] ?? ''),
             ])->all();
+
+            $standardPendidikanById = collect($standardOptions)->mapWithKeys(fn (array $item) => [
+                (string) ($item['id'] ?? '') => (string) ($item['jenjang'] ?? ''),
+            ])->all();
+
+            $pendidikanById = $apiPendidikanById + $standardPendidikanById;
 
             $items = collect($this->listData($tendikResponse))
                 ->map(fn (array $item) => $this->normalizeTendik($item, $pendidikanById))

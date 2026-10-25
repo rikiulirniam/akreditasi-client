@@ -7,7 +7,7 @@
 @endif
 
 @section('content')
-<div class="w-full flex-1 flex flex-col {{ $totalData === 0 && empty($search) && empty($selectedJabatan) ? 'min-h-[70vh] justify-center items-center' : 'pt-12 sm:pt-16 lg:pt-20' }}">
+<div class="w-full flex-1 flex flex-col {{ $totalData === 0 && empty($search) && empty($selectedJabatan) ? 'min-h-[70vh] justify-center items-center' : 'pt-0' }}">
     @if($apiError)
         <div class="w-full rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs font-semibold text-amber-900 mb-4" role="alert">
             {{ $apiError }}

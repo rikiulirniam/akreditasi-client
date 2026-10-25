@@ -67,13 +67,41 @@
 
             {{-- Daftar kualifikasi — scrollable, mengisi ruang tersisa --}}
             <div class="flex-1 overflow-y-auto divide-y divide-[#BAC7D5] px-4 sm:px-5">
-                @forelse($kualifikasis as $qualification)
+                @php
+                    $displayKualifikasis = count($kualifikasis) > 0 ? $kualifikasis : [
+                        [
+                            'gelar' => 'Dr',
+                            'jenjang' => 'S3',
+                            'institusi' => 'Politeknik Negeri Semarang',
+                            'program_studi' => 'Teknik Informatika',
+                            'tahun_lulus' => '2026',
+                        ],
+                        [
+                            'gelar' => 'Dr',
+                            'jenjang' => 'S3',
+                            'institusi' => 'Politeknik Negeri Semarang',
+                            'program_studi' => 'Teknik Informatika',
+                            'tahun_lulus' => '2026',
+                        ],
+                        [
+                            'gelar' => 'Dr',
+                            'jenjang' => 'S3',
+                            'institusi' => 'Politeknik Negeri Semarang',
+                            'program_studi' => 'Teknik Informatika',
+                            'tahun_lulus' => '2026',
+                        ],
+                    ];
+                @endphp
+                @foreach($displayKualifikasis as $qualification)
                     @php
-                        $gelar     = !empty($qualification['gelar'])         ? $qualification['gelar']         : 'Dr';
-                        $jenjang   = !empty($qualification['jenjang'])       ? $qualification['jenjang']       : 'S3';
-                        $institusi = !empty($qualification['institusi'])     ? $qualification['institusi']     : 'Politeknik Negeri Semarang';
+                        $rawJenjang = !empty($qualification['jenjang']) ? $qualification['jenjang'] : '';
+                        $rawGelar   = !empty($qualification['gelar']) ? $qualification['gelar'] : '';
+                        $isJenjangCode = in_array(strtoupper($rawGelar), ['D3', 'D4', 'S1', 'D4/S1', 'S2', 'S3', 'PROFESI']);
+                        $jenjang   = $rawJenjang !== '' ? $rawJenjang : ($isJenjangCode ? $rawGelar : 'S3');
+                        $gelar     = ($rawGelar !== '' && ! $isJenjangCode) ? $rawGelar : 'Dr';
+                        $institusi = !empty($qualification['institusi']) ? $qualification['institusi'] : 'Politeknik Negeri Semarang';
                         $prodi     = !empty($qualification['program_studi']) ? $qualification['program_studi'] : ($tenagaKependidikan['bidang_keahlian'] ?: 'Teknik Informatika');
-                        $tahun     = !empty($qualification['tahun_lulus'])   ? $qualification['tahun_lulus']   : '2026';
+                        $tahun     = !empty($qualification['tahun_lulus']) ? $qualification['tahun_lulus'] : '2026';
                     @endphp
                     <article class="flex items-center gap-3.5 py-4">
                         <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#FFC400] text-black shadow-xs">
@@ -92,11 +120,7 @@
                             </p>
                         </div>
                     </article>
-                @empty
-                    <div class="flex flex-1 items-center justify-center px-5 text-center text-xs text-gray-600 py-10">
-                        Jenjang pendidikan Tendik belum tersedia.
-                    </div>
-                @endforelse
+                @endforeach
             </div>
 
             {{-- Tombol Tambah Pendidikan --}}
@@ -213,12 +237,11 @@
                 <label for="pendidikan_jenjang" class="block text-xs font-semibold text-gray-700 mb-1">Jenjang <span class="text-red-500">*</span></label>
                 <select name="jenjang" id="pendidikan_jenjang" required
                     class="w-full h-[38px] rounded-[6px] border border-gray-300 bg-white px-3 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#002B49]/30 transition">
-                    <option value="">-- Pilih Jenjang --</option>
-                    <option value="D3">D3</option>
+                    <option value="" disabled selected>Isi Pendidikan Terakhir</option>
                     <option value="D4/S1">D4/S1</option>
-                    <option value="S1">S1</option>
                     <option value="S2">S2</option>
                     <option value="S3">S3</option>
+                    <option value="D3">D3</option>
                     <option value="Profesi">Profesi</option>
                 </select>
             </div>
@@ -298,43 +321,73 @@
 @push('scripts')
 <script>
 (function () {
-    // ── Modal Tambah Pendidikan ──
-    const pendidikanModal  = document.getElementById('addPendidikanModal');
-    const openPendidikanBtn  = document.getElementById('openAddPendidikanModalBtn');
-    const closePendidikanBtn = document.getElementById('closeAddPendidikanModalBtn');
-    const cancelPendidikanBtn = document.getElementById('cancelAddPendidikanBtn');
+    function initModals() {
+        // ── Modal Tambah Pendidikan ──
+        const pendidikanModal   = document.getElementById('addPendidikanModal');
+        const openPendidikanBtn   = document.getElementById('openAddPendidikanModalBtn');
+        const closePendidikanBtn  = document.getElementById('closeAddPendidikanModalBtn');
+        const cancelPendidikanBtn = document.getElementById('cancelAddPendidikanBtn');
 
-    function openModal(modal) {
-        modal.classList.remove('hidden');
-        document.body.style.overflow = 'hidden';
+        function openModal(modal) {
+            if (!modal) return;
+            modal.classList.remove('hidden');
+            document.body.style.overflow = 'hidden';
+        }
+        function closeModal(modal) {
+            if (!modal) return;
+            modal.classList.add('hidden');
+            document.body.style.overflow = '';
+        }
+
+        if (openPendidikanBtn && pendidikanModal) {
+            openPendidikanBtn.addEventListener('click', () => openModal(pendidikanModal));
+        }
+        if (closePendidikanBtn && pendidikanModal) {
+            closePendidikanBtn.addEventListener('click', () => closeModal(pendidikanModal));
+        }
+        if (cancelPendidikanBtn && pendidikanModal) {
+            cancelPendidikanBtn.addEventListener('click', () => closeModal(pendidikanModal));
+        }
+        if (pendidikanModal) {
+            pendidikanModal.addEventListener('click', (e) => {
+                if (e.target === pendidikanModal) closeModal(pendidikanModal);
+            });
+        }
+
+        // ── Modal Tambah Sertifikasi ──
+        const sertifikasiModal   = document.getElementById('addSertifikasiModal');
+        const openSertifikasiBtn   = document.getElementById('openAddSertifikasiModalBtn');
+        const closeSertifikasiBtn  = document.getElementById('closeAddSertifikasiModalBtn');
+        const cancelSertifikasiBtn = document.getElementById('cancelAddSertifikasiBtn');
+
+        if (openSertifikasiBtn && sertifikasiModal) {
+            openSertifikasiBtn.addEventListener('click', () => openModal(sertifikasiModal));
+        }
+        if (closeSertifikasiBtn && sertifikasiModal) {
+            closeSertifikasiBtn.addEventListener('click', () => closeModal(sertifikasiModal));
+        }
+        if (cancelSertifikasiBtn && sertifikasiModal) {
+            cancelSertifikasiBtn.addEventListener('click', () => closeModal(sertifikasiModal));
+        }
+        if (sertifikasiModal) {
+            sertifikasiModal.addEventListener('click', (e) => {
+                if (e.target === sertifikasiModal) closeModal(sertifikasiModal);
+            });
+        }
+
+        // Escape closes any open modal
+        document.addEventListener('keydown', (e) => {
+            if (e.key !== 'Escape') return;
+            if (pendidikanModal && !pendidikanModal.classList.contains('hidden'))  closeModal(pendidikanModal);
+            if (sertifikasiModal && !sertifikasiModal.classList.contains('hidden')) closeModal(sertifikasiModal);
+        });
     }
-    function closeModal(modal) {
-        modal.classList.add('hidden');
-        document.body.style.overflow = '';
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initModals);
+    } else {
+        initModals();
     }
-
-    openPendidikanBtn.addEventListener('click', () => openModal(pendidikanModal));
-    closePendidikanBtn.addEventListener('click', () => closeModal(pendidikanModal));
-    cancelPendidikanBtn.addEventListener('click', () => closeModal(pendidikanModal));
-    pendidikanModal.addEventListener('click', (e) => { if (e.target === pendidikanModal) closeModal(pendidikanModal); });
-
-    // ── Modal Tambah Sertifikasi ──
-    const sertifikasiModal  = document.getElementById('addSertifikasiModal');
-    const openSertifikasiBtn  = document.getElementById('openAddSertifikasiModalBtn');
-    const closeSertifikasiBtn = document.getElementById('closeAddSertifikasiModalBtn');
-    const cancelSertifikasiBtn = document.getElementById('cancelAddSertifikasiBtn');
-
-    openSertifikasiBtn.addEventListener('click', () => openModal(sertifikasiModal));
-    closeSertifikasiBtn.addEventListener('click', () => closeModal(sertifikasiModal));
-    cancelSertifikasiBtn.addEventListener('click', () => closeModal(sertifikasiModal));
-    sertifikasiModal.addEventListener('click', (e) => { if (e.target === sertifikasiModal) closeModal(sertifikasiModal); });
-
-    // Escape closes any open modal
-    document.addEventListener('keydown', (e) => {
-        if (e.key !== 'Escape') return;
-        if (!pendidikanModal.classList.contains('hidden'))  closeModal(pendidikanModal);
-        if (!sertifikasiModal.classList.contains('hidden')) closeModal(sertifikasiModal);
-    });
 })();
 </script>
 @endpush

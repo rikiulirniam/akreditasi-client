@@ -84,9 +84,9 @@
                 >
                     <option value="" disabled {{ old('id_pendidikan') ? '' : 'selected' }}>Isi Pendidikan Terakhir</option>
                     @foreach($pendidikan ?? [
+                        ['id' => 4, 'jenjang' => 'D4/S1'],
                         ['id' => 1, 'jenjang' => 'S2'],
                         ['id' => 3, 'jenjang' => 'S3'],
-                        ['id' => 4, 'jenjang' => 'D4/S1'],
                     ] as $level)
                         <option value="{{ $level['id'] ?? $level['id_pendidikan'] ?? '' }}" {{ (string) old('id_pendidikan') === (string) ($level['id'] ?? $level['id_pendidikan'] ?? '') ? 'selected' : '' }}>
                             {{ $level['jenjang'] ?? '-' }}
