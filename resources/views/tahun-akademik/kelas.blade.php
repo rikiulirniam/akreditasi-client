@@ -6,7 +6,7 @@
 <div class="space-y-6">
     <div class="flex items-center justify-between">
         <h2 class="text-xl font-bold text-gray-900 tracking-tight">
-            Daftar Kelas (Tahun Akademik {{ $tahunAkademik['tahun'] ?? '2025/2026' }})
+            Daftar Kelas (Tahun Akademik {{ $tahunAkademik['tahun'] ?? '2025/2026' }} {{ $tahunAkademik['semester'] ?? '' }})
         </h2>
     </div>
 
@@ -25,8 +25,8 @@
                 $rowNumber = $index + 1 + (($pagination['current_page'] - 1) * $pagination['per_page']);
                 $tahun = $item['tahun_akademik']['tahun'] ?? $tahunAkademik['tahun'] ?? '2025';
                 $prodi = $item['prodi']['nama'] ?? 'Teknologi Rekayasa Komputer';
-                $namaKelas = $item['nama'] ?? $item['nama_kelas'] ?? 'TI 1-A';
-                $jumlahMahasiswa = $item['jumlah_mahasiswa'] ?? 24;
+                $namaKelas = $item['kelas'] ?? $item['nama'] ?? $item['nama_kelas'] ?? 'TI-1A';
+                $jumlahMahasiswa = $item['jumlah_mahasiswa'] ?? 25;
             @endphp
             <x-table.row>
                 <x-table.cell class="text-gray-500 font-medium w-16">

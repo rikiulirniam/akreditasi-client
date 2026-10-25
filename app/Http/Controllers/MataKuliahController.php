@@ -308,9 +308,18 @@ class MataKuliahController extends Controller
             'angkatan' => $this->akademikService->getAngkatanList(['per_page' => 500]),
             'tahun_akademik' => $this->akademikService->getTahunAkademikList(['per_page' => 500]),
             'enrollment_kelas' => $this->akademikService->getEnrollmentKelasList(['per_page' => 500]),
-            'enrollment_mata_kuliah' => $this->akademikService->getEnrollmentMataKuliahList(['per_page' => 500]),
-            'mata_kuliah_angkatan_kelas' => $this->akademikService->getMataKuliahAngkatanKelasList(['per_page' => 500]),
-            'nilai_mahasiswa' => $this->akademikService->getNilaiMahasiswaList(['per_page' => 500]),
+            'enrollment_mata_kuliah' => $this->akademikService->getEnrollmentMataKuliahList([
+                'mata_kuliah_id' => $id,
+                'per_page' => 500,
+            ]),
+            'mata_kuliah_angkatan_kelas' => $this->akademikService->getMataKuliahAngkatanKelasList([
+                'mata_kuliah_id' => $id,
+                'per_page' => 500,
+            ]),
+            'nilai_mahasiswa' => $this->akademikService->getNilaiMahasiswaList([
+                'mata_kuliah_id' => $id,
+                'per_page' => 500,
+            ]),
         ];
         $kelasDataError = collect($responses)->contains(fn (Response $response) => ! $response->successful());
 
@@ -452,9 +461,20 @@ class MataKuliahController extends Controller
         $validated = $request->validate([
             $field => ['required', 'url', 'max:2048'],
         ]);
-        $offeringsResponse = $this->akademikService->getMataKuliahAngkatanKelasList(['per_page' => 500]);
-        $enrollmentsResponse = $this->akademikService->getEnrollmentMataKuliahList(['per_page' => 500]);
-        $gradesResponse = $this->akademikService->getNilaiMahasiswaList(['per_page' => 500]);
+        $offeringsResponse = $this->akademikService->getMataKuliahAngkatanKelasList([
+            'mata_kuliah_id' => $mataKuliahId,
+            'angkatan_kelas_id' => $angkatanKelasId,
+            'per_page' => 500,
+        ]);
+        $enrollmentsResponse = $this->akademikService->getEnrollmentMataKuliahList([
+            'mata_kuliah_id' => $mataKuliahId,
+            'per_page' => 500,
+        ]);
+        $gradesResponse = $this->akademikService->getNilaiMahasiswaList([
+            'mata_kuliah_id' => $mataKuliahId,
+            'angkatan_kelas_id' => $angkatanKelasId,
+            'per_page' => 500,
+        ]);
         foreach ([$offeringsResponse, $enrollmentsResponse, $gradesResponse] as $response) {
             if ($response->status() === 401) {
                 return redirect()->route('login')->with('toast', [

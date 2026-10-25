@@ -31,10 +31,13 @@ class NilaiMahasiswaController extends Controller
 
         $queryParams = array_filter([
             'page' => $page,
-            'per_page' => $request->wantsJson() ? 500 : $perPage,
+            'per_page' => $request->wantsJson() ? 100 : $perPage,
             'mata_kuliah_angkatan_kelas_id' => $mkAkId,
+            'mata_kuliah_id' => $mataKuliahId,
+            'kelas_id' => $kelasId,
             'tahun_akademik_id' => $tahunAkademikId,
             'semester' => $semester,
+            'search' => $search,
         ], fn ($v) => $v !== null && $v !== '');
 
         $response = $this->akademikService->getNilaiMahasiswaList($queryParams);

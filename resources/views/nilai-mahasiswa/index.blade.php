@@ -373,20 +373,6 @@
                 <!-- Aksi -->
                 <x-table.cell class="text-right">
                     <div class="flex items-center justify-end gap-2">
-                        <!-- Lihat KHS & Transkrip Mahasiswa -->
-                        @if(!empty($item['mahasiswa_id']))
-                        <button 
-                            type="button" 
-                            class="open-khs-modal-btn text-primary hover:text-additional transition p-1 cursor-pointer"
-                            title="Lihat KHS & Transkrip Mahasiswa"
-                            data-mahasiswa-id="{{ $item['mahasiswa_id'] }}"
-                            data-mahasiswa-nama="{{ $mhs['nama_mahasiswa'] ?? '' }}"
-                            data-mahasiswa-nim="{{ $mhs['nim'] ?? '' }}"
-                        >
-                            <x-icon.eye class="w-4 h-4" />
-                        </button>
-                        @endif
-
                         <!-- Edit Nilai -->
                         @haspermission('nilai_mahasiswa.update')
                         <button 
@@ -887,138 +873,12 @@
     </div>
 </div>
 
-<!-- ======================================================== -->
-<!-- MODAL: KHS & Transkrip Akademik Mahasiswa                -->
-<!-- ======================================================== -->
-<div 
-    id="khsTranskripModal" 
-    class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 opacity-0 pointer-events-none transition-all duration-200 select-none"
-    role="dialog"
-    aria-modal="true"
-    aria-labelledby="khsModalTitle"
->
-    <div class="khs-modal-card relative bg-white rounded-[28px] p-6 sm:p-8 max-w-2xl w-full shadow-2xl text-left transform scale-95 transition-all duration-200 max-h-[92vh] overflow-y-auto">
-        <div class="flex items-center justify-between pb-4 border-b border-gray-100 mb-4">
-            <div>
-                <h3 id="khsModalTitle" class="text-base font-black text-gray-900 tracking-tight">
-                    Catatan Akademik Mahasiswa
-                </h3>
-                <p class="text-xs text-gray-500" id="khsStudentSubtitle">-</p>
-            </div>
-            <button type="button" class="close-khs-modal p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition cursor-pointer">
-                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
-                </svg>
-            </button>
-        </div>
-
-        <!-- Tab Switches: KHS vs Transkrip -->
-        <div class="flex border-b border-gray-200 mb-4">
-            <button 
-                type="button" 
-                id="tabKhsBtn"
-                class="py-2.5 px-4 font-bold text-xs border-b-2 border-primary text-primary transition cursor-pointer"
-            >
-                Kartu Hasil Studi (KHS)
-            </button>
-            <button 
-                type="button" 
-                id="tabTranskripBtn"
-                class="py-2.5 px-4 font-bold text-xs border-b-2 border-transparent text-gray-500 hover:text-gray-700 transition cursor-pointer"
-            >
-                Transkrip Nilai Kumulatif (IPK)
-            </button>
-        </div>
-
-        <!-- Tab Content 1: KHS -->
-        <div id="tabKhsContent" class="space-y-4">
-            <div id="khsLoading" class="py-8 text-center text-xs text-gray-500">Memuat data KHS...</div>
-            <div id="khsDataContainer" class="hidden space-y-4">
-                <!-- IP Banner -->
-                <div class="p-4 rounded-2xl bg-primary/5 border border-primary/20 flex items-center justify-between">
-                    <div>
-                        <div class="text-[11px] font-bold uppercase tracking-wider text-primary">Indeks Prestasi Semester (IP)</div>
-                        <div class="text-xs text-gray-500 mt-0.5">Rumus: Σ (SKS × Bobot) ÷ Σ SKS</div>
-                    </div>
-                    <div class="text-right">
-                        <div class="text-2xl font-black text-primary" id="khsIpValue">0.00</div>
-                        <div class="text-[11px] text-gray-500" id="khsSksValue">Total 0 SKS • Kredit 0</div>
-                    </div>
-                </div>
-
-                <!-- Table KHS -->
-                <div class="overflow-x-auto rounded-xl border border-gray-200">
-                    <table class="w-full text-left text-xs">
-                        <thead class="bg-gray-50 text-gray-700 font-bold border-b border-gray-200">
-                            <tr>
-                                <th class="p-2.5">Mata Kuliah</th>
-                                <th class="p-2.5 text-center">SKS</th>
-                                <th class="p-2.5 text-center">Nilai</th>
-                                <th class="p-2.5 text-center">Bobot</th>
-                                <th class="p-2.5 text-center">Kredit (SKS × Bobot)</th>
-                            </tr>
-                        </thead>
-                        <tbody id="khsTableBody" class="divide-y divide-gray-100">
-                            <!-- Populated via JS -->
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-
-        <!-- Tab Content 2: Transkrip Kumulatif -->
-        <div id="tabTranskripContent" class="hidden space-y-4">
-            <div id="transkripLoading" class="py-8 text-center text-xs text-gray-500">Memuat transkrip...</div>
-            <div id="transkripDataContainer" class="hidden space-y-4">
-                <!-- IPK Banner -->
-                <div class="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 flex items-center justify-between">
-                    <div>
-                        <div class="text-[11px] font-bold uppercase tracking-wider text-emerald-800">Indeks Prestasi Kumulatif (IPK)</div>
-                        <div class="text-xs text-emerald-700 mt-0.5">Perhitungan seluruh semester berbobot SKS resmi</div>
-                    </div>
-                    <div class="text-right">
-                        <div class="text-2xl font-black text-emerald-700" id="transkripIpkValue">0.00</div>
-                        <div class="text-[11px] text-emerald-800" id="transkripSksValue">Total 0 SKS • Kredit 0</div>
-                    </div>
-                </div>
-
-                <!-- Table Transkrip -->
-                <div class="overflow-x-auto rounded-xl border border-gray-200 max-h-64 overflow-y-auto">
-                    <table class="w-full text-left text-xs">
-                        <thead class="bg-gray-50 text-gray-700 font-bold border-b border-gray-200 sticky top-0">
-                            <tr>
-                                <th class="p-2.5">Mata Kuliah</th>
-                                <th class="p-2.5 text-center">SKS</th>
-                                <th class="p-2.5 text-center">Nilai</th>
-                                <th class="p-2.5 text-center">Bobot</th>
-                                <th class="p-2.5 text-center">Kredit</th>
-                            </tr>
-                        </thead>
-                        <tbody id="transkripTableBody" class="divide-y divide-gray-100">
-                            <!-- Populated via JS -->
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-
-        <div class="pt-4 border-t border-gray-100 mt-4 text-right">
-            <button 
-                type="button" 
-                class="close-khs-modal px-5 py-2.5 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold text-xs transition cursor-pointer"
-            >
-                Tutup
-            </button>
-        </div>
-    </div>
-</div>
-
 <script>
     document.addEventListener('DOMContentLoaded', function () {
         // Modal Helper Functions
         function openDialog(modal) {
             if (!modal) return;
-            const card = modal.querySelector('.import-modal-card, .create-modal-card, .edit-modal-card, .khs-modal-card');
+            const card = modal.querySelector('.import-modal-card, .create-modal-card, .edit-modal-card');
             modal.classList.remove('opacity-0', 'pointer-events-none');
             modal.classList.add('opacity-100');
             if (card) {
@@ -1029,7 +889,7 @@
 
         function closeDialog(modal) {
             if (!modal) return;
-            const card = modal.querySelector('.import-modal-card, .create-modal-card, .edit-modal-card, .khs-modal-card');
+            const card = modal.querySelector('.import-modal-card, .create-modal-card, .edit-modal-card');
             modal.classList.remove('opacity-100');
             modal.classList.add('opacity-0', 'pointer-events-none');
             if (card) {
@@ -1164,146 +1024,6 @@
         document.querySelectorAll('.close-edit-modal').forEach(btn => {
             btn.addEventListener('click', () => closeDialog(editModal));
         });
-
-        // KHS & Transkrip Viewer Modal Handlers
-        const khsModal = document.getElementById('khsTranskripModal');
-        const khsStudentSubtitle = document.getElementById('khsStudentSubtitle');
-        const tabKhsBtn = document.getElementById('tabKhsBtn');
-        const tabTranskripBtn = document.getElementById('tabTranskripBtn');
-        const tabKhsContent = document.getElementById('tabKhsContent');
-        const tabTranskripContent = document.getElementById('tabTranskripContent');
-
-        let currentActiveMahasiswaId = null;
-
-        tabKhsBtn?.addEventListener('click', function () {
-            tabKhsBtn.classList.add('border-primary', 'text-primary');
-            tabKhsBtn.classList.remove('border-transparent', 'text-gray-500');
-            tabTranskripBtn.classList.remove('border-primary', 'text-primary');
-            tabTranskripBtn.classList.add('border-transparent', 'text-gray-500');
-            tabKhsContent.classList.remove('hidden');
-            tabTranskripContent.classList.add('hidden');
-        });
-
-        tabTranskripBtn?.addEventListener('click', function () {
-            tabTranskripBtn.classList.add('border-primary', 'text-primary');
-            tabTranskripBtn.classList.remove('border-transparent', 'text-gray-500');
-            tabKhsBtn.classList.remove('border-primary', 'text-primary');
-            tabKhsBtn.classList.add('border-transparent', 'text-gray-500');
-            tabTranskripContent.classList.remove('hidden');
-            tabKhsContent.classList.add('hidden');
-
-            if (currentActiveMahasiswaId) {
-                loadTranskripData(currentActiveMahasiswaId);
-            }
-        });
-
-        document.querySelectorAll('.open-khs-modal-btn').forEach(btn => {
-            btn.addEventListener('click', function () {
-                const mhsId = this.dataset.mahasiswaId;
-                const mhsNama = this.dataset.mahasiswaNama;
-                const mhsNim = this.dataset.mahasiswaNim;
-                currentActiveMahasiswaId = mhsId;
-
-                khsStudentSubtitle.textContent = mhsNama + ' (' + mhsNim + ')';
-
-                // Reset ke Tab KHS
-                tabKhsBtn.click();
-                loadKhsData(mhsId);
-                openDialog(khsModal);
-            });
-        });
-
-        document.querySelectorAll('.close-khs-modal').forEach(btn => {
-            btn.addEventListener('click', () => closeDialog(khsModal));
-        });
-
-        function loadKhsData(mhsId) {
-            const loading = document.getElementById('khsLoading');
-            const container = document.getElementById('khsDataContainer');
-            const tbody = document.getElementById('khsTableBody');
-            const ipVal = document.getElementById('khsIpValue');
-            const sksVal = document.getElementById('khsSksValue');
-
-            loading.classList.remove('hidden');
-            container.classList.add('hidden');
-            tbody.innerHTML = '';
-
-            fetch(`/nilai-mahasiswa/khs/${mhsId}`)
-                .then(r => r.json())
-                .then(res => {
-                    loading.classList.add('hidden');
-                    container.classList.remove('hidden');
-
-                    const d = res.data ?? {};
-                    const ringkasan = d.ringkasan ?? {};
-                    const items = d.items ?? [];
-
-                    ipVal.textContent = (ringkasan.ip ?? 0).toFixed(2);
-                    sksVal.textContent = `Total ${ringkasan.total_sks ?? 0} SKS • Kredit ${ringkasan.total_kredit ?? 0}`;
-
-                    if (items.length === 0) {
-                        tbody.innerHTML = '<tr><td colspan="5" class="p-4 text-center text-gray-500">Belum ada nilai terdaftar untuk KHS mahasiswa ini.</td></tr>';
-                        return;
-                    }
-
-                    tbody.innerHTML = items.map(it => `
-                        <tr>
-                            <td class="p-2.5 font-bold text-gray-900">${it.nama_mata_kuliah ?? '-'} <span class="font-normal text-gray-500 font-mono text-[11px]">(${it.kode_mata_kuliah ?? ''})</span></td>
-                            <td class="p-2.5 text-center font-mono font-bold">${it.sks ?? 0}</td>
-                            <td class="p-2.5 text-center font-black text-primary">${it.nilai_huruf ?? '-'}</td>
-                            <td class="p-2.5 text-center font-mono">${(it.bobot ?? 0).toFixed(2)}</td>
-                            <td class="p-2.5 text-center font-mono font-bold text-gray-900">${(it.kredit ?? 0).toFixed(2)}</td>
-                        </tr>
-                    `).join('');
-                })
-                .catch(err => {
-                    loading.innerHTML = '<span class="text-rose-600">Gagal memuat data KHS.</span>';
-                });
-        }
-
-        function loadTranskripData(mhsId) {
-            const loading = document.getElementById('transkripLoading');
-            const container = document.getElementById('transkripDataContainer');
-            const tbody = document.getElementById('transkripTableBody');
-            const ipkVal = document.getElementById('transkripIpkValue');
-            const sksVal = document.getElementById('transkripSksValue');
-
-            loading.classList.remove('hidden');
-            container.classList.add('hidden');
-            tbody.innerHTML = '';
-
-            fetch(`/nilai-mahasiswa/transkrip/${mhsId}`)
-                .then(r => r.json())
-                .then(res => {
-                    loading.classList.add('hidden');
-                    container.classList.remove('hidden');
-
-                    const d = res.data ?? {};
-                    const ringkasan = d.ringkasan ?? {};
-                    const items = d.mata_kuliah ?? [];
-
-                    ipkVal.textContent = (ringkasan.ipk ?? 0).toFixed(2);
-                    sksVal.textContent = `Total ${ringkasan.total_sks ?? 0} SKS • Kredit ${ringkasan.total_kredit ?? 0}`;
-
-                    if (items.length === 0) {
-                        tbody.innerHTML = '<tr><td colspan="5" class="p-4 text-center text-gray-500">Belum ada mata kuliah yang tercatat pada transkrip.</td></tr>';
-                        return;
-                    }
-
-                    tbody.innerHTML = items.map(it => `
-                        <tr>
-                            <td class="p-2.5 font-bold text-gray-900">${it.nama_mata_kuliah ?? '-'} <span class="font-normal text-gray-500 font-mono text-[11px]">(${it.kode_mata_kuliah ?? ''})</span></td>
-                            <td class="p-2.5 text-center font-mono font-bold">${it.sks ?? 0}</td>
-                            <td class="p-2.5 text-center font-black text-emerald-700">${it.nilai_huruf ?? '-'}</td>
-                            <td class="p-2.5 text-center font-mono">${(it.bobot ?? 0).toFixed(2)}</td>
-                            <td class="p-2.5 text-center font-mono font-bold text-gray-900">${(it.kredit ?? 0).toFixed(2)}</td>
-                        </tr>
-                    `).join('');
-                })
-                .catch(err => {
-                    loading.innerHTML = '<span class="text-rose-600">Gagal memuat transkrip.</span>';
-                });
-        }
     });
 </script>
 @endsection
