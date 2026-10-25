@@ -240,6 +240,14 @@ class MataKuliahTest extends TestCase
                 'success' => true,
                 'data' => [
                     ['id' => 93, 'enrollment_mata_kuliah_id' => 12, 'angkatan_kelas_id' => 8],
+                    ['id' => 94, 'enrollment_mata_kuliah_id' => 13, 'angkatan_kelas_id' => 8],
+                ],
+            ], 200),
+            '*/api/enrollment-mata-kuliah*' => Http::response([
+                'success' => true,
+                'data' => [
+                    ['id' => 12, 'tahun_akademik_id' => 4, 'mata_kuliah_id' => 1, 'dosen_id' => 6, 'evidence' => ''],
+                    ['id' => 13, 'tahun_akademik_id' => 4, 'mata_kuliah_id' => 2, 'dosen_id' => 6, 'evidence' => ''],
                 ],
             ], 200),
             '*/api/nilai-mahasiswa*' => Http::response([
@@ -247,6 +255,7 @@ class MataKuliahTest extends TestCase
                 'data' => [
                     ['id' => 21, 'enrollment_mahasiswa_angkatan_kelas_id' => 100, 'mata_kuliah_angkatan_kelas_id' => 93, 'bobot_nilai' => 3.75, 'link_nilai' => 'https://example.com/nilai/21', 'link_evidence' => 'https://example.com/evidence/21'],
                     ['id' => 22, 'enrollment_mahasiswa_angkatan_kelas_id' => 101, 'mata_kuliah_angkatan_kelas_id' => 93, 'bobot_nilai' => 4],
+                    ['id' => 23, 'mata_kuliah_angkatan_kelas_id' => 94, 'link_nilai' => 'https://example.com/other-course', 'link_evidence' => 'https://example.com/other-evidence'],
                 ],
             ], 200),
             '*/api/mahasiswa*' => Http::response([
@@ -275,8 +284,14 @@ class MataKuliahTest extends TestCase
         $response->assertSee('Input Link Nilai');
         $response->assertSee('Input Evidence');
         $response->assertSee('Input Link Evidence');
+        $response->assertSee('id="classDetailLinkNilaiEmpty">-</span>', false);
+        $response->assertSee('id="classDetailLinkEvidenceEmpty">-</span>', false);
         $response->assertDontSee('gradeStudentSelect');
         $response->assertDontSee('evidenceStudentSelect');
+        $response->assertSee('data-link-nilai="https://example.com/nilai/21"', false);
+        $response->assertSee('data-link-evidence="https://example.com/evidence/21"', false);
+        $response->assertDontSee('data-link-nilai="https://example.com/other-course"', false);
+        $response->assertDontSee('data-link-evidence="https://example.com/other-evidence"', false);
     }
 
     public function test_user_can_patch_a_student_grade_link_for_a_mata_kuliah(): void

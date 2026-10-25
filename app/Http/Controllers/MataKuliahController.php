@@ -362,12 +362,30 @@ class MataKuliahController extends Controller
                 ->pluck('id')
                 ->map(fn ($offeringId) => (string) $offeringId)
                 ->all();
+            $courseOfferingIds = $courseOfferings
+                ->filter(fn (array $courseOffering) => (string) ($courseOffering['angkatan_kelas_id'] ?? '') === $classId)
+                ->pluck('id')
+                ->map(fn ($offeringId) => (string) $offeringId)
+                ->all();
             $gradePoints = collect($nilaiMahasiswa)
                 ->filter(fn (array $grade) => in_array((string) ($grade['mata_kuliah_angkatan_kelas_id'] ?? ''), $classOfferingIds, true))
                 ->pluck('bobot_nilai')
                 ->filter(fn ($gradePoint) => is_numeric($gradePoint))
                 ->map(fn ($gradePoint) => (float) $gradePoint);
             $averageIpk = $gradePoints->isNotEmpty() ? number_format($gradePoints->avg(), 2) : '-';
+            $classGrades = collect($nilaiMahasiswa)
+                ->filter(fn (array $grade) => in_array((string) ($grade['mata_kuliah_angkatan_kelas_id'] ?? ''), $courseOfferingIds, true));
+            $gradeLinks = $classGrades->pluck('link_nilai')
+                ->filter(fn ($link) => is_string($link) && trim($link) !== '')
+                ->map(fn (string $link) => trim($link))
+                ->unique()
+                ->values();
+            $evidenceLinks = $classGrades->pluck('link_evidence')
+                ->filter(fn ($link) => is_string($link) && trim($link) !== '')
+                ->map(fn (string $link) => trim($link))
+                ->unique()
+                ->values();
+
             $kelasList[$classId] = [
                 'id' => $classId,
                 'nama_kelas' => $masterKelasItem['kelas'] ?? $masterKelasItem['nama_kelas'] ?? $angkatanKelas['kelas']['kelas'] ?? '-',
@@ -380,6 +398,10 @@ class MataKuliahController extends Controller
                 'jumlah_mata_kuliah' => $offeringsByClassId->get($classId, collect())->pluck('id')->unique()->count(),
                 'enrollment_mata_kuliah_id' => $courseEnrollment['id'] ?? null,
                 'evidence' => $courseEnrollment['evidence'] ?? '',
+                'link_nilai' => $gradeLinks->count() === 1 ? $gradeLinks->first() : '',
+                'link_evidence' => $evidenceLinks->count() === 1 ? $evidenceLinks->first() : '',
+                'has_multiple_grade_links' => $gradeLinks->count() > 1,
+                'has_multiple_evidence_links' => $evidenceLinks->count() > 1,
             ];
         }
         $kelasList = array_values($kelasList);
