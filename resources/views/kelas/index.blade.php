@@ -41,6 +41,8 @@
             <x-slot:header>
                 <x-table.th class="w-16">No</x-table.th>
                 <x-table.th>Nama Kelas</x-table.th>
+                <x-table.th class="w-36">Angkatan</x-table.th>
+                <x-table.th class="w-48">Jumlah Mahasiswa</x-table.th>
                 <x-table.th class="w-28 text-right">Action</x-table.th>
             </x-slot:header>
 
@@ -48,6 +50,8 @@
                 @php
                     $rowNumber = $index + 1 + (($pagination['current_page'] - 1) * $pagination['per_page']);
                     $namaKelas = $item['kelas'] ?? $item['nama_kelas'] ?? '-';
+                    $angkatan = $item['angkatan']['angkatan'] ?? $item['angkatan'] ?? '-';
+                    $jumlahMahasiswa = $item['jumlah_mahasiswa'] ?? 0;
                 @endphp
                 <x-table.row class="kelas-row">
                     <!-- No -->
@@ -57,14 +61,40 @@
 
                     <!-- Nama Kelas -->
                     <x-table.cell>
-                        <span class="font-extrabold text-sm text-gray-900 tracking-tight font-mono kelas-text">
-                            {{ $namaKelas }}
-                        </span>
+                        <a 
+                            href="{{ route('kelas.show', $item['id']) }}" 
+                            class="font-extrabold text-sm text-primary hover:text-additional tracking-tight font-mono kelas-text transition inline-flex items-center gap-1.5 group"
+                            title="Lihat Detail Kelas {{ $namaKelas }}"
+                        >
+                            <span>{{ $namaKelas }}</span>
+                            <svg class="w-3.5 h-3.5 opacity-0 group-hover:opacity-100 transition-opacity text-additional shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
+                            </svg>
+                        </a>
                     </x-table.cell>
 
-                    <!-- Action (Yellow Edit, Red Delete) -->
+                    <!-- Angkatan -->
+                    <x-table.cell class="w-36 text-gray-700 font-medium text-sm kelas-angkatan">
+                        {{ $angkatan }}
+                    </x-table.cell>
+
+                    <!-- Jumlah Mahasiswa -->
+                    <x-table.cell class="w-48 text-gray-700 font-medium text-sm">
+                        {{ $jumlahMahasiswa }} Mahasiswa
+                    </x-table.cell>
+
+                    <!-- Action (Detail Eye, Yellow Edit, Red Delete) -->
                     <x-table.cell class="w-28">
-                        <div class="flex items-center justify-end gap-3">
+                        <div class="flex items-center justify-end gap-2.5">
+                            <!-- Detail Kelas Icon (Eye) -->
+                            <a 
+                                href="{{ route('kelas.show', $item['id']) }}" 
+                                class="text-primary hover:text-additional transition p-1 cursor-pointer"
+                                title="Lihat Detail Kelas"
+                            >
+                                <x-icon.eye class="w-5 h-5" />
+                            </a>
+
                             @haspermission('kelas.update')
                             <!-- Edit Kelas Icon (Yellow) -->
                             <button 
@@ -97,7 +127,7 @@
                     </x-table.cell>
                 </x-table.row>
             @empty
-                <x-table.empty colspan="3" message="Belum ada data kelas" submessage="Silakan klik tombol Tambah Kelas untuk membuat kelas baru." />
+                <x-table.empty colspan="5" message="Belum ada data kelas" submessage="Silakan klik tombol Tambah Kelas untuk membuat kelas baru." />
             @endforelse
         </x-table>
 
@@ -223,8 +253,8 @@
             searchInput.addEventListener('input', function () {
                 const keyword = this.value.toLowerCase().trim();
                 rows.forEach(row => {
-                    const text = row.querySelector('.kelas-text')?.textContent.toLowerCase() || '';
-                    row.style.display = (!keyword || text.includes(keyword)) ? '' : 'none';
+                    const text = (row.querySelector('.kelas-text')?.textContent || '') + ' ' + (row.querySelector('.kelas-angkatan')?.textContent || '');
+                    row.style.display = (!keyword || text.toLowerCase().includes(keyword)) ? '' : 'none';
                 });
             });
         }
