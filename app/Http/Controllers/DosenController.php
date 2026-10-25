@@ -20,7 +20,18 @@ class DosenController extends Controller
     {
         $page = (int) $request->query('page', 1);
         $search = $request->query('search');
-        $status = $request->query('status');
+
+        // API hanya mengenal DTPS/DTT/NONAKTIF, jadi label UI dipetakan ke kode tersebut.
+        $statusLabels = [
+            'DTPS' => 'DTPS',
+            'DTT' => 'Tidak tetap',
+            'TIDAK TETAP' => 'Tidak tetap',
+        ];
+        $status = strtoupper(trim((string) $request->query('status')));
+        $status = array_key_exists($status, $statusLabels) ? $status : '';
+        if ($status === 'TIDAK TETAP') {
+            $status = 'DTT';
+        }
 
         $params = [
             'page' => $page,
@@ -32,7 +43,7 @@ class DosenController extends Controller
         }
 
         if (! empty($status)) {
-            $params['status'] = trim($status);
+            $params['status'] = $status;
         }
 
         $response = $this->tridharmaService->getDosenList($params);
@@ -117,7 +128,8 @@ class DosenController extends Controller
             'pendidikanList' => $pendidikanList,
             'bidangKeahlianList' => $bidangKeahlianList,
             'search' => $search ?? '',
-            'selectedStatus' => $status ?? '',
+            'selectedStatus' => $status,
+            'selectedStatusLabel' => $statusLabels[$status] ?? 'Status',
         ]);
     }
 

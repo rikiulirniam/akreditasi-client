@@ -522,4 +522,99 @@ class DosenShowTest extends TestCase
                 && ($data['nama_dosen'] ?? null) === 'Dr. Hendra Gunawan, M.T.';
         });
     }
+
+    public function test_dosen_index_status_filter_submits_dtt_for_tidak_tetap_and_drops_non_active(): void
+    {
+        Http::fake([
+            '*/dosen*' => Http::response([
+                'success' => true,
+                'data' => [
+                    'data' => [],
+                    'total' => 0,
+                    'per_page' => 10,
+                    'current_page' => 1,
+                    'last_page' => 1,
+                ],
+            ], 200),
+            '*/jabatan-akademik*' => Http::response(['data' => []], 200),
+            '*/pendidikan*' => Http::response(['data' => []], 200),
+            '*/bidang-keahlian*' => Http::response(['data' => []], 200),
+        ]);
+
+        $response = $this->withSession([
+            'access_token' => 'dummy-token',
+            'user' => ['nama' => 'Kuwat', 'role' => 'Kaprodi'],
+        ])->get(route('dosen.index'));
+
+        $response->assertOk()
+            ->assertSee('data-value="DTT"', false)
+            ->assertSee('data-label="Tidak tetap"', false)
+            ->assertDontSee('data-value="Non-aktif"', false);
+    }
+
+    public function test_dosen_index_shows_friendly_label_for_selected_tidak_tetap_filter(): void
+    {
+        Http::fake([
+            '*/dosen*' => Http::response([
+                'success' => true,
+                'data' => [
+                    'data' => [],
+                    'total' => 0,
+                    'per_page' => 10,
+                    'current_page' => 1,
+                    'last_page' => 1,
+                ],
+            ], 200),
+            '*/jabatan-akademik*' => Http::response(['data' => []], 200),
+            '*/pendidikan*' => Http::response(['data' => []], 200),
+            '*/bidang-keahlian*' => Http::response(['data' => []], 200),
+        ]);
+
+        $response = $this->withSession([
+            'access_token' => 'dummy-token',
+            'user' => ['nama' => 'Kuwat', 'role' => 'Kaprodi'],
+        ])->get(route('dosen.index', ['status' => 'DTT']));
+
+        $response->assertOk();
+        $html = preg_replace('/\s+/', ' ', $response->getContent());
+        $this->assertStringContainsString(
+            '<span id="filterStatusLabel" class="text-sm font-semibold text-gray-900 truncate pr-2"> Tidak tetap </span>',
+            $html
+        );
+        $this->assertStringContainsString('name="status" id="filterStatusSelect" value="DTT"', $html);
+    }
+
+    public function test_dosen_index_normalizes_tidak_tetap_status_query_to_dtt(): void
+    {
+        Http::fake([
+            '*/dosen*' => Http::response([
+                'success' => true,
+                'data' => [
+                    'data' => [],
+                    'total' => 0,
+                    'per_page' => 10,
+                    'current_page' => 1,
+                    'last_page' => 1,
+                ],
+            ], 200),
+            '*/jabatan-akademik*' => Http::response(['data' => []], 200),
+            '*/pendidikan*' => Http::response(['data' => []], 200),
+            '*/bidang-keahlian*' => Http::response(['data' => []], 200),
+        ]);
+
+        $this->withSession([
+            'access_token' => 'dummy-token',
+            'user' => ['nama' => 'Kuwat', 'role' => 'Kaprodi'],
+        ])->get(route('dosen.index', ['status' => 'Tidak Tetap']))->assertOk();
+
+        Http::assertSent(function ($request) {
+            if (! str_contains($request->url(), '/dosen')) {
+                return false;
+            }
+            $query = [];
+            parse_str(parse_url($request->url(), PHP_URL_QUERY) ?? '', $query);
+
+            return ($query['status'] ?? null) === 'DTT';
+        });
+    }
 }
