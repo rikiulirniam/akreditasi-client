@@ -37,7 +37,7 @@ class AkademikService
 
         $client = Http::acceptJson()
             ->asJson()
-            ->withoutVerifying() #kalo push hapus dulu
+            ->withoutVerifying()
             ->timeout(20);
 
         if (! empty($resolvedToken)) {
@@ -723,4 +723,4 @@ class AkademikService
     {
         return $this->delete("cpl/{$id}", [], $token);
     }
-}    
+}
