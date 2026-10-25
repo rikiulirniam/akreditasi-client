@@ -37,6 +37,12 @@
             justify-content: center !important;
             width: 100% !important;
         }
+        #sidebar.is-collapsed .sidebar-section-header {
+            padding-left: 0.25rem !important;
+            padding-right: 0.25rem !important;
+            margin-top: 0.5rem !important;
+            margin-bottom: 0.5rem !important;
+        }
     </style>
 </head>
 <body class="h-full font-sans antialiased text-black overflow-hidden {{ request()->routeIs('tenaga-kependidikan.*', 'tenaga-pendidikan.*') ? 'flow2-tendik' : '' }}">
@@ -224,16 +230,9 @@
             const submenuContainers = document.querySelectorAll('.submenu-container');
             const sidebarExpandedWidth = 'w-[350px]';
 
-            let isCollapsed = localStorage.getItem('sidebar_collapsed') === 'true';
-
-            // Track open submenus so they remain open when expanded
+            let isCollapsed = false;
             const openSubmenus = new Set();
-            submenuContainers.forEach(container => {
-                if (container.getAttribute('data-is-active') === 'true' || !container.classList.contains('hidden')) {
-                    openSubmenus.add(container.id);
-                }
-            });
-
+            localStorage.setItem('sidebar_collapsed', 'false');
             function applySidebarState() {
                 if (isCollapsed) {
                     sidebar.classList.remove('w-[350px]', 'w-64');

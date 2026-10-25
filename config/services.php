@@ -39,6 +39,10 @@ return [
         'base_url' => env('AKADEMIK_API_URL', 'https://akademik.fayra.my.id/api'),
     ],
 
+    'akreditasi' => [
+        'base_url' => env('AKREDITASI_API_URL', 'https://akreditasi.fayra.my.id/api/v1'),
+    ],
+
     'tridharma' => [
         'base_url' => env('TRIDHARMA_API_URL', env('API_BASE_URL', env('API_URL', 'https://tridharma.fayra.my.id/api'))),
     ],
