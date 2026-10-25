@@ -369,7 +369,7 @@ class MataKuliahController extends Controller
                 ->all();
             $gradePoints = collect($nilaiMahasiswa)
                 ->filter(fn (array $grade) => in_array((string) ($grade['mata_kuliah_angkatan_kelas_id'] ?? ''), $classOfferingIds, true))
-                ->pluck('bobot_nilai')
+                ->map(fn (array $grade) => $grade['bobot'] ?? $grade['bobot_nilai'] ?? null)
                 ->filter(fn ($gradePoint) => is_numeric($gradePoint))
                 ->map(fn ($gradePoint) => (float) $gradePoint);
             $averageIpk = $gradePoints->isNotEmpty() ? number_format($gradePoints->avg(), 2) : '-';

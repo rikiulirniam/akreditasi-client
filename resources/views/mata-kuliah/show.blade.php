@@ -1321,7 +1321,7 @@
                 tbody.innerHTML = data.map((it, idx) => {
                     const mhs = it.mahasiswa ?? it.data_mahasiswa ?? it.enrollment_kelas?.mahasiswa ?? {};
                     const namaMhs = mhs.nama_mahasiswa ?? mhs.nama ?? mhs.name ?? it.nama_mahasiswa ?? it.nama ?? '-';
-                    const nimMhs = mhs.nim ?? it.nim ?? '-';
+                    const nimMhs = mhs.nim_display ?? mhs.nim ?? it.nim_display ?? it.nim ?? '-';
                     const mhsId = it.mahasiswa_id ?? it.id_mahasiswa ?? mhs.id ?? null;
 
                     const angkaVal = it.nilai_angka ?? it.angka ?? null;
