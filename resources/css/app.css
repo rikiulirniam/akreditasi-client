@@ -92,7 +92,7 @@
 }
 
 .flow2-tendik #sidebar:not(.is-collapsed) {
-    width: 314px;
+    width: 350px;
 }
 
 .flow2-tendik .tendik-flow-table > div {
@@ -104,50 +104,46 @@
 }
 
 .flow2-tendik .tendik-flow-table table {
+    width: 100%;
     table-layout: fixed;
-    border-spacing: 0 12px;
+    border-collapse: collapse;
 }
 
-.flow2-tendik .tendik-flow-table thead th {
-    padding: 12px 18px;
-    border: 0;
-    background: #D9D9D9;
-    font-size: 13px;
-    font-weight: 700;
-    color: #262626;
-    line-height: 1.25;
-}
-
-.flow2-tendik .tendik-flow-table thead th:first-child {
-    border-radius: 10px 0 0 10px;
-}
-
-.flow2-tendik .tendik-flow-table thead th:last-child {
-    border-radius: 0 10px 10px 0;
-}
-
-.flow2-tendik .tendik-flow-table tbody tr {
+.flow2-tendik .tendik-flow-table thead tr {
+    border-top: 1px solid #D1D5DB;
+    border-bottom: 1px solid #D1D5DB;
     background: transparent;
 }
 
-.flow2-tendik .tendik-flow-table tbody td {
-    padding: 13px 18px;
-    border: 0;
+.flow2-tendik .tendik-flow-table thead th {
+    padding: 14px 16px;
+    border: none;
+    background: transparent;
+    font-size: 14px;
+    font-weight: 700;
+    color: #000000;
+    line-height: 1.25;
+}
+
+.flow2-tendik .tendik-flow-table tbody tr {
+    border-bottom: 1px solid #E5E7EB;
     background: #FFFFFF;
-    box-shadow: inset 0 1px #D0D0D0, inset 0 -1px #D0D0D0;
-    font-size: 13.5px;
-    line-height: 1.35;
-    overflow-wrap: anywhere;
+    transition: background-color 0.15s ease;
 }
 
-.flow2-tendik .tendik-flow-table tbody td:first-child {
-    border-radius: 10px 0 0 10px;
-    box-shadow: inset 1px 0 #D0D0D0, inset 0 1px #D0D0D0, inset 0 -1px #D0D0D0;
+.flow2-tendik .tendik-flow-table tbody tr:hover {
+    background: #FAFAFA;
 }
 
-.flow2-tendik .tendik-flow-table tbody td:last-child {
-    border-radius: 0 10px 10px 0;
-    box-shadow: inset -1px 0 #D0D0D0, inset 0 1px #D0D0D0, inset 0 -1px #D0D0D0;
+.flow2-tendik .tendik-flow-table tbody td {
+    padding: 15px 16px;
+    border: none;
+    background: transparent;
+    box-shadow: none;
+    border-radius: 0;
+    font-size: 14px;
+    line-height: 1.4;
+    color: #000000;
 }
 
 /* Smooth Table Row Deletion & Upward Slide Animation */
@@ -182,5 +178,52 @@ tr.row-deleting td * {
 
 tbody tr {
     transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Profile Card & Smooth Dropdown Animation */
+#profileDropdownContainer {
+    position: relative;
+    width: 215px;
+}
+
+#profileDropdownBtn {
+    width: 100%;
+    transition: border-radius 0.25s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.2s ease;
+}
+
+#profileDropdownMenu {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    margin-top: -2px;
+    background-color: #E5E5E5;
+    border: 2px solid #3A5675;
+    border-top: 1.5px solid #3A5675;
+    border-bottom-left-radius: 16px;
+    border-bottom-right-radius: 16px;
+    overflow: hidden;
+    max-height: 0;
+    opacity: 0;
+    transform: translateY(-8px) scaleY(0.9);
+    transform-origin: top center;
+    pointer-events: none;
+    box-shadow: 0 12px 28px -6px rgba(0, 0, 0, 0.12), 0 8px 12px -6px rgba(0, 0, 0, 0.08);
+    transition: max-height 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+                opacity 0.25s cubic-bezier(0.4, 0, 0.2, 1),
+                transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    z-index: 50;
+}
+
+#profileDropdownContainer.is-open #profileDropdownBtn {
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
+}
+
+#profileDropdownContainer.is-open #profileDropdownMenu {
+    max-height: 280px;
+    opacity: 1;
+    transform: translateY(0) scaleY(1);
+    pointer-events: auto;
 }
 

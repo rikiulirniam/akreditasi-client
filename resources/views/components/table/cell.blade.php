@@ -9,6 +9,6 @@
     $cleanClass = preg_replace('/\b(?:w-(?:36|40|44|48|52|56|60|64|72|80|96)|max-w-\S+)\b/', '', $class);
 @endphp
 
-<td {{ $attributes->except('class')->merge(['class' => 'py-4 px-4 sm:px-6 text-sm text-gray-800 align-middle border-b border-gray-200 ' . trim($cleanClass)]) }}>
+<td {{ $attributes->except('class')->merge(['class' => 'py-3.5 px-4 sm:px-6 text-sm text-gray-800 align-middle border-b border-gray-200 text-left ' . trim($cleanClass)]) }}>
     {{ $slot }}
 </td>

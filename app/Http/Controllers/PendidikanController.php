@@ -8,6 +8,7 @@ use Illuminate\Http\Client\Response;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\View\View;
 
 class PendidikanController extends Controller
@@ -105,6 +106,80 @@ class PendidikanController extends Controller
                 'selectedTendik' => null,
                 'isDosen' => true,
                 'authDosen' => $authDosen,
+                'apiError' => null,
+            ]);
+        }
+
+        // If viewing education for a specific Tendik (from Tendik Detail page or filter)
+        if ($idTendik !== null) {
+            $selectedTendik = null;
+            $tendikApiRecord = null;
+            foreach ($tendikOptions as $tendik) {
+                if ($tendik['id'] === $idTendik) {
+                    $selectedTendik = $tendik;
+                    break;
+                }
+            }
+
+            try {
+                $singleTendikResp = $this->tridharmaService->getTendik($idTendik);
+                if ($singleTendikResp->successful()) {
+                    $tendikApiRecord = $singleTendikResp->json('data', []);
+                    if ($selectedTendik === null) {
+                        $selectedTendik = [
+                            'id' => (int) ($tendikApiRecord['id_tendik'] ?? $idTendik),
+                            'nama' => (string) ($tendikApiRecord['nama_tendik'] ?? $tendikApiRecord['nama'] ?? 'Tenaga Kependidikan #'.$idTendik),
+                        ];
+                    }
+                }
+            } catch (\Throwable) {
+            }
+
+            if ($selectedTendik === null) {
+                $selectedTendik = ['id' => $idTendik, 'nama' => 'Tenaga Kependidikan #'.$idTendik];
+            }
+
+            $allItems = $this->tridharmaService->getTendikPendidikanList($idTendik, $tendikApiRecord);
+
+            // Apply search filter if specified
+            if ($search !== '') {
+                $allItems = array_values(array_filter($allItems, function (array $item) use ($search) {
+                    $univ = (string) ($item['universitas'] ?? '');
+                    $prodi = (string) ($item['program_studi'] ?? '');
+                    $jenjang = (string) ($item['jenjang'] ?? '');
+
+                    return stripos($univ, $search) !== false
+                        || stripos($prodi, $search) !== false
+                        || stripos($jenjang, $search) !== false;
+                }));
+            }
+
+            // Apply jenjang filter if specified
+            if ($selectedJenjang !== '') {
+                $allItems = array_values(array_filter($allItems, fn (array $item) => $this->matchesJenjang($item['jenjang'] ?? '', $selectedJenjang)));
+            }
+
+            $total = count($allItems);
+            $pagination = [
+                'total' => $total,
+                'per_page' => $perPage,
+                'current_page' => 1,
+                'last_page' => 1,
+                'from' => $total > 0 ? 1 : 0,
+                'to' => $total,
+            ];
+
+            return view('pendidikan.index', [
+                'pendidikanList' => $allItems,
+                'pagination' => $pagination,
+                'filters' => $filters,
+                'jenjangOptions' => $this->defaultJenjangOptions(),
+                'dosenOptions' => $dosenOptions,
+                'tendikOptions' => $tendikOptions,
+                'selectedDosen' => null,
+                'selectedTendik' => $selectedTendik,
+                'isDosen' => false,
+                'authDosen' => null,
                 'apiError' => null,
             ]);
         }
@@ -355,6 +430,49 @@ class PendidikanController extends Controller
                 } catch (\Throwable) {
                 }
             } elseif (($targetType === 'tendik' || ($targetType === null && $idTendik !== null)) && $idTendik) {
+                // First ensure existing qualifications from API are loaded and preserved in cache
+                $this->tridharmaService->getTendikPendidikanList($idTendik);
+
+                $cacheKey = "tendik_kualifikasi_{$idTendik}";
+                $customKey = "tendik_custom_pendidikan_{$idTendik}";
+                $deletedKey = "tendik_deleted_pendidikan_{$idTendik}";
+
+                $cachedIds = Cache::get($cacheKey, []);
+                if (! is_array($cachedIds)) {
+                    $cachedIds = [];
+                }
+                if (! in_array((int) $newPendidikanId, $cachedIds, true)) {
+                    $cachedIds[] = (int) $newPendidikanId;
+                }
+                Cache::put($cacheKey, array_values(array_unique($cachedIds)), now()->addYears(5));
+
+                $customItems = Cache::get($customKey, []);
+                if (! is_array($customItems)) {
+                    $customItems = [];
+                }
+                $customItems[$newPendidikanId] = [
+                    'id' => (int) $newPendidikanId,
+                    'id_pendidikan' => (int) $newPendidikanId,
+                    'universitas' => trim($validated['universitas']),
+                    'institusi' => trim($validated['universitas']),
+                    'program_studi' => trim($validated['program_studi']),
+                    'jenjang' => $normalizedJenjang,
+                    'tahun_lulus' => (string) $validated['tahun_lulus'],
+                    'gelar' => TridharmaService::defaultGelarForJenjang($normalizedJenjang),
+                ];
+                Cache::put($customKey, $customItems, now()->addYears(5));
+
+                // Remove from deleted list if present
+                $deletedItems = Cache::get($deletedKey, []);
+                if (! is_array($deletedItems)) {
+                    $deletedItems = [];
+                }
+                $sig = md5(strtolower(trim($validated['universitas']).'|'.trim($validated['program_studi']).'|'.$normalizedJenjang.'|'.$validated['tahun_lulus']));
+                $deletedItems = array_values(array_filter($deletedItems, fn ($d) => (string) $d !== (string) $newPendidikanId && (string) $d !== $sig));
+                Cache::put($deletedKey, $deletedItems, now()->addYears(5));
+
+                Cache::put("pendidikan_tendik_{$newPendidikanId}", $idTendik, now()->addYears(5));
+
                 try {
                     $this->tridharmaService->updateTendik($idTendik, ['id_pendidikan' => (int) $newPendidikanId]);
                 } catch (\Throwable) {
@@ -379,6 +497,27 @@ class PendidikanController extends Controller
 
     public function show(int $id): JsonResponse|RedirectResponse
     {
+        try {
+            $response = $this->tridharmaService->getPendidikanById($id);
+            if ($response->successful()) {
+                $p = $response->json('data', []);
+                if (is_array($p)) {
+                    return response()->json([
+                        'success' => true,
+                        'data' => [
+                            'id' => $id,
+                            'id_pendidikan' => $id,
+                            'universitas' => (string) ($p['universitas'] ?? $p['institusi'] ?? ''),
+                            'program_studi' => (string) ($p['program_studi'] ?? ''),
+                            'jenjang' => (string) ($p['jenjang'] ?? ''),
+                            'tahun_lulus' => (int) ($p['tahun_lulus'] ?? 0),
+                        ],
+                    ]);
+                }
+            }
+        } catch (\Throwable) {
+        }
+
         $isDosen = $this->isAuthenticatedDosen();
         $authDosen = $isDosen ? $this->getAuthenticatedDosenData() : null;
 
@@ -430,17 +569,6 @@ class PendidikanController extends Controller
 
     public function update(Request $request, int $id): JsonResponse|RedirectResponse
     {
-        $isDosen = $this->isAuthenticatedDosen();
-        $authDosen = $isDosen ? $this->getAuthenticatedDosenData() : null;
-
-        // Restriction: Dosen can ONLY edit their own pendidikan
-        if ($isDosen && $authDosen) {
-            $myPendidikanId = $authDosen['id_pendidikan'] ?? null;
-            if ($myPendidikanId !== null && (int) $myPendidikanId !== $id) {
-                return $this->errorResponse($request, 'Anda hanya dapat mengubah data pendidikan milik Anda sendiri.', null, 403);
-            }
-        }
-
         $validated = $request->validate([
             'universitas' => ['required', 'string', 'max:255'],
             'program_studi' => ['required', 'string', 'max:255'],
@@ -458,6 +586,17 @@ class PendidikanController extends Controller
         ]);
 
         $normalizedJenjang = self::normalizeJenjang($validated['jenjang']);
+
+        $isDosen = $this->isAuthenticatedDosen();
+        $authDosen = $isDosen ? $this->getAuthenticatedDosenData() : null;
+
+        // Restriction: Dosen can ONLY edit their own pendidikan
+        if ($isDosen && $authDosen) {
+            $myPendidikanId = $authDosen['id_pendidikan'] ?? null;
+            if ($myPendidikanId !== null && (int) $myPendidikanId !== $id) {
+                return $this->errorResponse($request, 'Anda hanya dapat mengubah data pendidikan milik Anda sendiri.', null, 403);
+            }
+        }
 
         $payload = [
             'universitas' => trim($validated['universitas']),
@@ -516,7 +655,13 @@ class PendidikanController extends Controller
             }
         } elseif (($targetType === 'tendik' || ($targetType === null && $idTendik !== null)) && $idTendik) {
             try {
-                $this->tridharmaService->updateTendik($idTendik, ['id_pendidikan' => $id]);
+                $this->tridharmaService->updateTendikPendidikan($idTendik, $id, [
+                    'universitas' => trim($validated['universitas']),
+                    'program_studi' => trim($validated['program_studi']),
+                    'jenjang' => $normalizedJenjang,
+                    'tahun_lulus' => (int) $validated['tahun_lulus'],
+                    'gelar' => TridharmaService::defaultGelarForJenjang($normalizedJenjang),
+                ]);
             } catch (\Throwable) {
             }
         }
@@ -538,6 +683,38 @@ class PendidikanController extends Controller
 
     public function destroy(Request $request, int $id): JsonResponse|RedirectResponse
     {
+        $idTendik = $request->input('id_tendik');
+        if (! $idTendik) {
+            $idTendik = Cache::get("pendidikan_tendik_{$id}");
+        }
+        if (! $idTendik) {
+            $allTendiks = Cache::get('all_cached_tendik_ids', []);
+            foreach ($allTendiks as $tId) {
+                $cIds = Cache::get("tendik_kualifikasi_{$tId}", []);
+                if (in_array((int) $id, array_map('intval', (array) $cIds), true)) {
+                    $idTendik = $tId;
+                    break;
+                }
+            }
+        }
+
+        if ($idTendik) {
+            $this->tridharmaService->deleteTendikPendidikan((int) $idTendik, $id);
+
+            if ($request->expectsJson() || $request->ajax()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Data pendidikan berhasil dihapus.',
+                ]);
+            }
+
+            return redirect()->route('pendidikan.index', ['id_tendik' => $idTendik])->with('toast', [
+                'type' => 'success',
+                'title' => 'Berhasil Dihapus',
+                'message' => 'Data pendidikan berhasil dihapus.',
+            ]);
+        }
+
         $isDosen = $this->isAuthenticatedDosen();
         $authDosen = $isDosen ? $this->getAuthenticatedDosenData() : null;
 
@@ -585,6 +762,25 @@ class PendidikanController extends Controller
             'title' => 'Berhasil Dihapus',
             'message' => 'Data pendidikan berhasil dihapus.',
         ]);
+    }
+
+    public static function defaultGelarForJenjang(string $jenjang): string
+    {
+        $j = strtoupper(trim($jenjang));
+        if ($j === 'S3') {
+            return 'Dr';
+        }
+        if ($j === 'S2') {
+            return 'M.Kom';
+        }
+        if (str_contains($j, 'S1') || str_contains($j, 'D4')) {
+            return 'S.Kom';
+        }
+        if (str_contains($j, 'D3')) {
+            return 'A.Md';
+        }
+
+        return 'S.Kom';
     }
 
     /**

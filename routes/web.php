@@ -138,8 +138,22 @@ Route::middleware('auth.akademik')->group(function () {
     Route::post('/tenaga-pendidikan/{tendikId}/sertifikasi', [TenagaKependidikanController::class, 'storeSertifikasi'])->name('tenaga-pendidikan.sertifikasi.store');
     Route::put('/tenaga-pendidikan/{tendikId}/sertifikasi/{sertifikasiId}', [TenagaKependidikanController::class, 'updateSertifikasi'])->name('tenaga-pendidikan.sertifikasi.update');
     Route::delete('/tenaga-pendidikan/{tendikId}/sertifikasi/{sertifikasiId}', [TenagaKependidikanController::class, 'destroySertifikasi'])->name('tenaga-pendidikan.sertifikasi.destroy');
-    Route::post('/tenaga-kependidikan/{tenaga_kependidikan}/sertifikasi', [TenagaKependidikanController::class, 'storeSertifikasi'])->name('tenaga-kependidikan.sertifikasi.store');
-    Route::delete('/tenaga-kependidikan/{tenaga_kependidikan}/sertifikasi/{sertifikasi}', [TenagaKependidikanController::class, 'destroySertifikasi'])->name('tenaga-kependidikan.sertifikasi.destroy');
+    Route::post('/tenaga-kependidikan/{tendikId}/sertifikasi', [TenagaKependidikanController::class, 'storeSertifikasi'])->name('tenaga-kependidikan.sertifikasi.store');
+    Route::delete('/tenaga-kependidikan/{tendikId}/sertifikasi/{sertifikasiId}', [TenagaKependidikanController::class, 'destroySertifikasi'])->name('tenaga-kependidikan.sertifikasi.destroy');
+    Route::get('/tenaga-kependidikan/{tendikId}/sertifikasi', function ($tendikId) {
+        return redirect()->route('sertifikasi.index', ['tipe_pemilik' => 'tendik', 'id_tendik' => $tendikId]);
+    })->name('tenaga-kependidikan.sertifikasi.index');
+    Route::get('/tenaga-pendidikan/{tendikId}/sertifikasi', function ($tendikId) {
+        return redirect()->route('sertifikasi.index', ['tipe_pemilik' => 'tendik', 'id_tendik' => $tendikId]);
+    })->name('tenaga-pendidikan.sertifikasi.index');
+    Route::get('/tenaga-kependidikan/{tendikId}/pendidikan', function ($tendikId) {
+        return redirect()->route('pendidikan.index', ['id_tendik' => $tendikId]);
+    })->name('tenaga-kependidikan.pendidikan.index');
+    Route::get('/tenaga-pendidikan/{tendikId}/pendidikan', function ($tendikId) {
+        return redirect()->route('pendidikan.index', ['id_tendik' => $tendikId]);
+    })->name('tenaga-pendidikan.pendidikan.index');
+    Route::post('/tenaga-kependidikan/{tendikId}/pendidikan', [TenagaKependidikanController::class, 'storePendidikan'])->name('tenaga-kependidikan.pendidikan.store');
+    Route::post('/tenaga-pendidikan/{tendikId}/pendidikan', [TenagaKependidikanController::class, 'storePendidikan'])->name('tenaga-pendidikan.pendidikan.store');
 
     // Modul Pendidikan
     Route::resource('pendidikan', PendidikanController::class);
