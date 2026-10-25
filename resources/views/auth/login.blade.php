@@ -129,7 +129,7 @@
                     </p>
                     <div class="mt-3.5 flex justify-center">
                         <a 
-                            href="#" 
+                            href="{{ route('auth.google') }}" 
                             class="w-10 h-10 rounded-full flex items-center justify-center hover:bg-gray-100 transition cursor-pointer"
                             title="Login dengan Google"
                         >
