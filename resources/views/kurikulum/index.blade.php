@@ -54,6 +54,7 @@
             </div>
 
             <!-- Tambah Kurikulum Button -->
+            @haspermission('kurikulum.create')
             <div>
                 <a
                     href="{{ route('kurikulum.create') }}"
@@ -65,6 +66,7 @@
                     Tambah Kurikulum
                 </a>
             </div>
+            @endhaspermission
         </div>
 
         <!-- Table -->
@@ -108,6 +110,7 @@
                     </x-table.cell>
                     <x-table.cell class="w-28">
                         <div class="flex items-center justify-end gap-3">
+                            @haspermission('kurikulum.update')
                             <!-- Edit -->
                             <a
                                 href="{{ route('kurikulum.edit', $item['id']) }}"
@@ -116,7 +119,9 @@
                             >
                                 <x-icon.edit class="w-5 h-5" />
                             </a>
+                            @endhaspermission
 
+                            @haspermission('kurikulum.delete')
                             <!-- Delete -->
                             <button
                                 type="button"
@@ -129,6 +134,7 @@
                             >
                                 <x-icon.delete class="w-5 h-5" />
                             </button>
+                            @endhaspermission
 
                             <!-- Detail / View -->
                             <a
