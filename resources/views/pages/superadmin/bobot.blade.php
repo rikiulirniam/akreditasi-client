@@ -1,261 +1,275 @@
 @extends('layouts.app')
 
-@section('title', 'Master LAM INFOKOM - Bobot')
+@section('title', 'Master Data Bobot')
 
 @section('content')
 <div class="space-y-6">
 
     {{-- Breadcrumbs --}}
-    <nav class="flex text-[11px] font-medium text-gray-500" aria-label="Breadcrumb">
-        <ol class="inline-flex items-center space-x-1 md:space-x-2 overflow-x-auto whitespace-nowrap pb-2 md:pb-0">
-            <li class="inline-flex items-center"><span class="text-gray-400">Master Data Akreditasi</span></li>
+    <nav class="flex text-xs sm:text-sm font-medium text-gray-500" aria-label="Breadcrumb">
+        <ol class="inline-flex items-center space-x-1 sm:space-x-2">
+            <li class="inline-flex items-center">
+                <span class="text-gray-400">Master Data Akreditasi</span>
+            </li>
             <li>
                 <div class="flex items-center">
                     <span class="mx-1 text-gray-400">/</span>
-                    <a href="{{ route('akreditasi.superadmin.lembaga_akreditasi') }}" class="hover:text-[#005A9C] transition">Lembaga Akreditasi: LAM-INFOKOM</a>
+                    <a href="{{ route('akreditasi.superadmin.lembaga_akreditasi') }}" class="hover:text-primary transition font-medium">Lembaga Akreditasi</a>
                 </div>
             </li>
             <li>
                 <div class="flex items-center">
                     <span class="mx-1 text-gray-400">/</span>
-                    <a href="{{ route('akreditasi.superadmin.instrumen') }}" class="hover:text-[#005A9C] transition">Versi Instrumen: 2.1</a>
+                    <a href="{{ route('akreditasi.superadmin.instrumen') }}" class="hover:text-primary transition font-medium">Instrumen</a>
                 </div>
             </li>
             <li>
                 <div class="flex items-center">
                     <span class="mx-1 text-gray-400">/</span>
-                    <a href="{{ route('akreditasi.superadmin.kriteria') }}" class="hover:text-[#005A9C] transition">Instrumen : INS-001</a>
+                    <a href="{{ route('akreditasi.superadmin.kriteria') }}" class="hover:text-primary transition font-medium">Kriteria</a>
                 </div>
             </li>
             <li>
                 <div class="flex items-center">
                     <span class="mx-1 text-gray-400">/</span>
-                    <a href="{{ route('akreditasi.superadmin.subkriteria') }}" class="hover:text-[#005A9C] transition">Kriteria: C1</a>
+                    <a href="{{ route('akreditasi.superadmin.subkriteria') }}" class="hover:text-primary transition font-medium">Subkriteria</a>
                 </div>
             </li>
             <li>
                 <div class="flex items-center">
                     <span class="mx-1 text-gray-400">/</span>
-                    <a href="{{ route('akreditasi.superadmin.indikator') }}" class="hover:text-[#005A9C] transition">Subkriteria: C1.1</a>
+                    <a href="{{ route('akreditasi.superadmin.indikator') }}" class="hover:text-primary transition font-medium">Indikator</a>
                 </div>
             </li>
             <li>
                 <div class="flex items-center">
                     <span class="mx-1 text-gray-400">/</span>
-                    <a href="{{ route('akreditasi.superadmin.rubrik') }}" class="hover:text-[#005A9C] transition">Indikator: C1.1.1</a>
+                    <a href="{{ route('akreditasi.superadmin.rubrik') }}" class="hover:text-primary transition font-medium">Rubrik</a>
                 </div>
             </li>
             <li aria-current="page">
                 <div class="flex items-center">
                     <span class="mx-1 text-gray-400">/</span>
-                    <span class="font-bold text-gray-800">Rubrik : 2</span>
+                    <span class="font-bold text-gray-800">Bobot</span>
                 </div>
             </li>
         </ol>
     </nav>
 
     {{-- Banner Utama --}}
-    <section class="flex flex-col justify-between gap-4 rounded-xl bg-[#06284F] p-6 shadow-sm sm:flex-row sm:items-start">
-        <div class="text-white max-w-2xl">
-            <p class="text-[10px] font-bold uppercase tracking-wider text-gray-300">DETAIL RUBRIK</p>
-            <h2 class="mt-2 text-2xl font-bold tracking-tight sm:text-3xl">2</h2>
-            <p class="mt-2 text-xs text-gray-300/80">Turunan kriteria sebagai kelompok indikator.</p>
+    <section class="flex flex-col justify-between gap-5 rounded-2xl bg-primary p-6 sm:p-7 shadow-xs sm:flex-row sm:items-center text-white">
+        <div class="min-w-0">
+            <p class="text-xs sm:text-sm font-bold uppercase tracking-wider text-secondary">
+                DETAIL RUBRIK
+            </p>
+            <h2 class="mt-1 text-2xl sm:text-3xl font-extrabold tracking-tight">
+                Bobot Indikator: C1.1
+            </h2>
+            <p class="mt-2 text-sm text-white/80">
+                Kelola nilai bobot instrumen berdasarkan jenjang dan jenis akreditasi.
+            </p>
         </div>
         
-        <div class="flex shrink-0 items-center gap-3 mt-2 sm:mt-0">
-            <button onclick="toggleModal('modal-edit')" class="rounded-lg bg-[#FFD400] px-6 py-2 text-sm font-bold text-[#06284F] transition hover:bg-yellow-500 shadow-sm">
+        <div class="flex shrink-0 items-center gap-3">
+            <button onclick="toggleModal('modal-edit')" class="rounded-2xl bg-secondary px-6 py-2.5 text-sm font-bold text-primary transition hover:brightness-95 shadow-sm cursor-pointer">
                 Edit
             </button>
-            <button onclick="toggleModal('modal-hapus')" class="rounded-lg bg-[#D32F2F] px-5 py-2 text-sm font-bold text-white transition hover:bg-red-700 shadow-sm">
+            <button onclick="toggleModal('modal-hapus')" class="rounded-2xl bg-rose-600 px-5 py-2.5 text-sm font-bold text-white transition hover:bg-rose-700 shadow-sm cursor-pointer">
                 Hapus
             </button>
         </div>
     </section>
 
     {{-- Metadata Info --}}
-    <section class="grid grid-cols-1 gap-6 px-2 py-2 sm:grid-cols-3">
+    <section class="grid grid-cols-1 sm:grid-cols-3 gap-4 rounded-2xl border border-[#EAEAEA] bg-white p-5 sm:p-6 shadow-xs">
         <div>
-            <p class="text-[10px] font-bold uppercase tracking-wider text-gray-400">INDIKATOR</p>
-            <p class="mt-1 text-xs font-medium text-gray-900">C1.1</p>
+            <p class="text-xs font-bold uppercase tracking-wider text-gray-500">INDIKATOR</p>
+            <p class="mt-1.5 text-base font-semibold text-gray-900 font-mono">C1.1</p>
         </div>
         <div>
-            <p class="text-[10px] font-bold uppercase tracking-wider text-gray-400">SKOR</p>
-            <p class="mt-1 text-xs font-medium text-gray-900">0</p>
+            <p class="text-xs font-bold uppercase tracking-wider text-gray-500">SKOR RUJUKAN</p>
+            <p class="mt-1.5 text-base font-semibold text-gray-900 font-mono">0</p>
         </div>
         <div>
-            <p class="text-[10px] font-bold uppercase tracking-wider text-gray-400">DESKRIPSI RUBRIK</p>
-            <p class="mt-1 text-xs font-medium text-gray-900">Tidak ada bukti</p>
+            <p class="text-xs font-bold uppercase tracking-wider text-gray-500">DESKRIPSI RUBRIK</p>
+            <p class="mt-1.5 text-base font-semibold text-gray-900">Tidak ada bukti</p>
         </div>
     </section>
 
     {{-- Tabel Bobot --}}
-    <section class="mt-4">
-        <div class="mb-4 flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
+    <section class="space-y-4">
+        <div class="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
             <div>
-                <h3 class="text-lg font-bold text-gray-900">Bobot</h3>
-                <p class="mt-0.5 text-xs text-gray-500">5 data terkait</p>
+                <h3 class="text-lg sm:text-xl font-bold text-gray-900 tracking-tight">Daftar Bobot</h3>
+                <p class="text-xs sm:text-sm text-gray-500">5 data terkait</p>
             </div>
-            <button onclick="toggleModal('modal-tambah')" class="inline-flex h-9 items-center justify-center rounded-lg bg-[#005A9C] px-5 text-xs font-semibold text-white shadow-sm transition hover:bg-[#06284F]">
-                + Tambah Bobot
+            <button onclick="toggleModal('modal-tambah')" class="inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-primary text-white text-sm font-bold shadow-sm hover:bg-additional transition cursor-pointer">
+                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                </svg>
+                Tambah Bobot
             </button>
         </div>
 
-        <div class="overflow-x-auto border-t border-gray-200">
-            <table class="w-full text-left text-sm text-gray-600">
-                <thead class="text-[11px] font-medium text-gray-500">
-                    <tr>
-                        <th scope="col" class="px-4 py-3 pb-4">Indikator</th>
-                        <th scope="col" class="px-4 py-3 pb-4">Jenis Instrumen</th>
-                        <th scope="col" class="px-4 py-3 pb-4">Jenjang</th>
-                        <th scope="col" class="px-4 py-3 pb-4">Nilai Bobot</th>
-                        <th scope="col" class="px-4 py-3 pb-4">Link</th>
-                        <th scope="col" class="px-4 py-3 pb-4"></th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-gray-100">
-                    
-                    @php
-                        $bobot = array_fill(0, 4, [
-                            'indikator' => 'C1.1.1',
-                            'jenis' => 'Terakreditasi',
-                            'jenjang' => 'D3',
-                            'nilai' => '2',
-                            'link' => '-'
-                        ]);
-                    @endphp
+        <div class="bg-white rounded-2xl border border-[#EAEAEA] shadow-xs overflow-hidden">
+            <x-table>
+                <x-slot:header>
+                    <x-table.th class="w-36">Indikator</x-table.th>
+                    <x-table.th>Jenis Instrumen</x-table.th>
+                    <x-table.th class="w-48">Jenjang</x-table.th>
+                    <x-table.th class="w-36">Nilai Bobot</x-table.th>
+                    <x-table.th class="w-24 text-right">Aksi</x-table.th>
+                </x-slot:header>
 
-                    @foreach ($bobot as $item)
-                    <tr class="transition hover:bg-gray-50">
-                        <td class="whitespace-nowrap px-4 py-4 text-xs font-medium text-gray-800">{{ $item['indikator'] }}</td>
-                        <td class="px-4 py-4 text-xs text-gray-800">{{ $item['jenis'] }}</td>
-                        <td class="px-4 py-4 text-xs text-gray-800">{{ $item['jenjang'] }}</td>
-                        <td class="px-4 py-4 text-xs text-gray-800">{{ $item['nilai'] }}</td>
-                        <td class="px-4 py-4 text-xs text-gray-800">{{ $item['link'] }}</td>
-                        <td class="px-4 py-4 text-right">
-                            <button onclick="window.location.href='{{ route('akreditasi.superadmin.detail_bobot') }}'" class="text-[#005A9C] hover:text-[#06284F] transition">
-                                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                @php
+                    $bobot = array_fill(0, 5, [
+                        'indikator' => 'C1.1.1',
+                        'jenis' => 'APS untuk Pemenuhan Syarat Minimum',
+                        'jenjang' => 'Sarjana Terapan',
+                        'nilai' => '2.0'
+                    ]);
+                @endphp
+
+                @foreach ($bobot as $item)
+                    <x-table.row>
+                        <x-table.cell>
+                            <span class="font-mono font-bold text-sm text-primary tracking-tight">
+                                {{ $item['indikator'] }}
+                            </span>
+                        </x-table.cell>
+                        <x-table.cell>
+                            <span class="font-semibold text-sm text-gray-900">
+                                {{ $item['jenis'] }}
+                            </span>
+                        </x-table.cell>
+                        <x-table.cell>
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-gray-100 text-gray-700">
+                                {{ $item['jenjang'] }}
+                            </span>
+                        </x-table.cell>
+                        <x-table.cell>
+                            <span class="font-mono font-bold text-sm text-gray-900">
+                                {{ $item['nilai'] }}
+                            </span>
+                        </x-table.cell>
+                        <x-table.cell class="w-24 text-right">
+                            <button onclick="window.location.href='{{ route('akreditasi.superadmin.detail_bobot') }}'" class="p-1.5 text-primary hover:text-additional transition cursor-pointer" title="Lihat Detail Bobot">
+                                <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"></path>
                                 </svg>
                             </button>
-                        </td>
-                    </tr>
-                    @endforeach
-
-                </tbody>
-            </table>
+                        </x-table.cell>
+                    </x-table.row>
+                @endforeach
+            </x-table>
         </div>
     </section>
 
-    {{-- ========================================== --}}
-    {{-- KUMPULAN MODAL & SCRIPT --}}
-    {{-- ========================================== --}}
-
-    {{-- Modal Tambah Bobot --}}
-    <div id="modal-tambah" tabindex="-1" class="hidden fixed inset-0 z-50 items-center justify-center bg-gray-900/50">
-        <div class="relative w-full max-w-lg p-4">
-            <div class="relative rounded-2xl bg-white shadow-lg">
-                <div class="flex items-center justify-between border-b border-gray-200 p-4 md:p-5">
-                    <h3 class="text-lg font-bold text-[#06284F]">Tambah Bobot</h3>
-                    <button type="button" onclick="toggleModal('modal-tambah')" class="text-gray-400 hover:bg-gray-200 hover:text-gray-900 rounded-lg p-1.5 transition">
-                        <svg class="h-4 w-4" fill="none" viewBox="0 0 14 14" stroke="currentColor" stroke-width="2">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="m1 1 6 6m0 0 6 6M7 7l6-6M7 7l-6 6"/>
-                        </svg>
-                    </button>
-                </div>
-                <div class="p-4 md:p-5 space-y-4">
-                    <div class="grid grid-cols-2 gap-4">
-                        <div>
-                            <label class="mb-2 block text-xs font-bold text-gray-700">Indikator <span class="text-red-500">*</span></label>
-                            <input type="text" placeholder="Contoh: C1.1.1" class="block w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-xs text-gray-900 focus:border-[#005A9C] focus:ring-[#005A9C] focus:outline-none">
-                        </div>
-                        <div>
-                            <label class="mb-2 block text-xs font-bold text-gray-700">Jenjang <span class="text-red-500">*</span></label>
-                            <select class="block w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-xs text-gray-900 focus:border-[#005A9C] focus:ring-[#005A9C] focus:outline-none">
-                                <option value="">-- Pilih --</option>
-                                <option>D3</option>
-                                <option>D4</option>
-                                <option>S1</option>
-                            </select>
-                        </div>
-                        <div class="col-span-2">
-                            <label class="mb-2 block text-xs font-bold text-gray-700">Jenis Instrumen <span class="text-red-500">*</span></label>
-                            <input type="text" placeholder="Contoh: Terakreditasi" class="block w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-xs text-gray-900 focus:border-[#005A9C] focus:ring-[#005A9C] focus:outline-none">
-                        </div>
-                        <div class="col-span-2">
-                            <label class="mb-2 block text-xs font-bold text-gray-700">Nilai Bobot <span class="text-red-500">*</span></label>
-                            <input type="number" step="0.1" placeholder="Masukkan nilai bobot" class="block w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-xs text-gray-900 focus:border-[#005A9C] focus:ring-[#005A9C] focus:outline-none">
-                        </div>
-                    </div>
-                </div>
-                <div class="flex items-center justify-end rounded-b border-t border-gray-200 p-4 md:p-5 gap-3">
-                    <button onclick="toggleModal('modal-tambah')" type="button" class="rounded-lg bg-gray-200 px-5 py-2 text-xs font-bold text-gray-700 hover:bg-gray-300 transition">Batal</button>
-                    <button onclick="toggleModal('modal-tambah')" type="button" class="rounded-lg bg-[#005A9C] px-5 py-2 text-xs font-bold text-white hover:bg-[#06284F] transition">Simpan</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    {{-- Modal Edit (Banner) --}}
-    <div id="modal-edit" tabindex="-1" class="hidden fixed inset-0 z-50 items-center justify-center bg-gray-900/50">
-        <div class="relative w-full max-w-lg p-4">
-            <div class="relative rounded-2xl bg-white shadow-lg">
-                <div class="flex items-center justify-between border-b border-gray-200 p-4 md:p-5">
-                    <h3 class="text-lg font-bold text-[#06284F]">Edit Rubrik</h3>
-                    <button type="button" onclick="toggleModal('modal-edit')" class="text-gray-400 hover:bg-gray-200 hover:text-gray-900 rounded-lg p-1.5 transition">
-                        <svg class="h-4 w-4" fill="none" viewBox="0 0 14 14" stroke="currentColor" stroke-width="2">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="m1 1 6 6m0 0 6 6M7 7l6-6M7 7l-6 6"/>
-                        </svg>
-                    </button>
-                </div>
-                <div class="p-4 md:p-5 space-y-4">
-                    <div>
-                        <label class="mb-2 block text-xs font-bold text-gray-700">Skor <span class="text-red-500">*</span></label>
-                        <input type="number" value="0" class="block w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-xs text-gray-900 focus:border-[#005A9C] focus:ring-[#005A9C] focus:outline-none">
-                    </div>
-                    <div>
-                        <label class="mb-2 block text-xs font-bold text-gray-700">Deskripsi Rubrik <span class="text-red-500">*</span></label>
-                        <textarea rows="3" class="block w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-xs text-gray-900 focus:border-[#005A9C] focus:ring-[#005A9C] focus:outline-none">Tidak ada bukti</textarea>
-                    </div>
-                </div>
-                <div class="flex items-center justify-end rounded-b border-t border-gray-200 p-4 md:p-5 gap-3">
-                    <button onclick="toggleModal('modal-edit')" type="button" class="rounded-lg bg-gray-200 px-5 py-2 text-xs font-bold text-gray-700 hover:bg-gray-300 transition">Batal</button>
-                    <button onclick="toggleModal('modal-edit')" type="button" class="rounded-lg bg-[#005A9C] px-5 py-2 text-xs font-bold text-white hover:bg-[#06284F] transition">Simpan</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    {{-- Modal Hapus --}}
-    <div id="modal-hapus" tabindex="-1" class="hidden fixed inset-0 z-50 items-center justify-center bg-gray-900/50">
-        <div class="relative w-full max-w-md p-4">
-            <div class="relative rounded-2xl bg-white p-6 text-center shadow-lg">
-                <div class="mx-auto mb-4 flex h-12 w-12 items-center justify-center">
-                    <svg class="h-10 w-10 text-[#D32F2F]" fill="currentColor" viewBox="0 0 24 24">
-                        <path d="M12 2L1 21h22L12 2zm1 16h-2v-2h2v2zm0-4h-2v-4h2v4z"/>
-                    </svg>
-                </div>
-                <h3 class="mb-2 text-lg font-bold text-gray-900">Hapus Data?</h3>
-                <p class="mb-6 text-xs text-gray-500">Apakah Anda yakin ingin menghapus data ini? Tindakan ini bersifat permanen.</p>
-                <div class="flex justify-center gap-3">
-                    <button onclick="toggleModal('modal-hapus')" class="rounded-lg bg-gray-200 px-8 py-2 text-xs font-bold text-gray-700 hover:bg-gray-300">Batal</button>
-                    <button onclick="toggleModal('modal-hapus')" class="rounded-lg bg-[#D32F2F] px-8 py-2 text-xs font-bold text-white hover:bg-red-700">Hapus</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    {{-- Script Modal --}}
-    <script>
-        function toggleModal(modalID) {
-            const modal = document.getElementById(modalID);
-            if (modal.classList.contains('hidden')) {
-                modal.classList.remove('hidden');
-                modal.classList.add('flex');
-            } else {
-                modal.classList.add('hidden');
-                modal.classList.remove('flex');
-            }
-        }
-    </script>
 </div>
+
+{{-- Modal Tambah Bobot --}}
+<div id="modal-tambah" tabindex="-1" class="hidden fixed inset-0 z-50 items-center justify-center bg-gray-900/50 p-4">
+    <div class="relative w-full max-w-lg">
+        <div class="relative rounded-2xl bg-white shadow-xl overflow-hidden">
+            <div class="flex items-center justify-between border-b border-gray-200 p-5 sm:p-6">
+                <h3 class="text-lg sm:text-xl font-bold text-gray-900 tracking-tight">Tambah Bobot Penilaian</h3>
+                <button type="button" onclick="toggleModal('modal-tambah')" class="text-gray-400 hover:bg-gray-100 hover:text-gray-700 rounded-xl p-2 transition cursor-pointer">
+                    <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>
+            </div>
+            <div class="p-5 sm:p-6 space-y-4">
+                <div>
+                    <label class="mb-2 block text-xs sm:text-sm font-bold text-gray-700">Kode Indikator <span class="text-red-500">*</span></label>
+                    <input type="text" placeholder="Contoh: C1.1.1" class="block w-full rounded-[8px] border border-white-bone bg-white-form p-3 text-sm text-gray-900 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary">
+                </div>
+                <div>
+                    <label class="mb-2 block text-xs sm:text-sm font-bold text-gray-700">Jenis Instrumen <span class="text-red-500">*</span></label>
+                    <input type="text" placeholder="Nama jenis instrumen" class="block w-full rounded-[8px] border border-white-bone bg-white-form p-3 text-sm text-gray-900 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary">
+                </div>
+                <div>
+                    <label class="mb-2 block text-xs sm:text-sm font-bold text-gray-700">Jenjang <span class="text-red-500">*</span></label>
+                    <select class="block w-full rounded-[8px] border border-white-bone bg-white-form p-3 text-sm text-gray-900 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary">
+                        <option value="">-- Pilih Jenjang --</option>
+                        <option>Sarjana Terapan</option>
+                        <option>Sarjana</option>
+                        <option>Magister Terapan</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="mb-2 block text-xs sm:text-sm font-bold text-gray-700">Nilai Bobot <span class="text-red-500">*</span></label>
+                    <input type="number" step="0.1" placeholder="Contoh: 2.0" class="block w-full rounded-[8px] border border-white-bone bg-white-form p-3 text-sm text-gray-900 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary">
+                </div>
+            </div>
+            <div class="flex items-center justify-end gap-3 border-t border-gray-200 p-5 sm:p-6 bg-gray-50">
+                <button onclick="toggleModal('modal-tambah')" type="button" class="rounded-xl bg-white border border-gray-300 px-5 py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-100 transition cursor-pointer">Batal</button>
+                <button onclick="toggleModal('modal-tambah')" type="button" class="rounded-2xl bg-primary px-6 py-2.5 text-sm font-bold text-white hover:bg-additional transition cursor-pointer shadow-sm">Simpan</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{{-- Modal Edit --}}
+<div id="modal-edit" tabindex="-1" class="hidden fixed inset-0 z-50 items-center justify-center bg-gray-900/50 p-4">
+    <div class="relative w-full max-w-lg">
+        <div class="relative rounded-2xl bg-white shadow-xl overflow-hidden">
+            <div class="flex items-center justify-between border-b border-gray-200 p-5 sm:p-6">
+                <h3 class="text-lg sm:text-xl font-bold text-gray-900 tracking-tight">Edit Rubrik</h3>
+                <button type="button" onclick="toggleModal('modal-edit')" class="text-gray-400 hover:bg-gray-100 hover:text-gray-700 rounded-xl p-2 transition cursor-pointer">
+                    <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>
+            </div>
+            <div class="p-5 sm:p-6 space-y-4">
+                <div>
+                    <label class="mb-2 block text-xs sm:text-sm font-bold text-gray-700">Indikator</label>
+                    <input type="text" value="C1.1" class="block w-full rounded-[8px] border border-white-bone bg-white-form p-3 text-sm text-gray-900 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary">
+                </div>
+                <div>
+                    <label class="mb-2 block text-xs sm:text-sm font-bold text-gray-700">Skor</label>
+                    <input type="text" value="0" class="block w-full rounded-[8px] border border-white-bone bg-white-form p-3 text-sm text-gray-900 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary">
+                </div>
+                <div>
+                    <label class="mb-2 block text-xs sm:text-sm font-bold text-gray-700">Deskripsi</label>
+                    <textarea rows="3" class="block w-full rounded-[8px] border border-white-bone bg-white-form p-3 text-sm text-gray-900 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary">Tidak ada bukti</textarea>
+                </div>
+            </div>
+            <div class="flex items-center justify-end gap-3 border-t border-gray-200 p-5 sm:p-6 bg-gray-50">
+                <button onclick="toggleModal('modal-edit')" type="button" class="rounded-xl bg-white border border-gray-300 px-5 py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-100 transition cursor-pointer">Batal</button>
+                <button onclick="toggleModal('modal-edit')" type="button" class="rounded-2xl bg-primary px-6 py-2.5 text-sm font-bold text-white hover:bg-additional transition cursor-pointer shadow-sm">Simpan</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{{-- Modal Hapus --}}
+<div id="modal-hapus" tabindex="-1" class="hidden fixed inset-0 z-50 items-center justify-center bg-gray-900/50 p-4">
+    <div class="relative w-full max-w-md">
+        <div class="relative rounded-2xl bg-white shadow-xl overflow-hidden p-6 text-center">
+            <div class="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-rose-100 mb-4">
+                <svg class="h-8 w-8 text-rose-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                </svg>
+            </div>
+            <h3 class="text-lg font-bold text-gray-900 tracking-tight">Hapus Bobot?</h3>
+            <p class="mt-2 text-sm text-gray-600">Seluruh rincian bobot terkait pada instrumen ini akan ikut terhapus.</p>
+            <div class="mt-6 flex justify-center gap-3">
+                <button onclick="toggleModal('modal-hapus')" type="button" class="rounded-xl bg-gray-100 px-5 py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-200 transition cursor-pointer">Batal</button>
+                <button onclick="toggleModal('modal-hapus')" type="button" class="rounded-2xl bg-rose-600 px-5 py-2.5 text-sm font-bold text-white hover:bg-rose-700 transition cursor-pointer shadow-sm">Hapus</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function toggleModal(modalId) {
+        const modal = document.getElementById(modalId);
+        if (modal) {
+            modal.classList.toggle('hidden');
+            modal.classList.toggle('flex');
+        }
+    }
+</script>
 @endsection
