@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Akreditasi\Superadmin\DashboardController as SuperadminDashboard;
 use App\Http\Controllers\AngkatanController;
 use App\Http\Controllers\AngkatanKelasController;
 use App\Http\Controllers\AuthController;
@@ -20,7 +21,6 @@ use App\Http\Controllers\UppsController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\ValidasiMonitoringController;
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\Akreditasi\Superadmin\DashboardController as SuperadminDashboard;
 
 Route::get('/', function () {
     if (session()->has('access_token')) {
