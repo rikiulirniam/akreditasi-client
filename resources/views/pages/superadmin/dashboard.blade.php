@@ -1,153 +1,60 @@
 @extends('layouts.app')
 
-@section('title', 'Dashboard')
+@section('title', 'Dashboard Superadmin')
 
 @section('content')
 
 @php
-    $stats = [
-        [
-            'label' => 'Total Pengguna',
-            'value' => 5,
-            'note' => '4 akun aktif',
-            'iconBg' => 'bg-sky-200',
-            'iconColor' => 'text-sky-800',
-            'icon' => 'M16 11a4 4 0 1 0-8 0 4 4 0 0 0 8 0ZM4 21v-2a8 8 0 0 1 16 0v2',
-            'dot' => 'bg-sky-700',
-        ],
-        [
-            'label' => 'Aktivitas Hari Ini',
-            'value' => 28,
-            'note' => '',
-            'iconBg' => 'bg-green-300',
-            'iconColor' => 'text-green-800',
-            'icon' => 'M9 12h6m-6 4h6m2 5H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5.6L19 9v10a2 2 0 0 1-2 2Z',
-            'dot' => 'bg-sky-700',
-        ],
-        [
-            'label' => 'Project Aktif',
-            'value' => 0,
-            'note' => '0 Total Project',
-            'iconBg' => 'bg-red-400',
-            'iconColor' => 'text-red-900',
-            'icon' => 'M12 9v4m0 4h.01M10 3h4l8 15H2L10 3Z',
-            'dot' => 'bg-yellow-400',
-        ],
-        [
-            'label' => 'Instrumen Aktif',
-            'value' => 5,
-            'note' => '720 indikator tersedia',
-            'iconBg' => 'bg-yellow-300',
-            'iconColor' => 'text-yellow-900',
-            'icon' => 'M12 8v4m0 4h.01M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z',
-            'dot' => 'bg-sky-700',
-        ],
-    ];
-
-    $prioritas = [
-        [
-            'kode' => 'C1.1.1',
-            'judul' => 'Ketersediaan dokumen formal — kejelasan & kerealistisan',
-            'deadline' => '19 Okt 2026',
-            'status' => 'Belum diisi',
-        ],
-        [
-            'kode' => 'C1.1.2',
-            'judul' => 'Tingkat ketercapaian target — kejelasan & kerealistisan',
-            'deadline' => '22 Okt 2026',
-            'status' => 'Belum diisi',
-        ],
-        [
-            'kode' => 'C1.2.1',
-            'judul' => 'Rasio dan kecukupan — mekanisme penyusunan &',
-            'deadline' => '25 Okt 2026',
-            'status' => 'Belum diisi',
-        ],
-        [
-            'kode' => 'C1.2.2',
-            'judul' => 'Monitoring dan evaluasi berkala — mekanisme penyusunan &',
-            'deadline' => '28 Okt 2026',
-            'status' => 'Belum diisi',
-        ],
-        [
-            'kode' => 'C2.1.1',
-            'judul' => 'Tingkat ketercapaian target — sistem tata',
-            'deadline' => '31 Okt 2026',
-            'status' => 'Belum diisi',
-        ],
-    ];
-
-    $totalIndikator = 12;
-    $indikatorTerisi = 0;
-    $persentase = $totalIndikator > 0
-        ? round(($indikatorTerisi / $totalIndikator) * 100)
-        : 0;
+    $stats = $stats ?? [];
+    $prioritas = $prioritas ?? [];
+    $totalIndikator = $totalIndikator ?? 0;
+    $indikatorTerisi = $indikatorTerisi ?? 0;
+    $persentase = $persentase ?? 0;
 @endphp
 
-<div class="space-y-4 lg:space-y-5">
+<div class="space-y-6">
 
     {{-- Banner Selamat Datang --}}
-    <section class="flex flex-col gap-5 rounded-2xl bg-[#06284F]
-                    px-5 py-6 shadow-sm sm:px-7 sm:py-7
-                    md:flex-row md:items-center md:justify-between">
-
+    <section class="flex flex-col gap-5 rounded-2xl bg-primary p-6 sm:p-8 text-white shadow-xs md:flex-row md:items-center md:justify-between">
         <div class="min-w-0">
-            <p class="text-[10px] font-bold uppercase tracking-[0.18em]
-                      text-[#FFD400]">
+            <p class="text-xs sm:text-sm font-bold uppercase tracking-wider text-secondary">
                 Pusat Kendali Sistem
             </p>
 
-            <h2 class="mt-3 text-xl font-bold tracking-tight text-white
-                       sm:text-2xl">
+            <h2 class="mt-2 text-2xl sm:text-3xl font-extrabold tracking-tight text-white">
                 Selamat datang, Superadmin
             </h2>
 
-            <p class="mt-2 max-w-xl text-xs leading-relaxed text-white/60">
-                Pantau pengguna, aktivitas sistem, serta kesiapan data
-                master akreditasi dari satu tempat.
+            <p class="mt-2 max-w-xl text-sm leading-relaxed text-white/80">
+                Pantau pengguna, aktivitas sistem, serta kesiapan data master akreditasi dari satu tempat.
             </p>
         </div>
 
-        <div class="shrink-0 rounded-xl border border-white/10
-                    bg-white/10 px-4 py-3 md:min-w-[175px]">
-
-            <p class="text-[9px] font-semibold uppercase tracking-wider
-                      text-white/50">
+        <div class="shrink-0 rounded-2xl border border-white/15 bg-white/10 px-5 py-3.5 md:min-w-[190px]">
+            <p class="text-xs font-bold uppercase tracking-wider text-white/60">
                 Status Sistem
             </p>
 
-            <p class="mt-1.5 flex items-center gap-2 text-xs
-                      font-semibold text-white">
-                <span class="h-2 w-2 rounded-full bg-yellow-400"></span>
+            <p class="mt-1.5 flex items-center gap-2 text-sm font-bold text-white">
+                <span class="h-2.5 w-2.5 rounded-full bg-secondary"></span>
                 Semua layanan normal
             </p>
         </div>
     </section>
 
-
     {{-- Kartu Statistik --}}
-    <section class="grid grid-cols-1 gap-3 sm:grid-cols-2
-                    xl:grid-cols-4">
-
+    <section class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
         @foreach ($stats as $stat)
-            <article class="relative flex min-h-[112px] flex-col
-                            justify-between rounded-xl border
-                            border-[#E5E7EB] bg-[#F0F4F7] p-4
-                            shadow-sm transition hover:shadow-md">
+            <article class="relative flex flex-col justify-between rounded-2xl border border-[#EAEAEA] bg-white p-5 shadow-xs transition hover:shadow-md">
+                <span class="absolute right-4 top-4 h-2 w-2 rounded-full {{ $stat['dot'] }}"></span>
 
-                <span class="absolute right-3 top-3 h-1.5 w-1.5
-                             rounded-full {{ $stat['dot'] }}"></span>
-
-                <div class="flex items-center gap-3">
-                    <div class="flex h-10 w-10 shrink-0 items-center
-                                justify-center rounded-lg
-                                {{ $stat['iconBg'] }}">
-
-                        <svg class="h-5 w-5 {{ $stat['iconColor'] }}"
+                <div class="flex items-center gap-3.5">
+                    <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl {{ $stat['iconBg'] }}">
+                        <svg class="h-6 w-6 {{ $stat['iconColor'] }}"
                              viewBox="0 0 24 24"
                              fill="none"
                              stroke="currentColor"
-                             stroke-width="1.8"
+                             stroke-width="2"
                              stroke-linecap="round"
                              stroke-linejoin="round"
                              aria-hidden="true">
@@ -156,145 +63,109 @@
                     </div>
 
                     <div class="min-w-0">
-                        <p class="text-[9px] font-semibold uppercase
-                                  tracking-wide text-gray-500">
+                        <p class="text-xs font-bold uppercase tracking-wider text-gray-500">
                             {{ $stat['label'] }}
                         </p>
 
-                        <p class="mt-0.5 text-2xl font-bold leading-none
-                                  text-[#06284F]">
+                        <p class="mt-1 text-2xl sm:text-3xl font-extrabold leading-none text-gray-900 tracking-tight">
                             {{ $stat['value'] }}
                         </p>
                     </div>
                 </div>
 
-                <p class="mt-3 min-h-3 text-right text-[9px]
-                          text-gray-400">
+                <p class="mt-4 text-right text-xs font-medium text-gray-400">
                     {{ $stat['note'] }}
                 </p>
             </article>
         @endforeach
-
     </section>
 
-
     {{-- Progres Keseluruhan --}}
-    <section class="rounded-xl border border-[#E5E7EB]
-                    bg-[#F0F4F7] px-4 py-4 shadow-sm sm:px-5">
-
+    <section class="rounded-2xl border border-[#EAEAEA] bg-white p-6 shadow-xs">
         <div class="mb-3 flex items-end justify-between gap-3">
             <div>
-                <h3 class="text-xs font-bold text-[#06284F]">
-                    Progres keseluruhan
+                <h3 class="text-base sm:text-lg font-bold text-gray-900 tracking-tight">
+                    Progres Keseluruhan
                 </h3>
 
-                <p class="mt-1 text-[10px] text-gray-500">
-                    {{ $indikatorTerisi }} dari {{ $totalIndikator }}
-                    indikator sudah diisi
+                <p class="mt-1 text-sm text-gray-500">
+                    {{ $indikatorTerisi }} dari {{ $totalIndikator }} indikator sudah diisi
                 </p>
             </div>
 
-            <span class="text-base font-extrabold text-[#06284F]">
+            <span class="text-xl sm:text-2xl font-extrabold text-primary">
                 {{ $persentase }}%
             </span>
         </div>
 
-        <div class="h-2 overflow-hidden rounded-full bg-gray-300">
+        <div class="h-3 overflow-hidden rounded-full bg-gray-100">
             <div
-                class="h-full rounded-full bg-[#06284F]
-                       transition-all duration-500"
+                class="h-full rounded-full bg-primary transition-all duration-500"
                 style="width: {{ $persentase }}%"
             ></div>
         </div>
     </section>
 
-
     {{-- Prioritas Pengisian --}}
-    <section class="overflow-hidden rounded-xl border
-                    border-[#E5E7EB] bg-[#F0F4F7] shadow-sm">
-
+    <section class="overflow-hidden rounded-2xl border border-[#EAEAEA] bg-white shadow-xs">
         {{-- Header --}}
-        <div class="flex flex-col gap-3 border-b border-[#E0E5E9]
-                    p-4 sm:flex-row sm:items-center
-                    sm:justify-between sm:px-5">
-
+        <div class="flex flex-col gap-3 border-b border-gray-200 p-5 sm:flex-row sm:items-center sm:justify-between sm:px-6">
             <div>
-                <h3 class="text-sm font-bold text-[#06284F]">
+                <h3 class="text-base sm:text-lg font-bold text-gray-900 tracking-tight">
                     Prioritas Pengisian
                 </h3>
 
-                <p class="mt-1 text-[10px] text-gray-500">
+                <p class="mt-0.5 text-xs sm:text-sm text-gray-500">
                     Indikator terdekat dengan tenggat pengumpulan.
                 </p>
             </div>
 
             <a
                 href="#daftar-prioritas"
-                class="inline-flex items-center justify-center
-                       rounded-lg bg-gray-200 px-4 py-2
-                       text-[10px] font-semibold text-gray-700
-                       transition hover:bg-gray-300"
+                class="inline-flex items-center justify-center rounded-xl bg-gray-100 px-4 py-2 text-xs sm:text-sm font-semibold text-gray-700 transition hover:bg-gray-200"
             >
                 Lihat semua
             </a>
         </div>
 
-
         {{-- Daftar Indikator --}}
-        <div id="daftar-prioritas" class="divide-y divide-[#E0E5E9]">
-
-            @foreach ($prioritas as $item)
+        <div id="daftar-prioritas" class="divide-y divide-gray-100">
+            @forelse ($prioritas as $item)
                 <a
                     href="{{ route('akreditasi.superadmin.kriteria') }}"
-                    class="group flex flex-col gap-3 px-4 py-3
-                           transition hover:bg-white/70
-                           sm:flex-row sm:items-center
-                           sm:justify-between sm:px-5"
+                    class="group flex flex-col gap-3 px-5 py-4 transition hover:bg-gray-50 sm:flex-row sm:items-center sm:justify-between sm:px-6"
                 >
-
-                    <div class="flex min-w-0 items-start gap-3">
-
-                        <span class="w-10 shrink-0 pt-0.5 text-[9px]
-                                     font-bold text-[#005A9C]">
+                    <div class="flex min-w-0 items-start gap-4">
+                        <span class="w-14 shrink-0 font-mono text-sm font-bold text-primary">
                             {{ $item['kode'] }}
                         </span>
 
                         <div class="min-w-0">
-                            <p class="text-[10px] font-bold leading-relaxed
-                                      text-gray-800 transition
-                                      group-hover:text-[#005A9C]">
+                            <p class="text-sm font-semibold text-gray-800 transition group-hover:text-primary">
                                 {{ $item['judul'] }}
                             </p>
 
-                            <p class="mt-0.5 text-[9px] text-gray-500">
-                                Deadline {{ $item['deadline'] }}
+                            <p class="mt-1 text-xs text-gray-500">
+                                Deadline: {{ $item['deadline'] }}
                             </p>
                         </div>
                     </div>
 
-                    <div class="flex shrink-0 items-center
-                                justify-end gap-3 pl-12 sm:pl-0">
-
-                        <span class="rounded-full bg-gray-200
-                                     px-2.5 py-1 text-[9px]
-                                     font-medium text-gray-600">
+                    <div class="flex shrink-0 items-center gap-3">
+                        <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-600">
                             {{ $item['status'] }}
                         </span>
 
-                        <svg class="h-3.5 w-3.5 text-[#005A9C]
-                                    transition group-hover:translate-x-1"
-                             viewBox="0 0 24 24"
-                             fill="none"
-                             stroke="currentColor"
-                             stroke-width="2"
-                             aria-hidden="true">
-                            <path d="m9 18 6-6-6-6"/>
+                        <svg class="h-5 w-5 text-gray-400 group-hover:text-primary transition" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
                         </svg>
                     </div>
-
                 </a>
-            @endforeach
-
+            @empty
+                <div class="p-8 text-center text-sm text-gray-500 font-medium">
+                    Belum ada indikator atau tugas pengisian yang terdaftar.
+                </div>
+            @endforelse
         </div>
     </section>
 

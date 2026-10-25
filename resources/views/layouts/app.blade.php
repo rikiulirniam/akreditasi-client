@@ -27,6 +27,12 @@
             justify-content: center !important;
             width: 100% !important;
         }
+        #sidebar.is-collapsed .sidebar-section-header {
+            padding-left: 0.25rem !important;
+            padding-right: 0.25rem !important;
+            margin-top: 0.5rem !important;
+            margin-bottom: 0.5rem !important;
+        }
     </style>
 </head>
 <body class="h-full font-sans antialiased text-black overflow-hidden">
@@ -192,6 +198,7 @@
             const submenuContainers = document.querySelectorAll('.submenu-container');
 
             let isCollapsed = false;
+            const openSubmenus = new Set();
             localStorage.setItem('sidebar_collapsed', 'false');
             function applySidebarState() {
                 if (!sidebar) return;

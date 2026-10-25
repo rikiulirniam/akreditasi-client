@@ -1,10 +1,21 @@
 <?php
 
+use App\Http\Controllers\Akreditasi\Superadmin\BobotController;
+use App\Http\Controllers\Akreditasi\Superadmin\BuktiDokumenController;
+use App\Http\Controllers\Akreditasi\Superadmin\DashboardController as SuperadminDashboard;
+use App\Http\Controllers\Akreditasi\Superadmin\IndikatorController;
+use App\Http\Controllers\Akreditasi\Superadmin\InstrumenController;
+use App\Http\Controllers\Akreditasi\Superadmin\KriteriaController;
+use App\Http\Controllers\Akreditasi\Superadmin\LembagaAkreditasiController;
+use App\Http\Controllers\Akreditasi\Superadmin\LembarKerjaController;
+use App\Http\Controllers\Akreditasi\Superadmin\RubrikController;
+use App\Http\Controllers\Akreditasi\Superadmin\StandarSpmiController;
+use App\Http\Controllers\Akreditasi\Superadmin\SubkriteriaController;
 use App\Http\Controllers\AngkatanController;
 use App\Http\Controllers\AngkatanKelasController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\DashboardController;
-use App\Http\Controllers\KaprodiController;
+use App\Http\Controllers\Kaprodi\ProjectController as KaprodiProjectController;
 use App\Http\Controllers\KelasController;
 use App\Http\Controllers\KurikulumController;
 use App\Http\Controllers\LaporanAkhirController;
@@ -21,7 +32,6 @@ use App\Http\Controllers\UppsController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\ValidasiMonitoringController;
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\Akreditasi\Superadmin\DashboardController as SuperadminDashboard;
 
 Route::get('/', function () {
     if (session()->has('access_token')) {
@@ -97,49 +107,32 @@ Route::prefix('pages')->name('akreditasi.superadmin.')->group(function () {
     Route::get('/superadmin', [SuperadminDashboard::class, 'index'])->name('dashboard');
     Route::get('/superadmin/dashboard', [SuperadminDashboard::class, 'index'])->name('dashboard');
 
-    // Tambahkan baris ini untuk mengatasi error instrumen
-    Route::get('/superadmin/instrumen', function () {
-        return view('pages.superadmin.instrumen');
-    })->name('instrumen');
+    Route::get('/superadmin/instrumen', [InstrumenController::class, 'index'])->name('instrumen');
+    Route::post('/superadmin/instrumen', [InstrumenController::class, 'store'])->name('instrumen.store');
 
-    Route::get('/superadmin/lembaga-akreditasi', function () {
-        return view('pages.superadmin.lembaga-akreditasi');
-    })->name('lembaga_akreditasi');
+    Route::get('/superadmin/lembaga-akreditasi', [LembagaAkreditasiController::class, 'index'])->name('lembaga_akreditasi');
+    Route::post('/superadmin/lembaga-akreditasi', [LembagaAkreditasiController::class, 'store'])->name('lembaga_akreditasi.store');
+    Route::put('/superadmin/lembaga-akreditasi/{id}', [LembagaAkreditasiController::class, 'update'])->name('lembaga_akreditasi.update');
+    Route::delete('/superadmin/lembaga-akreditasi/{id}', [LembagaAkreditasiController::class, 'destroy'])->name('lembaga_akreditasi.destroy');
 
-    Route::get('/superadmin/kriteria', function () {
-        return view('pages.superadmin.kriteria');
-    })->name('kriteria');
+    Route::get('/superadmin/kriteria', [KriteriaController::class, 'index'])->name('kriteria');
+    Route::post('/superadmin/kriteria', [KriteriaController::class, 'store'])->name('kriteria.store');
 
-    Route::get('/superadmin/subkriteria', function () {
-        return view('pages.superadmin.subkriteria');
-    })->name('subkriteria');
+    Route::get('/superadmin/subkriteria', [SubkriteriaController::class, 'index'])->name('subkriteria');
 
-    Route::get('/superadmin/indikator', function () {
-        return view('pages.superadmin.indikator');
-    })->name('indikator');
+    Route::get('/superadmin/indikator', [IndikatorController::class, 'index'])->name('indikator');
+    Route::post('/superadmin/indikator', [IndikatorController::class, 'store'])->name('indikator.store');
 
-    Route::get('/superadmin/rubrik', function () {
-        return view('pages.superadmin.rubrik');
-    })->name('rubrik');
+    Route::get('/superadmin/rubrik', [RubrikController::class, 'index'])->name('rubrik');
+    Route::post('/superadmin/rubrik', [RubrikController::class, 'store'])->name('rubrik.store');
 
-    Route::get('/superadmin/bobot', function () {
-        return view('pages.superadmin.bobot');
-    })->name('bobot');
+    Route::get('/superadmin/bobot', [BobotController::class, 'index'])->name('bobot');
+    Route::get('/superadmin/detail-bobot', [BobotController::class, 'detail'])->name('detail_bobot');
 
-    Route::get('/superadmin/detail-bobot', function () {
-        return view('pages.superadmin.detail-bobot');
-    })->name('detail_bobot');
+    Route::get('/superadmin/standar-spmi', [StandarSpmiController::class, 'index'])->name('standar_spmi');
+    Route::post('/superadmin/standar-spmi', [StandarSpmiController::class, 'store'])->name('standar_spmi.store');
 
-    Route::get('/superadmin/standar-spmi', function () {
-        return view('pages.superadmin.standar-spmi');
-    })->name('standar_spmi');
-
-    Route::get('/superadmin/lembar-kerja', function () {
-        return view('pages.superadmin.lembar-kerja');
-    })->name('lembar_kerja');
-
-    Route::get('/superadmin/bukti-dokumen', function () {
-        return view('pages.superadmin.bukti-dokumen');
-    })->name('bukti_dokumen');
+    Route::get('/superadmin/lembar-kerja', [LembarKerjaController::class, 'index'])->name('lembar_kerja');
+    Route::get('/superadmin/bukti-dokumen', [BuktiDokumenController::class, 'index'])->name('bukti_dokumen');
 });
 Route::get('/superadmin', [SuperadminDashboard::class, 'index']);
