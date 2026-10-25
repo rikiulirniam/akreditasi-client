@@ -188,7 +188,7 @@
 
                 <!-- Kurikulum & Mata Kuliah -->
                 @php
-                    $isKurikulumMkActive = request()->routeIs('mata-kuliah.*') || request()->routeIs('kurikulum.*');
+                    $isKurikulumMkActive = request()->routeIs('mata-kuliah.*') || request()->routeIs('kurikulum.*') || request()->routeIs('cpl.*');
                 @endphp
                 <div>
                     <button type="button"
@@ -220,6 +220,12 @@
                             <span
                                 class="w-1.5 h-1.5 rounded-full {{ request()->routeIs('mata-kuliah.*') ? 'bg-secondary' : 'bg-white/40' }} shrink-0"></span>
                             <span>Mata Kuliah</span>
+                        </a>
+                        <a href="{{ route('cpl.index') }}"
+                            class="flex items-center gap-2.5 py-2.5 px-3.5 rounded-xl text-sm font-semibold transition-all duration-150 {{ request()->routeIs('cpl.*') ? 'bg-white/20 text-white shadow-xs font-bold' : 'text-white/80 hover:text-white hover:bg-white/10' }}">
+                            <span
+                                class="w-1.5 h-1.5 rounded-full {{ request()->routeIs('cpl.*') ? 'bg-secondary' : 'bg-white/40' }} shrink-0"></span>
+                            <span>Capaian Pembelajaran (CPL)</span>
                         </a>
                     </div>
                 </div>

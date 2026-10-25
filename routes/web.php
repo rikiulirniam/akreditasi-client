@@ -3,6 +3,7 @@
 use App\Http\Controllers\AngkatanController;
 use App\Http\Controllers\AngkatanKelasController;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\CplController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\KegiatanMahasiswaController;
 use App\Http\Controllers\KelasController;
@@ -98,6 +99,7 @@ Route::middleware('auth.akademik')->group(function () {
 
     Route::middleware('permission:kurikulum')->resource('kurikulum', KurikulumController::class);
     Route::middleware('permission:kurikulum.update')->put('kurikulum/{kurikulum}/cpl-mata-kuliah', [KurikulumController::class, 'updateMataKuliahCpl'])->name('kurikulum.update-mk-cpl');
+    Route::middleware('permission:cpl')->resource('cpl', CplController::class);
 
     // ==========================================
     // MODUL NILAI MAHASISWA & AKADEMIK
