@@ -99,11 +99,7 @@ class SpmiController extends Controller
             'Tim Penjaminan Mutu Prodi',
         ];
 
-        $viewName = view()->exists('spmi.tindak-lanjut')
-            ? 'spmi.tindak-lanjut'
-            : (view()->exists('pages.kaprodi.tindak-lanjut-spmi') ? 'pages.kaprodi.tindak-lanjut-spmi' : 'spmi.tindak-lanjut');
-
-        return view($viewName, [
+        return view('pages.kaprodi.tindak-lanjut-spmi', [
             'selectedYear' => $selectedYear,
             'activeTab' => $activeTab,
             'summary' => $summary,
@@ -154,11 +150,13 @@ class SpmiController extends Controller
      */
     protected function loadTemuanAmiFromApi(int $year): array
     {
+        $default = $this->getDefaultTemuanAmi();
+
         try {
             $response = $this->akreditasiService->getSpmiAudits(['tahun' => $year]);
             if ($response->successful()) {
                 $apiData = $response->json('data') ?? [];
-                if (is_array($apiData)) {
+                if (is_array($apiData) && ! empty($apiData)) {
                     $mapped = [];
                     foreach ($apiData as $item) {
                         $statusTindak = $item['status_tindak_lanjut'] ?? null;
@@ -205,7 +203,7 @@ class SpmiController extends Controller
             // Abaikan kesalahan koneksi
         }
 
-        return [];
+        return $default;
     }
 
     /**
