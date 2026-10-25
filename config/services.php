@@ -40,7 +40,7 @@ return [
     ],
 
     'akreditasi' => [
-        'base_url' => env('AKREDITASI_API_URL', 'https://akreditasi.fayra.my.id'),
+        'base_url' => env('AKREDITASI_API_URL', 'https://akreditasi.fayra.my.id/api/v1'),
     ],
 
     'google' => [

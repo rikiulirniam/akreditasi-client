@@ -8,11 +8,19 @@
     <!-- Toast Notification Component -->
     <x-toast />
 
+    @php
+        $namaProject = $project['nama_project'] ?? 'Sarjana Terapan Test';
+        $versiNomor = $project['versi_instrumen']['nomor_versi'] ?? '2.1';
+        $jenjangNama = $project['jenjang']['nama_jenjang'] ?? 'Sarjana Terapan';
+        $jenisNama = $project['jenis_instrumen']['nama_jenis'] ?? ($project['status_project'] ?? 'Unggul');
+        $tahunTarget = $project['tahun_target_submit'] ?? 2026;
+    @endphp
+
     <!-- Header Halaman -->
     <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
             <h1 class="text-2xl font-extrabold text-primary tracking-tight leading-tight">Project Akreditasi</h1>
-            <p class="text-xs sm:text-sm text-[#5A6E85] mt-1">Detail parameter instrumen, capaian kriteria, dan simulasi penilaian mandiri.</p>
+            <p class="text-xs sm:text-sm text-[#5A6E85] mt-1">Detail parameter instrumen, capaian kriteria, dan simulasi penilaian mandiri dari server akreditasi.</p>
         </div>
         <div class="flex items-center gap-3">
             <a 
@@ -28,17 +36,17 @@
     <div class="flex items-center text-xs gap-1.5 font-medium">
         <a href="{{ route('kaprodi.project') }}" class="text-gray-400 hover:text-additional transition-colors">Project Akreditasi</a>
         <span class="text-gray-300">›</span>
-        <span class="text-primary font-bold">Sarjana Terapan Test</span>
+        <span class="text-primary font-bold">{{ $namaProject }}</span>
     </div>
 
     <!-- 2 Kotak Utama (Informasi & Nilai) -->
     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div class="md:col-span-2 bg-white rounded-2xl border border-[#EAEAEA] p-6 flex flex-col justify-center shadow-xs">
             <div class="text-additional text-[10px] font-bold tracking-widest uppercase mb-2">
-                LAM INFOKOM · V2.1 · UNGGUL
+                LAM INFOKOM · V{{ $versiNomor }} · {{ strtoupper($jenjangNama) }}
             </div>
-            <h2 class="text-2xl sm:text-3xl font-extrabold text-primary mb-1 tracking-tight">Sarjana Terapan Test</h2>
-            <p class="text-gray-500 text-xs sm:text-sm font-medium">Unggul · Tahun 2026</p>
+            <h2 class="text-2xl sm:text-3xl font-extrabold text-primary mb-1 tracking-tight">{{ $namaProject }}</h2>
+            <p class="text-gray-500 text-xs sm:text-sm font-medium">{{ $jenisNama }} · Tahun {{ $tahunTarget }}</p>
         </div>
 
         <div class="md:col-span-1 bg-white rounded-2xl border border-[#EAEAEA] p-6 flex flex-col justify-center shadow-xs">
@@ -79,10 +87,13 @@
     </div>
 
     @php
+        // Ambil data dari API atau gunakan fallback lengkap 9 kriteria
+        $apiC1 = !empty($apiKriteria[0]) ? $apiKriteria[0] : null;
+
         $kriteriaList = [
             [
-                'code' => 'C1',
-                'name' => 'Visi, Misi, Tujuan, dan Strategi',
+                'code' => $apiC1['kode_kriteria'] ?? 'C1',
+                'name' => $apiC1['nama_kriteria'] ?? 'Visi, Misi, Tujuan, dan Strategi',
                 'isOpen' => true,
                 'subkriteria' => [
                     [

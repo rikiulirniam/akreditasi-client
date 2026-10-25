@@ -4,6 +4,7 @@ use App\Http\Controllers\AngkatanController;
 use App\Http\Controllers\AngkatanKelasController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\KaprodiController;
 use App\Http\Controllers\KelasController;
 use App\Http\Controllers\KurikulumController;
 use App\Http\Controllers\LaporanAkhirController;
@@ -46,17 +47,14 @@ Route::middleware('auth.akademik')->group(function () {
     Route::post('/reviewer/penilaian/{projectId}/indikator/{indicatorId}', [ReviewerController::class, 'saveAssessment'])->name('reviewer.assessment-save');
 
     Route::prefix('kaprodi')->name('kaprodi.')->group(function () {
-        Route::get('/dashboard', function () {
-            return view('pages.kaprodi.dashboard');
-        })->name('dashboard');
-
-        Route::get('/project', function () {
-            return view('pages.kaprodi.project');
-        })->name('project');
-
-        Route::get('/project/detail', function () {
-            return view('pages.kaprodi.project-detail');
-        })->name('project.detail');
+        Route::get('/dashboard', [KaprodiController::class, 'dashboard'])->name('dashboard');
+        Route::get('/project', [KaprodiController::class, 'project'])->name('project');
+        Route::post('/project', [KaprodiController::class, 'storeProject'])->name('project.store');
+        Route::delete('/project/{id}', [KaprodiController::class, 'destroyProject'])->name('project.destroy');
+        Route::get('/project/detail/{id?}', [KaprodiController::class, 'projectDetail'])->name('project.detail');
+        
+        // Route Plotting Tim Akreditasi
+        Route::get('/plotting', [KaprodiController::class, 'plotting'])->name('plotting');
     });
 
     Route::get('/perguruan-tinggi', [PerguruanTinggiController::class, 'index'])->name('perguruan-tinggi.index');
@@ -89,7 +87,6 @@ Route::middleware('auth.akademik')->group(function () {
     Route::post('/spmi/tindak-lanjut', [SpmiController::class, 'storeTindakLanjut'])->name('spmi.tindak-lanjut.store');
 
     Route::get('/laporan-akhir', [LaporanAkhirController::class, 'index'])->name('laporan-akhir.index');
-
 });
 
 // =====================================================================

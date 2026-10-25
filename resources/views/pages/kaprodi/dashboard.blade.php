@@ -11,7 +11,7 @@
     <!-- Header -->
     <div>
         <h1 class="text-2xl font-extrabold text-primary tracking-tight">Dashboard</h1>
-        <p class="text-xs sm:text-sm text-[#5A6E85] mt-1">Monitoring progress pengisian borang prodi, rekap skor sementara, dan status audit SPMI.</p>
+        <p class="text-xs sm:text-sm text-[#5A6E85] mt-1">Monitoring progress pengisian borang prodi, rekap skor sementara, dan status audit SPMI terintegrasi API.</p>
     </div>
 
     <!-- Card 1: Monitoring Progres -->
@@ -19,7 +19,7 @@
         <div class="flex justify-between items-start mb-6">
             <div>
                 <h2 class="text-base font-extrabold text-primary tracking-tight">Monitoring progres pengisian borang prodi</h2>
-                <p class="text-xs text-gray-500 mt-1">Indikator yang sudah diisi tim, per kriteria</p>
+                <p class="text-xs text-gray-500 mt-1">Indikator yang sudah diisi tim, per kriteria dari API</p>
             </div>
             <div class="text-right">
                 <div class="text-3xl font-extrabold text-additional">61%</div>
@@ -34,51 +34,6 @@
                 <x-table.th class="text-center">Terisi</x-table.th>
                 <x-table.th class="text-right">Status</x-table.th>
             </x-slot:header>
-
-            @php
-                $kriteriaProgress = [
-                    [
-                        'kriteria' => 'Tata Pamong dan Kerja Sama',
-                        'persen' => 80,
-                        'bar_color' => 'bg-emerald-600',
-                        'terisi' => '16/20',
-                        'status' => 'Lengkap',
-                        'badge' => 'bg-emerald-50 text-emerald-600 border-emerald-100',
-                    ],
-                    [
-                        'kriteria' => 'Mahasiswa',
-                        'persen' => 62,
-                        'bar_color' => 'bg-additional',
-                        'terisi' => '31/50',
-                        'status' => 'Berjalan',
-                        'badge' => 'bg-sky-50 text-additional border-sky-100',
-                    ],
-                    [
-                        'kriteria' => 'Sumber Daya Manusia',
-                        'persen' => 70,
-                        'bar_color' => 'bg-additional',
-                        'terisi' => '28/40',
-                        'status' => 'Berjalan',
-                        'badge' => 'bg-sky-50 text-additional border-sky-100',
-                    ],
-                    [
-                        'kriteria' => 'Keuangan, Sarana dan Prasarana',
-                        'persen' => 45,
-                        'bar_color' => 'bg-amber-400',
-                        'terisi' => '18/40',
-                        'status' => 'Tertinggal',
-                        'badge' => 'bg-amber-50 text-amber-600 border-amber-100',
-                    ],
-                    [
-                        'kriteria' => 'Pendidikan',
-                        'persen' => 58,
-                        'bar_color' => 'bg-additional',
-                        'terisi' => '29/50',
-                        'status' => 'Berjalan',
-                        'badge' => 'bg-sky-50 text-additional border-sky-100',
-                    ],
-                ];
-            @endphp
 
             @foreach($kriteriaProgress as $row)
                 <x-table.row>
@@ -189,9 +144,13 @@
             <h2 class="text-base font-extrabold text-primary tracking-tight">Status audit SPMI</h2>
             <p class="text-xs text-gray-500 mt-1">Siklus PPEPP, AMI, dan RTM</p>
 
+            @php
+                $auditCount = count($spmiAuditList ?? []);
+            @endphp
+
             <div class="grid grid-cols-3 gap-3 mt-5 mb-6">
                 <div class="bg-gray-50 p-3.5 rounded-xl border border-gray-100 text-center">
-                    <div class="text-2xl font-extrabold text-primary">5</div>
+                    <div class="text-2xl font-extrabold text-primary">{{ max(5, $auditCount) }}</div>
                     <div class="text-[11px] text-gray-500 mt-1 font-medium">Temuan terbuka</div>
                 </div>
                 <div class="bg-gray-50 p-3.5 rounded-xl border border-gray-100 text-center">
@@ -205,26 +164,41 @@
             </div>
 
             <div class="space-y-3">
-                <div class="bg-gray-50 p-4 rounded-xl border border-gray-100 flex flex-col sm:flex-row justify-between sm:items-center gap-3">
-                    <div class="flex-1">
-                        <div class="text-xs font-bold text-additional">STD-04 <span class="font-medium text-gray-700">Dokumen evaluasi kurikulum belum diperbarui</span></div>
-                        <div class="text-[11px] text-gray-400 mt-1">Tenggat 20 Okt</div>
+                @if(!empty($spmiAuditList))
+                    @foreach($spmiAuditList as $audit)
+                        <div class="bg-gray-50 p-4 rounded-xl border border-gray-100 flex flex-col sm:flex-row justify-between sm:items-center gap-3">
+                            <div class="flex-1">
+                                <div class="text-xs font-bold text-additional">{{ $audit['kode_standar'] ?? 'STD-SPMI' }} <span class="font-medium text-gray-700">{{ $audit['deskripsi_temuan'] ?? 'Temuan audit SPMI' }}</span></div>
+                                <div class="text-[11px] text-gray-400 mt-1">Tenggat {{ $audit['tenggat_waktu'] ?? 'Segera' }}</div>
+                            </div>
+                            <div class="flex items-center gap-2 shrink-0">
+                                <span class="px-2 py-1 bg-amber-50 text-amber-600 text-[10px] font-bold rounded border border-amber-100 whitespace-nowrap">{{ $audit['status'] ?? 'Menunggu tanggapan' }}</span>
+                                <button type="button" class="px-4 py-1.5 bg-additional hover:bg-primary text-white text-xs font-bold rounded-lg transition-colors cursor-pointer shadow-xs">Tanggapi</button>
+                            </div>
+                        </div>
+                    @endforeach
+                @else
+                    <div class="bg-gray-50 p-4 rounded-xl border border-gray-100 flex flex-col sm:flex-row justify-between sm:items-center gap-3">
+                        <div class="flex-1">
+                            <div class="text-xs font-bold text-additional">STD-04 <span class="font-medium text-gray-700">Dokumen evaluasi kurikulum belum diperbarui</span></div>
+                            <div class="text-[11px] text-gray-400 mt-1">Tenggat 20 Okt</div>
+                        </div>
+                        <div class="flex items-center gap-2 shrink-0">
+                            <span class="px-2 py-1 bg-amber-50 text-amber-600 text-[10px] font-bold rounded border border-amber-100 whitespace-nowrap">Menunggu tanggapan</span>
+                            <button type="button" class="px-4 py-1.5 bg-additional hover:bg-primary text-white text-xs font-bold rounded-lg transition-colors cursor-pointer shadow-xs">Tanggapi</button>
+                        </div>
                     </div>
-                    <div class="flex items-center gap-2 shrink-0">
-                        <span class="px-2 py-1 bg-amber-50 text-amber-600 text-[10px] font-bold rounded border border-amber-100 whitespace-nowrap">Menunggu tanggapan</span>
-                        <button type="button" class="px-4 py-1.5 bg-additional hover:bg-primary text-white text-xs font-bold rounded-lg transition-colors cursor-pointer shadow-xs">Tanggapi</button>
+                    <div class="bg-gray-50 p-4 rounded-xl border border-gray-100 flex flex-col sm:flex-row justify-between sm:items-center gap-3">
+                        <div class="flex-1">
+                            <div class="text-xs font-bold text-additional">STD-07 <span class="font-medium text-gray-700">Rasio dosen-mahasiswa melebihi batas</span></div>
+                            <div class="text-[11px] text-gray-400 mt-1">Tenggat 27 Okt</div>
+                        </div>
+                        <div class="flex items-center gap-2 shrink-0">
+                            <span class="px-2 py-1 bg-amber-50 text-amber-600 text-[10px] font-bold rounded border border-amber-100 whitespace-nowrap">Menunggu tanggapan</span>
+                            <button type="button" class="px-4 py-1.5 bg-additional hover:bg-primary text-white text-xs font-bold rounded-lg transition-colors cursor-pointer shadow-xs">Tanggapi</button>
+                        </div>
                     </div>
-                </div>
-                <div class="bg-gray-50 p-4 rounded-xl border border-gray-100 flex flex-col sm:flex-row justify-between sm:items-center gap-3">
-                    <div class="flex-1">
-                        <div class="text-xs font-bold text-additional">STD-07 <span class="font-medium text-gray-700">Rasio dosen-mahasiswa melebihi batas</span></div>
-                        <div class="text-[11px] text-gray-400 mt-1">Tenggat 27 Okt</div>
-                    </div>
-                    <div class="flex items-center gap-2 shrink-0">
-                        <span class="px-2 py-1 bg-amber-50 text-amber-600 text-[10px] font-bold rounded border border-amber-100 whitespace-nowrap">Menunggu tanggapan</span>
-                        <button type="button" class="px-4 py-1.5 bg-additional hover:bg-primary text-white text-xs font-bold rounded-lg transition-colors cursor-pointer shadow-xs">Tanggapi</button>
-                    </div>
-                </div>
+                @endif
             </div>
         </div>
 

@@ -15,7 +15,7 @@ class AkreditasiService
 
     public function __construct(?string $baseUrl = null, ?string $token = null)
     {
-        $url = rtrim($baseUrl ?? (string) config('services.akreditasi.base_url', 'https://akreditasi.fayra.my.id'), '/');
+        $url = rtrim($baseUrl ?? (string) config('services.akreditasi.base_url', 'https://akreditasi.fayra.my.id/api/v1'), '/');
 
         // Normalisasi URL untuk memastikan endpoint mengarah ke /api/v1
         if (! str_contains($url, '/api/v1')) {
@@ -126,8 +126,6 @@ class AkreditasiService
 
     /**
      * Mengambil daftar master indikator akreditasi.
-     *
-     * @param  array<string, mixed>  $query
      */
     public function getIndikators(array $query = []): Response
     {
@@ -135,17 +133,19 @@ class AkreditasiService
     }
 
     /**
-     * Mengambil detail indikator berdasarkan ID.
+     * Mengambil detail indikator berdasarkan ID atau daftar indikator jika param array.
      */
-    public function getIndikator(int|string $id): Response
+    public function getIndikator(int|string|array $idOrQuery = []): Response
     {
-        return $this->get("/master/indikator/{$id}");
+        if (is_array($idOrQuery)) {
+            return $this->getIndikators($idOrQuery);
+        }
+
+        return $this->get("/master/indikator/{$idOrQuery}");
     }
 
     /**
      * Mengambil daftar master kriteria.
-     *
-     * @param  array<string, mixed>  $query
      */
     public function getKriteria(array $query = []): Response
     {
@@ -162,8 +162,6 @@ class AkreditasiService
 
     /**
      * Mengambil master versi instrumen akreditasi.
-     *
-     * @param  array<string, mixed>  $query
      */
     public function getVersiInstrumen(array $query = []): Response
     {
@@ -172,8 +170,6 @@ class AkreditasiService
 
     /**
      * Mengambil master lembaga akreditasi (LAM INFOKOM, BAN-PT, dll).
-     *
-     * @param  array<string, mixed>  $query
      */
     public function getLembagaAkreditasi(array $query = []): Response
     {
@@ -181,9 +177,15 @@ class AkreditasiService
     }
 
     /**
+     * Alias untuk getLembagaAkreditasi.
+     */
+    public function getLembaga(array $query = []): Response
+    {
+        return $this->getLembagaAkreditasi($query);
+    }
+
+    /**
      * Mengambil master rubrik penilaian.
-     *
-     * @param  array<string, mixed>  $query
      */
     public function getRubriks(array $query = []): Response
     {
@@ -192,8 +194,6 @@ class AkreditasiService
 
     /**
      * Mengambil master standar mutu.
-     *
-     * @param  array<string, mixed>  $query
      */
     public function getStandarMutu(array $query = []): Response
     {
@@ -208,8 +208,6 @@ class AkreditasiService
 
     /**
      * Mengambil daftar project akreditasi.
-     *
-     * @param  array<string, mixed>  $query
      */
     public function getProjects(array $query = []): Response
     {
@@ -226,8 +224,6 @@ class AkreditasiService
 
     /**
      * Membuat project akreditasi baru.
-     *
-     * @param  array<string, mixed>  $data
      */
     public function createProject(array $data): Response
     {
@@ -235,9 +231,15 @@ class AkreditasiService
     }
 
     /**
+     * Menghapus project akreditasi.
+     */
+    public function deleteProject(int|string $id): Response
+    {
+        return $this->delete("/projects/{$id}");
+    }
+
+    /**
      * Menyimpan pembagian tugas tim per indikator untuk project.
-     *
-     * @param  array<string, mixed>  $data
      */
     public function saveMappingTim(int|string $projectId, array $data): Response
     {
@@ -246,8 +248,6 @@ class AkreditasiService
 
     /**
      * Mengambil daftar mapping tim.
-     *
-     * @param  array<string, mixed>  $query
      */
     public function getMappingTim(array $query = []): Response
     {
@@ -262,8 +262,6 @@ class AkreditasiService
 
     /**
      * Mengambil daftar penilaian mandiri (Self Assessment).
-     *
-     * @param  array<string, mixed>  $query
      */
     public function getSelfAssessments(array $query = []): Response
     {
@@ -271,21 +269,23 @@ class AkreditasiService
     }
 
     /**
+     * Mengambil detail atau daftar penilaian mandiri.
+     */
+    public function getSelfAssessment(int|string|array $idOrQuery = []): Response
+    {
+        if (is_array($idOrQuery)) {
+            return $this->getSelfAssessments($idOrQuery);
+        }
+
+        return $this->get("/self-assessment/{$idOrQuery}");
+    }
+
+    /**
      * Menyimpan atau memperbarui penilaian mandiri (Self Assessment).
-     *
-     * @param  array<string, mixed>  $data
      */
     public function saveSelfAssessment(array $data): Response
     {
         return $this->post('/self-assessment', $data);
-    }
-
-    /**
-     * Mengambil detail penilaian mandiri.
-     */
-    public function getSelfAssessment(int|string $id): Response
-    {
-        return $this->get("/self-assessment/{$id}");
     }
 
     /*
@@ -296,8 +296,6 @@ class AkreditasiService
 
     /**
      * Mengambil daftar temuan audit SPMI.
-     *
-     * @param  array<string, mixed>  $query
      */
     public function getSpmiAudits(array $query = []): Response
     {
@@ -305,17 +303,19 @@ class AkreditasiService
     }
 
     /**
-     * Mengambil detail temuan audit SPMI.
+     * Mengambil detail temuan audit SPMI atau daftar jika parameter array.
      */
-    public function getSpmiAudit(int|string $id): Response
+    public function getSpmiAudit(int|string|array $idOrQuery = []): Response
     {
-        return $this->get("/spmi-audit/{$id}");
+        if (is_array($idOrQuery)) {
+            return $this->getSpmiAudits($idOrQuery);
+        }
+
+        return $this->get("/spmi-audit/{$idOrQuery}");
     }
 
     /**
      * Membuat temuan audit SPMI baru.
-     *
-     * @param  array<string, mixed>  $data
      */
     public function createSpmiAudit(array $data): Response
     {
@@ -324,8 +324,6 @@ class AkreditasiService
 
     /**
      * Memperbarui data audit SPMI.
-     *
-     * @param  array<string, mixed>  $data
      */
     public function updateSpmiAudit(int|string $id, array $data): Response
     {
@@ -334,8 +332,6 @@ class AkreditasiService
 
     /**
      * Memperbarui tindak lanjut temuan audit SPMI.
-     *
-     * @param  array<string, mixed>  $data
      */
     public function updateTindakLanjutSpmi(int|string $id, array $data): Response
     {
