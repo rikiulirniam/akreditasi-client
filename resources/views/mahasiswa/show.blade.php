@@ -28,6 +28,66 @@
         'Non-Aktif', 'Drop Out' => 'bg-red-100 text-red-700 border-red-200',
         default   => 'bg-gray-100 text-gray-500 border-gray-200',
     };
+
+    // Helper to format Tahun Akademik: e.g. 2026/2027 Gasal, 2026/2027 Genap
+    $formatTa = function ($ta, $fallbackSemester = null) {
+        if (! $ta) {
+            return '-';
+        }
+        $rawYear = (string) (is_array($ta) ? ($ta['tahun'] ?? $ta['tahun_akademik'] ?? $ta['nama'] ?? '') : $ta);
+        $rawSem = (string) (is_array($ta) ? ($ta['semester'] ?? $fallbackSemester ?? '') : ($fallbackSemester ?? ''));
+
+        if (empty($rawSem) && preg_match('/(ganjil|gasal|genap)/i', $rawYear, $m)) {
+            $rawSem = $m[1];
+            $rawYear = trim(preg_replace('/(ganjil|gasal|genap)/i', '', $rawYear));
+        }
+
+        if (empty($rawSem) && ! empty($fallbackSemester)) {
+            if (preg_match('/[13579]/', (string) $fallbackSemester) || preg_match('/(ganjil|gasal)/i', (string) $fallbackSemester)) {
+                $rawSem = 'Gasal';
+            } elseif (preg_match('/[24680]/', (string) $fallbackSemester) || preg_match('/genap/i', (string) $fallbackSemester)) {
+                $rawSem = 'Genap';
+            }
+        }
+
+        $semName = '';
+        if (! empty($rawSem)) {
+            if (strcasecmp($rawSem, 'ganjil') === 0 || strcasecmp($rawSem, 'gasal') === 0) {
+                $semName = 'Gasal';
+            } elseif (strcasecmp($rawSem, 'genap') === 0) {
+                $semName = 'Genap';
+            } else {
+                $semName = ucfirst(trim($rawSem));
+            }
+        }
+
+        $cleanedYear = trim(preg_replace('/[^\d\/]/', '', $rawYear));
+        if (preg_match('/^\d{4}$/', $cleanedYear)) {
+            $y = (int) $cleanedYear;
+            $formattedYear = $y . '/' . ($y + 1);
+        } elseif (preg_match('/^\d{4}\/\d{2,4}$/', $cleanedYear)) {
+            if (strlen($cleanedYear) === 7) {
+                $parts = explode('/', $cleanedYear);
+                $formattedYear = $parts[0] . '/' . substr($parts[0], 0, 2) . $parts[1];
+            } else {
+                $formattedYear = $cleanedYear;
+            }
+        } else {
+            $formattedYear = $cleanedYear ?: $rawYear;
+        }
+
+        if (! empty($formattedYear) && ! empty($semName)) {
+            return "{$formattedYear} {$semName}";
+        }
+        if (! empty($formattedYear)) {
+            return $formattedYear;
+        }
+        if (! empty($semName)) {
+            return $semName;
+        }
+
+        return '-';
+    };
 @endphp
 
 <div class="space-y-6">
@@ -148,7 +208,7 @@
                     <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
                     </svg>
-                    + Tambah Status
+                    Tambah Status
                 </button>
             @else
                 <span class="text-xs text-gray-400 italic">Mahasiswa belum terdaftar di kelas (enrollment)</span>
@@ -159,7 +219,6 @@
         <x-table>
             <x-slot:header>
                 <x-table.th class="w-14">No</x-table.th>
-                <x-table.th>Semester</x-table.th>
                 <x-table.th>Tahun Akademik</x-table.th>
                 <x-table.th class="w-32">Status</x-table.th>
                 <x-table.th>Tanggal Dibuat</x-table.th>
@@ -169,27 +228,31 @@
             @forelse($statusHistory as $idx => $status)
                 @php
                     $statusId = $status['id'] ?? '';
-                    $semester = $status['semester'] ?? ('Semester ' . ($idx + 1));
+                    $semester = $status['semester'] ?? ($idx % 2 === 0 ? 'Gasal' : 'Genap');
                     $taId = $status['tahun_akademik_id'] ?? null;
                     $matchedTa = null;
                     if ($taId && !empty($tahunAkademikList)) {
                         foreach ($tahunAkademikList as $taItem) {
                             if ((string)($taItem['id'] ?? '') === (string)$taId) {
-                                $matchedTa = $taItem;
-                                break;
+                                if (empty($semester) || empty($taItem['semester']) || strcasecmp($taItem['semester'], $semester) === 0) {
+                                    $matchedTa = $taItem;
+                                    break;
+                                }
+                            }
+                        }
+                        if (! $matchedTa) {
+                            foreach ($tahunAkademikList as $taItem) {
+                                if ((string)($taItem['id'] ?? '') === (string)$taId) {
+                                    $matchedTa = $taItem;
+                                    break;
+                                }
                             }
                         }
                     }
-                    // Build label: API returns 'tahun' (e.g. 2024) + optional 'semester'
                     $taSource = $status['tahun_akademik'] ?? $matchedTa ?? null;
-                    $tahunAkademikLabel = '-';
-                    if ($taSource && is_array($taSource)) {
-                        $taYear = $taSource['tahun'] ?? $taSource['tahun_akademik'] ?? $taSource['nama'] ?? '';
-                        $taSemester = $taSource['semester'] ?? '';
-                        $tahunAkademikLabel = trim($taYear . (!empty($taSemester) ? ' (' . $taSemester . ')' : ''));
-                    }
-                    if (empty($tahunAkademikLabel) || $tahunAkademikLabel === '-') {
-                        $tahunAkademikLabel = $taId ? "ID #{$taId}" : '-';
+                    $tahunAkademikLabel = $formatTa($taSource, $semester);
+                    if ($tahunAkademikLabel === '-' && $taId) {
+                        $tahunAkademikLabel = "ID #{$taId}";
                     }
                     $statusVal = $status['status'] ?? '-';
                     $createdAt = !empty($status['created_at']) ? \Carbon\Carbon::parse($status['created_at'])->format('d M Y') : '-';
@@ -206,10 +269,7 @@
                 <x-table.row>
                     <x-table.cell class="text-gray-500 font-medium w-14">{{ $idx + 1 }}</x-table.cell>
                     <x-table.cell>
-                        <span class="text-sm font-medium text-gray-800">{{ $semester }}</span>
-                    </x-table.cell>
-                    <x-table.cell>
-                        <span class="text-sm text-gray-600">{{ $tahunAkademikLabel }}</span>
+                        <span class="text-sm font-semibold text-gray-800">{{ $tahunAkademikLabel }}</span>
                     </x-table.cell>
                     <x-table.cell class="w-32">
                         <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold border {{ $rowColor }}">
@@ -229,8 +289,8 @@
                                 data-id="{{ $statusId }}"
                                 data-action="{{ route('mahasiswa.status.update', [$id, $statusId]) }}"
                                 data-enrollment="{{ $enrollIdForRow }}"
-                                data-semester="{{ $semester }}"
                                 data-tahun-akademik-id="{{ $tahunAkademikIdForRow }}"
+                                data-semester="{{ $status['semester'] ?? $semester }}"
                                 data-status="{{ $statusVal }}"
                             >
                                 <x-icon.edit class="w-4 h-4" />
@@ -244,7 +304,7 @@
                                 data-confirm-delete
                                 data-action="{{ route('mahasiswa.status.destroy', [$id, $statusId]) }}"
                                 data-title="Hapus Status?"
-                                data-message="Apakah Anda yakin ingin menghapus status '{{ $statusVal }}' pada {{ $semester }}? Tindakan ini tidak dapat dibatalkan."
+                                data-message="Apakah Anda yakin ingin menghapus status '{{ $statusVal }}' pada {{ $tahunAkademikLabel }}? Tindakan ini tidak dapat dibatalkan."
                             >
                                 <x-icon.delete class="w-4 h-4" />
                             </button>
@@ -252,7 +312,7 @@
                     </x-table.cell>
                 </x-table.row>
             @empty
-                <x-table.empty colspan="6" message="Belum ada riwayat status" submessage="Klik tombol '+ Tambah Status' untuk menambahkan status mahasiswa." />
+                <x-table.empty colspan="5" message="Belum ada riwayat status" submessage="Klik tombol '+ Tambah Status' untuk menambahkan status mahasiswa." />
             @endforelse
         </x-table>
     </div>
@@ -371,35 +431,20 @@
             <input type="hidden" name="id_enrollment_mahasiswa_angkatan_kelas" value="{{ $enrollmentId }}">
 
             <div>
-                <label for="tambahStatusSemesterInput" class="block text-xs font-bold text-gray-900 mb-1.5">Semester</label>
+                <label for="tambahStatusTahunAkademikInput" class="block text-xs font-bold text-gray-900 mb-1.5">Tahun Akademik</label>
                 <div class="relative">
-                    <select name="semester" id="tambahStatusSemesterInput" required
+                    <select name="tahun_akademik_id" id="tambahStatusTahunAkademikInput" required
                         class="w-full px-4 py-2.5 rounded-[10px] bg-white-form border-none text-sm font-medium text-gray-900 focus:ring-2 focus:ring-additional/30 focus:outline-none appearance-none cursor-pointer">
-                        <option value="" disabled selected>Pilih Semester</option>
-                        @foreach($semesterOptions as $sem)
-                            <option value="{{ $sem }}">{{ $sem }}</option>
-                        @endforeach
-                    </select>
-                    <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-gray-600">
-                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
-                        </svg>
-                    </div>
-                </div>
-            </div>
-
-            <div>
-                <label for="tambahStatusTahunAkademikInput" class="block text-xs font-bold text-gray-900 mb-1.5">Tahun Akademik <span class="text-gray-400 font-normal">(opsional)</span></label>
-                <div class="relative">
-                    <select name="tahun_akademik_id" id="tambahStatusTahunAkademikInput"
-                        class="w-full px-4 py-2.5 rounded-[10px] bg-white-form border-none text-sm font-medium text-gray-900 focus:ring-2 focus:ring-additional/30 focus:outline-none appearance-none cursor-pointer">
-                        <option value="">-- Tidak Dipilih --</option>
+                        <option value="" disabled selected>Pilih Tahun Akademik</option>
                         @foreach($tahunAkademikList as $ta)
                             @php
-                                $taLabel = trim(($ta['tahun'] ?? $ta['tahun_akademik'] ?? $ta['nama'] ?? '') . (!empty($ta['semester']) ? ' (' . $ta['semester'] . ')' : ''));
-                                if (empty($taLabel)) { $taLabel = "ID {$ta['id']}"; }
+                                $optVal = $ta['option_key'] ?? ($ta['id'] . (!empty($ta['semester']) ? '_' . $ta['semester'] : ''));
+                                $taLabel = $formatTa($ta);
+                                if ($taLabel === '-' || empty($taLabel)) {
+                                    $taLabel = "ID #{$ta['id']}";
+                                }
                             @endphp
-                            <option value="{{ $ta['id'] }}">{{ $taLabel }}</option>
+                            <option value="{{ $optVal }}">{{ $taLabel }}</option>
                         @endforeach
                     </select>
                     <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-gray-600">
@@ -462,35 +507,20 @@
             <input type="hidden" id="editStatusEnrollmentInput" name="id_enrollment_mahasiswa_angkatan_kelas" value="">
 
             <div>
-                <label for="editStatusSemesterInput" class="block text-xs font-bold text-gray-900 mb-1.5">Semester</label>
+                <label for="editStatusTahunAkademikInput" class="block text-xs font-bold text-gray-900 mb-1.5">Tahun Akademik</label>
                 <div class="relative">
-                    <select name="semester" id="editStatusSemesterInput" required
+                    <select name="tahun_akademik_id" id="editStatusTahunAkademikInput" required
                         class="w-full px-4 py-2.5 rounded-[10px] bg-white-form border-none text-sm font-medium text-gray-900 focus:ring-2 focus:ring-additional/30 focus:outline-none appearance-none cursor-pointer">
-                        <option value="" disabled>Pilih Semester</option>
-                        @foreach($semesterOptions as $sem)
-                            <option value="{{ $sem }}">{{ $sem }}</option>
-                        @endforeach
-                    </select>
-                    <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-gray-600">
-                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
-                        </svg>
-                    </div>
-                </div>
-            </div>
-
-            <div>
-                <label for="editStatusTahunAkademikInput" class="block text-xs font-bold text-gray-900 mb-1.5">Tahun Akademik <span class="text-gray-400 font-normal">(opsional)</span></label>
-                <div class="relative">
-                    <select name="tahun_akademik_id" id="editStatusTahunAkademikInput"
-                        class="w-full px-4 py-2.5 rounded-[10px] bg-white-form border-none text-sm font-medium text-gray-900 focus:ring-2 focus:ring-additional/30 focus:outline-none appearance-none cursor-pointer">
-                        <option value="">-- Tidak Dipilih --</option>
+                        <option value="" disabled>Pilih Tahun Akademik</option>
                         @foreach($tahunAkademikList as $ta)
                             @php
-                                $taLabelEdit = trim(($ta['tahun'] ?? $ta['tahun_akademik'] ?? $ta['nama'] ?? '') . (!empty($ta['semester']) ? ' (' . $ta['semester'] . ')' : ''));
-                                if (empty($taLabelEdit)) { $taLabelEdit = "ID {$ta['id']}"; }
+                                $optValEdit = $ta['option_key'] ?? ($ta['id'] . (!empty($ta['semester']) ? '_' . $ta['semester'] : ''));
+                                $taLabelEdit = $formatTa($ta);
+                                if ($taLabelEdit === '-' || empty($taLabelEdit)) {
+                                    $taLabelEdit = "ID #{$ta['id']}";
+                                }
                             @endphp
-                            <option value="{{ $ta['id'] }}">{{ $taLabelEdit }}</option>
+                            <option value="{{ $optValEdit }}">{{ $taLabelEdit }}</option>
                         @endforeach
                     </select>
                     <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-gray-600">
@@ -579,9 +609,10 @@ document.addEventListener('DOMContentLoaded', function () {
             // Reset the form
             const form = tambahStatusModal?.querySelector('form');
             if (form) {
-                form.querySelector('#tambahStatusSemesterInput').value = '';
-                form.querySelector('#tambahStatusTahunAkademikInput').value = '';
-                form.querySelector('#tambahStatusStatusInput').value = '';
+                const taInput = form.querySelector('#tambahStatusTahunAkademikInput');
+                if (taInput) taInput.value = '';
+                const stInput = form.querySelector('#tambahStatusStatusInput');
+                if (stInput) stInput.value = '';
             }
             showModal(tambahStatusModal);
         });
@@ -592,10 +623,26 @@ document.addEventListener('DOMContentLoaded', function () {
         btn.addEventListener('click', function () {
             const form = document.getElementById('editStatusForm');
             if (form) form.action = this.getAttribute('data-action') || '';
-            document.getElementById('editStatusEnrollmentInput').value = this.getAttribute('data-enrollment') || '';
-            document.getElementById('editStatusSemesterInput').value = this.getAttribute('data-semester') || '';
-            document.getElementById('editStatusTahunAkademikInput').value = this.getAttribute('data-tahun-akademik-id') || '';
-            document.getElementById('editStatusStatusInput').value = this.getAttribute('data-status') || '';
+            const enrollInput = document.getElementById('editStatusEnrollmentInput');
+            if (enrollInput) enrollInput.value = this.getAttribute('data-enrollment') || '';
+            
+            const taId = this.getAttribute('data-tahun-akademik-id') || '';
+            const sem = this.getAttribute('data-semester') || '';
+            const taInput = document.getElementById('editStatusTahunAkademikInput');
+            if (taInput) {
+                const comboVal = sem ? `${taId}_${sem}` : taId;
+                let opt = taInput.querySelector(`option[value="${comboVal}"]`);
+                if (!opt && sem) {
+                    opt = taInput.querySelector(`option[value^="${taId}_"]`);
+                }
+                if (!opt) {
+                    opt = taInput.querySelector(`option[value="${taId}"]`);
+                }
+                taInput.value = opt ? opt.value : '';
+            }
+
+            const stInput = document.getElementById('editStatusStatusInput');
+            if (stInput) stInput.value = this.getAttribute('data-status') || '';
             showModal(editStatusModal);
         });
     });

@@ -514,15 +514,25 @@ class MahasiswaController extends Controller
     {
         $validated = $request->validate([
             'id_enrollment_mahasiswa_angkatan_kelas' => ['required'],
-            'semester' => ['required', 'string'],
-            'tahun_akademik_id' => ['nullable'],
+            'tahun_akademik_id' => ['required'],
             'status' => ['required', 'string', 'in:'.implode(',', self::STATUS_OPTIONS)],
+            'semester' => ['nullable', 'string'],
         ], [
             'id_enrollment_mahasiswa_angkatan_kelas.required' => 'Enrollment mahasiswa diperlukan.',
-            'semester.required' => 'Semester wajib dipilih.',
+            'tahun_akademik_id.required' => 'Tahun akademik wajib dipilih.',
             'status.required' => 'Status wajib dipilih.',
             'status.in' => 'Status yang dipilih tidak valid.',
         ]);
+
+        $rawTa = (string) $validated['tahun_akademik_id'];
+        $taId = $rawTa;
+        $semester = $validated['semester'] ?? null;
+        if (str_contains($rawTa, '_')) {
+            [$taId, $extractedSem] = explode('_', $rawTa, 2);
+            if (empty($semester)) {
+                $semester = $extractedSem;
+            }
+        }
 
         $basePayload = [
             'id_enrollment_mahasiswa_angkatan_kelas' => (int) $validated['id_enrollment_mahasiswa_angkatan_kelas'],
@@ -530,9 +540,9 @@ class MahasiswaController extends Controller
         ];
 
         $extendedPayload = $basePayload;
-        $extendedPayload['semester'] = $validated['semester'];
-        if (! empty($validated['tahun_akademik_id'])) {
-            $extendedPayload['tahun_akademik_id'] = (int) $validated['tahun_akademik_id'];
+        $extendedPayload['tahun_akademik_id'] = (int) $taId;
+        if (! empty($semester)) {
+            $extendedPayload['semester'] = $semester;
         }
 
         // Attempt creation with extended fields first
@@ -577,15 +587,25 @@ class MahasiswaController extends Controller
     {
         $validated = $request->validate([
             'id_enrollment_mahasiswa_angkatan_kelas' => ['required'],
-            'semester' => ['required', 'string'],
-            'tahun_akademik_id' => ['nullable'],
+            'tahun_akademik_id' => ['required'],
             'status' => ['required', 'string', 'in:'.implode(',', self::STATUS_OPTIONS)],
+            'semester' => ['nullable', 'string'],
         ], [
             'id_enrollment_mahasiswa_angkatan_kelas.required' => 'Enrollment mahasiswa diperlukan.',
-            'semester.required' => 'Semester wajib dipilih.',
+            'tahun_akademik_id.required' => 'Tahun akademik wajib dipilih.',
             'status.required' => 'Status wajib dipilih.',
             'status.in' => 'Status yang dipilih tidak valid.',
         ]);
+
+        $rawTa = (string) $validated['tahun_akademik_id'];
+        $taId = $rawTa;
+        $semester = $validated['semester'] ?? null;
+        if (str_contains($rawTa, '_')) {
+            [$taId, $extractedSem] = explode('_', $rawTa, 2);
+            if (empty($semester)) {
+                $semester = $extractedSem;
+            }
+        }
 
         $basePayload = [
             'id_enrollment_mahasiswa_angkatan_kelas' => (int) $validated['id_enrollment_mahasiswa_angkatan_kelas'],
@@ -593,9 +613,9 @@ class MahasiswaController extends Controller
         ];
 
         $extendedPayload = $basePayload;
-        $extendedPayload['semester'] = $validated['semester'];
-        if (! empty($validated['tahun_akademik_id'])) {
-            $extendedPayload['tahun_akademik_id'] = (int) $validated['tahun_akademik_id'];
+        $extendedPayload['tahun_akademik_id'] = (int) $taId;
+        if (! empty($semester)) {
+            $extendedPayload['semester'] = $semester;
         }
 
         $response = $this->akademikService->updateStatusMahasiswa($statusId, $extendedPayload);
@@ -813,14 +833,74 @@ class MahasiswaController extends Controller
             $response = $this->akademikService->getTahunAkademikList(['per_page' => 100]);
             if ($response->successful()) {
                 $raw = $response->json('data') ?? [];
-
-                return is_array($raw) ? (isset($raw['data']) && is_array($raw['data']) ? $raw['data'] : $raw) : [];
+                $list = is_array($raw) ? (isset($raw['data']) && is_array($raw['data']) ? $raw['data'] : $raw) : [];
+                if (! empty($list)) {
+                    return $this->expandTahunAkademikSemesters($list);
+                }
             }
         } catch (\Throwable) {
             // Silent
         }
 
-        return [];
+        $custom = session('custom_tahun_akademik_list', []);
+        if (! empty($custom)) {
+            return $this->expandTahunAkademikSemesters($custom);
+        }
+
+        $currentYear = (int) date('Y');
+        $fallback = [];
+        $idCounter = 1;
+        for ($y = $currentYear + 1; $y >= $currentYear - 3; $y--) {
+            $nextY = $y + 1;
+            $fallback[] = [
+                'id' => $idCounter,
+                'option_key' => "{$idCounter}_Gasal",
+                'tahun' => "{$y}/{$nextY}",
+                'semester' => 'Gasal',
+            ];
+            $fallback[] = [
+                'id' => $idCounter++,
+                'option_key' => "{$idCounter}_Genap",
+                'tahun' => "{$y}/{$nextY}",
+                'semester' => 'Genap',
+            ];
+        }
+
+        return $fallback;
+    }
+
+    /**
+     * Ensure every academic year has choices for both Gasal and Genap.
+     *
+     * @param  array<int, array<string, mixed>>  $list
+     * @return array<int, array<string, mixed>>
+     */
+    protected function expandTahunAkademikSemesters(array $list): array
+    {
+        $expanded = [];
+        foreach ($list as $item) {
+            $itemSem = $item['semester'] ?? null;
+            if (! empty($itemSem)) {
+                $semName = (strcasecmp($itemSem, 'ganjil') === 0 || strcasecmp($itemSem, 'gasal') === 0) ? 'Gasal' : ((strcasecmp($itemSem, 'genap') === 0) ? 'Genap' : ucfirst($itemSem));
+                $copy = $item;
+                $copy['semester'] = $semName;
+                $copy['option_key'] = ($item['id'] ?? '').'_'.$semName;
+                $expanded[] = $copy;
+            } else {
+                $gasal = $item;
+                $gasal['semester'] = 'Gasal';
+                $gasal['option_key'] = ($item['id'] ?? '').'_Gasal';
+
+                $genap = $item;
+                $genap['semester'] = 'Genap';
+                $genap['option_key'] = ($item['id'] ?? '').'_Genap';
+
+                $expanded[] = $gasal;
+                $expanded[] = $genap;
+            }
+        }
+
+        return $expanded;
     }
 
     protected function extractErrorMessage($response, string $fallback): string
