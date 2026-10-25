@@ -370,6 +370,7 @@ class TenagaKependidikanController extends Controller
             $response = $this->tridharmaService->createSertifikasi(
                 $payload,
                 $request->file('evidence_file'),
+                asMultipart: true,
             );
 
             if ($response->status() === 401) {

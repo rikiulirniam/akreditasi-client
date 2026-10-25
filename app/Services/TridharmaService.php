@@ -191,6 +191,26 @@ class TridharmaService
         return $this->get('pendidikan', $query, $token);
     }
 
+    public function getPendidikanById(int|string $id, ?string $token = null): Response
+    {
+        return $this->get("pendidikan/{$id}", [], $token);
+    }
+
+    public function createPendidikan(array $data, ?string $token = null): Response
+    {
+        return $this->post('pendidikan', $data, $token);
+    }
+
+    public function updatePendidikan(int|string $id, array $data, ?string $token = null): Response
+    {
+        return $this->put("pendidikan/{$id}", $data, $token);
+    }
+
+    public function deletePendidikan(int|string $id, ?string $token = null): Response
+    {
+        return $this->delete("pendidikan/{$id}", [], $token);
+    }
+
     public function getBidangKeahlianList(array $query = [], ?string $token = null): Response
     {
         return $this->get('bidang-keahlian', $query, $token);
