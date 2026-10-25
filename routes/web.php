@@ -81,7 +81,6 @@ Route::middleware('auth.akademik')->group(function () {
 
     Route::resource('kurikulum', KurikulumController::class);
     Route::put('kurikulum/{kurikulum}/cpl-mata-kuliah', [KurikulumController::class, 'updateMataKuliahCpl'])->name('kurikulum.update-mk-cpl');
-});
 
     Route::get('/validasi-monitoring', [ValidasiMonitoringController::class, 'index'])->name('validasi-monitoring.index');
     Route::post('/validasi-monitoring/status', [ValidasiMonitoringController::class, 'updateStatus'])->name('validasi-monitoring.update-status');
@@ -100,7 +99,7 @@ Route::middleware('auth.akademik')->group(function () {
 Route::prefix('pages')->name('akreditasi.superadmin.')->group(function () {
     Route::get('/superadmin', [SuperadminDashboard::class, 'index'])->name('dashboard');
     Route::get('/superadmin/dashboard', [SuperadminDashboard::class, 'index'])->name('dashboard');
-    
+
     // Tambahkan baris ini untuk mengatasi error instrumen
     Route::get('/superadmin/instrumen', function () {
         return view('pages.superadmin.instrumen');
