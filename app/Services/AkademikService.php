@@ -683,11 +683,6 @@ class AkademikService
         return $this->delete("evidence-prestasi-mahasiswa/{$id}", [], $token);
     }
 
-    public function getJenisPrestasiList(array $query = [], ?string $token = null): Response
-    {
-        return $this->get('jenis-prestasi', $query, $token);
-    }
-
     public function getJenisPrestasiById(int|string $id, ?string $token = null): Response
     {
         return $this->get("jenis-prestasi/{$id}", [], $token);

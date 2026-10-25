@@ -243,4 +243,72 @@ class MahasiswaTest extends TestCase
         $response->assertRedirect(route('mahasiswa.show', 1));
         $response->assertSessionHas('toast');
     }
+
+    public function test_user_can_add_status_without_semester(): void
+    {
+        Http::fake([
+            '*/api/status-mahasiswa*' => Http::response([
+                'success' => true,
+                'message' => 'Status mahasiswa berhasil ditambahkan.',
+                'data' => [
+                    'id' => 51,
+                    'id_enrollment_mahasiswa_angkatan_kelas' => 5,
+                    'status' => 'Aktif',
+                ],
+            ], 200),
+        ]);
+
+        $response = $this->withSession($this->authSession())
+            ->post(route('mahasiswa.status.store', 1), [
+                'id_enrollment_mahasiswa_angkatan_kelas' => 5,
+                'tahun_akademik_id' => 1,
+                'status' => 'Aktif',
+            ]);
+
+        $response->assertRedirect(route('mahasiswa.show', 1));
+        $response->assertSessionHas('toast');
+    }
+
+    public function test_user_cannot_add_status_without_tahun_akademik_id(): void
+    {
+        $response = $this->withSession($this->authSession())
+            ->post(route('mahasiswa.status.store', 1), [
+                'id_enrollment_mahasiswa_angkatan_kelas' => 5,
+                'status' => 'Aktif',
+            ]);
+
+        $response->assertSessionHasErrors('tahun_akademik_id');
+    }
+
+    public function test_user_can_add_status_with_combo_tahun_akademik_gasal(): void
+    {
+        Http::fake([
+            '*/api/status-mahasiswa*' => Http::response([
+                'success' => true,
+                'message' => 'Status mahasiswa berhasil ditambahkan.',
+                'data' => [
+                    'id' => 52,
+                    'id_enrollment_mahasiswa_angkatan_kelas' => 5,
+                    'status' => 'Aktif',
+                ],
+            ], 200),
+        ]);
+
+        $response = $this->withSession($this->authSession())
+            ->post(route('mahasiswa.status.store', 1), [
+                'id_enrollment_mahasiswa_angkatan_kelas' => 5,
+                'tahun_akademik_id' => '4_Gasal',
+                'status' => 'Aktif',
+            ]);
+
+        $response->assertRedirect(route('mahasiswa.show', 1));
+        $response->assertSessionHas('toast');
+
+        // Verify session saved with separated integer id and semester
+        $custom = session('custom_status_mahasiswa_1', []);
+        $this->assertNotEmpty($custom);
+        $last = end($custom);
+        $this->assertEquals(4, $last['tahun_akademik_id']);
+        $this->assertEquals('Gasal', $last['semester']);
+    }
 }
