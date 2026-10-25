@@ -459,9 +459,9 @@ class TenagaKependidikanController extends Controller
 
             if ($this->apiSucceeded($response)) {
                 return redirect()->route('tenaga-pendidikan.show', $tendikId)->with('toast', [
-                    'type' => 'success',
-                    'title' => 'Berhasil',
-                    'message' => $response->json('message') ?: 'Sertifikasi berhasil dihapus.',
+                    'type' => 'delete',
+                    'title' => '',
+                    'message' => 'Data berhasil dihapus',
                 ]);
             }
 

@@ -207,9 +207,9 @@
 
                         if (window.showToast) {
                             window.showToast({
-                                type: 'success',
-                                title: 'Berhasil Dihapus',
-                                message: data.message || 'Data berhasil dihapus.'
+                                type: 'delete',
+                                title: '',
+                                message: data.message || 'Data berhasil dihapus'
                             });
                         }
                         activeDeleteRow = null;

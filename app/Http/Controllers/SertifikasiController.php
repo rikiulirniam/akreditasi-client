@@ -339,10 +339,17 @@ class SertifikasiController extends Controller
         }
 
         if ($this->successfulResponse($response)) {
+            if ($request->expectsJson() || $request->ajax()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Data berhasil dihapus',
+                ]);
+            }
+
             return $this->indexRedirect()->with('toast', [
-                'type' => 'success',
-                'title' => 'Berhasil',
-                'message' => $this->responseMessage($response, 'Sertifikasi berhasil dihapus.'),
+                'type' => 'delete',
+                'title' => '',
+                'message' => 'Data berhasil dihapus',
             ]);
         }
 

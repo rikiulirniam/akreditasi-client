@@ -886,9 +886,9 @@ document.addEventListener('DOMContentLoaded', function () {
 
                         if (window.showToast) {
                             window.showToast({
-                                type: 'success',
-                                title: 'Berhasil Dihapus',
-                                message: data.message || 'Data Tenaga Kependidikan berhasil dihapus.'
+                                type: 'delete',
+                                title: '',
+                                message: data.message || 'Data berhasil dihapus'
                             });
                         }
                         isSubmittingDelete = false;

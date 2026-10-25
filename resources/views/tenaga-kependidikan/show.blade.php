@@ -130,17 +130,17 @@
     <section class="overflow-hidden rounded-[8px] bg-[#EEF3F7]" aria-labelledby="certificationHeading">
         <div class="flex h-[47px] items-center justify-between bg-[#002B49] px-4 sm:px-6">
             <h3 id="certificationHeading" class="text-base font-semibold text-white tracking-wide">Sertifikasi</h3>
-            {{-- Tombol Tambah Sertifikasi --}}
-            <button
-                type="button"
-                id="openAddSertifikasiModalBtn"
+            {{-- Tombol Tambah Sertifikasi (Mengarahkan ke halaman Tenaga Kependidikan > Sertifikasi sesuai Foto 1) --}}
+            <a
+                href="{{ route('tenaga-kependidikan.sertifikasi.index', $tenagaKependidikan['id']) }}"
+                id="addSertifikasiLink"
                 class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-[6px] bg-[#00629B] hover:bg-[#005180] text-white text-xs font-semibold transition shadow-sm cursor-pointer"
             >
                 <svg class="w-3.5 h-3.5" viewBox="0 0 20 20" fill="currentColor">
                     <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm.75-11.25a.75.75 0 00-1.5 0v2.5h-2.5a.75.75 0 000 1.5h2.5v2.5a.75.75 0 001.5 0v-2.5h2.5a.75.75 0 000-1.5h-2.5v-2.5z" clip-rule="evenodd" />
                 </svg>
                 <span>Tambah Sertifikasi</span>
-            </button>
+            </a>
         </div>
 
         @if($detailApiError)
