@@ -53,10 +53,15 @@
             <p class="text-xs sm:text-sm font-bold uppercase tracking-wider text-secondary">
                 DETAIL INDIKATOR
             </p>
-            <h2 class="mt-1 text-2xl sm:text-3xl font-extrabold tracking-tight">
-                {{ ($indikator['kode_indikator'] ?? 'Indikator') . ' - ' . \Illuminate\Support\Str::limit($indikator['deskripsi_indikator'] ?? '', 50) }}
+            <h2 class="mt-1 text-2xl sm:text-3xl font-extrabold tracking-tight font-mono">
+                {{ $indikator['kode_indikator'] ?? 'Indikator' }}
             </h2>
-            <p class="mt-2 text-sm text-white/80">
+            @if(!empty($indikator['deskripsi_indikator']))
+                <p class="mt-2 text-base sm:text-lg font-semibold text-white/95 leading-relaxed">
+                    {{ $indikator['deskripsi_indikator'] }}
+                </p>
+            @endif
+            <p class="mt-2 text-xs sm:text-sm text-white/75">
                 Kelola skala skor rubrik penilaian untuk indikator ini.
             </p>
         </div>

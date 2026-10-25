@@ -45,10 +45,15 @@
             <p class="text-xs sm:text-sm font-bold uppercase tracking-wider text-secondary">
                 DETAIL KRITERIA
             </p>
-            <h2 class="mt-1 text-2xl sm:text-3xl font-extrabold tracking-tight">
-                {{ ($kriteria['kode_kriteria'] ?? 'C1') . ' - ' . ($kriteria['nama_kriteria'] ?? 'Kriteria') }}
+            <h2 class="mt-1 text-2xl sm:text-3xl font-extrabold tracking-tight font-mono">
+                {{ $kriteria['kode_kriteria'] ?? 'C1' }}
             </h2>
-            <p class="mt-2 text-sm text-white/80">
+            @if(!empty($kriteria['nama_kriteria']))
+                <p class="mt-2 text-base sm:text-lg font-semibold text-white/95 leading-relaxed">
+                    {{ $kriteria['nama_kriteria'] }}
+                </p>
+            @endif
+            <p class="mt-2 text-xs sm:text-sm text-white/75">
                 Kelola subkriteria yang menjadi rujukan indikator penilaian.
             </p>
         </div>
