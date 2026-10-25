@@ -129,7 +129,7 @@
                     </p>
                     <div class="mt-3.5 flex justify-center">
                         <a 
-                            href="#" 
+                            href="{{ route('auth.google') }}" 
                             class="w-10 h-10 rounded-full flex items-center justify-center hover:bg-gray-100 transition cursor-pointer"
                             title="Login dengan Google"
                         >
@@ -152,6 +152,8 @@
     <div 
         id="forgotPasswordModal" 
         class="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-black/45 backdrop-blur-[2px] transition-all duration-200 opacity-0 pointer-events-none"
+        role="dialog"
+        aria-modal="true"
         aria-hidden="true"
     >
         <div 
