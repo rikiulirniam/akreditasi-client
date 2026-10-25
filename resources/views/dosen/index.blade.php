@@ -47,7 +47,7 @@
                             aria-haspopup="true"
                         >
                             <span id="filterStatusLabel" class="text-sm font-semibold text-gray-900 truncate pr-2">
-                                {{ !empty($selectedStatus) && $selectedStatus !== 'all' ? $selectedStatus : 'Status' }}
+                                {{ $selectedStatusLabel ?? 'Status' }}
                             </span>
                             <div class="w-7 h-7 rounded-[6px] bg-secondary border border-primary flex items-center justify-center shrink-0 shadow-2xs">
                                 <svg id="filterStatusChevron" class="w-4 h-4 text-primary stroke-primary transition-transform duration-200 rotate-0" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none" viewBox="0 0 24 24">
@@ -84,18 +84,10 @@
                             <button
                                 type="button"
                                 class="status-option-btn w-full text-left px-4 py-1.5 text-xs sm:text-sm font-medium text-gray-900 hover:bg-black/5 hover:text-primary transition cursor-pointer select-none"
-                                data-value="Tidak Tetap"
+                                data-value="DTT"
                                 data-label="Tidak tetap"
                             >
                                 Tidak tetap
-                            </button>
-                            <button
-                                type="button"
-                                class="status-option-btn w-full text-left px-4 py-1.5 text-xs sm:text-sm font-medium text-gray-900 hover:bg-black/5 hover:text-primary transition cursor-pointer select-none"
-                                data-value="Non-aktif"
-                                data-label="Non-aktif"
-                            >
-                                Non-aktif
                             </button>
                         </div>
                     </div>
