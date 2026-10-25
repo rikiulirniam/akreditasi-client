@@ -8,7 +8,6 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\View\View;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
-use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class DosenController extends Controller
 {
@@ -500,54 +499,12 @@ class DosenController extends Controller
         ]);
     }
 
-    public function template(): BinaryFileResponse|StreamedResponse
+    public function template(): BinaryFileResponse
     {
-        $templatePath = public_path('templates/template_data_dosen.xlsx');
-
-        if (file_exists($templatePath)) {
-            return response()->download($templatePath, 'template_data_dosen.xlsx', [
-                'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-            ]);
-        }
-
-        $staticCsv = public_path('templates/template_data_dosen.csv');
-        if (file_exists($staticCsv)) {
-            return response()->download($staticCsv, 'template_data_dosen.csv', [
-                'Content-Type' => 'text/csv; charset=UTF-8',
-            ]);
-        }
-
-        // Fallback: Generate a CSV formatted spreadsheet template on the fly
-        $headers = [
-            'Content-Type' => 'text/csv; charset=UTF-8',
-            'Content-Disposition' => 'attachment; filename="template_data_dosen.csv"',
-        ];
-
-        return response()->stream(function () {
-            $handle = fopen('php://output', 'w');
-            // Write UTF-8 BOM for Excel
-            fprintf($handle, chr(0xEF).chr(0xBB).chr(0xBF));
-            fputcsv($handle, [
-                'nidn',
-                'nuptk',
-                'nama_dosen',
-                'email',
-                'status_dosen',
-                'id_jabatan',
-                'id_pendidikan',
-                'sertifikasi',
-            ]);
-            fputcsv($handle, [
-                '0015088501',
-                '1234567890',
-                'Dr. Ir. Ahmad Dahlan, M.T.',
-                'ahmad.dahlan@polines.ac.id',
-                'DTPS',
-                '1',
-                '1',
-                'Pendidik Profesional',
-            ]);
-            fclose($handle);
-        }, 200, $headers);
+        return response()->download(
+            public_path('templates/template_data_dosen.xlsx'),
+            'template_data_dosen.xlsx',
+            ['Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'],
+        );
     }
 }

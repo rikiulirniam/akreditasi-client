@@ -617,4 +617,20 @@ class DosenShowTest extends TestCase
             return ($query['status'] ?? null) === 'DTT';
         });
     }
+
+    public function test_dosen_template_download_serves_xlsx_workbook(): void
+    {
+        $response = $this->withSession([
+            'access_token' => 'dummy-token',
+            'user' => ['nama' => 'Kuwat', 'role' => 'Kaprodi'],
+        ])->get(route('dosen.template'));
+
+        $response->assertOk();
+        $this->assertSame(
+            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            $response->headers->get('content-type')
+        );
+        $this->assertStringContainsString('template_data_dosen.xlsx', (string) $response->headers->get('content-disposition'));
+        $this->assertSame('PK', substr($response->streamedContent(), 0, 2));
+    }
 }
