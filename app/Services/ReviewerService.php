@@ -35,7 +35,9 @@ class ReviewerService
 
     protected function http(): PendingRequest
     {
-        $request = Http::acceptJson()->timeout(20);
+        $request = Http::acceptJson()
+            ->withoutVerifying()
+            ->timeout(20);
         $token = (string) session('access_token');
 
         if ($token !== '') {
