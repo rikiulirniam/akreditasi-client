@@ -95,6 +95,7 @@ Route::middleware('auth.akademik')->group(function () {
     Route::post('/spmi/tindak-lanjut', [SpmiController::class, 'storeTindakLanjut'])->name('spmi.tindak-lanjut.store');
 
     Route::get('/laporan-akhir', [LaporanAkhirController::class, 'index'])->name('laporan-akhir.index');
+    Route::get('/laporan-akhir/download', [LaporanAkhirController::class, 'download'])->name('laporan-akhir.download');
 });
 
 // =====================================================================
