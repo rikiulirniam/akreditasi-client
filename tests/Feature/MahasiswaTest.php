@@ -311,4 +311,110 @@ class MahasiswaTest extends TestCase
         $this->assertEquals(4, $last['tahun_akademik_id']);
         $this->assertEquals('Gasal', $last['semester']);
     }
+
+    public function test_authenticated_user_can_filter_mahasiswa_by_status(): void
+    {
+        Http::fake([
+            '*/api/mahasiswa*' => Http::response([
+                'success' => true,
+                'data' => [
+                    [
+                        'id' => 1,
+                        'nama_mahasiswa' => 'Budi Santoso',
+                        'nim' => 33423001,
+                        'tahun_masuk' => 2023,
+                        'jenis_pendaftaran' => 'SNBP',
+                        'tanggal_kelulusan' => null,
+                        'masa_studi_bulan' => 48,
+                    ],
+                    [
+                        'id' => 2,
+                        'nama_mahasiswa' => 'Siti Aminah',
+                        'nim' => 33423002,
+                        'tahun_masuk' => 2022,
+                        'jenis_pendaftaran' => 'SNBT',
+                        'tanggal_kelulusan' => '2026-08-01',
+                        'masa_studi_bulan' => 48,
+                    ],
+                ],
+            ], 200),
+            '*/api/status-mahasiswa*' => Http::response([
+                'success' => true,
+                'data' => [
+                    [
+                        'id' => 10,
+                        'id_enrollment_mahasiswa_angkatan_kelas' => 1,
+                        'status' => 'Aktif',
+                    ],
+                    [
+                        'id' => 11,
+                        'id_enrollment_mahasiswa_angkatan_kelas' => 2,
+                        'status' => 'Lulus',
+                    ],
+                ],
+            ], 200),
+            '*/api/enrollment-kelas*' => Http::response([
+                'success' => true,
+                'data' => [
+                    ['id' => 1, 'id_mahasiswa' => 1],
+                    ['id' => 2, 'id_mahasiswa' => 2],
+                ],
+            ], 200),
+            '*/api/angkatan*' => Http::response([
+                'success' => true,
+                'data' => [
+                    ['id' => 1, 'angkatan' => 2023],
+                    ['id' => 2, 'angkatan' => 2022],
+                ],
+            ], 200),
+        ]);
+
+        $response = $this->withSession($this->authSession())
+            ->get(route('mahasiswa.index', ['status' => 'Lulus']));
+
+        $response->assertStatus(200);
+        $response->assertSee('Siti Aminah');
+        $response->assertDontSee('Budi Santoso');
+        $response->assertSee('Semua Status');
+        $response->assertSee('Semua Tahun Masuk');
+    }
+
+    public function test_authenticated_user_can_filter_mahasiswa_by_tahun_and_search(): void
+    {
+        Http::fake([
+            '*/api/mahasiswa*' => Http::response([
+                'success' => true,
+                'data' => [
+                    [
+                        'id' => 1,
+                        'nama_mahasiswa' => 'Budi Santoso',
+                        'nim' => 33423001,
+                        'tahun_masuk' => 2023,
+                        'jenis_pendaftaran' => 'SNBP',
+                        'tanggal_kelulusan' => null,
+                        'masa_studi_bulan' => 48,
+                    ],
+                    [
+                        'id' => 2,
+                        'nama_mahasiswa' => 'Budi Hartono',
+                        'nim' => 33422002,
+                        'tahun_masuk' => 2022,
+                        'jenis_pendaftaran' => 'SNBT',
+                        'tanggal_kelulusan' => null,
+                        'masa_studi_bulan' => 48,
+                    ],
+                ],
+            ], 200),
+            '*/api/status-mahasiswa*' => Http::response(['success' => true, 'data' => []], 200),
+            '*/api/enrollment-kelas*' => Http::response(['success' => true, 'data' => []], 200),
+            '*/api/angkatan*' => Http::response(['success' => true, 'data' => []], 200),
+        ]);
+
+        $response = $this->withSession($this->authSession())
+            ->get(route('mahasiswa.index', ['search' => 'Budi', 'tahun' => '2023']));
+
+        $response->assertStatus(200);
+        $response->assertSee('Budi Santoso');
+        $response->assertDontSee('Budi Hartono');
+    }
 }

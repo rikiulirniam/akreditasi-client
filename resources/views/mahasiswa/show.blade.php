@@ -10,9 +10,26 @@
     $tahunMasuk = $mahasiswa['tahun_masuk'] ?? '-';
     $jenisPendaftaran = $mahasiswa['jenis_pendaftaran'] ?? '-';
     $rawKelulusan = $mahasiswa['tanggal_kelulusan'] ?? '';
-    $formattedKelulusan = !empty($rawKelulusan) ? \Carbon\Carbon::parse($rawKelulusan)->format('d M Y') : '-';
-    $masaStudi = $mahasiswa['masa_studi_bulan'] ?? 48;
-    $masaStudiTahun = round($masaStudi / 12, 1);
+    $formattedKelulusan = '-';
+    if (!empty($rawKelulusan)) {
+        try {
+            $formattedKelulusan = \Carbon\Carbon::parse($rawKelulusan)->locale('id')->isoFormat('D MMMM Y');
+        } catch (\Throwable) {
+            $formattedKelulusan = \Carbon\Carbon::parse($rawKelulusan)->format('d-m-Y');
+        }
+    }
+    $masaStudi = (int) ($mahasiswa['masa_studi_bulan'] ?? 48);
+    if ($masaStudi > 0) {
+        if ($masaStudi % 12 === 0) {
+            $tahunCount = (int) ($masaStudi / 12);
+            $masaStudiDisplay = "{$tahunCount} Tahun";
+        } else {
+            $tahunCount = round($masaStudi / 12, 1);
+            $masaStudiDisplay = "{$tahunCount} Tahun";
+        }
+    } else {
+        $masaStudiDisplay = '-';
+    }
 
     $enrollmentId = $enrollmentDetail['id'] ?? null;
     $kelasNama = $enrollmentDetail['kelas']['nama_kelas'] ?? $enrollmentDetail['kelas']['kelas'] ?? $enrollmentDetail['nama_kelas'] ?? '-';
@@ -94,14 +111,14 @@
     <!-- Top Navigation Bar -->
     <div class="flex items-center justify-between gap-4">
         <div>
-            <h2 class="text-lg font-bold text-gray-900 tracking-tight">Detail Mahasiswa</h2>
+            <h2 class="text-xl font-bold text-gray-900 tracking-tight">Detail Mahasiswa</h2>
         </div>
         <div>
             <a
                 href="{{ route('mahasiswa.index') }}"
-                class="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-primary hover:bg-additional text-white text-xs font-bold shadow-xs transition cursor-pointer"
+                class="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-[#00476E] hover:bg-additional text-white text-xs font-bold shadow-xs transition cursor-pointer"
             >
-                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                <svg class="w-4 h-4 stroke-[2.5]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" />
                 </svg>
                 Kembali ke Daftar Mahasiswa
@@ -109,48 +126,38 @@
         </div>
     </div>
 
-    <!-- Profile Card -->
-    <div class="bg-white rounded-2xl border border-white-bone shadow-xs p-6 sm:p-8">
-        <!-- Card Header -->
-        <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-6">
-            <div class="flex items-center gap-4">
-                <!-- Avatar initials -->
-                <div class="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                    <span class="text-primary font-extrabold text-xl">{{ strtoupper(substr($nama, 0, 1)) }}</span>
-                </div>
-                <div>
-                    <h3 class="text-xl font-bold text-gray-900 tracking-tight">{{ $nama }}</h3>
-                    <p class="text-sm font-mono text-gray-500 mt-0.5">NIM: {{ $nim }}</p>
-                    @if($statusTerkini !== '-')
-                        <span class="mt-1.5 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold border {{ $statusColor }}">
-                            {{ $statusTerkini }}
-                        </span>
-                    @endif
-                </div>
+    <!-- Profile Card (Sesuai Gambar) -->
+    <div class="bg-[#F8F9FA] rounded-[22px] border border-gray-200/90 shadow-xs p-6 sm:p-8">
+        <!-- Top Row: Student Name & Action Buttons -->
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div>
+                <h3 class="text-2xl sm:text-3xl font-bold text-gray-900 tracking-tight">
+                    {{ $nama }}
+                </h3>
             </div>
 
-            <!-- Action Buttons -->
-            <div class="flex items-center gap-2.5 flex-wrap">
-                <!-- Hapus Data -->
+            <!-- Action Buttons: Hapus Data & Edit Data -->
+            <div class="flex items-center gap-3 shrink-0">
+                <!-- Hapus Data Button (Red) -->
                 <button
                     type="button"
-                    class="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-[#DC2626] hover:bg-[#B91C1C] text-white text-xs font-bold shadow-xs transition cursor-pointer"
+                    class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#BA2626] hover:bg-[#991B1B] text-white text-sm font-bold shadow-xs transition cursor-pointer"
                     data-confirm-delete
                     data-action="{{ route('mahasiswa.destroy', $id) }}"
                     data-title="Hapus Data Mahasiswa?"
                     data-message="Apakah Anda yakin ingin menghapus data mahasiswa {{ $nama }} (NIM: {{ $nim }})? Tindakan ini bersifat permanen."
                 >
-                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    <svg class="w-4 h-4 fill-current shrink-0" viewBox="0 0 24 24">
+                        <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
                     </svg>
                     Hapus Data
                 </button>
 
-                <!-- Edit Data -->
+                <!-- Edit Data Button (Yellow) -->
                 <button
                     type="button"
                     id="openEditMahasiswaFromShowBtn"
-                    class="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-[#EAB308] hover:bg-[#CA8A04] text-white text-xs font-bold shadow-xs transition cursor-pointer"
+                    class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#F59E0B] hover:bg-[#D97706] text-white text-sm font-bold shadow-xs transition cursor-pointer"
                     data-action="{{ route('mahasiswa.update', $id) }}"
                     data-nama="{{ $nama }}"
                     data-nim="{{ $nim }}"
@@ -159,7 +166,7 @@
                     data-kelulusan="{{ $rawKelulusan }}"
                     data-masa-studi="{{ $masaStudi }}"
                 >
-                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <svg class="w-4 h-4 stroke-[2.2] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                     </svg>
                     Edit Data
@@ -167,26 +174,107 @@
             </div>
         </div>
 
-        <hr class="border-gray-100 mb-6">
+        <!-- Divider Line -->
+        <hr class="border-t border-gray-200/90 my-6">
 
-        <!-- Info Grid -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-            @php
-                $fields = [
-                    ['label' => 'Tahun Masuk',        'value' => $tahunMasuk],
-                    ['label' => 'Jenis Pendaftaran',   'value' => $jenisPendaftaran],
-                    ['label' => 'Tanggal Kelulusan',   'value' => $formattedKelulusan],
-                    ['label' => 'Masa Studi',          'value' => "{$masaStudi} Bulan (~{$masaStudiTahun} Tahun)"],
-                    ['label' => 'Kelas',               'value' => $kelasNama],
-                    ['label' => 'Angkatan',            'value' => $angkatanNama],
-                ];
-            @endphp
-            @foreach($fields as $field)
-                <div class="bg-gray-50/70 rounded-xl px-4 py-3 border border-gray-100">
-                    <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">{{ $field['label'] }}</p>
-                    <p class="text-sm font-semibold text-gray-800">{{ $field['value'] }}</p>
+        <!-- Two Columns Info Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-y-4 gap-x-12">
+            <!-- Left Column -->
+            <div class="space-y-4">
+                <!-- NIM -->
+                <div class="flex items-center gap-3">
+                    <span class="w-6 h-6 flex items-center justify-center shrink-0 text-slate-500">
+                        <svg class="w-5 h-5 fill-current" viewBox="0 0 24 24">
+                            <path d="M12 2L1 7l11 5 9-4.09V14h2V7L12 2zm0 8c1.66 0 3-1.34 3-3V6.26l-3-1.36-3 1.36V7c0 1.66 1.34 3 3 3zm6 7.5v-1c0-2-4-3-6-3s-6 1-6 3v1h12z"/>
+                        </svg>
+                    </span>
+                    <div class="text-sm">
+                        <span class="font-bold text-gray-900">NIM:</span>
+                        <span class="text-gray-800 ml-1.5 font-normal">{{ $nim }}</span>
+                    </div>
                 </div>
-            @endforeach
+
+                <!-- Kelas -->
+                <div class="flex items-center gap-3">
+                    <span class="w-6 h-6 flex items-center justify-center shrink-0 text-slate-500">
+                        <svg class="w-5 h-5 fill-current" viewBox="0 0 24 24">
+                            <path d="M18 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zM6 4h5v8l-2.5-1.5L6 12V4z"/>
+                        </svg>
+                    </span>
+                    <div class="text-sm">
+                        <span class="font-bold text-gray-900">Kelas:</span>
+                        <span class="text-gray-800 ml-1.5 font-normal">{{ $kelasNama }}</span>
+                    </div>
+                </div>
+
+                <!-- Angkatan -->
+                <div class="flex items-center gap-3">
+                    <span class="w-6 h-6 flex items-center justify-center shrink-0 text-slate-500">
+                        <svg class="w-5 h-5 fill-current" viewBox="0 0 24 24">
+                            <path d="M19 4h-1V2h-2v2H8V2H6v2H5c-1.11 0-1.99.9-1.99 2L3 20a2 2 0 0 0 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V10h14v10zm0-12H5V6h14v2zm-6 4h-2v2H9v2h2v2h2v-2h2v-2h-2v-2z"/>
+                        </svg>
+                    </span>
+                    <div class="text-sm">
+                        <span class="font-bold text-gray-900">Angkatan:</span>
+                        <span class="text-gray-800 ml-1.5 font-normal">{{ $angkatanNama }}</span>
+                    </div>
+                </div>
+
+                <!-- Jenis Pendaftaran -->
+                <div class="flex items-center gap-3">
+                    <span class="w-6 h-6 flex items-center justify-center shrink-0 text-slate-500">
+                        <svg class="w-5 h-5 fill-current" viewBox="0 0 24 24">
+                            <path d="M19 3h-4.18C14.4 1.84 13.3 1 12 1c-1.3 0-2.4.84-2.82 2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 0c.55 0 1 .45 1 1s-.45 1-1 1-1-.45-1-1 .45-1 1-1zm2 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/>
+                        </svg>
+                    </span>
+                    <div class="text-sm">
+                        <span class="font-bold text-gray-900">Jenis Pendaftaran:</span>
+                        <span class="text-gray-800 ml-1.5 font-normal">{{ $jenisPendaftaran }}</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Column -->
+            <div class="space-y-4">
+                <!-- Tahun Masuk -->
+                <div class="flex items-center gap-3">
+                    <span class="w-6 h-6 flex items-center justify-center shrink-0 text-slate-500">
+                        <svg class="w-5 h-5 fill-current" viewBox="0 0 24 24">
+                            <path d="M19 3h-1V1h-2v2H8V1H6v2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11zM7 10h5v5H7z"/>
+                        </svg>
+                    </span>
+                    <div class="text-sm">
+                        <span class="font-bold text-gray-900">Tahun Masuk:</span>
+                        <span class="text-gray-800 ml-1.5 font-normal">{{ $tahunMasuk }}</span>
+                    </div>
+                </div>
+
+                <!-- Tanggal Kelulusan -->
+                <div class="flex items-center gap-3">
+                    <span class="w-6 h-6 flex items-center justify-center shrink-0 text-slate-500">
+                        <svg class="w-5 h-5 fill-current" viewBox="0 0 24 24">
+                            <path d="M12 2a6 6 0 0 0-6 6c0 2.22 1.21 4.16 3 5.2V22l3-2 3 2v-8.8c1.79-1.04 3-2.98 3-5.2a6 6 0 0 0-6-6zm0 9a3 3 0 1 1 0-6 3 3 0 0 1 0 6z"/>
+                        </svg>
+                    </span>
+                    <div class="text-sm">
+                        <span class="font-bold text-gray-900">Tanggal Kelulusan:</span>
+                        <span class="text-gray-800 ml-1.5 font-normal">{{ $formattedKelulusan }}</span>
+                    </div>
+                </div>
+
+                <!-- Masa Studi -->
+                <div class="flex items-center gap-3">
+                    <span class="w-6 h-6 flex items-center justify-center shrink-0 text-slate-500">
+                        <svg class="w-5 h-5 fill-current" viewBox="0 0 24 24">
+                            <path d="M15 1H9v2h6V1zm-4 13h2V8h-2v6zm8.03-6.61l1.42-1.42c-.43-.51-.9-.99-1.41-1.41l-1.42 1.42A8.962 8.962 0 0 0 12 4c-4.97 0-9 4.03-9 9s4.02 9 9 9a8.994 8.994 0 0 0 7.03-14.61zM12 20c-3.87 0-7-3.13-7-7s3.13-7 7-7 7 3.13 7 7-3.13 7-7 7z"/>
+                        </svg>
+                    </span>
+                    <div class="text-sm">
+                        <span class="font-bold text-gray-900">Masa Studi:</span>
+                        <span class="text-gray-800 ml-1.5 font-normal">{{ $masaStudiDisplay }}</span>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
