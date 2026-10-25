@@ -152,38 +152,58 @@
             <div class="divide-y divide-[#BAC7D5]">
                 @foreach($sertifikasis as $sertifikasi)
                     @php
+                        $sertifikasiId = $sertifikasi['id'] ?? $sertifikasi['id_sertifikasi'] ?? null;
                         $tahunSertifikasi = $sertifikasi['tahun_sertifikasi'] ?? null;
                         $tahunKadaluwarsa = isset($sertifikasi['tanggal_kedaluwarsa'])
                             ? \Illuminate\Support\Str::before($sertifikasi['tanggal_kedaluwarsa'], '-')
                             : null;
                         $status    = $sertifikasi['status_sertifikasi'] ?? $sertifikasi['status'] ?? 'Aktif';
                         $isExpired = \Illuminate\Support\Str::lower($status) === 'kadaluarsa'
-                                  || \Illuminate\Support\Str::lower($status) === 'expired';
+                                  || \Illuminate\Support\Str::lower($status) === 'expired'
+                                  || \Illuminate\Support\Str::lower($status) === 'kedaluwarsa';
                     @endphp
-                    <button
-                        type="button"
-                        class="w-full text-left px-4 sm:px-6 py-3 cursor-pointer hover:bg-black/[0.03] transition focus:outline-none"
-                        title="Detail sertifikasi"
-                    >
-                        <p class="text-sm font-bold text-black uppercase tracking-wide leading-tight">
-                            {{ $sertifikasi['jenis_sertifikasi'] ?? 'Sertifikasi' }}
-                        </p>
-                        @if(!empty($sertifikasi['lembaga_penerbit']))
-                            <p class="text-xs text-gray-500 mt-0.5">{{ $sertifikasi['lembaga_penerbit'] }}</p>
-                        @endif
-                        <div class="mt-1.5 flex flex-wrap gap-2">
-                            @if($tahunSertifikasi)
-                                <span class="inline-flex items-center rounded-full bg-[#002B49] px-2.5 py-1 text-[11px] font-semibold text-[#FFC400]">
-                                    Tahun Sertifikasi: {{ $tahunSertifikasi }}
-                                </span>
+                    <div class="flex items-center justify-between px-4 sm:px-6 py-3 hover:bg-black/[0.03] transition">
+                        <div class="min-w-0 flex-1">
+                            <p class="text-sm font-bold text-black uppercase tracking-wide leading-tight">
+                                {{ $sertifikasi['jenis_sertifikasi'] ?? 'Sertifikasi' }}
+                            </p>
+                            @if(!empty($sertifikasi['lembaga_penerbit']))
+                                <p class="text-xs text-gray-500 mt-0.5">{{ $sertifikasi['lembaga_penerbit'] }}</p>
                             @endif
-                            @if($tahunKadaluwarsa)
-                                <span class="inline-flex items-center rounded-full {{ $isExpired ? 'bg-red-100 text-red-700' : 'bg-[#002B49] text-[#FFC400]' }} px-2.5 py-1 text-[11px] font-semibold">
-                                    Tahun Kadaluwarsa: {{ $tahunKadaluwarsa }}
-                                </span>
-                            @endif
+                            <div class="mt-1.5 flex flex-wrap gap-2">
+                                @if($tahunSertifikasi)
+                                    <span class="inline-flex items-center rounded-full bg-[#002B49] px-2.5 py-1 text-[11px] font-semibold text-[#FFC400]">
+                                        Tahun Sertifikasi: {{ $tahunSertifikasi }}
+                                    </span>
+                                @endif
+                                @if($tahunKadaluwarsa)
+                                    <span class="inline-flex items-center rounded-full {{ $isExpired ? 'bg-red-100 text-red-700' : 'bg-[#002B49] text-[#FFC400]' }} px-2.5 py-1 text-[11px] font-semibold">
+                                        Tahun Kadaluwarsa: {{ $tahunKadaluwarsa }}
+                                    </span>
+                                @endif
+                            </div>
                         </div>
-                    </button>
+                        @if($sertifikasiId)
+                            <div class="flex items-center gap-2.5 shrink-0 ml-4">
+                                <a href="{{ route('sertifikasi.show', $sertifikasiId) }}" class="text-[#00629B] hover:text-[#002B49] p-1 transition" title="Lihat detail sertifikasi">
+                                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12s3.5-7.5 9.75-7.5 9.75 7.5 9.75 7.5-3.5 7.5-9.75 7.5S2.25 12 2.25 12Z" />
+                                        <circle cx="12" cy="12" r="3" />
+                                    </svg>
+                                </a>
+                                <a href="{{ route('sertifikasi.edit', $sertifikasiId) }}" class="text-amber-500 hover:text-amber-700 p-1 transition" title="Edit sertifikasi">
+                                    <x-icon.edit class="h-4 w-4" />
+                                </a>
+                                <form method="POST" action="{{ route('tenaga-pendidikan.sertifikasi.destroy', [$tenagaKependidikan['id'], $sertifikasiId]) }}" onsubmit="return confirm('Apakah Anda yakin ingin menghapus sertifikasi ini?');">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="submit" class="text-red-600 hover:text-red-800 p-1 transition cursor-pointer" title="Hapus sertifikasi">
+                                        <x-icon.delete class="h-4 w-4" />
+                                    </button>
+                                </form>
+                            </div>
+                        @endif
+                    </div>
                 @endforeach
             </div>
         @else
@@ -272,7 +292,7 @@
     </div>
 </div>
 
-{{-- Modal Tambah Sertifikasi (placeholder — belum aktif) --}}
+{{-- Modal Tambah Sertifikasi --}}
 <div
     id="addSertifikasiModal"
     class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm hidden"
@@ -280,8 +300,8 @@
     aria-modal="true"
     aria-labelledby="addSertifikasiModalTitle"
 >
-    <div class="relative w-full max-w-md mx-4 bg-white rounded-[10px] shadow-xl overflow-hidden">
-        <div class="flex items-center justify-between h-[52px] bg-[#012650] px-5">
+    <div class="relative w-full max-w-lg mx-4 bg-white rounded-[10px] shadow-xl overflow-hidden">
+        <div class="flex items-center justify-between h-[52px] bg-[#002B49] px-5">
             <h4 id="addSertifikasiModalTitle" class="text-sm font-semibold text-white tracking-wide">Tambah Sertifikasi</h4>
             <button type="button" id="closeAddSertifikasiModalBtn" class="text-white/70 hover:text-white transition cursor-pointer" aria-label="Tutup">
                 <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
@@ -289,19 +309,72 @@
                 </svg>
             </button>
         </div>
-        <div class="p-5 flex flex-col items-center justify-center gap-3 text-center min-h-[160px]">
-            <svg class="w-10 h-10 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M11.42 15.17 17.25 21A2.652 2.652 0 0 0 21 17.25l-5.877-5.877M11.42 15.17l2.496-3.03c.317-.384.74-.626 1.208-.766M11.42 15.17l-4.655 5.653a2.548 2.548 0 1 1-3.586-3.586l5.654-4.655m5.292-4.67.208-.31a1.5 1.5 0 0 1 2.202-.165l1.516 1.516a1.5 1.5 0 0 1-.165 2.202l-.31.208m-6.464-6.464.31-.207a1.5 1.5 0 0 1 2.202.165l1.516 1.516a1.5 1.5 0 0 1-.165 2.202l-.31.207m-6.464-6.464-.208.31A1.5 1.5 0 0 0 5.25 7.5H4.5" />
-            </svg>
-            <p class="text-sm font-semibold text-gray-700">Fitur ini sedang dikembangkan</p>
-            <p class="text-xs text-gray-400">Form tambah sertifikasi akan segera tersedia.</p>
-        </div>
-        <div class="px-5 pb-5 flex justify-end">
-            <button type="button" id="cancelAddSertifikasiBtn"
-                class="h-[38px] px-6 rounded-[6px] bg-[#012650] hover:bg-[#003B66] text-xs font-semibold text-white transition cursor-pointer">
-                Tutup
-            </button>
-        </div>
+        <form
+            method="POST"
+            action="{{ route('tenaga-pendidikan.sertifikasi.store', $tenagaKependidikan['id']) }}"
+            enctype="multipart/form-data"
+            class="p-5 space-y-3.5"
+            id="addSertifikasiForm"
+        >
+            @csrf
+
+            <div>
+                <label for="sertifikasi_jenis" class="block text-xs font-semibold text-gray-700 mb-1">Nama / Jenis Sertifikasi <span class="text-red-500">*</span></label>
+                <input type="text" name="jenis_sertifikasi" id="sertifikasi_jenis" required placeholder="Contoh: Sertifikasi Kompetensi Jaringan"
+                    class="w-full h-[38px] rounded-[6px] border border-gray-300 bg-white px-3 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#002B49]/30 transition">
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                    <label for="sertifikasi_tahun" class="block text-xs font-semibold text-gray-700 mb-1">Tahun Sertifikasi <span class="text-red-500">*</span></label>
+                    <input type="text" name="tahun_sertifikasi" id="sertifikasi_tahun" required placeholder="Contoh: 2025" maxlength="4" inputmode="numeric"
+                        class="w-full h-[38px] rounded-[6px] border border-gray-300 bg-white px-3 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#002B49]/30 transition">
+                </div>
+                <div>
+                    <label for="sertifikasi_status" class="block text-xs font-semibold text-gray-700 mb-1">Status Sertifikasi</label>
+                    <select name="status_sertifikasi" id="sertifikasi_status"
+                        class="w-full h-[38px] rounded-[6px] border border-gray-300 bg-white px-3 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#002B49]/30 transition">
+                        <option value="Aktif" selected>Aktif</option>
+                        <option value="Kedaluwarsa">Kedaluwarsa</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                    <label for="sertifikasi_nomor" class="block text-xs font-semibold text-gray-700 mb-1">Nomor Sertifikat</label>
+                    <input type="text" name="nomor_sertifikat" id="sertifikasi_nomor" placeholder="Contoh: CERT-2025-001"
+                        class="w-full h-[38px] rounded-[6px] border border-gray-300 bg-white px-3 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#002B49]/30 transition">
+                </div>
+                <div>
+                    <label for="sertifikasi_lembaga" class="block text-xs font-semibold text-gray-700 mb-1">Lembaga Penerbit</label>
+                    <input type="text" name="lembaga_penerbit" id="sertifikasi_lembaga" placeholder="Contoh: BNSP"
+                        class="w-full h-[38px] rounded-[6px] border border-gray-300 bg-white px-3 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#002B49]/30 transition">
+                </div>
+            </div>
+
+            <div>
+                <label for="sertifikasi_url" class="block text-xs font-semibold text-gray-700 mb-1">Tautan / Dokumen Drive</label>
+                <input type="url" name="url_drive" id="sertifikasi_url" placeholder="https://drive.google.com/..."
+                    class="w-full h-[38px] rounded-[6px] border border-gray-300 bg-white px-3 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#002B49]/30 transition">
+            </div>
+
+            <div class="flex items-center justify-between pt-2">
+                <a href="{{ route('sertifikasi.index', ['tipe_pemilik' => 'tendik', 'id_tendik' => $tenagaKependidikan['id']]) }}" class="text-xs text-[#00629B] hover:underline font-semibold">
+                    Buka Halaman Sertifikasi &rarr;
+                </a>
+                <div class="flex items-center gap-2">
+                    <button type="button" id="cancelAddSertifikasiBtn"
+                        class="h-[38px] px-4 rounded-[6px] border border-gray-300 bg-white text-xs font-semibold text-gray-700 hover:bg-gray-50 transition cursor-pointer">
+                        Batal
+                    </button>
+                    <button type="submit"
+                        class="h-[38px] px-5 rounded-[6px] bg-[#002B49] hover:bg-[#003B66] text-xs font-semibold text-white transition cursor-pointer">
+                        Simpan
+                    </button>
+                </div>
+            </div>
+        </form>
     </div>
 </div>
 

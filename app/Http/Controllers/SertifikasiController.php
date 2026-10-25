@@ -27,6 +27,30 @@ class SertifikasiController extends Controller
             'page' => ['nullable', 'integer', 'min:1'],
         ]);
 
+        $idTendik = ! empty($filters['id_tendik']) ? (int) $filters['id_tendik'] : null;
+        $selectedTendik = null;
+
+        if ($idTendik !== null) {
+            try {
+                $tendikResp = $this->tridharmaService->getTendik($idTendik);
+                if ($tendikResp->successful()) {
+                    $tendikRecord = $tendikResp->json('data', []);
+                    $selectedTendik = [
+                        'id' => (int) ($tendikRecord['id_tendik'] ?? $idTendik),
+                        'nama' => (string) ($tendikRecord['nama_tendik'] ?? $tendikRecord['nama'] ?? 'Tenaga Pendidikan #'.$idTendik),
+                    ];
+                }
+            } catch (\Throwable) {
+            }
+
+            if ($selectedTendik === null) {
+                $selectedTendik = [
+                    'id' => $idTendik,
+                    'nama' => 'Tenaga Pendidikan #'.$idTendik,
+                ];
+            }
+        }
+
         try {
             $response = $this->tridharmaService->getSertifikasiList(array_filter($filters, static fn ($value) => $value !== null && $value !== ''));
         } catch (ConnectionException) {
@@ -34,6 +58,7 @@ class SertifikasiController extends Controller
                 'certifications' => [],
                 'pagination' => ['total' => 0, 'per_page' => 10, 'current_page' => 1, 'last_page' => 1],
                 'filters' => $filters,
+                'selectedTendik' => $selectedTendik,
                 'apiError' => 'Tidak dapat terhubung ke server Tridharma. Silakan coba lagi nanti.',
             ]);
         }
@@ -47,12 +72,18 @@ class SertifikasiController extends Controller
                 'certifications' => [],
                 'pagination' => ['total' => 0, 'per_page' => 10, 'current_page' => 1, 'last_page' => 1],
                 'filters' => $filters,
+                'selectedTendik' => $selectedTendik,
                 'apiError' => $this->responseMessage($response, 'Gagal memuat data sertifikasi.'),
             ]);
         }
 
         $data = $response->json('data', []);
         $certifications = is_array($data['data'] ?? null) ? $data['data'] : (is_array($data) ? $data : []);
+
+        if ($idTendik !== null) {
+            $certifications = $this->tridharmaService->mergeTendikSertifikasi($idTendik, $certifications);
+        }
+
         $pagination = [
             'total' => $data['total'] ?? count($certifications),
             'per_page' => $data['per_page'] ?? 10,
@@ -66,6 +97,7 @@ class SertifikasiController extends Controller
             'certifications' => $certifications,
             'pagination' => $pagination,
             'filters' => $filters,
+            'selectedTendik' => $selectedTendik,
             'apiError' => null,
         ]);
     }
@@ -180,7 +212,11 @@ class SertifikasiController extends Controller
         $payload[$validated['owner_type'] === 'dosen' ? 'id_tendik' : 'id_dosen'] = null;
 
         try {
-            $response = $this->tridharmaService->createSertifikasi($payload);
+            if ($validated['owner_type'] === 'tendik') {
+                $response = $this->tridharmaService->storeTendikSertifikasi((int) $validated['owner_id'], $payload);
+            } else {
+                $response = $this->tridharmaService->createSertifikasi($payload);
+            }
         } catch (ConnectionException) {
             return back()->withInput()->with('toast', [
                 'type' => 'error',
@@ -279,10 +315,17 @@ class SertifikasiController extends Controller
         return $this->mutationFailure($response, 'Gagal memperbarui sertifikasi.');
     }
 
-    public function destroy(int $sertifikasi): RedirectResponse
+    public function destroy(Request $request, int $sertifikasi): RedirectResponse
     {
+        $idTendik = $request->query('id_tendik') ?? $request->input('id_tendik');
+        $idTendikInt = is_numeric($idTendik) ? (int) $idTendik : null;
+
         try {
-            $response = $this->tridharmaService->deleteSertifikasi($sertifikasi);
+            if ($idTendikInt) {
+                $response = $this->tridharmaService->deleteTendikSertifikasi($idTendikInt, $sertifikasi);
+            } else {
+                $response = $this->tridharmaService->deleteSertifikasi($sertifikasi);
+            }
         } catch (ConnectionException) {
             return $this->indexRedirect()->with('toast', [
                 'type' => 'error',
@@ -449,8 +492,12 @@ class SertifikasiController extends Controller
         ]);
     }
 
-    private function indexRedirect(): RedirectResponse
+    private function indexRedirect(?int $idTendik = null): RedirectResponse
     {
+        if ($idTendik) {
+            return redirect()->route('sertifikasi.index', ['tipe_pemilik' => 'tendik', 'id_tendik' => $idTendik]);
+        }
+
         return redirect()->route('sertifikasi.index');
     }
 

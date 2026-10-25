@@ -289,26 +289,13 @@ class TenagaKependidikanController extends Controller
                 return response()->json(['success' => true, 'data' => $tendik]);
             }
 
-            $sertifikasiResponse = $this->tridharmaService->getSertifikasiList([
-                'tipe_pemilik' => 'tendik',
-                'id_tendik' => (int) $id,
-                'per_page' => 100,
-                'page' => 1,
-            ]);
-
-            if ($sertifikasiResponse->status() === 401) {
-                return $this->expiredSession();
-            }
+            $sertifikasis = $this->tridharmaService->getTendikSertifikasiList((int) $id);
 
             return view('tenaga-kependidikan.show', [
                 'tenagaKependidikan' => $tendik,
                 'kualifikasis' => $this->mergeKualifikasi($record, $tendik, (int) $id),
-                'sertifikasis' => $this->apiSucceeded($sertifikasiResponse)
-                    ? $this->listData($sertifikasiResponse)
-                    : [],
-                'detailApiError' => $this->apiSucceeded($sertifikasiResponse)
-                    ? null
-                    : $this->apiErrorMessage($sertifikasiResponse, 'Sertifikasi tidak dapat dimuat.'),
+                'sertifikasis' => $sertifikasis,
+                'detailApiError' => null,
             ]);
         } catch (ConnectionException) {
             if ($request->expectsJson()) {
@@ -366,9 +353,11 @@ class TenagaKependidikanController extends Controller
             ?? 'https://drive.google.com/';
 
         try {
-            $response = $this->tridharmaService->createSertifikasi(
+            $response = $this->tridharmaService->storeTendikSertifikasi(
+                (int) $id,
                 $payload,
                 $request->file('evidence_file'),
+                true,
             );
 
             if ($response->status() === 401) {
@@ -431,7 +420,7 @@ class TenagaKependidikanController extends Controller
         $payload['url_sertifikasi'] = $validated['url_sertifikasi'] ?? $validated['url_drive'] ?? 'https://drive.google.com/';
 
         try {
-            $response = $this->tridharmaService->updateSertifikasi($sertifikasiId, $payload);
+            $response = $this->tridharmaService->updateTendikSertifikasi((int) $tendikId, (int) $sertifikasiId, $payload);
 
             if ($response->status() === 401) {
                 return $this->expiredSession();
@@ -462,7 +451,7 @@ class TenagaKependidikanController extends Controller
     public function destroySertifikasi(int|string $tendikId, int|string $sertifikasiId): RedirectResponse
     {
         try {
-            $response = $this->tridharmaService->deleteSertifikasi($sertifikasiId);
+            $response = $this->tridharmaService->deleteTendikSertifikasi((int) $tendikId, (int) $sertifikasiId);
 
             if ($response->status() === 401) {
                 return $this->expiredSession();

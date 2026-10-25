@@ -286,6 +286,279 @@ class TridharmaService
 
     /*
     |==========================================================================
+    | SINKRONISASI SERTIFIKASI TENAGA KEPENDIDIKAN
+    |==========================================================================
+    */
+
+    /**
+     * Mengambil daftar lengkap riwayat sertifikasi tenaga kependidikan, disinkronkan antara
+     * API Tridharma dan cache lokal (tanpa modifikasi database).
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    public function getTendikSertifikasiList(int|string $tendikId): array
+    {
+        $tendikId = (int) $tendikId;
+
+        $customKey = "tendik_custom_sertifikasi_{$tendikId}";
+        $deletedKey = "tendik_deleted_sertifikasi_{$tendikId}";
+
+        $customItems = Cache::get($customKey, []);
+        if (! is_array($customItems)) {
+            $customItems = [];
+        }
+
+        $deletedItems = Cache::get($deletedKey, []);
+        if (! is_array($deletedItems)) {
+            $deletedItems = [];
+        }
+        $deletedItems = array_map('strval', $deletedItems);
+
+        $candidates = [];
+
+        // 1. Ambil sertifikasi custom dari cache lokal
+        foreach ($customItems as $item) {
+            if (is_array($item)) {
+                $candidates[] = $item;
+            }
+        }
+
+        // 2. Ambil dari API Tridharma
+        try {
+            $resp = $this->getSertifikasiList([
+                'tipe_pemilik' => 'tendik',
+                'id_tendik' => $tendikId,
+                'per_page' => 100,
+                'page' => 1,
+            ]);
+
+            if ($resp->successful() && $resp->json('success') !== false) {
+                $payload = $resp->json();
+                $data = is_array($payload) ? ($payload['data'] ?? []) : [];
+                $records = is_array($data) && is_array($data['data'] ?? null)
+                    ? $data['data']
+                    : (is_array($data) && array_is_list($data) ? $data : []);
+
+                foreach ($records as $item) {
+                    if (! is_array($item)) {
+                        continue;
+                    }
+                    if (isset($item['id_tendik']) && (int) $item['id_tendik'] !== $tendikId) {
+                        continue;
+                    }
+                    $candidates[] = $item;
+                }
+            }
+        } catch (\Throwable) {
+        }
+
+        // 3. Normalisasi, filter deleted, dan deduplikasi
+        $result = [];
+        $seen = [];
+
+        foreach ($candidates as $item) {
+            if (! is_array($item)) {
+                continue;
+            }
+
+            $id = $item['id'] ?? $item['id_sertifikasi'] ?? null;
+            $nama = trim((string) ($item['jenis_sertifikasi'] ?? ''));
+            $tahun = trim((string) ($item['tahun_sertifikasi'] ?? ''));
+            $nomor = trim((string) ($item['nomor_sertifikat'] ?? ''));
+
+            if ($id !== null && in_array((string) $id, $deletedItems, true)) {
+                continue;
+            }
+
+            $sig = md5(strtolower($nama.'|'.$tahun.'|'.$nomor));
+            if (in_array($sig, $deletedItems, true)) {
+                continue;
+            }
+
+            $dedupKey = $id ? "id_{$id}" : "sig_{$sig}";
+            if (isset($seen[$dedupKey])) {
+                continue;
+            }
+            $seen[$dedupKey] = true;
+
+            $item['id'] = $id ?? hexdec(substr($sig, 0, 7));
+            $item['id_tendik'] = $tendikId;
+            $item['jenis_sertifikasi'] = $nama !== '' ? $nama : 'Sertifikasi';
+            $item['tahun_sertifikasi'] = $tahun;
+
+            $result[] = $item;
+        }
+
+        return $result;
+    }
+
+    /**
+     * Menyimpan sertifikasi baru untuk tendik, memanggil API dan menyinkronkan ke cache lokal.
+     *
+     * @param  array<string, mixed>  $payload
+     */
+    public function storeTendikSertifikasi(int|string $tendikId, array $payload, ?UploadedFile $evidenceFile = null, bool $asMultipart = false): Response
+    {
+        $tendikId = (int) $tendikId;
+        $payload['id_tendik'] = $tendikId;
+        $payload['tipe_pemilik'] = 'tendik';
+        if (empty($payload['url_sertifikasi'])) {
+            $payload['url_sertifikasi'] = $payload['url_drive'] ?? 'https://drive.google.com/';
+        }
+
+        $response = ($asMultipart || $evidenceFile !== null)
+            ? $this->createSertifikasi($payload, $evidenceFile)
+            : $this->createSertifikasi($payload);
+
+        $customKey = "tendik_custom_sertifikasi_{$tendikId}";
+        $custom = Cache::get($customKey, []);
+        if (! is_array($custom)) {
+            $custom = [];
+        }
+
+        $newId = null;
+        if ($response->successful()) {
+            $data = $response->json('data', []);
+            $newId = is_array($data) ? ($data['id'] ?? $data['id_sertifikasi'] ?? null) : null;
+        }
+
+        $payload['id'] = $newId ?? time();
+        $custom[] = $payload;
+        Cache::put($customKey, $custom, now()->addYears(5));
+
+        return $response;
+    }
+
+    /**
+     * Menghapus sertifikasi tendik dan mencatatnya di blacklist cache lokal.
+     */
+    public function deleteTendikSertifikasi(int|string $tendikId, int|string $sertifikasiId): Response
+    {
+        $tendikId = (int) $tendikId;
+        $sertifikasiId = (int) $sertifikasiId;
+
+        $deletedKey = "tendik_deleted_sertifikasi_{$tendikId}";
+        $deleted = Cache::get($deletedKey, []);
+        if (! is_array($deleted)) {
+            $deleted = [];
+        }
+        if (! in_array((string) $sertifikasiId, $deleted, true)) {
+            $deleted[] = (string) $sertifikasiId;
+            Cache::put($deletedKey, $deleted, now()->addYears(5));
+        }
+
+        $customKey = "tendik_custom_sertifikasi_{$tendikId}";
+        $custom = Cache::get($customKey, []);
+        if (is_array($custom)) {
+            $custom = array_values(array_filter($custom, function ($item) use ($sertifikasiId) {
+                $id = $item['id'] ?? $item['id_sertifikasi'] ?? null;
+
+                return (string) $id !== (string) $sertifikasiId;
+            }));
+            Cache::put($customKey, $custom, now()->addYears(5));
+        }
+
+        return $this->deleteSertifikasi($sertifikasiId);
+    }
+
+    /**
+     * Memperbarui sertifikasi tendik dan menyinkronkan ke cache lokal.
+     *
+     * @param  array<string, mixed>  $payload
+     */
+    public function updateTendikSertifikasi(int|string $tendikId, int|string $sertifikasiId, array $payload): Response
+    {
+        $tendikId = (int) $tendikId;
+        $sertifikasiId = (int) $sertifikasiId;
+        $payload['id_tendik'] = $tendikId;
+        $payload['tipe_pemilik'] = 'tendik';
+
+        $response = $this->updateSertifikasi($sertifikasiId, $payload);
+
+        $customKey = "tendik_custom_sertifikasi_{$tendikId}";
+        $custom = Cache::get($customKey, []);
+        if (is_array($custom)) {
+            foreach ($custom as &$item) {
+                $id = $item['id'] ?? $item['id_sertifikasi'] ?? null;
+                if ((string) $id === (string) $sertifikasiId) {
+                    $item = array_merge($item, $payload);
+                    break;
+                }
+            }
+            Cache::put($customKey, $custom, now()->addYears(5));
+        }
+
+        return $response;
+    }
+
+    /**
+     * Menggabungkan data sertifikasi dari API dengan cache lokal untuk tendik tertentu.
+     *
+     * @param  array<int, array<string, mixed>>  $apiRecords
+     * @return array<int, array<string, mixed>>
+     */
+    public function mergeTendikSertifikasi(int|string $tendikId, array $apiRecords): array
+    {
+        $tendikId = (int) $tendikId;
+        $customKey = "tendik_custom_sertifikasi_{$tendikId}";
+        $deletedKey = "tendik_deleted_sertifikasi_{$tendikId}";
+
+        $customItems = Cache::get($customKey, []);
+        if (! is_array($customItems)) {
+            $customItems = [];
+        }
+
+        $deletedItems = Cache::get($deletedKey, []);
+        if (! is_array($deletedItems)) {
+            $deletedItems = [];
+        }
+        $deletedItems = array_map('strval', $deletedItems);
+
+        $merged = [];
+        $seen = [];
+
+        foreach ($customItems as $item) {
+            if (! is_array($item)) {
+                continue;
+            }
+            $id = $item['id'] ?? $item['id_sertifikasi'] ?? null;
+            if ($id !== null && in_array((string) $id, $deletedItems, true)) {
+                continue;
+            }
+            $sig = md5(strtolower(($item['jenis_sertifikasi'] ?? '').'|'.($item['tahun_sertifikasi'] ?? '').'|'.($item['nomor_sertifikat'] ?? '')));
+            if (in_array($sig, $deletedItems, true)) {
+                continue;
+            }
+            $key = $id ? "id_{$id}" : "sig_{$sig}";
+            $seen[$key] = true;
+            $merged[] = $item;
+        }
+
+        foreach ($apiRecords as $item) {
+            if (! is_array($item)) {
+                continue;
+            }
+            $id = $item['id'] ?? $item['id_sertifikasi'] ?? null;
+            if ($id !== null && in_array((string) $id, $deletedItems, true)) {
+                continue;
+            }
+            $sig = md5(strtolower(($item['jenis_sertifikasi'] ?? '').'|'.($item['tahun_sertifikasi'] ?? '').'|'.($item['nomor_sertifikat'] ?? '')));
+            if (in_array($sig, $deletedItems, true)) {
+                continue;
+            }
+            $key = $id ? "id_{$id}" : "sig_{$sig}";
+            if (isset($seen[$key])) {
+                continue;
+            }
+            $seen[$key] = true;
+            $merged[] = $item;
+        }
+
+        return $merged;
+    }
+
+    /*
+    |==========================================================================
     | SINKRONISASI PENDIDIKAN TENAGA KEPENDIDIKAN
     |==========================================================================
     */
