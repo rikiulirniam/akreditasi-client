@@ -970,7 +970,6 @@
                             <th class="p-2.5 text-center">Nilai Angka</th>
                             <th class="p-2.5 text-center">Nilai Huruf</th>
                             <th class="p-2.5 text-center">Bobot</th>
-                            <th class="p-2.5 text-center w-16">KHS</th>
                         </tr>
                     </thead>
                     <tbody id="classGradesTableBody" class="divide-y divide-gray-100">
@@ -998,121 +997,6 @@
     </div>
 </div>
 
-<!-- ======================================================== -->
-<!-- MODAL: KHS & Transkrip Akademik Mahasiswa                -->
-<!-- ======================================================== -->
-<div 
-    id="khsTranskripModal" 
-    class="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/50 opacity-0 pointer-events-none transition-all duration-200 select-none"
-    role="dialog"
-    aria-modal="true"
-    aria-labelledby="khsModalTitle"
->
-    <div class="khs-modal-card relative bg-white rounded-[28px] p-6 sm:p-8 max-w-2xl w-full shadow-2xl text-left transform scale-95 transition-all duration-200 max-h-[92vh] overflow-y-auto">
-        <div class="flex items-center justify-between pb-4 border-b border-gray-100 mb-4">
-            <div>
-                <h3 id="khsModalTitle" class="text-base font-black text-gray-900 tracking-tight">
-                    Catatan Akademik Mahasiswa
-                </h3>
-                <p class="text-xs text-gray-500" id="khsStudentSubtitle">-</p>
-            </div>
-            <button type="button" class="close-khs-modal p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition cursor-pointer">
-                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
-                </svg>
-            </button>
-        </div>
-
-        <div class="flex border-b border-gray-200 mb-4">
-            <button 
-                type="button" 
-                id="tabKhsBtn"
-                class="py-2.5 px-4 font-bold text-xs border-b-2 border-primary text-primary transition cursor-pointer"
-            >
-                Kartu Hasil Studi (KHS)
-            </button>
-            <button 
-                type="button" 
-                id="tabTranskripBtn"
-                class="py-2.5 px-4 font-bold text-xs border-b-2 border-transparent text-gray-500 hover:text-gray-700 transition cursor-pointer"
-            >
-                Transkrip Nilai Kumulatif (IPK)
-            </button>
-        </div>
-
-        <div id="tabKhsContent" class="space-y-4">
-            <div id="khsLoading" class="py-8 text-center text-xs text-gray-500">Memuat data KHS...</div>
-            <div id="khsDataContainer" class="hidden space-y-4">
-                <div class="p-4 rounded-2xl bg-primary/5 border border-primary/20 flex items-center justify-between">
-                    <div>
-                        <div class="text-[11px] font-bold uppercase tracking-wider text-primary">Indeks Prestasi Semester (IP)</div>
-                        <div class="text-xs text-gray-500 mt-0.5">Rumus: Σ (SKS × Bobot) ÷ Σ SKS</div>
-                    </div>
-                    <div class="text-right">
-                        <div class="text-2xl font-black text-primary" id="khsIpValue">0.00</div>
-                        <div class="text-[11px] text-gray-500" id="khsSksValue">Total 0 SKS • Kredit 0</div>
-                    </div>
-                </div>
-
-                <div class="overflow-x-auto rounded-xl border border-gray-200">
-                    <table class="w-full text-left text-xs">
-                        <thead class="bg-gray-50 text-gray-700 font-bold border-b border-gray-200">
-                            <tr>
-                                <th class="p-2.5">Mata Kuliah</th>
-                                <th class="p-2.5 text-center">SKS</th>
-                                <th class="p-2.5 text-center">Nilai</th>
-                                <th class="p-2.5 text-center">Bobot</th>
-                                <th class="p-2.5 text-center">Kredit</th>
-                            </tr>
-                        </thead>
-                        <tbody id="khsTableBody" class="divide-y divide-gray-100"></tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-
-        <div id="tabTranskripContent" class="hidden space-y-4">
-            <div id="transkripLoading" class="py-8 text-center text-xs text-gray-500">Memuat transkrip...</div>
-            <div id="transkripDataContainer" class="hidden space-y-4">
-                <div class="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 flex items-center justify-between">
-                    <div>
-                        <div class="text-[11px] font-bold uppercase tracking-wider text-emerald-800">Indeks Prestasi Kumulatif (IPK)</div>
-                        <div class="text-xs text-emerald-700 mt-0.5">Perhitungan seluruh semester berbobot SKS resmi</div>
-                    </div>
-                    <div class="text-right">
-                        <div class="text-2xl font-black text-emerald-700" id="transkripIpkValue">0.00</div>
-                        <div class="text-[11px] text-emerald-800" id="transkripSksValue">Total 0 SKS • Kredit 0</div>
-                    </div>
-                </div>
-
-                <div class="overflow-x-auto rounded-xl border border-gray-200 max-h-64 overflow-y-auto">
-                    <table class="w-full text-left text-xs">
-                        <thead class="bg-gray-50 text-gray-700 font-bold border-b border-gray-200 sticky top-0">
-                            <tr>
-                                <th class="p-2.5">Mata Kuliah</th>
-                                <th class="p-2.5 text-center">SKS</th>
-                                <th class="p-2.5 text-center">Nilai</th>
-                                <th class="p-2.5 text-center">Bobot</th>
-                                <th class="p-2.5 text-center">Kredit</th>
-                            </tr>
-                        </thead>
-                        <tbody id="transkripTableBody" class="divide-y divide-gray-100"></tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-
-        <div class="pt-4 border-t border-gray-100 mt-4 text-right">
-            <button 
-                type="button" 
-                class="close-khs-modal px-5 py-2.5 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold text-xs transition cursor-pointer"
-            >
-                Tutup
-            </button>
-        </div>
-    </div>
-</div>
-
 <script>
     document.addEventListener('DOMContentLoaded', function () {
         const gradeLinkUrlTemplate = @json(route('mata-kuliah.update-grade-link', [$id, '__CLASS_ID__']));
@@ -1124,7 +1008,6 @@
         const bulkImportModal = document.getElementById('bulkImportModal');
         const classImportModal = document.getElementById('classImportModal');
         const classGradesModal = document.getElementById('classGradesModal');
-        const khsModal = document.getElementById('khsTranskripModal');
         const editMkShowModal = document.getElementById('editMkShowModal');
 
         const evidenceForm = document.getElementById('evidenceForm');
@@ -1139,7 +1022,7 @@
         let selectedClassButton = null;
 
         function showDialog(dialog) {
-            const card = dialog?.querySelector('.class-detail-card, .evidence-modal-card, .grade-link-modal-card, .bulk-import-card, .class-import-card, .class-grades-card, .khs-modal-card, .mk-modal-card');
+            const card = dialog?.querySelector('.class-detail-card, .evidence-modal-card, .grade-link-modal-card, .bulk-import-card, .class-import-card, .class-grades-card, .mk-modal-card');
             if (!dialog) return;
             dialog.classList.remove('opacity-0', 'pointer-events-none');
             dialog.classList.add('opacity-100');
@@ -1148,7 +1031,7 @@
         }
 
         function hideDialog(dialog) {
-            const card = dialog?.querySelector('.class-detail-card, .evidence-modal-card, .grade-link-modal-card, .bulk-import-card, .class-import-card, .class-grades-card, .khs-modal-card, .mk-modal-card');
+            const card = dialog?.querySelector('.class-detail-card, .evidence-modal-card, .grade-link-modal-card, .bulk-import-card, .class-import-card, .class-grades-card, .mk-modal-card');
             if (!dialog) return;
             dialog.classList.remove('opacity-100');
             dialog.classList.add('opacity-0', 'pointer-events-none');
@@ -1314,7 +1197,7 @@
 
                 const data = res.data ?? [];
                 if (!Array.isArray(data) || data.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="6" class="p-4 text-center text-gray-500">Belum ada nilai mahasiswa yang tercatat pada kelas ini. Silakan gunakan tombol Import Nilai.</td></tr>';
+                    tbody.innerHTML = '<tr><td colspan="5" class="p-4 text-center text-gray-500">Belum ada nilai mahasiswa yang tercatat pada kelas ini. Silakan gunakan tombol Import Nilai.</td></tr>';
                     return;
                 }
 
@@ -1322,7 +1205,6 @@
                     const mhs = it.mahasiswa ?? it.data_mahasiswa ?? it.enrollment_kelas?.mahasiswa ?? {};
                     const namaMhs = mhs.nama_mahasiswa ?? mhs.nama ?? mhs.name ?? it.nama_mahasiswa ?? it.nama ?? '-';
                     const nimMhs = mhs.nim_display ?? mhs.nim ?? it.nim_display ?? it.nim ?? '-';
-                    const mhsId = it.mahasiswa_id ?? it.id_mahasiswa ?? mhs.id ?? null;
 
                     const angkaVal = it.nilai_angka ?? it.angka ?? null;
                     const angka = (angkaVal !== null && angkaVal !== undefined && angkaVal !== '') ? parseFloat(angkaVal).toFixed(2) : '-';
@@ -1342,36 +1224,9 @@
                             <td class="p-2.5 text-center font-mono font-bold">${angka}</td>
                             <td class="p-2.5 text-center font-black text-primary">${huruf}</td>
                             <td class="p-2.5 text-center font-mono">${bobot}</td>
-                            <td class="p-2.5 text-center">
-                                ${mhsId ? `
-                                    <button 
-                                        type="button" 
-                                        class="btn-view-khs text-primary hover:text-additional transition p-1 cursor-pointer"
-                                        data-mhs-id="${mhsId}"
-                                        data-mhs-nama="${namaMhs !== '-' ? namaMhs : ''}"
-                                        data-mhs-nim="${nimMhs !== '-' ? nimMhs : ''}"
-                                        title="Lihat KHS Mahasiswa"
-                                    >
-                                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                            <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" />
-                                            <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                        </svg>
-                                    </button>
-                                ` : '-'}
-                            </td>
                         </tr>
                     `;
                 }).join('');
-
-                // Attach click handler to KHS buttons
-                document.querySelectorAll('.btn-view-khs').forEach(btn => {
-                    btn.addEventListener('click', function () {
-                        const mId = this.dataset.mhsId;
-                        const mNama = this.dataset.mhsNama;
-                        const mNim = this.dataset.mhsNim;
-                        openKhsForStudent(mId, mNama, mNim);
-                    });
-                });
             })
             .catch(() => {
                 loading.innerHTML = '<span class="text-rose-600">Gagal memuat nilai kelas.</span>';
@@ -1385,135 +1240,6 @@
 
         document.querySelectorAll('.close-class-grades').forEach(btn => {
             btn.addEventListener('click', () => hideDialog(classGradesModal));
-        });
-
-        // KHS Modal and Tab Functionality
-        let activeKhsMhsId = null;
-        const tabKhsBtn = document.getElementById('tabKhsBtn');
-        const tabTranskripBtn = document.getElementById('tabTranskripBtn');
-        const tabKhsContent = document.getElementById('tabKhsContent');
-        const tabTranskripContent = document.getElementById('tabTranskripContent');
-
-        tabKhsBtn?.addEventListener('click', function () {
-            tabKhsBtn.classList.add('border-primary', 'text-primary');
-            tabKhsBtn.classList.remove('border-transparent', 'text-gray-500');
-            tabTranskripBtn.classList.remove('border-primary', 'text-primary');
-            tabTranskripBtn.classList.add('border-transparent', 'text-gray-500');
-            tabKhsContent.classList.remove('hidden');
-            tabTranskripContent.classList.add('hidden');
-        });
-
-        tabTranskripBtn?.addEventListener('click', function () {
-            tabTranskripBtn.classList.add('border-primary', 'text-primary');
-            tabTranskripBtn.classList.remove('border-transparent', 'text-gray-500');
-            tabKhsBtn.classList.remove('border-primary', 'text-primary');
-            tabKhsBtn.classList.add('border-transparent', 'text-gray-500');
-            tabTranskripContent.classList.remove('hidden');
-            tabKhsContent.classList.add('hidden');
-
-            if (activeKhsMhsId) {
-                loadTranskripData(activeKhsMhsId);
-            }
-        });
-
-        function openKhsForStudent(mhsId, mhsNama, mhsNim) {
-            activeKhsMhsId = mhsId;
-            document.getElementById('khsStudentSubtitle').textContent = `${mhsNama} (${mhsNim})`;
-            tabKhsBtn.click();
-            loadKhsData(mhsId);
-            showDialog(khsModal);
-        }
-
-        function loadKhsData(mhsId) {
-            const loading = document.getElementById('khsLoading');
-            const container = document.getElementById('khsDataContainer');
-            const tbody = document.getElementById('khsTableBody');
-            const ipVal = document.getElementById('khsIpValue');
-            const sksVal = document.getElementById('khsSksValue');
-
-            loading.classList.remove('hidden');
-            container.classList.add('hidden');
-            tbody.innerHTML = '';
-
-            fetch(`/nilai-mahasiswa/khs/${mhsId}`)
-                .then(r => r.json())
-                .then(res => {
-                    loading.classList.add('hidden');
-                    container.classList.remove('hidden');
-
-                    const d = res.data ?? {};
-                    const ringkasan = d.ringkasan ?? {};
-                    const items = d.items ?? [];
-
-                    ipVal.textContent = (ringkasan.ip ?? 0).toFixed(2);
-                    sksVal.textContent = `Total ${ringkasan.total_sks ?? 0} SKS • Kredit ${ringkasan.total_kredit ?? 0}`;
-
-                    if (items.length === 0) {
-                        tbody.innerHTML = '<tr><td colspan="5" class="p-4 text-center text-gray-500">Belum ada nilai terdaftar untuk KHS mahasiswa ini.</td></tr>';
-                        return;
-                    }
-
-                    tbody.innerHTML = items.map(it => `
-                        <tr>
-                            <td class="p-2.5 font-bold text-gray-900">${it.nama_mata_kuliah ?? '-'} <span class="font-normal text-gray-500 font-mono text-[11px]">(${it.kode_mata_kuliah ?? ''})</span></td>
-                            <td class="p-2.5 text-center font-mono font-bold">${it.sks ?? 0}</td>
-                            <td class="p-2.5 text-center font-black text-primary">${it.nilai_huruf ?? '-'}</td>
-                            <td class="p-2.5 text-center font-mono">${(it.bobot ?? 0).toFixed(2)}</td>
-                            <td class="p-2.5 text-center font-mono font-bold text-gray-900">${(it.kredit ?? 0).toFixed(2)}</td>
-                        </tr>
-                    `).join('');
-                })
-                .catch(() => {
-                    loading.innerHTML = '<span class="text-rose-600">Gagal memuat data KHS.</span>';
-                });
-        }
-
-        function loadTranskripData(mhsId) {
-            const loading = document.getElementById('transkripLoading');
-            const container = document.getElementById('transkripDataContainer');
-            const tbody = document.getElementById('transkripTableBody');
-            const ipkVal = document.getElementById('transkripIpkValue');
-            const sksVal = document.getElementById('transkripSksValue');
-
-            loading.classList.remove('hidden');
-            container.classList.add('hidden');
-            tbody.innerHTML = '';
-
-            fetch(`/nilai-mahasiswa/transkrip/${mhsId}`)
-                .then(r => r.json())
-                .then(res => {
-                    loading.classList.add('hidden');
-                    container.classList.remove('hidden');
-
-                    const d = res.data ?? {};
-                    const ringkasan = d.ringkasan ?? {};
-                    const items = d.mata_kuliah ?? [];
-
-                    ipkVal.textContent = (ringkasan.ipk ?? 0).toFixed(2);
-                    sksVal.textContent = `Total ${ringkasan.total_sks ?? 0} SKS • Kredit ${ringkasan.total_kredit ?? 0}`;
-
-                    if (items.length === 0) {
-                        tbody.innerHTML = '<tr><td colspan="5" class="p-4 text-center text-gray-500">Belum ada mata kuliah yang tercatat pada transkrip.</td></tr>';
-                        return;
-                    }
-
-                    tbody.innerHTML = items.map(it => `
-                        <tr>
-                            <td class="p-2.5 font-bold text-gray-900">${it.nama_mata_kuliah ?? '-'} <span class="font-normal text-gray-500 font-mono text-[11px]">(${it.kode_mata_kuliah ?? ''})</span></td>
-                            <td class="p-2.5 text-center font-mono font-bold">${it.sks ?? 0}</td>
-                            <td class="p-2.5 text-center font-black text-emerald-700">${it.nilai_huruf ?? '-'}</td>
-                            <td class="p-2.5 text-center font-mono">${(it.bobot ?? 0).toFixed(2)}</td>
-                            <td class="p-2.5 text-center font-mono font-bold text-gray-900">${(it.kredit ?? 0).toFixed(2)}</td>
-                        </tr>
-                    `).join('');
-                })
-                .catch(() => {
-                    loading.innerHTML = '<span class="text-rose-600">Gagal memuat transkrip.</span>';
-                });
-        }
-
-        document.querySelectorAll('.close-khs-modal').forEach(btn => {
-            btn.addEventListener('click', () => hideDialog(khsModal));
         });
 
         // Other Modals (Evidence, Grade Link, Edit Mata Kuliah)
@@ -1552,7 +1278,7 @@
             button.addEventListener('click', () => hideDialog(evidenceModal));
         });
 
-        [classDetailModal, gradeLinkModal, evidenceModal, bulkImportModal, classImportModal, classGradesModal, khsModal].forEach(dialog => {
+        [classDetailModal, gradeLinkModal, evidenceModal, bulkImportModal, classImportModal, classGradesModal].forEach(dialog => {
             dialog?.addEventListener('click', function (event) {
                 if (event.target === dialog) hideDialog(dialog);
             });
@@ -1560,7 +1286,6 @@
 
         document.addEventListener('keydown', function (event) {
             if (event.key === 'Escape') {
-                hideDialog(khsModal);
                 hideDialog(classGradesModal);
                 hideDialog(classImportModal);
                 hideDialog(bulkImportModal);

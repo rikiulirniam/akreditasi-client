@@ -337,21 +337,28 @@ class TahunAkademikController extends Controller
 
         $tahunAkademik = $tahunResponse->json('data') ?? ['id' => $id, 'tahun' => '2025/2026'];
 
-        $kelasResponse = $this->akademikService->getKelasById($kelasId);
+        $kelasResponse = $this->akademikService->getKelasById($kelasId, [
+            'tahun_akademik_id' => $id,
+        ]);
         $kelas = $kelasResponse->json('data') ?? ['id' => $kelasId, 'nama' => 'TI 2-A'];
 
-        // 2. Ambil Daftar Mahasiswa per Kelas
-        $mahasiswaResponse = $this->akademikService->getMahasiswaByKelasId($kelasId);
+        // 2. Ambil Daftar Mahasiswa per Kelas (sesuai Tahun Akademik)
+        $mahasiswaResponse = $this->akademikService->getMahasiswaByKelasId($kelasId, [
+            'tahun_akademik_id' => $id,
+        ]);
         if (! $mahasiswaResponse->successful()) {
             $mahasiswaResponse = $this->akademikService->getMahasiswaList([
                 'kelas_id' => $kelasId,
+                'tahun_akademik_id' => $id,
             ]);
         }
         $rawMahasiswa = $mahasiswaResponse->json('data') ?? [];
         $mahasiswaList = isset($rawMahasiswa['data']) && is_array($rawMahasiswa['data']) ? $rawMahasiswa['data'] : (is_array($rawMahasiswa) ? $rawMahasiswa : []);
 
-        // 3. Ambil Daftar Mata Kuliah per Kelas
-        $matakuliahResponse = $this->akademikService->getMataKuliahByKelasId($kelasId);
+        // 3. Ambil Daftar Mata Kuliah per Kelas (sesuai Tahun Akademik)
+        $matakuliahResponse = $this->akademikService->getMataKuliahByKelasId($kelasId, [
+            'tahun_akademik_id' => $id,
+        ]);
         $rawMatakuliah = $matakuliahResponse->json('data') ?? [];
         $matakuliahList = isset($rawMatakuliah['data']) && is_array($rawMatakuliah['data']) ? $rawMatakuliah['data'] : (is_array($rawMatakuliah) ? $rawMatakuliah : []);
 

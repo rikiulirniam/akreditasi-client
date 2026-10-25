@@ -20,7 +20,7 @@
     <!-- Tabel 1: Daftar Mahasiswa -->
     <div class="space-y-4 w-full">
         <h2 class="text-xl font-bold text-gray-900 tracking-tight">
-            Daftar Mahasiswa Kelas {{ $kelas['nama'] ?? $kelas['nama_kelas'] ?? '' }} (Tahun Akademik {{ $tahunAkademik['tahun'] ?? '' }})
+            Daftar Mahasiswa Kelas {{ $kelas['kelas'] ?? $kelas['nama'] ?? $kelas['nama_kelas'] ?? '' }} (Tahun Akademik {{ $tahunAkademik['tahun'] ?? '' }} {{ $tahunAkademik['semester'] ?? '' }})
         </h2>
 
         <div class="w-full rounded-2xl border border-gray-200 overflow-hidden">
@@ -39,6 +39,7 @@
                     @php 
                         $status = $mhs['status'] ?? 'Aktif';
                         $namaMahasiswa = $mhs['nama'] ?? $mhs['nama_mahasiswa'] ?? $mhs['name'] ?? '-';
+                        $nimMahasiswa = $mhs['nim_display'] ?? $mhs['nim'] ?? '-';
                         
                         // Menampilkan data asli dari API, jika tidak ada/null maka tampilkan '-'
                         $ipkVal = $mhs['ipk'] ?? $mhs['gpa'] ?? null;
@@ -53,7 +54,7 @@
                     @endphp
                     <x-table.row>
                         <x-table.cell class="text-gray-500 font-medium text-center">{{ $index + 1 }}.</x-table.cell>
-                        <x-table.cell class="font-mono text-gray-700 text-sm whitespace-nowrap">{{ $mhs['nim'] ?? '-' }}</x-table.cell>
+                        <x-table.cell class="font-mono text-gray-700 text-sm whitespace-nowrap">{{ $nimMahasiswa }}</x-table.cell>
                         <x-table.cell class="font-medium text-gray-900 whitespace-nowrap">{{ $namaMahasiswa }}</x-table.cell>
                         <x-table.cell class="text-center">
                             <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold {{ strtolower($status) === 'aktif' ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700' }}">
@@ -80,7 +81,7 @@
     <!-- Tabel 2: Daftar Mata Kuliah -->
     <div class="space-y-4 pt-4 w-full">
         <h2 class="text-xl font-bold text-gray-900 tracking-tight">
-            Daftar Mata Kuliah Kelas {{ $kelas['nama'] ?? $kelas['nama_kelas'] ?? '' }} (Tahun Akademik {{ $tahunAkademik['tahun'] ?? '' }})
+            Daftar Mata Kuliah Kelas {{ $kelas['kelas'] ?? $kelas['nama'] ?? $kelas['nama_kelas'] ?? '' }} (Tahun Akademik {{ $tahunAkademik['tahun'] ?? '' }} {{ $tahunAkademik['semester'] ?? '' }})
         </h2>
 
         <div class="w-full rounded-2xl border border-gray-200 overflow-hidden">

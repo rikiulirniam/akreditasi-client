@@ -53,7 +53,7 @@
                     $tahun = $item['tahun'] ?? '-';
                     $semester = $item['semester'] ?? 'Ganjil';
                     $isActive = ! empty($item['is_active']);
-                    $jumlahKelas = $item['jumlah_kelas'] ?? 3;
+                    $jumlahKelas = $item['jumlah_kelas'] ?? 12;
                     $prodi = $item['prodi']['nama'] ?? 'Teknologi Rekayasa Komputer';
                 @endphp
                 <x-table.row class="tahun-akademik-row">
@@ -64,9 +64,14 @@
 
                     <!-- Tahun Akademik -->
                     <x-table.cell>
-                        <span class="font-extrabold text-sm text-gray-900 tracking-tight font-mono tahun-text">
-                            {{ $tahun }}
-                        </span>
+                        <div class="flex items-center gap-2">
+                            <span class="font-extrabold text-sm text-gray-900 tracking-tight font-mono tahun-text">
+                                {{ $tahun }}
+                            </span>
+                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold bg-primary/10 text-primary">
+                                {{ $semester }}
+                            </span>
+                        </div>
                     </x-table.cell>
 
                     <!-- Jumlah Kelas -->

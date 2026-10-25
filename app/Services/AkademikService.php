@@ -513,9 +513,9 @@ class AkademikService
         return $this->get('kelas', $query, $token);
     }
 
-    public function getKelasById(int|string $id, ?string $token = null): Response
+    public function getKelasById(int|string $id, array $query = [], ?string $token = null): Response
     {
-        return $this->get("kelas/{$id}", [], $token);
+        return $this->get("kelas/{$id}", $query, $token);
     }
 
     public function createKelas(array $data, ?string $token = null): Response
