@@ -9,6 +9,7 @@ use App\Http\Controllers\KelasController;
 use App\Http\Controllers\KurikulumController;
 use App\Http\Controllers\MahasiswaController;
 use App\Http\Controllers\MataKuliahController;
+use App\Http\Controllers\NilaiMahasiswaController;
 use App\Http\Controllers\PerguruanTinggiController;
 use App\Http\Controllers\PermissionController;
 use App\Http\Controllers\PrestasiMahasiswaController;
@@ -91,21 +92,22 @@ Route::middleware('auth.akademik')->group(function () {
     Route::middleware('permission:mata_kuliah.update,enrollment_mata_kuliah.update')->patch('/mata-kuliah/{mataKuliahId}/kelas/{angkatanKelasId}/link-nilai', [MataKuliahController::class, 'updateNilaiLink'])->name('mata-kuliah.update-grade-link');
     Route::middleware('permission:mata_kuliah.update,enrollment_mata_kuliah.update')->patch('/mata-kuliah/{mataKuliahId}/kelas/{angkatanKelasId}/link-evidence', [MataKuliahController::class, 'updateEvidenceLink'])->name('mata-kuliah.update-grade-evidence');
 
-    Route::resource('kurikulum', KurikulumController::class);
-    Route::put('kurikulum/{kurikulum}/cpl-mata-kuliah', [KurikulumController::class, 'updateMataKuliahCpl'])->name('kurikulum.update-mk-cpl');
-
-    Route::get('/tahun-akademik/{id}/kelas', [TahunAkademikController::class, 'daftarKelas'])->name('tahun-akademik.kelas');
-    Route::get('/tahun-akademik/{id}/kelas/{kelasId}', [TahunAkademikController::class, 'detailKelas'])->name('tahun-akademik.detail-kelas');
-
-    Route::get('/upps/{id}/anggota', [UppsController::class, 'anggota'])->name('upps.anggota');
-    Route::post('/upps/{id}/anggota', [UppsController::class, 'storeAnggota'])->name('upps.anggota.store');
-    Route::put('/upps/{id}/anggota/{anggotaId}', [UppsController::class, 'updateAnggota'])->name('upps.anggota.update');
-    Route::delete('/upps/{id}/anggota/{anggotaId}', [UppsController::class, 'destroyAnggota'])->name('upps.anggota.destroy');
-
     Route::middleware('permission:tahun_akademik')->resource('tahun-akademik', TahunAkademikController::class);
     Route::middleware('permission:tahun_akademik.read')->get('/tahun-akademik/{id}/kelas', [TahunAkademikController::class, 'daftarKelas'])->name('tahun-akademik.kelas');
     Route::middleware('permission:kelas.read')->get('/tahun-akademik/{id}/kelas/{kelasId}', [TahunAkademikController::class, 'detailKelas'])->name('tahun-akademik.detail-kelas');
 
     Route::middleware('permission:kurikulum')->resource('kurikulum', KurikulumController::class);
     Route::middleware('permission:kurikulum.update')->put('kurikulum/{kurikulum}/cpl-mata-kuliah', [KurikulumController::class, 'updateMataKuliahCpl'])->name('kurikulum.update-mk-cpl');
+
+    // ==========================================
+    // MODUL NILAI MAHASISWA & AKADEMIK
+    // ==========================================
+    Route::middleware('permission:nilai_mahasiswa.read')->get('/nilai-mahasiswa', [NilaiMahasiswaController::class, 'index'])->name('nilai-mahasiswa.index');
+    Route::middleware('permission:nilai_mahasiswa.read')->get('/nilai-mahasiswa/template', [NilaiMahasiswaController::class, 'downloadTemplate'])->name('nilai-mahasiswa.template');
+    Route::middleware('permission:nilai_mahasiswa.create')->post('/nilai-mahasiswa/import', [NilaiMahasiswaController::class, 'import'])->name('nilai-mahasiswa.import');
+    Route::middleware('permission:nilai_mahasiswa.create')->post('/nilai-mahasiswa', [NilaiMahasiswaController::class, 'store'])->name('nilai-mahasiswa.store');
+    Route::middleware('permission:nilai_mahasiswa.update')->put('/nilai-mahasiswa/{id}', [NilaiMahasiswaController::class, 'update'])->name('nilai-mahasiswa.update');
+    Route::middleware('permission:nilai_mahasiswa.delete')->delete('/nilai-mahasiswa/{id}', [NilaiMahasiswaController::class, 'destroy'])->name('nilai-mahasiswa.destroy');
+    Route::middleware('permission:nilai_mahasiswa.read')->get('/nilai-mahasiswa/khs/{mahasiswaId}', [NilaiMahasiswaController::class, 'khs'])->name('nilai-mahasiswa.khs');
+    Route::middleware('permission:nilai_mahasiswa.read')->get('/nilai-mahasiswa/transkrip/{mahasiswaId}', [NilaiMahasiswaController::class, 'transkrip'])->name('nilai-mahasiswa.transkrip');
 });

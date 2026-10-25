@@ -277,6 +277,9 @@ class MataKuliahTest extends TestCase
         $response->assertSee('TRK101');
         $response->assertSee('Kurikulum TRK 2024');
         $response->assertSee('Daftar Kelas');
+        $response->assertSee('Bulk Import Nilai');
+        $response->assertSee('Format Import (Semua Kelas)');
+        $response->assertSee('Import Nilai Kelas Ini');
         $response->assertSee('TI1-A');
         $response->assertSee('3.88');
         $response->assertSee('Input Nilai');

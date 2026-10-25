@@ -4,6 +4,7 @@ namespace App\Services;
 
 use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Http\Client\Response;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Http;
 
 class AkademikService
@@ -37,7 +38,7 @@ class AkademikService
 
         $client = Http::acceptJson()
             ->asJson()
-            ->withoutVerifying() #kalau-commit-dihapus
+            ->withoutVerifying() // kalau-commit-dihapus
             ->timeout(20);
 
         if (! empty($resolvedToken)) {
@@ -683,6 +684,11 @@ class AkademikService
         return $this->delete("evidence-prestasi-mahasiswa/{$id}", [], $token);
     }
 
+    public function getJenisPrestasiList(array $query = [], ?string $token = null): Response
+    {
+        return $this->get('jenis-prestasi', $query, $token);
+    }
+
     public function getJenisPrestasiById(int|string $id, ?string $token = null): Response
     {
         return $this->get("jenis-prestasi/{$id}", [], $token);
@@ -899,20 +905,40 @@ class AkademikService
         return $this->get('mata-kuliah-angkatan-kelas', $query, $token);
     }
 
+    /*
+    |==========================================================================
+    | MODUL: NILAI MAHASISWA & AKADEMIK (/api/nilai-mahasiswa/* & /api/mahasiswa/{id}/khs|transkrip)
+    |==========================================================================
+    */
+
     public function getNilaiMahasiswaList(array $query = [], ?string $token = null): Response
     {
         return $this->get('nilai-mahasiswa', $query, $token);
     }
 
-    /*
-    |==========================================================================
-    | MODUL: JENIS PRESTASI (/api/jenis-prestasi/*)
-    |==========================================================================
-    */
-
     public function getNilaiMahasiswaById(int|string $id, ?string $token = null): Response
     {
         return $this->get("nilai-mahasiswa/{$id}", [], $token);
+    }
+
+    public function createNilaiMahasiswa(array $data, ?string $token = null): Response
+    {
+        return $this->post('nilai-mahasiswa', $data, $token);
+    }
+
+    public function batchCreateNilaiMahasiswa(array $data, ?string $token = null): Response
+    {
+        return $this->post('nilai-mahasiswa/batch', $data, $token);
+    }
+
+    public function updateNilaiMahasiswa(int|string $id, array $data, ?string $token = null): Response
+    {
+        return $this->put("nilai-mahasiswa/{$id}", $data, $token);
+    }
+
+    public function deleteNilaiMahasiswa(int|string $id, ?string $token = null): Response
+    {
+        return $this->delete("nilai-mahasiswa/{$id}", [], $token);
     }
 
     public function updateNilaiMahasiswaLinkNilai(int|string $id, array $data, ?string $token = null): Response
@@ -923,6 +949,109 @@ class AkademikService
     public function updateNilaiMahasiswaLinkEvidence(int|string $id, array $data, ?string $token = null): Response
     {
         return $this->patch("nilai-mahasiswa/{$id}/link-evidence", $data, $token);
+    }
+
+    public function downloadNilaiMahasiswaTemplate(array $query = [], ?string $token = null): Response
+    {
+        $resolvedToken = $token ?? $this->token ?? (string) session('access_token');
+        $url = $this->buildUrl('nilai-mahasiswa/template');
+
+        $client = Http::withoutVerifying()->timeout(30);
+        if (! empty($resolvedToken)) {
+            $client = $client->withToken($resolvedToken);
+        }
+
+        $response = $client->get($url, $query);
+
+        if ($response->status() === 401 && ! empty($resolvedToken)) {
+            try {
+                $refreshResponse = $this->refreshAuthToken($resolvedToken);
+                $body = $refreshResponse->json();
+                if ($refreshResponse->successful() && ($body['success'] ?? false) === true) {
+                    $newAccessToken = $body['data']['authorization']['access_token'] ?? null;
+                    if ($newAccessToken) {
+                        session()->put('access_token', $newAccessToken);
+
+                        return Http::withoutVerifying()
+                            ->timeout(30)
+                            ->withToken($newAccessToken)
+                            ->get($url, $query);
+                    }
+                }
+            } catch (\Throwable $e) {
+                // Return original response
+            }
+        }
+
+        return $response;
+    }
+
+    public function importNilaiMahasiswa(mixed $file, array $data = [], ?string $token = null): Response
+    {
+        $resolvedToken = $token ?? $this->token ?? (string) session('access_token');
+        $url = $this->buildUrl('nilai-mahasiswa/import');
+
+        $makeRequest = function ($authToken) use ($url, $file, $data) {
+            $client = Http::acceptJson()
+                ->withoutVerifying()
+                ->timeout(120);
+
+            if (! empty($authToken)) {
+                $client = $client->withToken($authToken);
+            }
+
+            if ($file instanceof UploadedFile) {
+                $client = $client->attach(
+                    'file',
+                    file_get_contents($file->getRealPath()),
+                    $file->getClientOriginalName()
+                );
+            } elseif (is_string($file) && file_exists($file)) {
+                $client = $client->attach(
+                    'file',
+                    file_get_contents($file),
+                    basename($file)
+                );
+            }
+
+            return $client->post($url, $data);
+        };
+
+        $response = $makeRequest($resolvedToken);
+
+        if ($response->status() === 401 && ! empty($resolvedToken)) {
+            try {
+                $refreshResponse = $this->refreshAuthToken($resolvedToken);
+                $body = $refreshResponse->json();
+                if ($refreshResponse->successful() && ($body['success'] ?? false) === true) {
+                    $newAccessToken = $body['data']['authorization']['access_token'] ?? null;
+                    if ($newAccessToken) {
+                        session()->put('access_token', $newAccessToken);
+
+                        return $makeRequest($newAccessToken);
+                    }
+                }
+            } catch (\Throwable $e) {
+                // Return original response
+            }
+        }
+
+        return $response;
+    }
+
+    public function getKhsMahasiswa(int|string $mahasiswaId, array $query = [], ?string $token = null): Response
+    {
+        return $this->get("mahasiswa/{$mahasiswaId}/khs", $query, $token);
+    }
+
+    public function getTranskripMahasiswa(int|string $mahasiswaId, array $query = [], ?string $token = null): Response
+    {
+        return $this->get("mahasiswa/{$mahasiswaId}/transkrip", $query, $token);
+    }
+
+    public function getRingkasanAkademikMahasiswa(int|string $mahasiswaId, ?string $token = null): Response
+    {
+        return $this->get("mahasiswa/{$mahasiswaId}/ringkasan-akademik", [], $token);
     }
     /*
     |==========================================================================

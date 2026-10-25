@@ -397,6 +397,7 @@ class MataKuliahController extends Controller
                 'rata_rata_ipk' => $averageIpk,
                 'jumlah_mata_kuliah' => $offeringsByClassId->get($classId, collect())->pluck('id')->unique()->count(),
                 'enrollment_mata_kuliah_id' => $courseEnrollment['id'] ?? null,
+                'mata_kuliah_angkatan_kelas_id' => $courseOfferingIds[0] ?? null,
                 'evidence' => $courseEnrollment['evidence'] ?? '',
                 'link_nilai' => $gradeLinks->count() === 1 ? $gradeLinks->first() : '',
                 'link_evidence' => $evidenceLinks->count() === 1 ? $evidenceLinks->first() : '',
