@@ -16,6 +16,7 @@ use App\Http\Controllers\TahunAkademikController;
 use App\Http\Controllers\UppsController;
 use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\Akreditasi\Superadmin\DashboardController as SuperadminDashboard;
 
 Route::get('/', function () {
     if (session()->has('access_token')) {
@@ -60,3 +61,58 @@ Route::middleware('auth.akademik')->group(function () {
     Route::put('kurikulum/{kurikulum}/cpl-mata-kuliah', [KurikulumController::class, 'updateMataKuliahCpl'])->name('kurikulum.update-mk-cpl');
 
 });
+
+// =====================================================================
+// ROUTE MODUL AKREDITASI (SUPERADMIN)
+// =====================================================================
+
+Route::prefix('pages')->name('akreditasi.superadmin.')->group(function () {
+    Route::get('/superadmin', [SuperadminDashboard::class, 'index'])->name('dashboard');
+    Route::get('/superadmin/dashboard', [SuperadminDashboard::class, 'index'])->name('dashboard');
+    
+    // Tambahkan baris ini untuk mengatasi error instrumen
+    Route::get('/superadmin/instrumen', function () {
+        return view('pages.superadmin.instrumen');
+    })->name('instrumen');
+
+    Route::get('/superadmin/lembaga-akreditasi', function () {
+        return view('pages.superadmin.lembaga-akreditasi');
+    })->name('lembaga_akreditasi');
+
+    Route::get('/superadmin/kriteria', function () {
+        return view('pages.superadmin.kriteria');
+    })->name('kriteria');
+
+    Route::get('/superadmin/subkriteria', function () {
+        return view('pages.superadmin.subkriteria');
+    })->name('subkriteria');
+
+    Route::get('/superadmin/indikator', function () {
+        return view('pages.superadmin.indikator');
+    })->name('indikator');
+
+    Route::get('/superadmin/rubrik', function () {
+        return view('pages.superadmin.rubrik');
+    })->name('rubrik');
+
+    Route::get('/superadmin/bobot', function () {
+        return view('pages.superadmin.bobot');
+    })->name('bobot');
+
+    Route::get('/superadmin/detail-bobot', function () {
+        return view('pages.superadmin.detail-bobot');
+    })->name('detail_bobot');
+
+    Route::get('/superadmin/standar-spmi', function () {
+        return view('pages.superadmin.standar-spmi');
+    })->name('standar_spmi');
+
+    Route::get('/superadmin/lembar-kerja', function () {
+        return view('pages.superadmin.lembar-kerja');
+    })->name('lembar_kerja');
+
+    Route::get('/superadmin/bukti-dokumen', function () {
+        return view('pages.superadmin.bukti-dokumen');
+    })->name('bukti_dokumen');
+});
+Route::get('/superadmin', [SuperadminDashboard::class, 'index']);
