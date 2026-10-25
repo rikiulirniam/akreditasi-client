@@ -30,10 +30,10 @@
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-6">
         <!-- Card 1 -->
         <div class="bg-white rounded-2xl border border-[#EAEAEA] p-5 flex flex-col justify-center shadow-xs">
-            <div class="text-gray-400 text-[10px] font-bold tracking-wider uppercase mb-2">Total Project</div>
+            <div class="text-gray-500 text-xs font-bold tracking-wider uppercase mb-2">Total Project</div>
             <div class="flex items-center gap-2.5">
-                <div class="w-8 h-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                <div class="w-9 h-9 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
                     </svg>
                 </div>
@@ -43,10 +43,10 @@
 
         <!-- Card 2 -->
         <div class="bg-white rounded-2xl border border-[#EAEAEA] p-5 flex flex-col justify-center shadow-xs">
-            <div class="text-gray-400 text-[10px] font-bold tracking-wider uppercase mb-2">Tahun Berjalan</div>
+            <div class="text-gray-500 text-xs font-bold tracking-wider uppercase mb-2">Tahun Berjalan</div>
             <div class="flex items-center gap-2.5">
-                <div class="w-8 h-8 rounded-lg bg-amber-500/10 text-amber-500 flex items-center justify-center">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                <div class="w-9 h-9 rounded-xl bg-amber-500/10 text-amber-500 flex items-center justify-center">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                     </svg>
                 </div>
@@ -56,7 +56,7 @@
 
         <!-- Card 3 -->
         <div class="bg-white rounded-2xl border border-[#EAEAEA] p-5 flex flex-col justify-center shadow-xs">
-            <div class="text-gray-400 text-[10px] font-bold tracking-wider uppercase mb-2">Rata-rata Kelengkapan</div>
+            <div class="text-gray-500 text-xs font-bold tracking-wider uppercase mb-2">Rata-rata Kelengkapan</div>
             <div class="flex items-center gap-2.5">
                 <span id="stat-kelengkapan" class="text-primary text-[28px] font-extrabold leading-none">—</span>
             </div>
@@ -64,7 +64,7 @@
 
         <!-- Card 4 -->
         <div class="bg-white rounded-2xl border border-[#EAEAEA] p-5 flex flex-col justify-center shadow-xs">
-            <div class="text-gray-400 text-[10px] font-bold tracking-wider uppercase mb-2">Instrumen Aktif</div>
+            <div class="text-gray-500 text-xs font-bold tracking-wider uppercase mb-2">Instrumen Aktif</div>
             <div class="flex items-center gap-2.5">
                 <span id="stat-instrumen" class="text-primary text-[28px] font-extrabold leading-none">2.1</span>
             </div>
@@ -99,49 +99,49 @@
                 <x-table.cell>
                     <div class="flex flex-col">
                         <span id="row-nama-prodi" class="text-primary font-bold text-sm tracking-tight">Teknik Informatika</span>
-                        <span id="row-lembaga" class="text-gray-400 text-[10px] font-semibold uppercase mt-0.5">LAM INFOKOM</span>
+                        <span id="row-lembaga" class="text-gray-500 text-xs font-semibold uppercase mt-0.5">LAM INFOKOM</span>
                     </div>
                 </x-table.cell>
 
                 <!-- Jenjang -->
                 <x-table.cell>
-                    <span id="row-jenjang" class="text-gray-700 text-xs font-medium">Sarjana Terapan</span>
+                    <span id="row-jenjang" class="text-gray-800 text-sm font-medium">Sarjana Terapan</span>
                 </x-table.cell>
 
                 <!-- Jenis -->
                 <x-table.cell>
-                    <span id="row-jenis" class="text-gray-700 text-xs font-medium">Akreditasi Pertama</span>
+                    <span id="row-jenis" class="text-gray-800 text-sm font-medium">Akreditasi Pertama</span>
                 </x-table.cell>
 
                 <!-- Instrumen -->
                 <x-table.cell>
-                    <span id="row-instrumen" class="text-gray-700 text-xs font-medium">v2.1</span>
+                    <span id="row-instrumen" class="text-gray-800 text-sm font-medium font-mono">v2.1</span>
                 </x-table.cell>
 
                 <!-- Tahun -->
                 <x-table.cell>
-                    <span id="row-tahun" class="text-gray-700 text-xs font-medium">2026</span>
+                    <span id="row-tahun" class="text-gray-800 text-sm font-medium">2026</span>
                 </x-table.cell>
 
                 <!-- Kelengkapan -->
                 <x-table.cell>
                     <div class="flex items-center gap-2.5">
-                        <div class="w-20 h-2 bg-slate-100 rounded-full overflow-hidden">
+                        <div class="w-20 h-2.5 bg-slate-100 rounded-full overflow-hidden">
                             <div class="h-full bg-additional w-0 transition-all duration-300"></div>
                         </div>
-                        <span class="text-gray-500 text-xs font-medium">0/36</span>
+                        <span class="text-gray-600 text-xs font-medium">0/36</span>
                     </div>
                 </x-table.cell>
 
                 <!-- Nilai -->
                 <x-table.cell>
-                    <span class="text-primary text-xs font-bold">0</span>
+                    <span class="text-primary text-sm font-bold">0</span>
                 </x-table.cell>
 
                 <!-- Action -->
                 <x-table.cell class="text-right">
                     <div class="flex items-center justify-end gap-3">
-                        <a href="{{ route('kaprodi.project.detail') }}" class="text-additional hover:text-primary text-xs font-bold transition-colors">Detail ›</a>
+                        <a href="{{ route('kaprodi.project.detail') }}" class="text-additional hover:text-primary text-sm font-bold transition-colors">Detail ›</a>
                         <button 
                             type="button" 
                             onclick="resetData()" 
