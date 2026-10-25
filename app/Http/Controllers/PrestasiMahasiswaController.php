@@ -365,7 +365,7 @@ class PrestasiMahasiswaController extends Controller
             'nama_aktivitas' => ['required', 'string', 'max:255'],
             'jenis' => ['required', 'string', 'max:255'],
             'tahun' => ['required', 'integer', 'min:1900', 'max:2100'],
-            'certificate' => ['nullable', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:10240'],
+            'evidence' => ['nullable', 'url', 'max:2048'],
         ]);
 
         $response = $this->akademikService->updatePrestasiMahasiswa($id, [
@@ -393,19 +393,10 @@ class PrestasiMahasiswaController extends Controller
                 ]);
             }
 
-            if ($request->hasFile('certificate')) {
-                $certificatePath = $request->file('certificate')->storePublicly('prestasi-mahasiswa', 'public');
-                if (! $certificatePath) {
-                    return redirect()->route('prestasi-mahasiswa.index')->with('toast', [
-                        'type' => 'error',
-                        'title' => 'Prestasi Diperbarui, Sertifikat Gagal Disimpan',
-                        'message' => 'File sertifikat tidak dapat disimpan.',
-                    ]);
-                }
-
+            if (! empty($validated['evidence'])) {
                 $evidenceResponse = $this->syncAchievementRelation(
                     $id,
-                    Storage::disk('public')->url($certificatePath),
+                    trim($validated['evidence']),
                     $this->akademikService->getEvidencePrestasiMahasiswaList(['per_page' => 500]),
                     fn (?string $relatedId, array $payload) => $relatedId
                         ? $this->akademikService->updateEvidencePrestasiMahasiswa($relatedId, $payload)

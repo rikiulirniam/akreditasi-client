@@ -165,6 +165,54 @@ class PrestasiMahasiswaTest extends TestCase
             && str_ends_with($request->url(), '/api/prestasi-mahasiswa/7'));
     }
 
+    public function test_user_can_update_achievement_certificate_using_a_link(): void
+    {
+        Http::fake([
+            '*/api/prestasi-mahasiswa/7' => Http::response(['success' => true]),
+            '*/api/jenis-prestasi/15' => Http::response(['success' => true]),
+            '*/api/evidence-prestasi-mahasiswa/12' => Http::response(['success' => true]),
+            '*/api/jenis-prestasi*' => Http::response([
+                'success' => true,
+                'data' => [['id' => 15, 'id_prestasi_mahasiswa' => 7, 'jenis' => 'Akademik']],
+            ]),
+            '*/api/evidence-prestasi-mahasiswa*' => Http::response([
+                'success' => true,
+                'data' => [['id' => 12, 'id_prestasi_mahasiswa' => 7, 'evidence' => 'https://example.com/old-certificate']],
+            ]),
+            '*' => Http::response(['success' => true, 'data' => []]),
+        ]);
+
+        $response = $this->authenticate()->put(route('prestasi-mahasiswa.update', 7), [
+            'id_mahasiswa' => 1,
+            'nama_aktivitas' => 'Juara 1 OSN',
+            'jenis' => 'Akademik',
+            'tahun' => 2024,
+            'evidence' => 'https://example.com/new-certificate',
+        ]);
+
+        $response->assertRedirect(route('prestasi-mahasiswa.index'));
+        $this->assertSame('success', session('toast.type'));
+        Http::assertSent(fn (HttpRequest $request) => $request->method() === 'PUT'
+            && str_ends_with($request->url(), '/api/evidence-prestasi-mahasiswa/12')
+            && $request->data() === [
+                'id_prestasi_mahasiswa' => 7,
+                'evidence' => 'https://example.com/new-certificate',
+            ]);
+    }
+
+    public function test_user_cannot_update_achievement_with_an_invalid_certificate_link(): void
+    {
+        $response = $this->authenticate()->put(route('prestasi-mahasiswa.update', 7), [
+            'id_mahasiswa' => 1,
+            'nama_aktivitas' => 'Juara 1 OSN',
+            'jenis' => 'Akademik',
+            'tahun' => 2024,
+            'evidence' => 'not-a-url',
+        ]);
+
+        $response->assertSessionHasErrors(['evidence']);
+    }
+
     public function test_user_can_view_achievement_with_evidence_and_type_records(): void
     {
         Http::fake([

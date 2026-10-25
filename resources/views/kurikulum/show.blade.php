@@ -197,6 +197,8 @@
 <div
     id="cplDetailModal"
     class="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4 transition-opacity duration-200 hidden"
+    role="dialog"
+    aria-modal="true"
 >
     <div class="bg-white rounded-2xl shadow-xl w-full max-w-md p-6 sm:p-8 space-y-5 transform transition-all">
         <!-- Modal Title -->
