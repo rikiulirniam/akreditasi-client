@@ -37,6 +37,7 @@ class AkademikService
 
         $client = Http::acceptJson()
             ->asJson()
+            ->withoutVerifying() #kalo push hapus dulu
             ->timeout(20);
 
         if (! empty($resolvedToken)) {

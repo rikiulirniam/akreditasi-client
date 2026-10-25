@@ -181,8 +181,8 @@
             const sidebarChevrons = document.querySelectorAll('.sidebar-chevron');
             const submenuContainers = document.querySelectorAll('.submenu-container');
 
-            let isCollapsed = localStorage.getItem('sidebar_collapsed') === 'true';
-
+            let isCollapsed = false;
+            localStorage.setItem('sidebar_collapsed', 'false');
             function applySidebarState() {
                 if (!sidebar) return;
                 if (isCollapsed) {
