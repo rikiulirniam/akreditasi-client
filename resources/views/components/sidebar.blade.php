@@ -263,9 +263,6 @@
                         </a>
                     </div>
                 </div>
-                        </a>
-                    </div>
-                </div>
 
                 <!-- Tri Dharma -->
                 <div>
