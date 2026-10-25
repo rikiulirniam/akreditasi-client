@@ -1,112 +1,126 @@
 @extends('layouts.app')
 
-@section('title', 'Edit Tenaga Kependidikan')
-@section('subtitle', 'Perbarui data tenaga kependidikan: ' . $item->nama)
+@section('meta_title', 'Perbarui Tenaga Kependidikan')
+@section('title', 'Perbarui Tenaga Kependidikan')
+
+@php
+    $tendikData = is_array($item ?? null) ? $item : (is_object($item ?? null) ? (array) $item : []);
+    $tendikId = $tendikData['id'] ?? ($tendikData['id_tendik'] ?? request()->route('tenaga_kependidikan'));
+    $tendikNama = $tendikData['nama'] ?? ($tendikData['nama_tendik'] ?? '');
+    $tendikNip = $tendikData['nip'] ?? '';
+    $tendikJabatan = $tendikData['jabatan'] ?? ($tendikData['jabatan_tendik'] ?? '');
+    $tendikPendidikanId = $tendikData['id_pendidikan'] ?? '';
+@endphp
 
 @section('content')
-<div class="max-w-2xl mx-auto py-4">
-    <!-- Back Button -->
-    <div class="mb-6">
-        <a 
-            href="{{ route('tenaga-kependidikan.index') }}" 
-            class="inline-flex items-center gap-2 text-sm font-bold text-primary hover:text-additional transition"
-        >
-            <svg class="w-4 h-4 stroke-[2.5]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" />
-            </svg>
-            <span>Kembali ke Daftar</span>
-        </a>
-    </div>
-
-    <!-- Form Card -->
-    <div class="bg-white rounded-3xl border border-[#CACACA] shadow-sm p-6 sm:p-8">
-        <h2 class="text-xl font-extrabold text-primary mb-6 pb-3 border-b border-gray-100">
-            Perbarui Data Tenaga Kependidikan
+<div class="max-w-[540px] mx-auto py-6">
+    <div class="bg-white rounded-[20px] shadow-2xl p-7 sm:px-11 sm:py-8 select-none">
+        <!-- Title: Centered, Bold, Black -->
+        <h2 class="text-center font-bold text-black text-2xl sm:text-[26px] tracking-tight mb-6 sm:mb-7">
+            Perbarui Tenaga Kependidikan
         </h2>
 
-        @if($errors->any())
-            <div class="mb-6 p-4 rounded-2xl bg-rose-50 border border-rose-200 text-rose-700 text-xs">
-                <p class="font-bold mb-1">Terdapat kesalahan pengisian:</p>
-                <ul class="list-disc list-inside space-y-0.5">
-                    @foreach($errors->all() as $error)
-                        <li>{{ $error }}</li>
-                    @endforeach
-                </ul>
-            </div>
-        @endif
-
-        <form method="POST" action="{{ route('tenaga-kependidikan.update', $item) }}" class="space-y-5">
+        <form method="POST" action="{{ route('tenaga-kependidikan.update', $tendikId) }}" class="space-y-4">
             @csrf
             @method('PUT')
 
+            <!-- Field 1: Nama -->
             <div>
-                <label for="nama" class="block text-xs font-bold text-gray-700 mb-1.5">
-                    Nama Lengkap & Gelar <span class="text-rose-500">*</span>
+                <label for="edit_nama" class="block text-left text-[16px] font-bold text-black mb-2">
+                    Nama
                 </label>
                 <input 
                     type="text" 
-                    id="nama" 
+                    id="edit_nama" 
                     name="nama" 
-                    value="{{ old('nama', $item->nama) }}" 
+                    value="{{ old('nama', $tendikNama) }}" 
+                    placeholder="Nama Tenaga Kependidikan"
                     required
-                    class="w-full bg-[#D9D9D9] border border-[#CACACA] rounded-xl px-4 py-2.5 text-sm font-medium text-black focus:outline-none focus:ring-2 focus:ring-primary/20"
+                    class="w-full h-[50px] bg-[#DEDEDE] border border-transparent rounded-[10px] px-5 text-[16px] text-black placeholder-[#737373] focus:outline-none focus:ring-2 focus:ring-[#075B91]/30 focus:border-[#075B91] transition @error('nama') border-rose-500 ring-1 ring-rose-500 @enderror"
                 >
+                @error('nama')
+                    <p class="text-rose-600 text-xs font-semibold mt-1.5 text-left">{{ $message }}</p>
+                @enderror
             </div>
 
+            <!-- Field 2: NIP -->
             <div>
-                <label for="nip" class="block text-xs font-bold text-gray-700 mb-1.5">
-                    NIP <span class="text-rose-500">*</span>
+                <label for="edit_nip" class="block text-left text-[16px] font-bold text-black mb-2">
+                    NIP
                 </label>
                 <input 
                     type="text" 
-                    id="nip" 
+                    id="edit_nip" 
                     name="nip" 
-                    value="{{ old('nip', $item->nip) }}" 
+                    value="{{ old('nip', $tendikNip) }}" 
+                    placeholder="Nomor Induk Pegawai"
                     required
-                    class="w-full bg-[#D9D9D9] border border-[#CACACA] rounded-xl px-4 py-2.5 text-sm font-medium text-black focus:outline-none focus:ring-2 focus:ring-primary/20 font-mono"
+                    class="w-full h-[50px] bg-[#DEDEDE] border border-transparent rounded-[10px] px-5 text-[16px] text-black placeholder-[#737373] focus:outline-none focus:ring-2 focus:ring-[#075B91]/30 focus:border-[#075B91] transition @error('nip') border-rose-500 ring-1 ring-rose-500 @enderror"
                 >
+                @error('nip')
+                    <p class="text-rose-600 text-xs font-semibold mt-1.5 text-left">{{ $message }}</p>
+                @enderror
             </div>
 
+            <!-- Field 3: Jabatan -->
             <div>
-                <label for="jabatan" class="block text-xs font-bold text-gray-700 mb-1.5">
-                    Jabatan <span class="text-rose-500">*</span>
+                <label for="edit_jabatan" class="block text-left text-[16px] font-bold text-black mb-2">
+                    Jabatan
                 </label>
                 <input 
                     type="text" 
-                    id="jabatan" 
+                    id="edit_jabatan" 
                     name="jabatan" 
-                    value="{{ old('jabatan', $item->jabatan) }}" 
+                    value="{{ old('jabatan', $tendikJabatan) }}" 
+                    placeholder="Jabatan Tenaga Kependidikan"
                     required
-                    class="w-full bg-[#D9D9D9] border border-[#CACACA] rounded-xl px-4 py-2.5 text-sm font-medium text-black focus:outline-none focus:ring-2 focus:ring-primary/20"
+                    class="w-full h-[50px] bg-[#DEDEDE] border border-transparent rounded-[10px] px-5 text-[16px] text-black placeholder-[#737373] focus:outline-none focus:ring-2 focus:ring-[#075B91]/30 focus:border-[#075B91] transition @error('jabatan') border-rose-500 ring-1 ring-rose-500 @enderror"
                 >
+                @error('jabatan')
+                    <p class="text-rose-600 text-xs font-semibold mt-1.5 text-left">{{ $message }}</p>
+                @enderror
             </div>
 
+            <!-- Field 4: Kualifikasi -->
             <div>
-                <label for="kualifikasi" class="block text-xs font-bold text-gray-700 mb-1.5">
-                    Kualifikasi Pendidikan <span class="text-rose-500">*</span>
+                <label for="edit_kualifikasi" class="block text-left text-[16px] font-bold text-black mb-2">
+                    Kualifikasi
                 </label>
-                <input 
-                    type="text" 
-                    id="kualifikasi" 
-                    name="kualifikasi" 
-                    value="{{ old('kualifikasi', $item->kualifikasi) }}" 
+                <select
+                    id="edit_kualifikasi" 
+                    name="id_pendidikan"
                     required
-                    class="w-full bg-[#D9D9D9] border border-[#CACACA] rounded-xl px-4 py-2.5 text-sm font-medium text-black focus:outline-none focus:ring-2 focus:ring-primary/20"
+                    class="w-full h-[50px] bg-[#DEDEDE] border border-transparent rounded-[10px] px-5 text-[16px] text-black focus:outline-none focus:ring-2 focus:ring-[#075B91]/30 focus:border-[#075B91] transition cursor-pointer @error('id_pendidikan') border-rose-500 ring-1 ring-rose-500 @enderror"
                 >
+                    <option value="" disabled>Isi Pendidikan Terakhir</option>
+                    @foreach($pendidikan ?? [
+                        ['id' => 4, 'jenjang' => 'D4/S1'],
+                        ['id' => 1, 'jenjang' => 'S2'],
+                        ['id' => 3, 'jenjang' => 'S3'],
+                    ] as $level)
+                        <option value="{{ $level['id'] ?? $level['id_pendidikan'] ?? '' }}" {{ (string) old('id_pendidikan', $tendikPendidikanId) === (string) ($level['id'] ?? $level['id_pendidikan'] ?? '') ? 'selected' : '' }}>
+                            {{ $level['jenjang'] ?? '-' }}
+                        </option>
+                    @endforeach
+                </select>
+                @error('id_pendidikan')
+                    <p class="text-rose-600 text-xs font-semibold mt-1.5 text-left">{{ $message }}</p>
+                @enderror
             </div>
 
-            <div class="flex items-center justify-end gap-3 pt-4 border-t border-gray-100">
+            <!-- Action Buttons: Batal & Simpan -->
+            <div class="flex items-center justify-between gap-4 pt-4 sm:pt-6">
                 <a 
                     href="{{ route('tenaga-kependidikan.index') }}" 
-                    class="px-5 py-2.5 rounded-xl border border-gray-300 text-sm font-semibold text-gray-700 hover:bg-gray-50 transition cursor-pointer"
+                    class="flex-1 h-[50px] bg-[#DEDEDE] hover:bg-[#CACACA] text-black font-bold text-[17px] rounded-[10px] transition cursor-pointer active:scale-[0.99] flex items-center justify-center select-none"
                 >
                     Batal
                 </a>
                 <button 
                     type="submit" 
-                    class="px-6 py-2.5 bg-primary hover:bg-additional text-white text-sm font-bold rounded-xl shadow-xs transition active:scale-[0.98] cursor-pointer"
+                    class="flex-1 h-[50px] bg-[#075B91] hover:bg-[#064e7c] text-white font-bold text-[17px] rounded-[10px] shadow-xs transition cursor-pointer active:scale-[0.99] flex items-center justify-center select-none"
                 >
-                    Simpan Perubahan
+                    Simpan
                 </button>
             </div>
         </form>

@@ -2,11 +2,24 @@
 
 @section('browser-title', 'Sertifikasi')
 
-@section('title', 'Sertifikasi')
+@section('title')
+    @if($selectedTendik ?? null)
+        <span class="inline-flex items-center gap-2.5 sm:gap-3.5 flex-wrap">
+            <a href="{{ route('tenaga-kependidikan.show', $selectedTendik['id']) }}" class="hover:text-additional transition text-black">Tenaga Kependidikan</a>
+            <svg class="w-5 h-5 sm:w-7 sm:h-7 stroke-[3] text-black shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" />
+            </svg>
+            <span>Sertifikasi</span>
+        </span>
+        <span class="sr-only">{{ $selectedTendik['nama'] }}</span>
+    @else
+        Sertifikasi
+    @endif
+@endsection
 
 @section('subtitle')
     @if(!$apiError)
-        {{ number_format((int) ($pagination['total'] ?? 0), 0, ',', '.') }} Data ditemukan
+        {{ number_format((int) ($pagination['total'] ?? count($certifications)), 0, ',', '.') }} Data ditemukan
     @endif
 @endsection
 
@@ -53,7 +66,7 @@
                         type="text"
                         name="search"
                         value="{{ $filters['search'] ?? '' }}"
-                        placeholder="Cari sertifikasi"
+                        placeholder="{{ ($selectedTendik ?? null) ? 'Cari nama' : 'Cari sertifikasi' }}"
                         class="min-w-0 flex-1 border-0 bg-transparent px-3 py-1 text-xs text-gray-900 placeholder:text-gray-600 focus:outline-none focus:ring-0"
                     >
                     <button type="submit" class="inline-flex h-full w-[34px] shrink-0 items-center justify-center rounded-[5px] text-black transition {{ filled($filters['search'] ?? null) ? 'border border-primary bg-[#ffc800]' : 'border border-transparent bg-transparent' }}" data-search-button aria-label="Cari">
@@ -138,8 +151,8 @@
                         </x-table.cell>
                         <x-table.cell class="!rounded-none !border-x-0 border-y border-gray-300 !px-4 !py-3.5 !text-sm text-gray-900">{{ $certification['nomor_sertifikat'] ?? '-' }}</x-table.cell>
                         <x-table.cell class="!rounded-none !border-x-0 border-y border-gray-300 !px-4 !py-3.5 !text-sm">
-                            <span class="font-medium {{ strtolower($status) === 'aktif' ? 'text-emerald-600' : (strtolower($status) === 'kedaluwarsa' ? 'text-red-700' : 'text-gray-700') }}">
-                                {{ $status }}
+                            <span class="font-medium {{ in_array(strtolower($status), ['aktif'], true) ? 'text-emerald-600' : (in_array(strtolower($status), ['kedaluwarsa', 'kadaluarsa', 'expired'], true) ? 'text-red-700' : 'text-gray-700') }}">
+                                {{ in_array(strtolower($status), ['kedaluwarsa', 'kadaluarsa'], true) ? 'Kadaluarsa' : $status }}
                             </span>
                         </x-table.cell>
                         <x-table.cell class="!rounded-none !border-x-0 border-y border-gray-300 !px-4 !py-3.5 !text-sm text-gray-900">{{ $year }}</x-table.cell>

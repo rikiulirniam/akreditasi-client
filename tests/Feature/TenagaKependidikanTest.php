@@ -92,6 +92,22 @@ class TenagaKependidikanTest extends TestCase
         Http::assertSent(fn (ClientRequest $request) => $request->url() === 'https://tridharma.fayra.my.id/api/tendik?search=Bambang&per_page=100');
     }
 
+    public function test_index_applies_kualifikasi_filter_to_returned_records(): void
+    {
+        $this->fakeTendikApi([
+            $this->tendikRecord(41, 'Bambang Triyono, S.E.', '197805122003121001', 'Kepala Tata Usaha', 2),
+            $this->tendikRecord(42, 'Bambang Nugraha, S.T.', '197805122003121002', 'Laboran', 3),
+        ]);
+
+        $response = $this->get(route('tenaga-kependidikan.index', [
+            'kualifikasi' => 'S1 Teknik Informatika',
+        ]));
+
+        $response->assertOk()
+            ->assertSee('Bambang Nugraha, S.T.')
+            ->assertDontSee('Bambang Triyono, S.E.');
+    }
+
     public function test_create_posts_api_field_names_and_only_reports_success_when_confirmed(): void
     {
         Http::fake([
@@ -337,6 +353,56 @@ class TenagaKependidikanTest extends TestCase
 
         $response->assertRedirect(route('login'))
             ->assertSessionMissing('access_token');
+    }
+
+    public function test_index_shows_empty_state_matching_screenshot_when_no_data(): void
+    {
+        $this->fakeTendikApi([]);
+
+        $response = $this->get(route('tenaga-kependidikan.index'));
+
+        $response->assertOk()
+            ->assertSee('Belum Ada Data Tendik')
+            ->assertSee('Tekan tombol di bawah untuk menambah data')
+            ->assertSee('Tambah Tendik')
+            ->assertDontSee('0 Data ditemukan');
+    }
+
+    public function test_show_displays_qualification_institution_from_api_pendidikan(): void
+    {
+        Http::fake([
+            'https://tridharma.fayra.my.id/api/tendik/3' => Http::response([
+                'success' => true,
+                'code' => 200,
+                'data' => [
+                    'id_tendik' => 3,
+                    'nama_tendik' => 'Bambang Triyono, S.T',
+                    'jabatan_tendik' => 'Laboran Komputer',
+                    'nip' => '199103152014021002',
+                    'id_pendidikan' => 1,
+                    'pendidikan' => [
+                        'id_pendidikan' => 1,
+                        'jenjang' => 'S2',
+                        'universitas' => 'Institut Teknologi Bandung',
+                        'program_studi' => 'Teknik Elektro dan Informatika',
+                        'tahun_lulus' => 2020,
+                    ],
+                ],
+            ], 200),
+            'https://tridharma.fayra.my.id/api/sertifikasi*' => Http::response([
+                'success' => true,
+                'code' => 200,
+                'data' => [],
+            ], 200),
+        ]);
+
+        $response = $this->get(route('tenaga-pendidikan.show', 3));
+
+        $response->assertOk()
+            ->assertSee('Bambang Triyono, S.T')
+            ->assertSee('Institut Teknologi Bandung')
+            ->assertSee('Teknik Elektro dan Informatika')
+            ->assertSee('Belum ada sertifikasi');
     }
 
     /** @param array<int, array<string, mixed>> $records */

@@ -18,6 +18,7 @@
         </div>
     </div>
 
+    <!-- Accent Border & Nav Items Container -->
     <div class="relative -mt-5 flex-1 flex flex-col bg-secondary rounded-t-[32px] pt-[5px] overflow-hidden">
         <div class="flex-1 bg-primary rounded-t-[27px] px-3.5 py-5 overflow-y-auto overflow-x-hidden">
 
@@ -57,7 +58,7 @@
                     </button>
 
                     <div id="submenu-akun"
-                        data-is-active="{{ $isUserMgmtActive ? "true" : "false" }}"
+                        data-is-active="{{ $isUserMgmtActive ? 'true' : 'false' }}"
                         class="submenu-container {{ $isUserMgmtActive ? '' : 'hidden' }} pl-10 pr-2 pt-1 pb-1 space-y-1.5">
                         <a href="{{ route('users.index') }}"
                             class="flex items-center gap-2.5 py-2.5 px-3.5 rounded-xl text-sm font-semibold transition-all duration-150 {{ request()->routeIs('users.*') ? 'bg-white/20 text-white shadow-xs font-bold' : 'text-white/80 hover:text-white hover:bg-white/10' }}">
@@ -82,7 +83,7 @@
 
                 <!-- Data Perguruan Tinggi -->
                 @php
-                    $isPtActive = request()->routeIs('perguruan-tinggi.*') || request()->routeIs('upps.*') || request()->routeIs('prodi.*') || request()->routeIs('program-studi.*') || request()->routeIs('tahun-akademik.*');
+                    $isPtActive = request()->routeIs('perguruan-tinggi.*') || request()->routeIs('upps.*') || request()->routeIs('prodi.*') || request()->routeIs('program-studi.*') || request()->routeIs('tahun-akademik.*') || request()->routeIs('kurikulum.*');
                 @endphp
                 <div>
                     <button type="button"
@@ -103,7 +104,7 @@
                     </button>
 
                     <div id="submenu-pt"
-                        data-is-active="{{ $isPtActive ? "true" : "false" }}"
+                        data-is-active="{{ $isPtActive ? 'true' : 'false' }}"
                         class="submenu-container {{ $isPtActive ? '' : 'hidden' }} pl-10 pr-2 pt-1 pb-1 space-y-1.5">
                         <a href="{{ Route::has('perguruan-tinggi.index') ? route('perguruan-tinggi.index') : '#' }}"
                             class="flex items-center gap-2.5 py-2.5 px-3.5 rounded-xl text-sm font-semibold transition-all duration-150 {{ request()->routeIs('perguruan-tinggi.*') ? 'bg-white/20 text-white shadow-xs font-bold' : 'text-white/80 hover:text-white hover:bg-white/10' }}">
@@ -122,6 +123,12 @@
                             <span
                                 class="w-1.5 h-1.5 rounded-full {{ request()->routeIs('tahun-akademik.*') ? 'bg-secondary' : 'bg-white/40' }} shrink-0"></span>
                             <span>Tahun Akademik</span>
+                        </a>
+                        <a href="{{ Route::has('kurikulum.index') ? route('kurikulum.index') : '#' }}"
+                            class="flex items-center gap-2.5 py-2.5 px-3.5 rounded-xl text-sm font-semibold transition-all duration-150 {{ request()->routeIs('kurikulum.*') ? 'bg-white/20 text-white shadow-xs font-bold' : 'text-white/80 hover:text-white hover:bg-white/10' }}">
+                            <span
+                                class="w-1.5 h-1.5 rounded-full {{ request()->routeIs('kurikulum.*') ? 'bg-secondary' : 'bg-white/40' }} shrink-0"></span>
+                            <span>Kurikulum</span>
                         </a>
                     </div>
                 </div>
@@ -149,7 +156,7 @@
                     </button>
 
                     <div id="submenu-kemahasiswaan"
-                        data-is-active="{{ $isKemahasiswaanActive ? "true" : "false" }}"
+                        data-is-active="{{ $isKemahasiswaanActive ? 'true' : 'false' }}"
                         class="submenu-container {{ $isKemahasiswaanActive ? '' : 'hidden' }} pl-10 pr-2 pt-1 pb-1 space-y-1.5">
                         <a href="{{ route('angkatan.index') }}"
                             class="flex items-center gap-2.5 py-2.5 px-3.5 rounded-xl text-sm font-semibold transition-all duration-150 {{ request()->routeIs('angkatan.*') ? 'bg-white/20 text-white shadow-xs font-bold' : 'text-white/80 hover:text-white hover:bg-white/10' }}">
@@ -172,9 +179,43 @@
                     </div>
                 </div>
 
+                <!-- Kurikulum & Mata Kuliah -->
+                @php
+                    $isKurikulumMkActive = request()->routeIs('mata-kuliah.*') || request()->routeIs('kurikulum.*');
+                @endphp
+                <div>
+                    <button type="button"
+                        class="sidebar-link submenu-toggle-btn w-full flex items-center justify-between gap-3.5 px-3.5 py-3 rounded-2xl text-sm font-medium {{ $isKurikulumMkActive ? 'bg-white/15 text-white' : 'text-white/80 hover:bg-white/10 hover:text-white' }} transition-all duration-150 group cursor-pointer"
+                        data-target="submenu-kurikulum-mk" title="Kurikulum & Mata Kuliah">
+                        <div class="flex items-center gap-3.5 min-w-0">
+                            <svg class="w-6 h-6 shrink-0 fill-none stroke-current text-white/90" stroke-width="1.8" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.042A8.967 8.967 0 0 0 6 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 0 1 6 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 0 1 6-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0 0 18 18a8.967 8.967 0 0 0-6 2.292m0-14.25v14.25" />
+                            </svg>
+                            <span class="sidebar-text truncate">Kurikulum & Mata Kuliah</span>
+                        </div>
+                        <svg class="submenu-chevron sidebar-chevron w-4 h-4 text-white/60 group-hover:text-white transition-transform duration-200 {{ $isKurikulumMkActive ? 'rotate-180' : '' }}"
+                            fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
+                        </svg>
+                    </button>
+
+                    <div id="submenu-kurikulum-mk"
+                        data-is-active="{{ $isKurikulumMkActive ? 'true' : 'false' }}"
+                        class="submenu-container {{ $isKurikulumMkActive ? '' : 'hidden' }} pl-10 pr-2 pt-1 pb-1 space-y-1.5">
+                        <a href="{{ route('mata-kuliah.index') }}"
+                            class="flex items-center gap-2.5 py-2.5 px-3.5 rounded-xl text-sm font-semibold transition-all duration-150 {{ request()->routeIs('mata-kuliah.*') ? 'bg-white/20 text-white shadow-xs font-bold' : 'text-white/80 hover:text-white hover:bg-white/10' }}">
+                            <span
+                                class="w-1.5 h-1.5 rounded-full {{ request()->routeIs('mata-kuliah.*') ? 'bg-secondary' : 'bg-white/40' }} shrink-0"></span>
+                            <span>Mata Kuliah</span>
+                        </a>
+                    </div>
+                </div>
+
                 <!-- SDM -->
                 @php
-                    $isSdmActive = request()->routeIs('dosen.*') || request()->routeIs('tenaga-kependidikan.*') || request()->routeIs('tenaga-pendidikan.*') || request()->routeIs('sertifikasi.*');
+                    $isTendikPage = request()->routeIs('tenaga-kependidikan.*') || request()->routeIs('tenaga-pendidikan.*') || (request()->routeIs('pendidikan.*') && (request()->filled('id_tendik') || !empty($selectedTendik)));
+                    $isDosenPage = request()->routeIs('dosen.*') || (request()->routeIs('pendidikan.*') && !empty($isDosen)) || (request()->routeIs('pendidikan.*') && (request()->filled('id_dosen') || !empty($selectedDosen)));
+                    $isSdmActive = $isDosenPage || $isTendikPage || request()->routeIs('sertifikasi.*');
                 @endphp
                 <div>
                     <button 
@@ -197,12 +238,12 @@
                     <div id="submenu-sdm" 
                         data-is-active="{{ $isSdmActive ? 'true' : 'false' }}"
                         class="submenu-container {{ $isSdmActive ? '' : 'hidden' }} pl-10 pr-2 pt-1 pb-1 space-y-1.5">
-                        <a href="{{ route('dosen.index') }}" class="flex items-center gap-2.5 py-2.5 px-3.5 rounded-xl text-sm font-semibold transition-all duration-150 {{ request()->routeIs('dosen.*') ? 'bg-white/20 text-white shadow-xs font-bold' : 'text-white/80 hover:text-white hover:bg-white/10' }}">
-                            <span class="w-1.5 h-1.5 rounded-full {{ request()->routeIs('dosen.*') ? 'bg-secondary' : 'bg-white/40' }} shrink-0"></span>
+                        <a href="{{ route('dosen.index') }}" class="flex items-center gap-2.5 py-2.5 px-3.5 rounded-xl text-sm font-semibold transition-all duration-150 {{ $isDosenPage ? 'bg-white/20 text-white shadow-xs font-bold' : 'text-white/80 hover:text-white hover:bg-white/10' }}">
+                            <span class="w-1.5 h-1.5 rounded-full {{ $isDosenPage ? 'bg-secondary' : 'bg-white/40' }} shrink-0"></span>
                             <span>Dosen</span>
                         </a>
-                        <a href="{{ route('tenaga-kependidikan.index') }}" class="flex items-center gap-2.5 py-2.5 px-3.5 rounded-xl text-sm font-semibold transition-all duration-150 {{ (request()->routeIs('tenaga-kependidikan.*') || request()->routeIs('tenaga-pendidikan.*')) ? 'bg-white/20 text-white shadow-xs font-bold' : 'text-white/80 hover:text-white hover:bg-white/10' }}">
-                            <span class="w-1.5 h-1.5 rounded-full {{ (request()->routeIs('tenaga-kependidikan.*') || request()->routeIs('tenaga-pendidikan.*')) ? 'bg-secondary' : 'bg-white/40' }} shrink-0"></span>
+                        <a href="{{ route('tenaga-kependidikan.index') }}" class="flex items-center gap-2.5 py-2.5 px-3.5 rounded-xl text-sm font-semibold transition-all duration-150 {{ $isTendikPage ? 'bg-white/20 text-white shadow-xs font-bold' : 'text-white/80 hover:text-white hover:bg-white/10' }}">
+                            <span class="w-1.5 h-1.5 rounded-full {{ $isTendikPage ? 'bg-secondary' : 'bg-white/40' }} shrink-0"></span>
                             <span>Tenaga Kependidikan</span>
                         </a>
                         <a href="{{ route('sertifikasi.index') }}" class="flex items-center gap-2.5 py-2.5 px-3.5 rounded-xl text-sm font-semibold transition-all duration-150 {{ request()->routeIs('sertifikasi.*') ? 'bg-white/20 text-white shadow-xs font-bold' : 'text-white/80 hover:text-white hover:bg-white/10' }}">

@@ -57,10 +57,10 @@
     }
 @endphp
 
-<div class="flex flex-col sm:flex-row items-center justify-between gap-3 pt-3 text-xs text-gray-700">
+<div class="flex flex-col sm:flex-row items-center justify-between gap-3 pt-4 text-xs sm:text-[13px] text-black">
     <div>
         @if($total > 0)
-            <span>Menampilkan {{ $fromFormatted }}–{{ $toFormatted }}{{ $showTotal ? ' dari ' . $total : ' Data' }}</span>
+            <span>Menampilkan {{ $fromFormatted }}–{{ $toFormatted }} Data{{ $showTotal ? ' dari ' . $total : '' }}</span>
         @else
             <span>Menampilkan 0 dari 0 data</span>
         @endif

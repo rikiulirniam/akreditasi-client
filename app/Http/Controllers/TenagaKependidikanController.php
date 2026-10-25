@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Services\TridharmaService;
+use App\Services\TenagaKependidikanService;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\Response;
 use Illuminate\Http\JsonResponse;
@@ -10,19 +10,21 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
 use Illuminate\View\View;
 
 class TenagaKependidikanController extends Controller
 {
     public function __construct(
-        protected TridharmaService $tridharmaService,
+        protected TenagaKependidikanService $tridharmaService,
     ) {}
 
     public function index(Request $request): View|RedirectResponse
     {
         $search = trim((string) $request->query('cari', $request->query('search', '')));
         $selectedJabatan = trim((string) $request->query('jabatan', ''));
+        $selectedKualifikasi = trim((string) $request->query('kualifikasi', ''));
 
         try {
             $tendikResponse = $this->tridharmaService->getTendikList(array_filter([
@@ -52,7 +54,7 @@ class TenagaKependidikanController extends Controller
                 ? $this->listData($pendidikanResponse)
                 : [];
 
-            $pendidikan = collect($rawPendidikan)
+            $apiPendidikan = collect($rawPendidikan)
                 ->map(function (array $item) {
                     $id = $item['id_pendidikan'] ?? $item['id'] ?? null;
                     $jenjang = $item['jenjang'] ?? $item['nama_pendidikan'] ?? null;
@@ -64,21 +66,44 @@ class TenagaKependidikanController extends Controller
                     ];
                 })
                 ->filter(fn (array $item) => ! empty($item['id']) && $item['jenjang'] !== '')
+                ->all();
+
+            $standardOptions = [
+                ['id' => 4, 'id_pendidikan' => 4, 'jenjang' => 'D4/S1'],
+                ['id' => 1, 'id_pendidikan' => 1, 'jenjang' => 'S2'],
+                ['id' => 3, 'id_pendidikan' => 3, 'jenjang' => 'S3'],
+            ];
+
+            // Merge API items with standard options so D4/S1, S2, S3 are always present, ordered D4/S1 to S3
+            $pendidikan = collect($apiPendidikan)
+                ->concat($standardOptions)
                 ->unique(fn (array $item) => Str::lower($item['jenjang']))
+                ->sortBy(function (array $item) {
+                    $val = Str::lower($item['jenjang']);
+                    if ($val === 'd4/s1' || $val === 's1' || $val === 'd4' || Str::startsWith($val, 's1') || Str::startsWith($val, 'd4')) {
+                        return 1;
+                    }
+                    if ($val === 's2' || Str::startsWith($val, 's2')) {
+                        return 2;
+                    }
+                    if ($val === 's3' || Str::startsWith($val, 's3')) {
+                        return 3;
+                    }
+
+                    return 10;
+                })
                 ->values()
                 ->all();
 
-            if (empty($pendidikan)) {
-                $pendidikan = [
-                    ['id' => 4, 'id_pendidikan' => 4, 'jenjang' => 'D4/S1'],
-                    ['id' => 1, 'id_pendidikan' => 1, 'jenjang' => 'S2'],
-                    ['id' => 3, 'id_pendidikan' => 3, 'jenjang' => 'S3'],
-                ];
-            }
-
-            $pendidikanById = collect($pendidikan)->mapWithKeys(fn (array $item) => [
+            $apiPendidikanById = collect($apiPendidikan)->mapWithKeys(fn (array $item) => [
                 (string) ($item['id'] ?? '') => (string) ($item['jenjang'] ?? ''),
             ])->all();
+
+            $standardPendidikanById = collect($standardOptions)->mapWithKeys(fn (array $item) => [
+                (string) ($item['id'] ?? '') => (string) ($item['jenjang'] ?? ''),
+            ])->all();
+
+            $pendidikanById = $apiPendidikanById + $standardPendidikanById;
 
             $items = collect($this->listData($tendikResponse))
                 ->map(fn (array $item) => $this->normalizeTendik($item, $pendidikanById))
@@ -100,6 +125,14 @@ class TenagaKependidikanController extends Controller
                     return $collection->filter(fn ($item) => Str::contains(Str::lower($item['jabatan']), $needle)
                     );
                 })
+                ->when($selectedKualifikasi !== '', function ($collection) use ($selectedKualifikasi) {
+                    $needle = Str::lower($selectedKualifikasi);
+                    if ($needle === 'all data' || $needle === 'all' || $needle === 'semua kualifikasi') {
+                        return $collection;
+                    }
+
+                    return $collection->filter(fn ($item) => Str::contains(Str::lower($item['kualifikasi']), $needle));
+                })
                 ->values();
 
             $jabatans = collect($this->listData($tendikResponse))
@@ -109,7 +142,7 @@ class TenagaKependidikanController extends Controller
                 ->sort()
                 ->values();
 
-            $perPage = 9;
+            $perPage = 8;
             $currentPage = max(1, (int) $request->query('page', 1));
             $totalData = $items->count();
 
@@ -133,6 +166,7 @@ class TenagaKependidikanController extends Controller
                 'totalData' => $totalData,
                 'search' => $search,
                 'selectedJabatan' => $selectedJabatan,
+                'selectedKualifikasi' => $selectedKualifikasi,
                 'jabatans' => $jabatans,
                 'pendidikan' => $pendidikan,
                 'apiError' => null,
@@ -145,6 +179,34 @@ class TenagaKependidikanController extends Controller
                 'Tidak dapat terhubung ke layanan Tendik. Periksa koneksi lalu coba lagi.',
             );
         }
+    }
+
+    public function storePendidikan(Request $request, int|string $tendikId): RedirectResponse
+    {
+        $validated = $request->validate([
+            'gelar' => ['nullable', 'string', 'max:100'],
+            'jenjang' => ['required', 'string', 'max:50'],
+            'institusi' => ['nullable', 'string', 'max:255'],
+            'program_studi' => ['nullable', 'string', 'max:255'],
+            'tahun_lulus' => ['nullable', 'string', 'max:10'],
+        ], [
+            'jenjang.required' => 'Jenjang pendidikan wajib dipilih.',
+        ]);
+
+        $this->tridharmaService->storeTendikPendidikan((int) $tendikId, [
+            'jenjang' => $validated['jenjang'],
+            'gelar' => $validated['gelar'] ?? null,
+            'universitas' => $validated['institusi'] ?? null,
+            'institusi' => $validated['institusi'] ?? null,
+            'program_studi' => $validated['program_studi'] ?? null,
+            'tahun_lulus' => $validated['tahun_lulus'] ?? null,
+        ]);
+
+        return redirect()->route('tenaga-kependidikan.show', $tendikId)->with('toast', [
+            'type' => 'success',
+            'title' => 'Berhasil',
+            'message' => 'Pendidikan berhasil ditambahkan.',
+        ]);
     }
 
     public function create(): RedirectResponse
@@ -227,26 +289,13 @@ class TenagaKependidikanController extends Controller
                 return response()->json(['success' => true, 'data' => $tendik]);
             }
 
-            $sertifikasiResponse = $this->tridharmaService->getSertifikasiList([
-                'tipe_pemilik' => 'tendik',
-                'id_tendik' => (int) $id,
-                'per_page' => 100,
-                'page' => 1,
-            ]);
-
-            if ($sertifikasiResponse->status() === 401) {
-                return $this->expiredSession();
-            }
+            $sertifikasis = $this->tridharmaService->getTendikSertifikasiList((int) $id);
 
             return view('tenaga-kependidikan.show', [
                 'tenagaKependidikan' => $tendik,
-                'kualifikasis' => $this->qualificationCards($record, $tendik),
-                'sertifikasis' => $this->apiSucceeded($sertifikasiResponse)
-                    ? $this->listData($sertifikasiResponse)
-                    : [],
-                'detailApiError' => $this->apiSucceeded($sertifikasiResponse)
-                    ? null
-                    : $this->apiErrorMessage($sertifikasiResponse, 'Sertifikasi tidak dapat dimuat.'),
+                'kualifikasis' => $this->mergeKualifikasi($record, $tendik, (int) $id),
+                'sertifikasis' => $sertifikasis,
+                'detailApiError' => null,
             ]);
         } catch (ConnectionException) {
             if ($request->expectsJson()) {
@@ -304,10 +353,11 @@ class TenagaKependidikanController extends Controller
             ?? 'https://drive.google.com/';
 
         try {
-            $response = $this->tridharmaService->createSertifikasi(
+            $response = $this->tridharmaService->storeTendikSertifikasi(
+                (int) $id,
                 $payload,
                 $request->file('evidence_file'),
-                asMultipart: true,
+                true,
             );
 
             if ($response->status() === 401) {
@@ -370,7 +420,7 @@ class TenagaKependidikanController extends Controller
         $payload['url_sertifikasi'] = $validated['url_sertifikasi'] ?? $validated['url_drive'] ?? 'https://drive.google.com/';
 
         try {
-            $response = $this->tridharmaService->updateSertifikasi($sertifikasiId, $payload);
+            $response = $this->tridharmaService->updateTendikSertifikasi((int) $tendikId, (int) $sertifikasiId, $payload);
 
             if ($response->status() === 401) {
                 return $this->expiredSession();
@@ -401,7 +451,7 @@ class TenagaKependidikanController extends Controller
     public function destroySertifikasi(int|string $tendikId, int|string $sertifikasiId): RedirectResponse
     {
         try {
-            $response = $this->tridharmaService->deleteSertifikasi($sertifikasiId);
+            $response = $this->tridharmaService->deleteTendikSertifikasi((int) $tendikId, (int) $sertifikasiId);
 
             if ($response->status() === 401) {
                 return $this->expiredSession();
@@ -409,9 +459,9 @@ class TenagaKependidikanController extends Controller
 
             if ($this->apiSucceeded($response)) {
                 return redirect()->route('tenaga-pendidikan.show', $tendikId)->with('toast', [
-                    'type' => 'success',
-                    'title' => 'Berhasil',
-                    'message' => $response->json('message') ?: 'Sertifikasi berhasil dihapus.',
+                    'type' => 'delete',
+                    'title' => '',
+                    'message' => 'Data berhasil dihapus',
                 ]);
             }
 
@@ -509,14 +559,18 @@ class TenagaKependidikanController extends Controller
 
         $id = $record['id'] ?? $record['id_tendik'] ?? '';
 
+        $bidangKeahlian = (string) ($record['bidang_keahlian'] ?? (is_array($pendidikan) ? ($pendidikan['program_studi'] ?? '') : ''));
+        $email = (string) ($record['email'] ?? '');
+        $status = (string) ($record['status'] ?? ($record['status_kepegawaian'] ?? ''));
+
         return [
             'id' => $id,
             'nama' => (string) ($record['nama_tendik'] ?? $record['nama'] ?? ''),
             'nip' => (string) ($record['nip'] ?? ''),
             'jabatan' => (string) ($record['jabatan_tendik'] ?? $record['jabatan'] ?? ''),
-            'bidang_keahlian' => (string) ($record['bidang_keahlian'] ?? ''),
-            'email' => (string) ($record['email'] ?? ''),
-            'status' => (string) ($record['status'] ?? ''),
+            'bidang_keahlian' => $bidangKeahlian,
+            'email' => $email,
+            'status' => $status,
             'id_pendidikan' => $pendidikanId,
             'kualifikasi' => (string) ($kualifikasi ?: ($pendidikanById[$pendidikanId] ?? '-')),
         ];
@@ -537,10 +591,22 @@ class TenagaKependidikanController extends Controller
             return array_map(fn (array $item) => [
                 'gelar' => (string) ($item['gelar'] ?? $item['jenjang'] ?? $tendik['kualifikasi']),
                 'jenjang' => (string) ($item['jenjang'] ?? ''),
-                'institusi' => (string) ($item['institusi'] ?? ''),
+                'institusi' => (string) ($item['institusi'] ?? $item['universitas'] ?? ''),
                 'program_studi' => (string) ($item['program_studi'] ?? ''),
                 'tahun_lulus' => (string) ($item['tahun_lulus'] ?? ''),
             ], array_filter($qualifications, 'is_array'));
+        }
+
+        if (isset($record['pendidikan']) && is_array($record['pendidikan']) && (! empty($record['pendidikan']['jenjang']) || ! empty($record['pendidikan']['universitas']))) {
+            $p = $record['pendidikan'];
+
+            return [[
+                'gelar' => (string) ($p['gelar'] ?? $p['jenjang'] ?? $tendik['kualifikasi']),
+                'jenjang' => (string) ($p['jenjang'] ?? ''),
+                'institusi' => (string) ($p['universitas'] ?? $p['institusi'] ?? ''),
+                'program_studi' => (string) ($p['program_studi'] ?? ''),
+                'tahun_lulus' => (string) ($p['tahun_lulus'] ?? ''),
+            ]];
         }
 
         return $tendik['kualifikasi'] !== '-'
@@ -552,6 +618,18 @@ class TenagaKependidikanController extends Controller
                 'tahun_lulus' => '',
             ]]
             : [];
+    }
+
+    /**
+     * Merge kualifikasi from API record with all cached extra pendidikan IDs (stored via cache).
+     *
+     * @param  array<string, mixed>  $record
+     * @param  array<string, mixed>  $tendik
+     * @return array<int, array<string, string>>
+     */
+    private function mergeKualifikasi(array $record, array $tendik, int $tendikApiId): array
+    {
+        return $this->tridharmaService->getTendikPendidikanList($tendikApiId, $record);
     }
 
     /** @return array<int, array<string, mixed>> */
@@ -567,7 +645,16 @@ class TenagaKependidikanController extends Controller
 
     private function apiSucceeded(Response $response): bool
     {
-        return $response->successful() && $response->json('success') === true;
+        if (! $response->successful()) {
+            return false;
+        }
+
+        $success = $response->json('success');
+        if ($success !== null) {
+            return (bool) $success;
+        }
+
+        return $response->status() >= 200 && $response->status() < 300;
     }
 
     private function handleMutationResponse(Response $response, string $successFallback, int|string|null $editingId = null): JsonResponse|RedirectResponse
