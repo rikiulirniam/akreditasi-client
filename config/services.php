@@ -39,6 +39,10 @@ return [
         'base_url' => env('AKADEMIK_API_URL', 'https://akademik.fayra.my.id/api'),
     ],
 
+    'akreditasi' => [
+        'base_url' => env('AKREDITASI_API_URL', 'https://akreditasi.fayra.my.id/api/v1'),
+    ],
+
     'google' => [
         'client_id' => env('GOOGLE_CLIENT_ID'),
         'client_secret' => env('GOOGLE_CLIENT_SECRET'),

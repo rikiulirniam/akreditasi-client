@@ -37,7 +37,6 @@ class AkademikService
 
         $client = Http::acceptJson()
             ->asJson()
-            ->withoutVerifying()
             ->timeout(20);
 
         if (! empty($resolvedToken)) {
