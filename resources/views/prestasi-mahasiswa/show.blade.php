@@ -7,6 +7,10 @@
     $namaAktivitas = $prestasi['nama_aktivitas'] ?? '-';
     $tahunPrestasi = $prestasi['tahun'] ?? '-';
     $jenisPrestasi = $jenisPrestasi ?? '-';
+    $currentEvidence = $evidenceList[0]['evidence'] ?? '';
+    $editEvidenceUrl = filter_var($currentEvidence, FILTER_VALIDATE_URL)
+        ? $currentEvidence
+        : ($currentEvidence !== '' ? \Illuminate\Support\Facades\Storage::disk('public')->url($currentEvidence) : '');
 @endphp
 
 @section('title', 'Detail Prestasi Mahasiswa')
@@ -171,7 +175,7 @@
 <div id="editPrestasiDetailModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/45 p-4 opacity-0 pointer-events-none transition-all duration-200" role="dialog" aria-modal="true" aria-labelledby="editPrestasiDetailTitle">
     <div class="edit-prestasi-detail-card max-h-[92vh] w-full max-w-[460px] transform overflow-y-auto rounded-[28px] bg-white p-8 shadow-2xl transition-all duration-200 scale-95">
         <h3 id="editPrestasiDetailTitle" class="mb-6 text-center text-xl font-bold text-gray-900">Perbarui Prestasi Mahasiswa</h3>
-        <form action="{{ route('prestasi-mahasiswa.update', $prestasiId) }}" method="POST" enctype="multipart/form-data" class="space-y-4">
+        <form action="{{ route('prestasi-mahasiswa.update', $prestasiId) }}" method="POST" class="space-y-4">
             @csrf
             @method('PUT')
             <div>
@@ -200,8 +204,8 @@
                 <input id="editPrestasiTahun" type="number" name="tahun" value="{{ $tahunPrestasi }}" min="1900" max="2100" required class="w-full rounded-[10px] bg-gray-100 px-4 py-2.5 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-primary/30">
             </div>
             <div>
-                <label for="editPrestasiCertificateDetail" class="mb-1.5 block text-xs font-bold text-gray-900">Sertifikat (opsional)</label>
-                <input id="editPrestasiCertificateDetail" type="file" name="certificate" accept=".pdf,.jpg,.jpeg,.png" class="w-full rounded-[10px] bg-gray-100 px-3 py-2.5 text-sm text-gray-700">
+                <label for="editPrestasiEvidenceDetail" class="mb-1.5 block text-xs font-bold text-gray-900">Link Sertifikat (opsional)</label>
+                <input id="editPrestasiEvidenceDetail" type="url" name="evidence" value="{{ $editEvidenceUrl }}" maxlength="2048" placeholder="https://contoh.com/sertifikat" class="w-full rounded-[10px] bg-gray-100 px-4 py-2.5 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-primary/30">
             </div>
             <div class="grid grid-cols-2 gap-4 pt-3">
                 <button type="button" id="closeEditPrestasiDetailBtn" class="w-full rounded-xl bg-gray-200 px-5 py-3 text-sm font-bold text-gray-800 transition hover:bg-gray-300">Batal</button>
@@ -260,8 +264,19 @@
         });
 
         [prestasiModal, relatedModal].forEach(dialog => {
+            let pointerStartedOnBackdrop = false;
+
+            dialog.addEventListener('pointerdown', event => {
+                pointerStartedOnBackdrop = event.target === dialog;
+            });
             dialog.addEventListener('click', event => {
-                if (event.target === dialog) setDialogVisible(dialog, false);
+                if (event.target === dialog && pointerStartedOnBackdrop) {
+                    setDialogVisible(dialog, false);
+                }
+                pointerStartedOnBackdrop = false;
+            });
+            dialog.addEventListener('pointercancel', () => {
+                pointerStartedOnBackdrop = false;
             });
         });
         document.addEventListener('keydown', event => {

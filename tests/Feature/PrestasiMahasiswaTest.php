@@ -3,9 +3,7 @@
 namespace Tests\Feature;
 
 use Illuminate\Http\Client\Request as HttpRequest;
-use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 class PrestasiMahasiswaTest extends TestCase
@@ -83,7 +81,6 @@ class PrestasiMahasiswaTest extends TestCase
 
     public function test_user_can_create_an_achievement_through_akademik_service(): void
     {
-        Storage::fake('public');
         Http::fake([
             '*/api/prestasi-mahasiswa' => Http::response([
                 'success' => true,
@@ -109,7 +106,7 @@ class PrestasiMahasiswaTest extends TestCase
             'nama_aktivitas' => ' Juara 1 OSN ',
             'jenis' => 'Akademik',
             'tahun' => 2024,
-            'certificate' => UploadedFile::fake()->create('sertifikat.pdf', 100, 'application/pdf'),
+            'evidence' => ' https://example.com/sertifikat.pdf ',
         ]);
 
         $response->assertRedirect(route('prestasi-mahasiswa.index'));
@@ -128,8 +125,7 @@ class PrestasiMahasiswaTest extends TestCase
         Http::assertSent(fn (HttpRequest $request) => $request->method() === 'POST'
             && str_ends_with($request->url(), '/api/evidence-prestasi-mahasiswa')
             && $request->data()['id_prestasi_mahasiswa'] === 7
-            && str_contains($request->data()['evidence'], '/storage/prestasi-mahasiswa/'));
-        $this->assertCount(1, Storage::disk('public')->allFiles('prestasi-mahasiswa'));
+            && $request->data()['evidence'] === 'https://example.com/sertifikat.pdf');
     }
 
     public function test_user_can_update_and_delete_an_achievement(): void
@@ -163,6 +159,54 @@ class PrestasiMahasiswaTest extends TestCase
             ]);
         Http::assertSent(fn (HttpRequest $request) => $request->method() === 'DELETE'
             && str_ends_with($request->url(), '/api/prestasi-mahasiswa/7'));
+    }
+
+    public function test_user_can_update_achievement_certificate_using_a_link(): void
+    {
+        Http::fake([
+            '*/api/prestasi-mahasiswa/7' => Http::response(['success' => true]),
+            '*/api/jenis-prestasi/15' => Http::response(['success' => true]),
+            '*/api/evidence-prestasi-mahasiswa/12' => Http::response(['success' => true]),
+            '*/api/jenis-prestasi*' => Http::response([
+                'success' => true,
+                'data' => [['id' => 15, 'id_prestasi_mahasiswa' => 7, 'jenis' => 'Akademik']],
+            ]),
+            '*/api/evidence-prestasi-mahasiswa*' => Http::response([
+                'success' => true,
+                'data' => [['id' => 12, 'id_prestasi_mahasiswa' => 7, 'evidence' => 'https://example.com/old-certificate']],
+            ]),
+            '*' => Http::response(['success' => true, 'data' => []]),
+        ]);
+
+        $response = $this->authenticate()->put(route('prestasi-mahasiswa.update', 7), [
+            'id_mahasiswa' => 1,
+            'nama_aktivitas' => 'Juara 1 OSN',
+            'jenis' => 'Akademik',
+            'tahun' => 2024,
+            'evidence' => 'https://example.com/new-certificate',
+        ]);
+
+        $response->assertRedirect(route('prestasi-mahasiswa.index'));
+        $this->assertSame('success', session('toast.type'));
+        Http::assertSent(fn (HttpRequest $request) => $request->method() === 'PUT'
+            && str_ends_with($request->url(), '/api/evidence-prestasi-mahasiswa/12')
+            && $request->data() === [
+                'id_prestasi_mahasiswa' => 7,
+                'evidence' => 'https://example.com/new-certificate',
+            ]);
+    }
+
+    public function test_user_cannot_update_achievement_with_an_invalid_certificate_link(): void
+    {
+        $response = $this->authenticate()->put(route('prestasi-mahasiswa.update', 7), [
+            'id_mahasiswa' => 1,
+            'nama_aktivitas' => 'Juara 1 OSN',
+            'jenis' => 'Akademik',
+            'tahun' => 2024,
+            'evidence' => 'not-a-url',
+        ]);
+
+        $response->assertSessionHasErrors(['evidence']);
     }
 
     public function test_user_can_view_achievement_with_evidence_and_type_records(): void
@@ -266,7 +310,21 @@ class PrestasiMahasiswaTest extends TestCase
             'tahun' => 1800,
         ]);
 
-        $response->assertSessionHasErrors(['id_mahasiswa', 'angkatan_kelas_id', 'nama_aktivitas', 'jenis', 'tahun', 'certificate']);
+        $response->assertSessionHasErrors(['id_mahasiswa', 'angkatan_kelas_id', 'nama_aktivitas', 'jenis', 'tahun', 'evidence']);
+    }
+
+    public function test_user_cannot_create_achievement_with_invalid_certificate_link(): void
+    {
+        $response = $this->authenticate()->post(route('prestasi-mahasiswa.store'), [
+            'id_mahasiswa' => 1,
+            'angkatan_kelas_id' => 3,
+            'nama_aktivitas' => 'Juara 1 OSN',
+            'jenis' => 'Akademik',
+            'tahun' => 2024,
+            'evidence' => 'bukan-link-valid',
+        ]);
+
+        $response->assertSessionHasErrors(['evidence']);
     }
 
     public function test_list_is_paginated_to_nine_rows_and_searches_related_fields(): void

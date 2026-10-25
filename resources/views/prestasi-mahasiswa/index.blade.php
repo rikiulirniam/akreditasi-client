@@ -159,7 +159,7 @@
             <span id="prestasiStepTwoIndicator" class="flex h-6 w-6 items-center justify-center rounded-full bg-gray-300 text-xs font-bold text-gray-700">2</span>
         </div>
 
-        <form id="prestasiForm" action="{{ route('prestasi-mahasiswa.store') }}" method="POST" enctype="multipart/form-data" class="space-y-3">
+        <form id="prestasiForm" action="{{ route('prestasi-mahasiswa.store') }}" method="POST" class="space-y-3">
             @csrf
             <input type="hidden" name="_method" id="prestasiFormMethod" value="POST">
 
@@ -218,8 +218,8 @@
                     <input id="prestasiTahunInput" type="number" name="tahun" min="1900" max="2100" value="{{ date('Y') }}" required class="w-full rounded-md bg-gray-200 px-4 py-2.5 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-primary/30">
                 </div>
                 <div>
-                    <label for="prestasiCertificateInput" class="mb-1 block text-xs font-bold text-gray-900">Sertifikat (PDF/JPG/PNG, maks. 10 MB)</label>
-                    <input id="prestasiCertificateInput" type="file" name="certificate" accept=".pdf,.jpg,.jpeg,.png" required class="w-full rounded-md bg-gray-200 px-3 py-2 text-sm text-gray-700 file:mr-3 file:rounded file:border-0 file:bg-gray-300 file:px-3 file:py-1.5 file:text-xs file:font-semibold">
+                    <label for="prestasiEvidenceInput" class="mb-1 block text-xs font-bold text-gray-900">Link Sertifikat</label>
+                    <input id="prestasiEvidenceInput" type="url" name="evidence" maxlength="2048" required placeholder="https://contoh.com/sertifikat" class="w-full rounded-md bg-gray-200 px-4 py-2.5 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-primary/30">
                 </div>
                 <div class="grid grid-cols-2 gap-3 pt-4">
                     <button type="button" id="backPrestasiWizardBtn" class="w-full rounded-md bg-gray-200 px-5 py-2.5 text-sm font-bold text-gray-900 transition hover:bg-gray-300">Kembali</button>
@@ -233,7 +233,7 @@
 <div id="editPrestasiModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/45 p-4 opacity-0 pointer-events-none transition-all duration-200" role="dialog" aria-modal="true" aria-labelledby="editPrestasiTitle">
     <div class="edit-prestasi-card max-h-[92vh] w-full max-w-[460px] transform overflow-y-auto rounded-[18px] bg-white p-7 shadow-2xl transition-all duration-200 scale-95">
         <h3 id="editPrestasiTitle" class="mb-6 text-center text-lg font-bold text-gray-900">Update Prestasi Mahasiswa</h3>
-        <form id="editPrestasiForm" method="POST" enctype="multipart/form-data" class="space-y-3">
+        <form id="editPrestasiForm" method="POST" class="space-y-3">
             @csrf
             @method('PUT')
             <div>
@@ -265,8 +265,8 @@
                 <input id="editPrestasiTahun" type="number" name="tahun" min="1900" max="2100" required class="w-full rounded-md bg-gray-200 px-4 py-2.5 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-primary/30">
             </div>
             <div>
-                <label for="editPrestasiCertificate" class="mb-1 block text-xs font-bold text-gray-900">Sertifikat (opsional)</label>
-                <input id="editPrestasiCertificate" type="file" name="certificate" accept=".pdf,.jpg,.jpeg,.png" class="w-full rounded-md bg-gray-200 px-3 py-2 text-sm text-gray-700 file:mr-3 file:rounded file:border-0 file:bg-gray-300 file:px-3 file:py-1.5 file:text-xs file:font-semibold">
+                <label for="editPrestasiEvidence" class="mb-1 block text-xs font-bold text-gray-900">Link Sertifikat (opsional)</label>
+                <input id="editPrestasiEvidence" type="url" name="evidence" maxlength="2048" placeholder="https://contoh.com/sertifikat" class="w-full rounded-md bg-gray-200 px-4 py-2.5 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-primary/30">
             </div>
             <a id="editPrestasiExistingEvidence" class="hidden break-all text-xs font-medium text-additional hover:underline" target="_blank" rel="noopener noreferrer">Lihat sertifikat saat ini</a>
             <div class="grid grid-cols-2 gap-3 pt-4">
@@ -387,8 +387,21 @@
             document.getElementById('prestasiStepTwoIndicator').className = 'flex h-6 w-6 items-center justify-center rounded-full bg-gray-300 text-xs font-bold text-gray-700';
         });
 
-        modal.addEventListener('click', event => {
-            if (event.target === modal) closeCreateModal();
+        [modal, editModal].forEach(dialog => {
+            let pointerStartedOnBackdrop = false;
+
+            dialog.addEventListener('pointerdown', event => {
+                pointerStartedOnBackdrop = event.target === dialog;
+            });
+            dialog.addEventListener('click', event => {
+                if (event.target === dialog && pointerStartedOnBackdrop) {
+                    setDialogVisible(dialog, dialog === editModal ? editCard : modalCard, false);
+                }
+                pointerStartedOnBackdrop = false;
+            });
+            dialog.addEventListener('pointercancel', () => {
+                pointerStartedOnBackdrop = false;
+            });
         });
 
         document.querySelectorAll('.open-edit-prestasi-btn').forEach(button => {
@@ -399,7 +412,7 @@
                 document.getElementById('editPrestasiAktivitas').value = this.dataset.aktivitas;
                 document.getElementById('editPrestasiJenis').value = this.dataset.jenis;
                 document.getElementById('editPrestasiTahun').value = this.dataset.tahun;
-                document.getElementById('editPrestasiCertificate').value = '';
+                document.getElementById('editPrestasiEvidence').value = this.dataset.evidence || '';
                 const existingEvidence = document.getElementById('editPrestasiExistingEvidence');
                 existingEvidence.href = this.dataset.evidence || '#';
                 existingEvidence.classList.toggle('hidden', !this.dataset.evidence);
@@ -408,9 +421,6 @@
         });
 
         document.getElementById('closeEditPrestasiBtn').addEventListener('click', () => setDialogVisible(editModal, editCard, false));
-        editModal.addEventListener('click', event => {
-            if (event.target === editModal) setDialogVisible(editModal, editCard, false);
-        });
         document.addEventListener('keydown', event => {
             if (event.key === 'Escape') {
                 closeCreateModal();
