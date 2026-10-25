@@ -218,29 +218,24 @@ class UppsController extends Controller
         ]);
     }
 
-    public function updateAnggota(Request $request, int|string $id, int|string $anggotaId)
+    public function updateAnggota(Request $request, $id, $anggotaId)
     {
         $validated = $request->validate([
             'nama' => ['required', 'string', 'max:255'],
             'jabatan' => ['required', 'string', 'max:255'],
         ]);
 
-        $payload = array_merge($validated, ['id_upps' => (int) $id]);
+        $payload = array_merge($validated, [
+            'id_upps' => (int) $id,
+        ]);
+
         $response = $this->akademikService->updateAnggotaUpps($anggotaId, $payload);
 
-        if (! $response->successful()) {
-            return redirect()->back()->withInput()->with('toast', [
-                'type' => 'error',
-                'title' => 'Gagal',
-                'message' => $response->json('message') ?? 'Gagal memperbarui data anggota.',
-            ]);
+        if ($response->successful()) {
+            return redirect()->route('upps.anggota', $id)->with('success', 'Data anggota UPPS berhasil diperbarui.');
         }
 
-        return redirect()->back()->with('toast', [
-            'type' => 'success',
-            'title' => 'Berhasil',
-            'message' => 'Data anggota berhasil diperbarui.',
-        ]);
+        return redirect()->back()->with('error', 'Gagal memperbarui data anggota UPPS.');
     }
 
     public function destroyAnggota(int|string $id, int|string $anggotaId)

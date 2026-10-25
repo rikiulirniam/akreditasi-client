@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Services\AkademikService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\ViewErrorBag;
 use Illuminate\View\View;
 
 class KegiatanMahasiswaController extends Controller
@@ -137,6 +138,11 @@ class KegiatanMahasiswaController extends Controller
 
     public function create(): View
     {
+        // Hanya reset errors pada fresh GET (bukan redirect-back dari validasi)
+        if (! request()->session()->hasOldInput()) {
+            app('view')->share('errors', new ViewErrorBag);
+        }
+
         $mahasiswaList = $this->fetchMahasiswaList();
         $tahunAkademikList = $this->fetchTahunAkademikList();
 
@@ -314,6 +320,11 @@ class KegiatanMahasiswaController extends Controller
         $kegiatan = $this->normalizeKegiatan($kegiatan);
         $mahasiswaList = $this->fetchMahasiswaList();
         $tahunAkademikList = $this->fetchTahunAkademikList();
+
+        // Hanya reset errors pada fresh GET (bukan redirect-back dari validasi)
+        if (! request()->session()->hasOldInput()) {
+            app('view')->share('errors', new ViewErrorBag);
+        }
 
         return view('kegiatan-mahasiswa.edit', [
             'kegiatan' => $kegiatan,

@@ -24,7 +24,7 @@
 
     <!-- Form Card -->
     <div class="bg-white rounded-2xl border border-white-bone shadow-xs p-6 sm:p-8">
-        <form method="POST" action="{{ route('kegiatan-mahasiswa.store') }}" class="space-y-6">
+        <form method="POST" action="{{ route('kegiatan-mahasiswa.store') }}" class="space-y-6" novalidate>
             @csrf
 
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-x-8 gap-y-5">
@@ -104,7 +104,7 @@
                         id="nama_kegiatan"
                         placeholder="Contoh: Turnamen Mobile Legends"
                         value="{{ old('nama_kegiatan') }}"
-                        class="@error('nama_kegiatan') ring-2 ring-red-400 @enderror"
+                        class="{{ $errors->has('nama_kegiatan') ? 'ring-2 ring-red-400' : '' }}"
                     />
                     @error('nama_kegiatan')
                         <p class="text-xs text-red-500 mt-1">{{ $message }}</p>
@@ -149,7 +149,7 @@
                         id="peran"
                         placeholder="Contoh: Ketua Tim, Anggota, Peserta"
                         value="{{ old('peran') }}"
-                        class="@error('peran') ring-2 ring-red-400 @enderror"
+                        class="{{ $errors->has('peran') ? 'ring-2 ring-red-400' : '' }}"
                     />
                     @error('peran')
                         <p class="text-xs text-red-500 mt-1">{{ $message }}</p>
@@ -194,7 +194,7 @@
                         id="penyelenggara"
                         placeholder="Contoh: BEM Polines"
                         value="{{ old('penyelenggara') }}"
-                        class="@error('penyelenggara') ring-2 ring-red-400 @enderror"
+                        class="{{ $errors->has('penyelenggara') ? 'ring-2 ring-red-400' : '' }}"
                     />
                     @error('penyelenggara')
                         <p class="text-xs text-red-500 mt-1">{{ $message }}</p>
@@ -211,7 +211,7 @@
                         name="tanggal_mulai"
                         id="tanggal_mulai"
                         value="{{ old('tanggal_mulai') }}"
-                        class="@error('tanggal_mulai') ring-2 ring-red-400 @enderror"
+                        class="{{ $errors->has('tanggal_mulai') ? 'ring-2 ring-red-400' : '' }}"
                     />
                     @error('tanggal_mulai')
                         <p class="text-xs text-red-500 mt-1">{{ $message }}</p>
@@ -228,7 +228,7 @@
                         name="tanggal_selesai"
                         id="tanggal_selesai"
                         value="{{ old('tanggal_selesai') }}"
-                        class="@error('tanggal_selesai') ring-2 ring-red-400 @enderror"
+                        class="{{ $errors->has('tanggal_selesai') ? 'ring-2 ring-red-400' : '' }}"
                     />
                     @error('tanggal_selesai')
                         <p class="text-xs text-red-500 mt-1">{{ $message }}</p>
