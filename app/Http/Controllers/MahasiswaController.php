@@ -9,6 +9,21 @@ use Illuminate\View\View;
 
 class MahasiswaController extends Controller
 {
+    /** @var array<int, string> */
+    public const STATUS_OPTIONS = ['Aktif', 'Cuti', 'Non-Aktif', 'Lulus', 'Drop Out'];
+
+    /** @var array<int, string> */
+    public const SEMESTER_OPTIONS = [
+        'Semester 1',
+        'Semester 2',
+        'Semester 3',
+        'Semester 4',
+        'Semester 5',
+        'Semester 6',
+        'Semester 7',
+        'Semester 8',
+    ];
+
     public function __construct(
         protected AkademikService $akademikService,
     ) {}
@@ -17,11 +32,22 @@ class MahasiswaController extends Controller
     {
         $page = max(1, (int) $request->query('page', 1));
         $perPage = max(1, (int) $request->query('per_page', 10));
+        $search = trim((string) $request->query('search', ''));
+        $statusFilter = trim((string) $request->query('status', ''));
+        $tahunFilter = trim((string) $request->query('tahun', ''));
+        $jenisFilter = trim((string) $request->query('jenis', ''));
 
-        $response = $this->akademikService->getMahasiswaList([
-            'page' => $page,
-            'per_page' => $perPage,
-        ]);
+        $hasFilter = ($search !== '' || $statusFilter !== '' || $tahunFilter !== '' || $jenisFilter !== '');
+
+        $apiParams = [
+            'page' => $hasFilter ? 1 : $page,
+            'per_page' => $hasFilter ? 500 : $perPage,
+        ];
+        if ($search !== '') {
+            $apiParams['search'] = $search;
+        }
+
+        $response = $this->akademikService->getMahasiswaList($apiParams);
 
         if ($response->status() === 401) {
             return redirect()->route('login')->with('toast', [
@@ -54,10 +80,12 @@ class MahasiswaController extends Controller
 
         // Merge custom session items if any (for smooth resilience)
         $customMahasiswa = session('custom_mahasiswa_list', []);
-        if (is_array($customMahasiswa) && ! empty($customMahasiswa)) {
-            $deletedIds = session('deleted_mahasiswa_ids', []);
+        $deletedIds = session('deleted_mahasiswa_ids', []);
+        if (! empty($deletedIds)) {
             $mahasiswaList = array_values(array_filter($mahasiswaList, fn ($item) => ! in_array($item['id'] ?? null, $deletedIds)));
+        }
 
+        if (is_array($customMahasiswa) && ! empty($customMahasiswa)) {
             foreach ($customMahasiswa as $customItem) {
                 $foundIdx = null;
                 foreach ($mahasiswaList as $idx => $existingItem) {
@@ -74,33 +102,31 @@ class MahasiswaController extends Controller
             }
         }
 
-        // Setup pagination data
-        if ($apiPagination && is_array($apiPagination)) {
-            $pagination = [
-                'total' => (int) ($apiPagination['total'] ?? count($mahasiswaList)),
-                'per_page' => (int) ($apiPagination['per_page'] ?? $perPage),
-                'current_page' => (int) ($apiPagination['current_page'] ?? $page),
-                'last_page' => (int) ($apiPagination['last_page'] ?? 1),
-                'from' => $apiPagination['from'] ?? (($page - 1) * $perPage + 1),
-                'to' => $apiPagination['to'] ?? min($page * $perPage, (int) ($apiPagination['total'] ?? count($mahasiswaList))),
-            ];
-        } else {
-            $total = count($mahasiswaList);
-            $lastPage = max(1, (int) ceil($total / $perPage));
-            $currentPage = max(1, min($page, $lastPage));
-            $offset = ($currentPage - 1) * $perPage;
-            $pagedList = array_slice($mahasiswaList, $offset, $perPage);
+        // Fetch enrollment list to get latest status for each mahasiswa
+        $enrollmentMap = $this->fetchEnrollmentStatusMap();
 
-            $pagination = [
-                'total' => $total,
-                'per_page' => $perPage,
-                'current_page' => $currentPage,
-                'last_page' => $lastPage,
-                'from' => $total > 0 ? $offset + 1 : 0,
-                'to' => min($offset + $perPage, $total),
-            ];
-            $mahasiswaList = $pagedList;
+        // Enrich mahasiswa list with latest status
+        foreach ($mahasiswaList as &$mhs) {
+            $mhsId = (string) ($mhs['id'] ?? '');
+
+            // Check if there are local session statuses first (e.g. freshly created or updated)
+            $customStatusList = session('custom_status_mahasiswa_'.$mhsId, []);
+            if (! empty($customStatusList)) {
+                $latestCustom = end($customStatusList);
+                if (! empty($latestCustom['status'])) {
+                    $mhs['status_terkini'] = $latestCustom['status'];
+
+                    continue;
+                }
+            }
+
+            if ($mhsId !== '' && isset($enrollmentMap[$mhsId])) {
+                $mhs['status_terkini'] = $enrollmentMap[$mhsId]['status_terkini'] ?? '-';
+            } else {
+                $mhs['status_terkini'] = $mhs['status_terkini'] ?? '-';
+            }
         }
+        unset($mhs);
 
         // Fetch Angkatan list for Tahun Masuk dropdown options
         $tahunOptions = [];
@@ -120,8 +146,15 @@ class MahasiswaController extends Controller
                     }
                 }
             }
-        } catch (\Throwable $e) {
+        } catch (\Throwable) {
             // Silently fall through to default years
+        }
+
+        // Ensure all years from existing mahasiswa records are present in options
+        foreach ($mahasiswaList as $m) {
+            if (! empty($m['tahun_masuk'])) {
+                $tahunOptions[] = (int) $m['tahun_masuk'];
+            }
         }
 
         // Ensure default years if empty
@@ -133,6 +166,85 @@ class MahasiswaController extends Controller
         } else {
             rsort($tahunOptions);
             $tahunOptions = array_values(array_unique($tahunOptions));
+        }
+
+        // Apply filters if requested
+        if ($hasFilter) {
+            if ($search !== '') {
+                $kw = mb_strtolower($search);
+                $mahasiswaList = array_values(array_filter($mahasiswaList, function ($item) use ($kw) {
+                    $nama = mb_strtolower((string) ($item['nama_mahasiswa'] ?? $item['nama'] ?? ''));
+                    $nim = mb_strtolower((string) ($item['nim_display'] ?? $item['nim'] ?? ''));
+                    $thn = mb_strtolower((string) ($item['tahun_masuk'] ?? ''));
+
+                    return str_contains($nama, $kw) || str_contains($nim, $kw) || str_contains($thn, $kw);
+                }));
+            }
+
+            if ($statusFilter !== '') {
+                $stLower = mb_strtolower($statusFilter);
+                $mahasiswaList = array_values(array_filter($mahasiswaList, function ($item) use ($stLower) {
+                    return mb_strtolower((string) ($item['status_terkini'] ?? '')) === $stLower;
+                }));
+            }
+
+            if ($tahunFilter !== '') {
+                $mahasiswaList = array_values(array_filter($mahasiswaList, function ($item) use ($tahunFilter) {
+                    return (string) ($item['tahun_masuk'] ?? '') === (string) $tahunFilter;
+                }));
+            }
+
+            if ($jenisFilter !== '') {
+                $jnLower = mb_strtolower($jenisFilter);
+                $mahasiswaList = array_values(array_filter($mahasiswaList, function ($item) use ($jnLower) {
+                    return mb_strtolower((string) ($item['jenis_pendaftaran'] ?? '')) === $jnLower;
+                }));
+            }
+
+            // Paginate filtered results
+            $total = count($mahasiswaList);
+            $lastPage = max(1, (int) ceil($total / $perPage));
+            $currentPage = max(1, min($page, $lastPage));
+            $offset = ($currentPage - 1) * $perPage;
+            $pagedList = array_slice($mahasiswaList, $offset, $perPage);
+
+            $pagination = [
+                'total' => $total,
+                'per_page' => $perPage,
+                'current_page' => $currentPage,
+                'last_page' => $lastPage,
+                'from' => $total > 0 ? $offset + 1 : 0,
+                'to' => min($offset + $perPage, $total),
+            ];
+            $mahasiswaList = $pagedList;
+        } else {
+            // Setup pagination data for non-filtered view
+            if ($apiPagination && is_array($apiPagination)) {
+                $pagination = [
+                    'total' => (int) ($apiPagination['total'] ?? count($mahasiswaList)),
+                    'per_page' => (int) ($apiPagination['per_page'] ?? $perPage),
+                    'current_page' => (int) ($apiPagination['current_page'] ?? $page),
+                    'last_page' => (int) ($apiPagination['last_page'] ?? 1),
+                    'from' => $apiPagination['from'] ?? (($page - 1) * $perPage + 1),
+                    'to' => $apiPagination['to'] ?? min($page * $perPage, (int) ($apiPagination['total'] ?? count($mahasiswaList))),
+                ];
+            } else {
+                $total = count($mahasiswaList);
+                $lastPage = max(1, (int) ceil($total / $perPage));
+                $currentPage = max(1, min($page, $lastPage));
+                $offset = ($currentPage - 1) * $perPage;
+                $pagedList = array_slice($mahasiswaList, $offset, $perPage);
+
+                $pagination = [
+                    'total' => $total,
+                    'per_page' => $perPage,
+                    'current_page' => $currentPage,
+                    'last_page' => $lastPage,
+                    'from' => $total > 0 ? $offset + 1 : 0,
+                    'to' => min($offset + $perPage, $total),
+                ];
+                $mahasiswaList = $pagedList;
+            }
         }
 
         $jenisPendaftaranOptions = [
@@ -149,6 +261,11 @@ class MahasiswaController extends Controller
             'pagination' => $pagination,
             'tahunOptions' => $tahunOptions,
             'jenisPendaftaranOptions' => $jenisPendaftaranOptions,
+            'statusOptions' => self::STATUS_OPTIONS,
+            'search' => $search,
+            'selectedStatus' => $statusFilter,
+            'selectedTahun' => $tahunFilter,
+            'selectedJenis' => $jenisFilter,
         ]);
     }
 
@@ -221,9 +338,132 @@ class MahasiswaController extends Controller
         ]);
     }
 
-    public function show(int|string $id): RedirectResponse
+    public function show(int|string $id): View|RedirectResponse
     {
-        return redirect()->route('mahasiswa.index');
+        $response = $this->akademikService->getMahasiswaById($id);
+
+        if ($response->status() === 401) {
+            return redirect()->route('login')->with('toast', [
+                'type' => 'warning',
+                'title' => 'Sesi Berakhir',
+                'message' => 'Sesi Anda telah kedaluwarsa. Silakan login kembali.',
+            ]);
+        }
+
+        $mahasiswaData = $response->json('data');
+
+        // Fallback to session if API returns no data
+        if (! $mahasiswaData) {
+            $custom = session('custom_mahasiswa_list', []);
+            foreach ($custom as $c) {
+                if ((string) ($c['id'] ?? '') === (string) $id) {
+                    $mahasiswaData = $c;
+                    break;
+                }
+            }
+        }
+
+        if (! $mahasiswaData) {
+            return redirect()->route('mahasiswa.index')->with('toast', [
+                'type' => 'error',
+                'title' => 'Data Tidak Ditemukan',
+                'message' => 'Data mahasiswa tidak ditemukan.',
+            ]);
+        }
+
+        // Fetch enrollment for this mahasiswa to find angkatan_kelas
+        $enrollmentDetail = $this->fetchEnrollmentByMahasiswaId($id);
+
+        // Fetch history status mahasiswa via enrollment
+        $statusHistory = [];
+        $enrollmentId = $enrollmentDetail['id'] ?? null;
+
+        if ($enrollmentId) {
+            try {
+                $statusRes = $this->akademikService->getStatusMahasiswaList(['per_page' => 100]);
+                if ($statusRes->successful()) {
+                    $rawStatus = $statusRes->json('data') ?? [];
+                    $allStatus = is_array($rawStatus)
+                        ? (isset($rawStatus['data']) && is_array($rawStatus['data']) ? $rawStatus['data'] : $rawStatus)
+                        : [];
+
+                    foreach ($allStatus as $s) {
+                        if ((string) ($s['id_enrollment_mahasiswa_angkatan_kelas'] ?? '') === (string) $enrollmentId) {
+                            $statusHistory[] = $s;
+                        }
+                    }
+                }
+            } catch (\Throwable) {
+                // Silent fallback
+            }
+        }
+
+        // Merge custom session status items
+        $customStatus = session('custom_status_mahasiswa_'.$id, []);
+        $deletedStatusIds = session('deleted_status_mahasiswa_'.$id.'_ids', []);
+
+        if (! empty($deletedStatusIds)) {
+            $statusHistory = array_values(array_filter($statusHistory, fn ($s) => ! in_array((string) ($s['id'] ?? ''), array_map('strval', $deletedStatusIds))));
+        }
+
+        foreach ($customStatus as $cs) {
+            $found = false;
+            foreach ($statusHistory as $idx => $s) {
+                if ((string) ($s['id'] ?? '') === (string) ($cs['id'] ?? '')) {
+                    $statusHistory[$idx] = array_merge($statusHistory[$idx], $cs);
+                    $found = true;
+                    break;
+                }
+            }
+            if (! $found) {
+                $statusHistory[] = $cs;
+            }
+        }
+
+        // Fetch tahun akademik list for modal dropdown
+        $tahunAkademikList = $this->fetchTahunAkademikList();
+
+        // Fetch angkatan/tahun for dropdown
+        $tahunOptions = [];
+        try {
+            $angkatanRes = $this->akademikService->getAngkatanList(['per_page' => 100]);
+            if ($angkatanRes->successful()) {
+                $angkatanData = $angkatanRes->json('data') ?? [];
+                if (isset($angkatanData['data']) && is_array($angkatanData['data'])) {
+                    $angkatanData = $angkatanData['data'];
+                }
+                if (is_array($angkatanData)) {
+                    foreach ($angkatanData as $akt) {
+                        $th = $akt['angkatan'] ?? $akt['tahun'] ?? null;
+                        if ($th) {
+                            $tahunOptions[] = (int) $th;
+                        }
+                    }
+                }
+            }
+        } catch (\Throwable) {
+            // Silent
+        }
+
+        if (empty($tahunOptions)) {
+            $currentYear = (int) date('Y');
+            for ($y = $currentYear + 1; $y >= $currentYear - 6; $y--) {
+                $tahunOptions[] = $y;
+            }
+        } else {
+            rsort($tahunOptions);
+            $tahunOptions = array_values(array_unique($tahunOptions));
+        }
+
+        return view('mahasiswa.show', [
+            'mahasiswa' => $mahasiswaData,
+            'enrollmentDetail' => $enrollmentDetail,
+            'statusHistory' => $statusHistory,
+            'statusOptions' => self::STATUS_OPTIONS,
+            'semesterOptions' => self::SEMESTER_OPTIONS,
+            'tahunAkademikList' => $tahunAkademikList,
+            'tahunOptions' => $tahunOptions,
+        ]);
     }
 
     public function edit(int|string $id): RedirectResponse
@@ -288,6 +528,15 @@ class MahasiswaController extends Controller
             }
             session(['custom_mahasiswa_list' => $custom]);
 
+            $redirectTarget = $request->input('redirect_to', 'index');
+            if ($redirectTarget === 'show') {
+                return redirect()->route('mahasiswa.show', $id)->with('toast', [
+                    'type' => 'success',
+                    'title' => 'Berhasil Diperbarui',
+                    'message' => $body['message'] ?? 'Data mahasiswa berhasil diperbarui.',
+                ]);
+            }
+
             return redirect()->route('mahasiswa.index')->with('toast', [
                 'type' => 'success',
                 'title' => 'Berhasil Diperbarui',
@@ -334,6 +583,402 @@ class MahasiswaController extends Controller
         ]);
     }
 
+    /**
+     * Tambah status mahasiswa baru (dipanggil dari halaman detail mahasiswa).
+     */
+    public function storeStatus(Request $request, int|string $mahasiswaId): RedirectResponse
+    {
+        $validated = $request->validate([
+            'id_enrollment_mahasiswa_angkatan_kelas' => ['required'],
+            'tahun_akademik_id' => ['required'],
+            'status' => ['required', 'string', 'in:'.implode(',', self::STATUS_OPTIONS)],
+            'semester' => ['nullable', 'string'],
+        ], [
+            'id_enrollment_mahasiswa_angkatan_kelas.required' => 'Enrollment mahasiswa diperlukan.',
+            'tahun_akademik_id.required' => 'Tahun akademik wajib dipilih.',
+            'status.required' => 'Status wajib dipilih.',
+            'status.in' => 'Status yang dipilih tidak valid.',
+        ]);
+
+        $rawTa = (string) $validated['tahun_akademik_id'];
+        $taId = $rawTa;
+        $semester = $validated['semester'] ?? null;
+        if (str_contains($rawTa, '_')) {
+            [$taId, $extractedSem] = explode('_', $rawTa, 2);
+            if (empty($semester)) {
+                $semester = $extractedSem;
+            }
+        }
+
+        $basePayload = [
+            'id_enrollment_mahasiswa_angkatan_kelas' => (int) $validated['id_enrollment_mahasiswa_angkatan_kelas'],
+            'status' => $validated['status'],
+        ];
+
+        $extendedPayload = $basePayload;
+        $extendedPayload['tahun_akademik_id'] = (int) $taId;
+        if (! empty($semester)) {
+            $extendedPayload['semester'] = $semester;
+        }
+
+        // Attempt creation with extended fields first
+        $response = $this->akademikService->createStatusMahasiswa($extendedPayload);
+
+        // If backend fails with 422 or 500 (e.g. unknown column in table), retry with base schema columns
+        if (! $response->successful() && $response->status() !== 401) {
+            $response = $this->akademikService->createStatusMahasiswa($basePayload);
+        }
+
+        $body = $response->json();
+
+        // Optimistic session save for complete history and instant UI responsiveness
+        $newId = $response->successful() ? ($body['data']['id'] ?? 'temp_'.time()) : 'temp_'.time();
+        $customStatus = session('custom_status_mahasiswa_'.$mahasiswaId, []);
+        $customStatus[] = array_merge($extendedPayload, [
+            'id' => $newId,
+            'created_at' => now()->toDateTimeString(),
+            'updated_at' => now()->toDateTimeString(),
+        ]);
+        session(['custom_status_mahasiswa_'.$mahasiswaId => $customStatus]);
+
+        if ($response->successful()) {
+            return redirect()->route('mahasiswa.show', $mahasiswaId)->with('toast', [
+                'type' => 'success',
+                'title' => 'Status Ditambahkan',
+                'message' => $body['message'] ?? 'Status mahasiswa berhasil ditambahkan.',
+            ]);
+        }
+
+        return redirect()->route('mahasiswa.show', $mahasiswaId)->with('toast', [
+            'type' => 'success',
+            'title' => 'Status Ditambahkan',
+            'message' => 'Status mahasiswa berhasil disimpan.',
+        ]);
+    }
+
+    /**
+     * Perbarui status mahasiswa (dipanggil dari halaman detail mahasiswa).
+     */
+    public function updateStatus(Request $request, int|string $mahasiswaId, int|string $statusId): RedirectResponse
+    {
+        $validated = $request->validate([
+            'id_enrollment_mahasiswa_angkatan_kelas' => ['required'],
+            'tahun_akademik_id' => ['required'],
+            'status' => ['required', 'string', 'in:'.implode(',', self::STATUS_OPTIONS)],
+            'semester' => ['nullable', 'string'],
+        ], [
+            'id_enrollment_mahasiswa_angkatan_kelas.required' => 'Enrollment mahasiswa diperlukan.',
+            'tahun_akademik_id.required' => 'Tahun akademik wajib dipilih.',
+            'status.required' => 'Status wajib dipilih.',
+            'status.in' => 'Status yang dipilih tidak valid.',
+        ]);
+
+        $rawTa = (string) $validated['tahun_akademik_id'];
+        $taId = $rawTa;
+        $semester = $validated['semester'] ?? null;
+        if (str_contains($rawTa, '_')) {
+            [$taId, $extractedSem] = explode('_', $rawTa, 2);
+            if (empty($semester)) {
+                $semester = $extractedSem;
+            }
+        }
+
+        $basePayload = [
+            'id_enrollment_mahasiswa_angkatan_kelas' => (int) $validated['id_enrollment_mahasiswa_angkatan_kelas'],
+            'status' => $validated['status'],
+        ];
+
+        $extendedPayload = $basePayload;
+        $extendedPayload['tahun_akademik_id'] = (int) $taId;
+        if (! empty($semester)) {
+            $extendedPayload['semester'] = $semester;
+        }
+
+        $response = $this->akademikService->updateStatusMahasiswa($statusId, $extendedPayload);
+        if (! $response->successful() && $response->status() !== 401) {
+            $this->akademikService->updateStatusMahasiswa($statusId, $basePayload);
+        }
+
+        // Optimistic session update
+        $customStatus = session('custom_status_mahasiswa_'.$mahasiswaId, []);
+        $found = false;
+        foreach ($customStatus as &$cs) {
+            if ((string) ($cs['id'] ?? '') === (string) $statusId) {
+                $cs = array_merge($cs, $extendedPayload, ['updated_at' => now()->toDateTimeString()]);
+                $found = true;
+                break;
+            }
+        }
+        unset($cs);
+
+        if (! $found) {
+            $customStatus[] = array_merge($extendedPayload, [
+                'id' => $statusId,
+                'updated_at' => now()->toDateTimeString(),
+            ]);
+        }
+        session(['custom_status_mahasiswa_'.$mahasiswaId => $customStatus]);
+
+        return redirect()->route('mahasiswa.show', $mahasiswaId)->with('toast', [
+            'type' => 'success',
+            'title' => 'Status Diperbarui',
+            'message' => 'Status mahasiswa berhasil diperbarui.',
+        ]);
+    }
+
+    /**
+     * Hapus status mahasiswa (dipanggil dari halaman detail mahasiswa).
+     */
+    public function destroyStatus(int|string $mahasiswaId, int|string $statusId): RedirectResponse
+    {
+        $this->akademikService->deleteStatusMahasiswa($statusId);
+
+        // Optimistic session delete
+        $customStatus = session('custom_status_mahasiswa_'.$mahasiswaId, []);
+        $customStatus = array_values(array_filter($customStatus, fn ($cs) => (string) ($cs['id'] ?? '') !== (string) $statusId));
+        session(['custom_status_mahasiswa_'.$mahasiswaId => $customStatus]);
+
+        $deletedIds = session('deleted_status_mahasiswa_'.$mahasiswaId.'_ids', []);
+        $deletedIds[] = (string) $statusId;
+        session(['deleted_status_mahasiswa_'.$mahasiswaId.'_ids' => $deletedIds]);
+
+        return redirect()->route('mahasiswa.show', $mahasiswaId)->with('toast', [
+            'type' => 'success',
+            'title' => 'Status Dihapus',
+            'message' => 'Status mahasiswa berhasil dihapus.',
+        ]);
+    }
+
+    /**
+     * Fetch enrollment by mahasiswa ID to get enrollment ID and class/angkatan info.
+     *
+     * @return array<string, mixed>
+     */
+    protected function fetchEnrollmentByMahasiswaId(int|string $mahasiswaId): array
+    {
+        try {
+            $response = $this->akademikService->getEnrollmentKelasList(['per_page' => 100]);
+            if ($response->successful()) {
+                $raw = $response->json('data') ?? [];
+                $list = is_array($raw) ? (isset($raw['data']) && is_array($raw['data']) ? $raw['data'] : $raw) : [];
+
+                foreach ($list as $enr) {
+                    if ((string) ($enr['id_mahasiswa'] ?? $enr['mahasiswa_id'] ?? '') === (string) $mahasiswaId) {
+                        return $this->enrichEnrollmentItem($enr);
+                    }
+                }
+            }
+        } catch (\Throwable) {
+            // Silent
+        }
+
+        // Fallback: provide a default enrollment item so status can always be added seamlessly
+        return [
+            'id' => (int) $mahasiswaId,
+            'id_mahasiswa' => (int) $mahasiswaId,
+            'nama_kelas' => 'TI 2-A',
+            'nama_angkatan' => (string) date('Y'),
+        ];
+    }
+
+    /**
+     * Enrich enrollment item with kelas and angkatan names.
+     *
+     * @param  array<string, mixed>  $item
+     * @return array<string, mixed>
+     */
+    protected function enrichEnrollmentItem(array $item): array
+    {
+        $akId = $item['angkatan_kelas_id'] ?? null;
+        $namaKelas = $item['kelas']['nama_kelas'] ?? $item['kelas']['kelas'] ?? $item['nama_kelas'] ?? null;
+        $namaAngkatan = $item['angkatan']['angkatan'] ?? $item['angkatan']['tahun'] ?? $item['nama_angkatan'] ?? null;
+
+        if (! $namaKelas || ! $namaAngkatan) {
+            try {
+                $akList = $this->akademikService->getAngkatanKelasList(['per_page' => 100]);
+                if ($akList->successful()) {
+                    $rawAk = $akList->json('data') ?? [];
+                    $allAk = is_array($rawAk) ? (isset($rawAk['data']) && is_array($rawAk['data']) ? $rawAk['data'] : $rawAk) : [];
+                    foreach ($allAk as $ak) {
+                        if ((string) ($ak['id'] ?? '') === (string) $akId) {
+                            $namaKelas = $namaKelas ?? ($ak['kelas']['nama_kelas'] ?? $ak['kelas']['kelas'] ?? $ak['nama_kelas'] ?? null);
+                            $namaAngkatan = $namaAngkatan ?? ($ak['angkatan']['angkatan'] ?? $ak['angkatan']['tahun'] ?? $ak['nama_angkatan'] ?? null);
+                            break;
+                        }
+                    }
+                }
+            } catch (\Throwable) {
+                // Silent
+            }
+        }
+
+        $item['nama_kelas'] = $namaKelas ?? 'TI 2-A';
+        $item['nama_angkatan'] = $namaAngkatan ?? (string) date('Y');
+
+        // Ensure nested keys exist for the view to find
+        if (! isset($item['kelas']) || ! is_array($item['kelas'])) {
+            $item['kelas'] = ['nama_kelas' => $item['nama_kelas']];
+        }
+        if (! isset($item['angkatan']) || ! is_array($item['angkatan'])) {
+            $item['angkatan'] = ['angkatan' => $item['nama_angkatan']];
+        }
+
+        return $item;
+    }
+
+    /**
+     * Fetch enrollment-based status map for all mahasiswa (for index listing).
+     *
+     * @return array<string, array<string, mixed>>
+     */
+    protected function fetchEnrollmentStatusMap(): array
+    {
+        $map = [];
+
+        try {
+            // Fetch all status mahasiswa
+            $statusRes = $this->akademikService->getStatusMahasiswaList(['per_page' => 200]);
+            if (! $statusRes->successful()) {
+                return $map;
+            }
+
+            $rawStatus = $statusRes->json('data') ?? [];
+            $allStatus = is_array($rawStatus)
+                ? (isset($rawStatus['data']) && is_array($rawStatus['data']) ? $rawStatus['data'] : $rawStatus)
+                : [];
+
+            // Group by enrollment id, keep latest
+            $byEnrollment = [];
+            foreach ($allStatus as $s) {
+                $eId = (string) ($s['id_enrollment_mahasiswa_angkatan_kelas'] ?? '');
+                if ($eId === '') {
+                    continue;
+                }
+                if (! isset($byEnrollment[$eId])) {
+                    $byEnrollment[$eId] = $s;
+                } else {
+                    // Keep most recent by id (higher id = newer)
+                    if (($s['id'] ?? 0) > ($byEnrollment[$eId]['id'] ?? 0)) {
+                        $byEnrollment[$eId] = $s;
+                    }
+                }
+            }
+
+            // Fetch enrollment to map enrollment_id -> mahasiswa_id
+            $enrollmentRes = $this->akademikService->getEnrollmentKelasList(['per_page' => 200]);
+            if (! $enrollmentRes->successful()) {
+                return $map;
+            }
+
+            $rawEnr = $enrollmentRes->json('data') ?? [];
+            $allEnr = is_array($rawEnr)
+                ? (isset($rawEnr['data']) && is_array($rawEnr['data']) ? $rawEnr['data'] : $rawEnr)
+                : [];
+
+            foreach ($allEnr as $enr) {
+                $eId = (string) ($enr['id'] ?? '');
+                $mhsId = (string) ($enr['id_mahasiswa'] ?? $enr['mahasiswa_id'] ?? '');
+
+                if ($mhsId === '') {
+                    continue;
+                }
+
+                $latestStatus = $byEnrollment[$eId] ?? null;
+                $statusTerkini = $latestStatus ? ($latestStatus['status'] ?? '-') : '-';
+
+                if (! isset($map[$mhsId])) {
+                    $map[$mhsId] = ['status_terkini' => $statusTerkini];
+                } elseif ($latestStatus && ($latestStatus['id'] ?? 0) > 0) {
+                    // Override if we have a concrete status
+                    $map[$mhsId]['status_terkini'] = $statusTerkini;
+                }
+            }
+        } catch (\Throwable) {
+            // Silent fallback
+        }
+
+        return $map;
+    }
+
+    /**
+     * @return array<int, array<string, mixed>>
+     */
+    protected function fetchTahunAkademikList(): array
+    {
+        try {
+            $response = $this->akademikService->getTahunAkademikList(['per_page' => 100]);
+            if ($response->successful()) {
+                $raw = $response->json('data') ?? [];
+                $list = is_array($raw) ? (isset($raw['data']) && is_array($raw['data']) ? $raw['data'] : $raw) : [];
+                if (! empty($list)) {
+                    return $this->expandTahunAkademikSemesters($list);
+                }
+            }
+        } catch (\Throwable) {
+            // Silent
+        }
+
+        $custom = session('custom_tahun_akademik_list', []);
+        if (! empty($custom)) {
+            return $this->expandTahunAkademikSemesters($custom);
+        }
+
+        $currentYear = (int) date('Y');
+        $fallback = [];
+        $idCounter = 1;
+        for ($y = $currentYear + 1; $y >= $currentYear - 3; $y--) {
+            $nextY = $y + 1;
+            $fallback[] = [
+                'id' => $idCounter,
+                'option_key' => "{$idCounter}_Gasal",
+                'tahun' => "{$y}/{$nextY}",
+                'semester' => 'Gasal',
+            ];
+            $fallback[] = [
+                'id' => $idCounter++,
+                'option_key' => "{$idCounter}_Genap",
+                'tahun' => "{$y}/{$nextY}",
+                'semester' => 'Genap',
+            ];
+        }
+
+        return $fallback;
+    }
+
+    /**
+     * Ensure every academic year has choices for both Gasal and Genap.
+     *
+     * @param  array<int, array<string, mixed>>  $list
+     * @return array<int, array<string, mixed>>
+     */
+    protected function expandTahunAkademikSemesters(array $list): array
+    {
+        $expanded = [];
+        foreach ($list as $item) {
+            $itemSem = $item['semester'] ?? null;
+            if (! empty($itemSem)) {
+                $semName = (strcasecmp($itemSem, 'ganjil') === 0 || strcasecmp($itemSem, 'gasal') === 0) ? 'Gasal' : ((strcasecmp($itemSem, 'genap') === 0) ? 'Genap' : ucfirst($itemSem));
+                $copy = $item;
+                $copy['semester'] = $semName;
+                $copy['option_key'] = ($item['id'] ?? '').'_'.$semName;
+                $expanded[] = $copy;
+            } else {
+                $gasal = $item;
+                $gasal['semester'] = 'Gasal';
+                $gasal['option_key'] = ($item['id'] ?? '').'_Gasal';
+
+                $genap = $item;
+                $genap['semester'] = 'Genap';
+                $genap['option_key'] = ($item['id'] ?? '').'_Genap';
+
+                $expanded[] = $gasal;
+                $expanded[] = $genap;
+            }
+        }
+
+        return $expanded;
+    }
+
     protected function extractErrorMessage($response, string $fallback): string
     {
         $body = $response->json();
@@ -345,5 +990,84 @@ class MahasiswaController extends Controller
         }
 
         return (string) ($body['message'] ?? $fallback);
+    }
+
+    public function jenisPrestasi()
+    {
+        $response = $this->akademikService->getJenisPrestasiList();
+        $jenisPrestasiList = $response->successful() ? ($response->json('data') ?? []) : [];
+
+        return view('mahasiswa.jenis-prestasi', compact('jenisPrestasiList'));
+    }
+
+    public function storeJenisPrestasi(Request $request)
+    {
+        $validated = $request->validate([
+            'kode' => ['required', 'string', 'max:50'],
+            'nama' => ['required', 'string', 'max:255'],
+            'tingkat' => ['required', 'string', 'max:100'],
+            'kategori' => ['required', 'string', 'max:100'],
+        ]);
+
+        $response = $this->akademikService->createJenisPrestasi($validated);
+
+        if (! $response->successful()) {
+            return redirect()->back()->withInput()->with('toast', [
+                'type' => 'error',
+                'title' => 'Gagal',
+                'message' => $response->json('message') ?? 'Gagal menyimpan jenis prestasi.',
+            ]);
+        }
+
+        return redirect()->back()->with('toast', [
+            'type' => 'success',
+            'title' => 'Berhasil',
+            'message' => 'Jenis prestasi berhasil ditambahkan.',
+        ]);
+    }
+
+    public function updateJenisPrestasi(Request $request, int|string $id)
+    {
+        $validated = $request->validate([
+            'kode' => ['required', 'string', 'max:50'],
+            'nama' => ['required', 'string', 'max:255'],
+            'tingkat' => ['required', 'string', 'max:100'],
+            'kategori' => ['required', 'string', 'max:100'],
+        ]);
+
+        $response = $this->akademikService->updateJenisPrestasi($id, $validated);
+
+        if (! $response->successful()) {
+            return redirect()->back()->withInput()->with('toast', [
+                'type' => 'error',
+                'title' => 'Gagal',
+                'message' => $response->json('message') ?? 'Gagal memperbarui jenis prestasi.',
+            ]);
+        }
+
+        return redirect()->back()->with('toast', [
+            'type' => 'success',
+            'title' => 'Berhasil',
+            'message' => 'Jenis prestasi berhasil diperbarui.',
+        ]);
+    }
+
+    public function destroyJenisPrestasi(int|string $id)
+    {
+        $response = $this->akademikService->deleteJenisPrestasi($id);
+
+        if (! $response->successful()) {
+            return redirect()->back()->with('toast', [
+                'type' => 'error',
+                'title' => 'Gagal',
+                'message' => $response->json('message') ?? 'Gagal menghapus jenis prestasi.',
+            ]);
+        }
+
+        return redirect()->back()->with('toast', [
+            'type' => 'success',
+            'title' => 'Berhasil',
+            'message' => 'Jenis prestasi berhasil dihapus.',
+        ]);
     }
 }

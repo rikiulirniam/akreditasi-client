@@ -17,11 +17,38 @@ class LembagaAkreditasiController extends Controller
     public function index(): View
     {
         $lembagas = [];
+        $allInstrumens = [];
+
         try {
             $lembagas = $this->akreditasiService->getLembagaAkreditasi()->json('data') ?? [];
         } catch (\Throwable) {
             $lembagas = [];
         }
+
+        try {
+            $allInstrumens = $this->akreditasiService->getInstrumens()->json('data') ?? [];
+        } catch (\Throwable) {
+            $allInstrumens = [];
+        }
+
+        foreach ($lembagas as &$lembaga) {
+            $lembagaId = (string) ($lembaga['id'] ?? '');
+            $versiIds = collect($lembaga['versi_instrumen'] ?? [])->pluck('id')->filter()->map(fn ($id) => (string) $id)->all();
+
+            $matchingInstrumens = array_filter($allInstrumens, function ($item) use ($lembagaId, $versiIds) {
+                $itemLembagaId = (string) ($item['versi_instrumen']['id_lembaga'] ?? ($item['versi_instrumen']['lembaga']['id'] ?? ''));
+                $itemVersiId = (string) ($item['id_versi_instrumen'] ?? ($item['versi_instrumen']['id'] ?? ''));
+
+                if ($itemLembagaId !== '' && $itemLembagaId === $lembagaId) {
+                    return true;
+                }
+
+                return ! empty($versiIds) && in_array($itemVersiId, $versiIds, true);
+            });
+
+            $lembaga['instrumen_count'] = count($matchingInstrumens);
+        }
+        unset($lembaga);
 
         return view('pages.superadmin.lembaga-akreditasi', [
             'lembagas' => $lembagas,

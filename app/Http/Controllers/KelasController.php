@@ -159,9 +159,78 @@ class KelasController extends Controller
         ]);
     }
 
-    public function show(int|string $id): RedirectResponse
+    public function show(int|string $id): View|RedirectResponse
     {
-        return redirect()->route('kelas.index');
+        $response = $this->akademikService->getKelasById($id);
+
+        if ($response->status() === 401) {
+            return redirect()->route('login')->with('toast', [
+                'type' => 'warning',
+                'title' => 'Sesi Berakhir',
+                'message' => 'Sesi Anda telah kedaluwarsa. Silakan login kembali.',
+            ]);
+        }
+
+        $rawData = $response->json('data') ?? [];
+        if (! $response->successful() || empty($rawData)) {
+            // Check custom session items as fallback
+            $custom = session('custom_kelas_list', []);
+            foreach ($custom as $item) {
+                if ((string) ($item['id'] ?? '') === (string) $id) {
+                    $rawData = $item;
+                    break;
+                }
+            }
+        }
+
+        if (empty($rawData)) {
+            return redirect()->route('kelas.index')->with('toast', [
+                'type' => 'error',
+                'title' => 'Data Tidak Ditemukan',
+                'message' => 'Data kelas tidak ditemukan atau gagal diambil dari server.',
+            ]);
+        }
+
+        $mhsResponse = $this->akademikService->getMahasiswaByKelasId($id);
+        $mahasiswaList = $mhsResponse->successful() ? ($mhsResponse->json('data') ?? []) : [];
+
+        $mkResponse = $this->akademikService->getMataKuliahByKelasId($id);
+        $allMataKuliah = $mkResponse->successful() ? ($mkResponse->json('data') ?? []) : [];
+
+        // Tentukan ID tahun akademik aktif (dari detail kelas atau tahun_akademik yang is_active)
+        $activeTahunAkademikId = $rawData['tahun_akademik_id'] ?? ($rawData['tahun_akademik']['id'] ?? null);
+
+        // Filter hanya mata kuliah pada tahun akademik yang sedang aktif
+        $activeMataKuliah = array_values(array_filter($allMataKuliah, function ($mk) use ($activeTahunAkademikId) {
+            $isTaActive = $mk['tahun_akademik']['is_active'] ?? ($mk['is_active'] ?? false);
+            if ($isTaActive === true || $isTaActive === 1 || $isTaActive === '1') {
+                return true;
+            }
+
+            if ($activeTahunAkademikId && isset($mk['tahun_akademik_id'])) {
+                return (string) $mk['tahun_akademik_id'] === (string) $activeTahunAkademikId;
+            }
+
+            return false;
+        }));
+
+        // Gunakan mata kuliah aktif jika ada, atau fallback ke seluruh mata kuliah jika belum ada flag aktif
+        $mataKuliahList = ! empty($activeMataKuliah) ? $activeMataKuliah : $allMataKuliah;
+
+        // Tentukan nama tahun akademik aktif
+        $tahunAkademikAktif = $rawData['tahun_akademik']['nama_tahun_akademik']
+            ?? ($rawData['tahun_akademik']['tahun'] ?? null);
+
+        if (! $tahunAkademikAktif && ! empty($activeMataKuliah[0]['tahun_akademik']['nama_tahun_akademik'])) {
+            $tahunAkademikAktif = $activeMataKuliah[0]['tahun_akademik']['nama_tahun_akademik'];
+        }
+
+        return view('kelas.show', [
+            'kelas' => $rawData,
+            'mahasiswaList' => $mahasiswaList,
+            'mataKuliahList' => $mataKuliahList,
+            'tahunAkademikAktif' => $tahunAkademikAktif,
+        ]);
     }
 
     public function edit(int|string $id): RedirectResponse
