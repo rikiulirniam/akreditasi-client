@@ -988,4 +988,33 @@ class TridharmaService
 
         return '';
     }
+
+    /*
+    |==========================================================================
+    | MODUL: STATISTIK & DASHBOARD (/api/v1/*)
+    |==========================================================================
+    */
+
+    public function getDosenStatistik(?string $token = null): Response
+    {
+        return $this->http($token)->get($this->url('v1/dosen/statistik'));
+    }
+
+    /** @param array<string, mixed> $query */
+    public function getTridharmaSummary(array $query = [], ?string $token = null): Response
+    {
+        return $this->http($token)->get($this->url('v1/tridharma/summary'), $query);
+    }
+
+    /** @param array<string, mixed> $query */
+    public function getKerjasamaAktif(array $query = [], ?string $token = null): Response
+    {
+        return $this->http($token)->get($this->url('v1/kerjasama/aktif'), $query);
+    }
+
+    /** @param array<string, mixed> $query */
+    public function getTridharmaTren(array $query = [], ?string $token = null): Response
+    {
+        return $this->http($token)->get($this->url('v1/tren-tridharma'), $query);
+    }
 }
