@@ -172,7 +172,11 @@
                                 <td class="text-sm font-medium text-gray-900 py-4 px-2 sm:px-3 break-words">{{ $nama }}</td>
                                 <td class="text-sm text-gray-900 py-4 px-2 sm:px-3 break-all">{{ $nidn }}</td>
                                 <td class="text-sm text-gray-900 py-4 px-2 sm:px-3 break-words">{{ $statusDosen }}</td>
-                                <td class="text-sm text-gray-900 py-4 px-2 sm:px-3 break-words">{{ $isSertifikasi ? 'Tersertifikasi' : 'Belum' }}</td>
+                                <td class="text-sm text-gray-900 py-4 px-2 sm:px-3 break-words">
+                                    <span class="{{ $isSertifikasi ? 'text-gray-900 font-medium' : 'text-gray-500' }}">
+                                        {{ $isSertifikasi ? 'Tersertifikasi' : 'Belum' }}
+                                    </span>
+                                </td>
                                 <td class="w-28 py-4 px-2 sm:px-3">
                                     <div class="flex items-center justify-center gap-2 sm:gap-4">
                                         <button
