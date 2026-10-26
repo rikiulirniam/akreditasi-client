@@ -614,6 +614,11 @@ class AkademikService
         return $this->get('mahasiswa', $query, $token);
     }
 
+    public function getMahasiswaTren(array $query = [], ?string $token = null): Response
+    {
+        return $this->get('mahasiswa/tren', $query, $token);
+    }
+
     public function getMahasiswaById(int|string $id, ?string $token = null): Response
     {
         return $this->get("mahasiswa/{$id}", [], $token);

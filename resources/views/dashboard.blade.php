@@ -3,7 +3,7 @@
 @section('title', 'Dashboard')
 
 @section('content')
-<div class="space-y-6 max-w-[1140px]">
+<div class="space-y-6 w-full">
 
     <!-- 1. Hero Banner: Pusat Kendali Sistem -->
     <div class="relative overflow-hidden rounded-2xl bg-[#0F3560] p-6 sm:p-8 text-white shadow-sm">
@@ -25,8 +25,8 @@
                 <div class="border border-white/25 rounded-xl px-5 py-3.5 bg-white/5 min-w-[200px]">
                     <p class="text-[11px] font-semibold text-white/70 uppercase tracking-wider mb-1">STATUS SISTEM</p>
                     <div class="flex items-center gap-2 text-xs sm:text-sm font-medium text-white">
-                        <span class="w-2.5 h-2.5 rounded-full bg-secondary inline-block shrink-0"></span>
-                        <span>Semua layanan normal</span>
+                        <span class="w-2.5 h-2.5 rounded-full {{ ($statusSistem['is_normal'] ?? true) ? 'bg-secondary' : 'bg-amber-400' }} inline-block shrink-0"></span>
+                        <span>{{ $statusSistem['text'] ?? 'Semua layanan normal' }}</span>
                     </div>
                 </div>
             </div>
@@ -70,7 +70,7 @@
             <div class="mt-2.5 sm:mt-3 min-w-0">
                 <span class="text-[9.5px] sm:text-[10px] font-semibold text-gray-700 uppercase tracking-tight block whitespace-nowrap" title="Mahasiswa Baru">Mahasiswa Baru</span>
                 <p class="text-2xl sm:text-[28px] font-black text-[#183A5F] tracking-tight mt-0.5 leading-none">{{ $kpi['mahasiswa_baru'] ?? 112 }}</p>
-                <p class="text-[8.5px] sm:text-[9px] font-semibold text-gray-500 uppercase tracking-tight mt-1 whitespace-nowrap">ANGKATAN 2026</p>
+                <p class="text-[8.5px] sm:text-[9px] font-semibold text-gray-500 uppercase tracking-tight mt-1 whitespace-nowrap">ANGKATAN {{ $kpi['tahun_angkatan_baru'] ?? '2026' }}</p>
             </div>
         </div>
 
@@ -153,8 +153,6 @@
 
     <!-- 3. Section: Ringkasan Tri Dharma -->
     <div class="space-y-3">
-        <h3 class="text-base sm:text-lg font-black text-[#183A5F] tracking-tight uppercase">RINGKASAN TRI DHARMA</h3>
-
         <!-- 8 Cards Grid (4x2 on desktop) -->
         <div class="grid grid-cols-2 md:grid-cols-4 gap-2.5 sm:gap-3">
 
@@ -291,6 +289,50 @@
 
                 <!-- Custom Dual-Axis Visual SVG Chart -->
                 <div class="relative w-full mt-4">
+                    @php
+                        $years = $tren['years'] ?? ['2022', '2023', '2024', '2025', '2026'];
+                        $ipkData = $tren['ipk'] ?? [3.30, 3.40, 3.52, 3.52, 3.52];
+                        $kelulusanData = $tren['kelulusan'] ?? [73, 88, 77, 87, 85];
+                        $totalYears = max(1, count($years));
+
+                        $ipkPoints = [];
+                        $kelulusanPoints = [];
+
+                        foreach ($years as $idx => $year) {
+                            $x = 90 + ($idx * 90);
+                            $ipk = (float) ($ipkData[$idx] ?? 3.50);
+                            $pct = (float) ($kelulusanData[$idx] ?? 80);
+
+                            // Skala IPK 2.10 (y=250) s/d 3.50 (y=45)
+                            $yIpk = 250 - (($ipk - 2.10) / 1.40) * 205;
+                            $yIpk = max(35, min(250, round($yIpk, 1)));
+
+                            // Skala Kelulusan 50% (y=250) s/d 90% (y=45)
+                            $yPct = 250 - (($pct - 50) / 40) * 205;
+                            $yPct = max(35, min(250, round($yPct, 1)));
+
+                            $ipkPoints[] = ['x' => $x, 'y' => $yIpk, 'val' => $ipk];
+                            $kelulusanPoints[] = ['x' => $x, 'y' => $yPct, 'val' => $pct];
+                        }
+
+                        // Bangun kurva halus cubic bezier SVG
+                        $buildSvgPath = function (array $points): string {
+                            if (empty($points)) return '';
+                            $d = 'M ' . $points[0]['x'] . ' ' . $points[0]['y'];
+                            $len = count($points);
+                            for ($i = 0; $i < $len - 1; $i++) {
+                                $p0 = $points[$i];
+                                $p1 = $points[$i + 1];
+                                $dx = ($p1['x'] - $p0['x']) / 2;
+                                $d .= ' C ' . ($p0['x'] + $dx) . ' ' . $p0['y'] . ', ' . ($p1['x'] - $dx) . ' ' . $p1['y'] . ', ' . $p1['x'] . ' ' . $p1['y'];
+                            }
+                            return $d;
+                        };
+
+                        $ipkPath = $buildSvgPath($ipkPoints);
+                        $kelulusanPath = $buildSvgPath($kelulusanPoints);
+                    @endphp
+
                     <svg viewBox="0 0 520 280" class="w-full h-auto overflow-visible select-none" preserveAspectRatio="xMidYMid meet">
                         <!-- Horizontal Gridlines & Y-Axis values -->
                         <!-- Row: 3.50 / 90% -->
@@ -326,57 +368,35 @@
                         <text x="44" y="254" text-anchor="end" font-size="10.5" font-weight="700" fill="#334155">2.10</text>
                         <text x="473" y="254" text-anchor="start" font-size="10.5" font-weight="700" fill="#334155">50%</text>
 
-                        <!-- Ticks on Baseline for 5 years -->
-                        <line x1="90" y1="243" x2="90" y2="257" stroke="#94A3B8" stroke-width="1.5" />
-                        <line x1="180" y1="243" x2="180" y2="257" stroke="#94A3B8" stroke-width="1.5" />
-                        <line x1="270" y1="243" x2="270" y2="257" stroke="#94A3B8" stroke-width="1.5" />
-                        <line x1="360" y1="243" x2="360" y2="257" stroke="#94A3B8" stroke-width="1.5" />
-                        <line x1="450" y1="243" x2="450" y2="257" stroke="#94A3B8" stroke-width="1.5" />
+                        <!-- Ticks on Baseline for years -->
+                        @foreach ($years as $idx => $year)
+                            @php $x = 90 + ($idx * 90); @endphp
+                            <line x1="{{ $x }}" y1="243" x2="{{ $x }}" y2="257" stroke="#94A3B8" stroke-width="1.5" />
+                        @endforeach
 
-                        <!-- IPK Line (Navy #183A5F) -->
-                        <path d="M 90 95 C 120 86, 150 75, 180 70 C 210 65, 240 40, 270 40 L 360 40 L 450 40" fill="none" stroke="#183A5F" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" />
+                        <!-- IPK Dynamic Line (Navy #183A5F) -->
+                        <path d="{{ $ipkPath }}" fill="none" stroke="#183A5F" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" />
 
-                        <!-- Kelulusan Line (Green #52A776) -->
-                        <path d="M 90 130 C 125 115, 155 82, 180 82 C 210 82, 240 110, 270 110 C 300 110, 330 68, 360 68 C 390 68, 420 76, 450 76" fill="none" stroke="#52A776" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" />
+                        <!-- Kelulusan Dynamic Line (Green #52A776) -->
+                        <path d="{{ $kelulusanPath }}" fill="none" stroke="#52A776" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" />
 
                         <!-- IPK Points & Text Above -->
-                        <circle cx="90" cy="95" r="4.5" fill="#183A5F" />
-                        <text x="90" y="82" text-anchor="middle" font-size="11" font-weight="800" fill="#183A5F">3.30</text>
-
-                        <circle cx="180" cy="70" r="4.5" fill="#183A5F" />
-                        <text x="180" y="57" text-anchor="middle" font-size="11" font-weight="800" fill="#183A5F">3.40</text>
-
-                        <circle cx="270" cy="40" r="4.5" fill="#183A5F" />
-                        <text x="270" y="27" text-anchor="middle" font-size="11" font-weight="800" fill="#183A5F">3.52</text>
-
-                        <circle cx="360" cy="40" r="4.5" fill="#183A5F" />
-                        <text x="360" y="27" text-anchor="middle" font-size="11" font-weight="800" fill="#183A5F">3.52</text>
-
-                        <circle cx="450" cy="40" r="4.5" fill="#183A5F" />
-                        <text x="450" y="27" text-anchor="middle" font-size="11" font-weight="800" fill="#183A5F">3.52</text>
+                        @foreach ($ipkPoints as $pt)
+                            <circle cx="{{ $pt['x'] }}" cy="{{ $pt['y'] }}" r="4.5" fill="#183A5F" />
+                            <text x="{{ $pt['x'] }}" y="{{ $pt['y'] - 13 }}" text-anchor="middle" font-size="11" font-weight="800" fill="#183A5F">{{ number_format($pt['val'], 2) }}</text>
+                        @endforeach
 
                         <!-- Kelulusan Points & Text Below -->
-                        <circle cx="90" cy="130" r="4.5" fill="#52A776" />
-                        <text x="90" y="148" text-anchor="middle" font-size="11" font-weight="800" fill="#334155">73%</text>
-
-                        <circle cx="180" cy="82" r="4.5" fill="#52A776" />
-                        <text x="180" y="100" text-anchor="middle" font-size="11" font-weight="800" fill="#334155">88%</text>
-
-                        <circle cx="270" cy="110" r="4.5" fill="#52A776" />
-                        <text x="270" y="128" text-anchor="middle" font-size="11" font-weight="800" fill="#334155">77%</text>
-
-                        <circle cx="360" cy="68" r="4.5" fill="#52A776" />
-                        <text x="360" y="86" text-anchor="middle" font-size="11" font-weight="800" fill="#334155">87%</text>
-
-                        <circle cx="450" cy="76" r="4.5" fill="#52A776" />
-                        <text x="450" y="94" text-anchor="middle" font-size="11" font-weight="800" fill="#334155">85%</text>
+                        @foreach ($kelulusanPoints as $pt)
+                            <circle cx="{{ $pt['x'] }}" cy="{{ $pt['y'] }}" r="4.5" fill="#52A776" />
+                            <text x="{{ $pt['x'] }}" y="{{ $pt['y'] + 18 }}" text-anchor="middle" font-size="11" font-weight="800" fill="#334155">{{ round($pt['val']) }}%</text>
+                        @endforeach
 
                         <!-- X-Axis Years Labels -->
-                        <text x="90" y="270" text-anchor="middle" font-size="11.5" font-weight="700" fill="#334155">2022</text>
-                        <text x="180" y="270" text-anchor="middle" font-size="11.5" font-weight="700" fill="#334155">2023</text>
-                        <text x="270" y="270" text-anchor="middle" font-size="11.5" font-weight="700" fill="#334155">2024</text>
-                        <text x="360" y="270" text-anchor="middle" font-size="11.5" font-weight="700" fill="#334155">2025</text>
-                        <text x="450" y="270" text-anchor="middle" font-size="11.5" font-weight="700" fill="#334155">2026</text>
+                        @foreach ($years as $idx => $year)
+                            @php $x = 90 + ($idx * 90); @endphp
+                            <text x="{{ $x }}" y="270" text-anchor="middle" font-size="11.5" font-weight="700" fill="#334155">{{ $year }}</text>
+                        @endforeach
                     </svg>
                 </div>
             </div>
@@ -390,7 +410,7 @@
                 </h3>
 
                 <!-- Table -->
-                <div class="mt-4 w-full">
+                <div class="mt-4 w-full overflow-x-auto">
                     <table class="w-full text-left text-[11px] sm:text-xs">
                         <thead>
                             <tr class="border-y border-[#CAD5DE] text-[#2D3748] font-bold whitespace-nowrap">
@@ -399,7 +419,6 @@
                                 <th class="py-2.5 px-1.5 sm:px-2 font-bold text-left">Nama Lomba</th>
                                 <th class="py-2.5 px-1.5 sm:px-2 font-bold text-left">Tingkat</th>
                                 <th class="py-2.5 px-1.5 sm:px-2 font-bold text-center w-12">Tahun</th>
-                                <th class="py-2.5 px-1.5 sm:px-2 font-bold text-center w-12">Action</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-[#CAD5DE]">
@@ -407,25 +426,19 @@
                                 <tr class="hover:bg-white/30 transition border-b border-[#CAD5DE] whitespace-nowrap">
                                     <td class="py-2.5 px-1.5 sm:px-2 text-gray-700 font-medium">{{ $item['no'] }}.</td>
                                     <td class="py-2.5 px-1.5 sm:px-2 text-[#1E293B] font-medium">{{ $item['nama'] }}</td>
-                                    <td class="py-2.5 px-1.5 sm:px-2 text-gray-700 font-medium" title="{{ $item['lomba'] }}">
-                                        {{ $item['lomba'] }}
+                                    <td class="py-2.5 px-1.5 sm:px-2 text-gray-700 font-medium">
+                                        <div class="truncate max-w-[180px] sm:max-w-[220px] xl:max-w-[280px]" title="{{ $item['lomba'] }}">
+                                            {{ $item['lomba'] }}
+                                        </div>
                                     </td>
                                     <td class="py-2.5 px-1.5 sm:px-2 text-gray-700 font-medium">
                                         {{ $item['tingkat'] }}
                                     </td>
                                     <td class="py-2.5 px-1.5 sm:px-2 text-gray-700 font-medium text-center">{{ $item['tahun'] }}</td>
-                                    <td class="py-2.5 px-1.5 sm:px-2 text-center">
-                                        <a href="{{ route('prestasi-mahasiswa.index') }}" class="text-[#183A5F] hover:text-[#0f2742] transition inline-flex items-center justify-center p-0.5" aria-label="Lihat prestasi {{ $item['nama'] }}">
-                                            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                                <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z" />
-                                                <circle cx="12" cy="12" r="3" />
-                                            </svg>
-                                        </a>
-                                    </td>
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="6" class="py-6 text-center text-gray-500 font-medium">
+                                    <td colspan="5" class="py-6 text-center text-gray-500 font-medium">
                                         Belum ada data prestasi mahasiswa.
                                     </td>
                                 </tr>
