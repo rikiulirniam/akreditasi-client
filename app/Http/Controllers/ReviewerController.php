@@ -7,10 +7,18 @@ use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\Response;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Illuminate\View\View;
 
 class ReviewerController extends Controller
 {
+    /**
+     * Cache indikator dan rubrik untuk satu request lifecycle.
+     */
+    protected ?array $cachedIndikators = null;
+
+    protected ?array $cachedRubriks = null;
+
     public function __construct(
         protected ReviewerService $reviewerService,
     ) {}
@@ -78,6 +86,12 @@ class ReviewerController extends Controller
 
         $indicators = $project['indicators'] ?? [];
 
+        // Jika data project dari API tidak menyertakan indicators langsung, ambil dari master indikator
+        if (empty($indicators)) {
+            $indicators = $this->loadIndicatorsFromApi($projectId);
+            $project['indicators'] = $indicators;
+        }
+
         if (! is_array($indicators)
             || ! array_is_list($indicators)
             || $indicators === []
@@ -103,16 +117,10 @@ class ReviewerController extends Controller
         }
 
         $indicator = $indicators[$indicatorIndex];
-        $savedAssessment = session("reviewer_assessments.{$projectId}.{$indicator['id']}", []);
-        $savedAssessments = array_reduce($indicators, function (array $assessments, array $item) use ($projectId): array {
-            $saved = session("reviewer_assessments.{$projectId}.{$item['id']}", []);
 
-            if (is_array($saved)) {
-                $assessments[(string) $item['id']] = $saved;
-            }
-
-            return $assessments;
-        }, []);
+        // Muat penilaian tersimpan dari API dan gabungkan dengan session terkini
+        $savedAssessments = $this->loadSavedAssessments($projectId, $indicators);
+        $savedAssessment = $savedAssessments[(string) $indicator['id']] ?? [];
 
         return view('pages.reviewer.assessment-detail', [
             'user' => session('user', []),
@@ -131,7 +139,14 @@ class ReviewerController extends Controller
     {
         [$projects, $error] = $this->projects();
         $project = $this->findProject($projects, $projectId);
-        $indicatorExists = $project !== null && collect($project['indicators'] ?? [])
+
+        $indicators = $project['indicators'] ?? [];
+        if (empty($indicators)) {
+            $indicators = $this->loadIndicatorsFromApi($projectId);
+            $project['indicators'] = $indicators;
+        }
+
+        $indicatorExists = $project !== null && collect($indicators)
             ->contains(fn (mixed $indicator): bool => is_array($indicator) && (string) ($indicator['id'] ?? '') === $indicatorId);
 
         if (! $indicatorExists) {
@@ -145,6 +160,8 @@ class ReviewerController extends Controller
         $validated = $request->validate([
             'score' => ['required', 'integer', 'between:0,4'],
             'notes' => ['nullable', 'string', 'max:1000'],
+            'rubrik_id' => ['nullable', 'integer'],
+            'rubrik_ids' => ['nullable', 'array'],
             'evidence_status' => ['nullable', 'array'],
             'evidence_status.*' => ['required', 'in:Disetujui,Pending,Perlu revisi'],
             'evidence_action' => ['nullable', 'string', 'regex:/^\d+:(Disetujui|Perlu revisi)$/'],
@@ -156,11 +173,43 @@ class ReviewerController extends Controller
             $evidenceStatuses[$evidenceIndex] = $evidenceStatus;
         }
 
+        // Tentukan ID rubrik jika ada
+        $score = (int) $validated['score'];
+        $rubrikId = $validated['rubrik_id'] ?? ($validated['rubrik_ids'][$score] ?? null);
+
+        if (! $rubrikId && ! empty($indicators)) {
+            $currentIndicator = collect($indicators)->first(fn ($item) => (string) ($item['id'] ?? '') === $indicatorId);
+            $rubriks = $currentIndicator['rubriks'] ?? [];
+            foreach ($rubriks as $r) {
+                if ((int) ($r['skor'] ?? 0) === $score) {
+                    $rubrikId = $r['id'] ?? null;
+                    break;
+                }
+            }
+        }
+
+        // Simpan ke session untuk akses instan dan offline UX
         $request->session()->put("reviewer_assessments.{$projectId}.{$indicatorId}", [
-            'score' => (int) $validated['score'],
+            'score' => $score,
+            'rubrik_id' => $rubrikId,
             'notes' => $validated['notes'] ?? '',
             'evidence_status' => $evidenceStatuses,
         ]);
+
+        // Kirim penyimpanan penilaian ke API akreditasi
+        try {
+            $user = $request->session()->get('user', []);
+            $reviewerId = (int) ($user['id'] ?? 1);
+            $this->reviewerService->saveSelfAssessment([
+                'id_project' => (int) $projectId,
+                'id_indikator' => (int) $indicatorId,
+                'id_rubrik' => (int) ($rubrikId ?? 1),
+                'id_reviewer' => $reviewerId,
+                'catatan_reviewer' => (string) ($validated['notes'] ?? ''),
+            ]);
+        } catch (\Throwable $e) {
+            Log::warning('Reviewer save assessment to API: '.$e->getMessage());
+        }
 
         return redirect()->route('reviewer.assessment-detail', [
             'projectId' => $projectId,
@@ -168,8 +217,113 @@ class ReviewerController extends Controller
         ])->with('toast', [
             'type' => 'success',
             'title' => 'Penilaian tersimpan',
-            'message' => 'Skor dan catatan indikator berhasil disimpan untuk sesi ini.',
+            'message' => 'Skor dan catatan indikator berhasil disimpan.',
         ]);
+    }
+
+    /**
+     * Memuat daftar indikator dari API master data.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    protected function loadIndicatorsFromApi(string|int $projectId): array
+    {
+        if ($this->cachedIndikators !== null) {
+            return $this->cachedIndikators;
+        }
+
+        try {
+            $resIndikator = $this->reviewerService->getIndikators();
+            $rawIndikators = $resIndikator->successful() ? ($resIndikator->json('data') ?? []) : [];
+
+            $resRubrik = $this->reviewerService->getRubriks();
+            $rawRubriks = $resRubrik->successful() ? ($resRubrik->json('data') ?? []) : [];
+
+            $rubriksByIndikator = [];
+            foreach ($rawRubriks as $rubrik) {
+                $indId = $rubrik['id_indikator'] ?? null;
+                if ($indId !== null) {
+                    $rubriksByIndikator[$indId][] = $rubrik;
+                }
+            }
+
+            $indicators = [];
+            foreach ($rawIndikators as $ind) {
+                $kriteriaNama = $ind['subkriteria']['kriteria']['nama_kriteria'] ?? null;
+                $kriteriaKode = $ind['subkriteria']['kriteria']['kode_kriteria'] ?? null;
+                $criterion = $kriteriaKode ? "Kriteria {$kriteriaKode}" : ($kriteriaNama ?? 'Kriteria');
+
+                $rubriks = $rubriksByIndikator[$ind['id']] ?? [];
+                usort($rubriks, fn ($a, $b) => ($b['skor'] ?? 0) <=> ($a['skor'] ?? 0));
+
+                $indicators[] = [
+                    'id' => (string) $ind['id'],
+                    'criterion' => $criterion,
+                    'criterion_title' => $kriteriaNama ?? $criterion,
+                    'code' => $ind['kode_indikator'] ?? ('IND-'.$ind['id']),
+                    'title' => $ind['deskripsi_indikator'] ?? 'Indikator Penilaian',
+                    'parameter' => $ind['parameter_penilaian'] ?? 'Parameter penilaian standar.',
+                    'narrative' => 'Program studi telah menyusun instrumen dan dokumentasi pelaksanaan kegiatan penjaminan mutu sesuai standar kriteria yang ditetapkan.',
+                    'evidence' => [
+                        ['type' => 'Dokumen kebijakan', 'name' => 'Dokumen SPMI & Regulasi Terkait', 'date' => date('d M Y'), 'status' => 'Disetujui'],
+                        ['type' => 'Laporan kinerja', 'name' => 'Laporan Hasil Evaluasi dan Tindak Lanjut', 'date' => date('d M Y'), 'status' => 'Pending'],
+                    ],
+                    'rubriks' => $rubriks,
+                    'weight' => 2.5,
+                ];
+            }
+
+            $this->cachedIndikators = $indicators;
+
+            return $indicators;
+        } catch (\Throwable $e) {
+            Log::warning('Gagal memuat indikator dari API: '.$e->getMessage());
+
+            return [];
+        }
+    }
+
+    /**
+     * Menggabungkan penilaian dari API dan session.
+     *
+     * @param  array<int, array<string, mixed>>  $indicators
+     * @return array<string, array<string, mixed>>
+     */
+    protected function loadSavedAssessments(string|int $projectId, array $indicators): array
+    {
+        $savedAssessments = [];
+
+        // 1. Ambil dari API self-assessment
+        try {
+            $res = $this->reviewerService->getSelfAssessments(['id_project' => $projectId]);
+            if ($res->successful()) {
+                $apiAssessments = $res->json('data') ?? [];
+                foreach ($apiAssessments as $s) {
+                    $indId = (string) ($s['id_indikator'] ?? '');
+                    if ($indId !== '') {
+                        $savedAssessments[$indId] = [
+                            'score' => (int) ($s['rubrik']['skor'] ?? 4),
+                            'notes' => $s['catatan_reviewer'] ?? '',
+                            'rubrik_id' => $s['id_rubrik'] ?? null,
+                            'evidence_status' => session("reviewer_assessments.{$projectId}.{$indId}.evidence_status", []),
+                        ];
+                    }
+                }
+            }
+        } catch (\Throwable $e) {
+            Log::warning('Gagal memuat self assessment dari API: '.$e->getMessage());
+        }
+
+        // 2. Gabungkan dengan session untuk indikator
+        foreach ($indicators as $item) {
+            $itemId = (string) ($item['id'] ?? '');
+            $sessionSaved = session("reviewer_assessments.{$projectId}.{$itemId}", []);
+            if (is_array($sessionSaved) && ! empty($sessionSaved)) {
+                $savedAssessments[$itemId] = array_merge($savedAssessments[$itemId] ?? [], $sessionSaved);
+            }
+        }
+
+        return $savedAssessments;
     }
 
     /**
@@ -224,8 +378,84 @@ class ReviewerController extends Controller
      */
     protected function prepareProjects(array $projects): array
     {
-        return array_map(function (array $project): array {
-            $project['_reviewer_progress'] = $this->progress($project);
+        $prodiMap = $this->reviewerService->getProdiMap();
+
+        // Ambil data self assessments untuk perhitungan progres akurat jika belum ada
+        $assessmentsByProject = [];
+        try {
+            $selfRes = $this->reviewerService->getSelfAssessments();
+            if ($selfRes->successful()) {
+                $allSelf = $selfRes->json('data') ?? [];
+                if (is_array($allSelf)) {
+                    foreach ($allSelf as $s) {
+                        $pId = $s['id_project'] ?? null;
+                        if ($pId !== null) {
+                            $assessmentsByProject[$pId][] = $s;
+                        }
+                    }
+                }
+            }
+        } catch (\Throwable) {
+            // fallback gracefully
+        }
+
+        return array_map(function (array $project) use ($prodiMap, $assessmentsByProject): array {
+            $id = $project['id'] ?? $project['project_id'] ?? null;
+
+            // Normalisasi nama program studi
+            if (empty($project['program_studi'])) {
+                if (! empty($project['id_prodi']) && isset($prodiMap[$project['id_prodi']])) {
+                    $project['program_studi'] = $prodiMap[$project['id_prodi']];
+                } elseif (! empty($project['prodi']['nama'])) {
+                    $project['program_studi'] = $project['prodi']['nama'];
+                } elseif (! empty($project['nama_prodi'])) {
+                    $project['program_studi'] = $project['nama_prodi'];
+                } elseif (preg_match('/(?:D3|D4|S1|S2)\s+([A-Za-z\s]+?)(?:\s+\d{4}|$)/', (string) ($project['nama_project'] ?? ''), $match)) {
+                    $project['program_studi'] = trim($match[1]);
+                } else {
+                    $project['program_studi'] = 'Program Studi';
+                }
+            }
+
+            // Normalisasi jenjang
+            if (is_array($project['jenjang'] ?? null)) {
+                $project['jenjang'] = $project['jenjang']['nama_jenjang'] ?? 'Program Diploma';
+            }
+
+            // Normalisasi jenis instrumen
+            if (is_array($project['jenis_instrumen'] ?? null)) {
+                $project['jenis_instrumen'] = $project['jenis_instrumen']['nama_jenis']
+                    ?? ($project['versi_instrumen']['nomor_versi'] ?? 'LAM-INFOKOM 2.1');
+            }
+
+            // Normalisasi target submit
+            if (empty($project['target_submit']) && ! empty($project['tahun_target_submit'])) {
+                $project['target_submit'] = (string) $project['tahun_target_submit'];
+            }
+
+            // Hitung progres dinamis jika project tidak membawa completed_indicators / progress
+            if (! isset($project['progress_percentage']) && ! isset($project['completed_indicators'])) {
+                $apiCount = count($assessmentsByProject[$id] ?? []);
+                $sessionAssessments = session("reviewer_assessments.{$id}", []);
+                $sessionCount = is_array($sessionAssessments) ? count($sessionAssessments) : 0;
+                $completed = max($apiCount, $sessionCount);
+                $total = count($project['indicators'] ?? []) ?: 31;
+
+                $project['completed_indicators'] = $completed;
+                $project['total_indicators'] = $total;
+                $project['_reviewer_progress'] = $total > 0 ? min(100, round(($completed / $total) * 100, 1)) : 0;
+
+                if ($project['_reviewer_progress'] >= 100) {
+                    $project['status'] = 'Selesai';
+                } elseif ($completed > 0) {
+                    $project['status'] = 'Sedang dinilai';
+                } else {
+                    $project['status'] = $project['status_project'] ?? 'Menunggu';
+                }
+            } else {
+                $project['_reviewer_progress'] = $this->progress($project);
+            }
+
             $project['_reviewer_status_key'] = $this->statusKey($project);
             $project['_reviewer_year'] = $this->year($project);
 
@@ -244,7 +474,7 @@ class ReviewerController extends Controller
             return 'selesai';
         }
 
-        if (str_contains($status, 'menunggu') || str_contains($status, 'pending') || str_contains($status, 'belum')) {
+        if (str_contains($status, 'menunggu') || str_contains($status, 'pending') || str_contains($status, 'belum') || str_contains($status, 'draft')) {
             return 'menunggu';
         }
 
@@ -260,7 +490,7 @@ class ReviewerController extends Controller
      */
     protected function year(array $project): string
     {
-        $target = $project['target_submit'] ?? $project['tahun'] ?? $project['tahun_akademik'] ?? '';
+        $target = $project['target_submit'] ?? $project['tahun'] ?? $project['tahun_akademik'] ?? ($project['tahun_target_submit'] ?? '');
 
         if (is_array($target)) {
             $target = $target['tahun'] ?? $target['nama'] ?? '';

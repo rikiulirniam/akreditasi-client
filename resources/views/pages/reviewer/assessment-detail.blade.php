@@ -178,13 +178,38 @@
 
                         <fieldset class="space-y-1.5 p-3">
                             <legend class="sr-only">Pilih skor indikator</legend>
-                            @foreach ([
-                                4 => ['title' => 'Sangat baik', 'description' => 'Memenuhi seluruh aspek penilaian dengan bukti yang sangat relevan.', 'tone' => 'emerald'],
-                                3 => ['title' => 'Baik', 'description' => 'Memenuhi sebagian besar aspek penilaian dan didukung bukti.', 'tone' => 'blue'],
-                                2 => ['title' => 'Cukup', 'description' => 'Memenuhi beberapa aspek, tetapi masih perlu dilengkapi.', 'tone' => 'amber'],
-                                1 => ['title' => 'Kurang', 'description' => 'Pemenuhan aspek penilaian masih terbatas.', 'tone' => 'orange'],
-                                0 => ['title' => 'Tidak memenuhi', 'description' => 'Belum memenuhi aspek penilaian yang dipersyaratkan.', 'tone' => 'rose'],
-                            ] as $score => $rubric)
+                            @php
+                                $apiRubriks = $indicator['rubriks'] ?? [];
+                                $rubricOptions = [];
+                                if (!empty($apiRubriks)) {
+                                    foreach ($apiRubriks as $r) {
+                                        $s = (int) ($r['skor'] ?? 0);
+                                        $desc = $r['deskripsi_rubrik'] ?? $r['deskripsi'] ?? '';
+                                        $title = match ($s) {
+                                            4 => 'Sangat baik',
+                                            3 => 'Baik',
+                                            2 => 'Cukup',
+                                            1 => 'Kurang',
+                                            default => 'Tidak memenuhi',
+                                        };
+                                        $rubricOptions[$s] = [
+                                            'id' => $r['id'] ?? null,
+                                            'title' => $title,
+                                            'description' => $desc ?: 'Kriteria penilaian sesuai rubrik instrumen.',
+                                        ];
+                                    }
+                                    krsort($rubricOptions);
+                                } else {
+                                    $rubricOptions = [
+                                        4 => ['id' => null, 'title' => 'Sangat baik', 'description' => 'Memenuhi seluruh aspek penilaian dengan bukti yang sangat relevan.'],
+                                        3 => ['id' => null, 'title' => 'Baik', 'description' => 'Memenuhi sebagian besar aspek penilaian dan didukung bukti.'],
+                                        2 => ['id' => null, 'title' => 'Cukup', 'description' => 'Memenuhi beberapa aspek, tetapi masih perlu dilengkapi.'],
+                                        1 => ['id' => null, 'title' => 'Kurang', 'description' => 'Pemenuhan aspek penilaian masih terbatas.'],
+                                        0 => ['id' => null, 'title' => 'Tidak memenuhi', 'description' => 'Belum memenuhi aspek penilaian yang dipersyaratkan.'],
+                                    ];
+                                }
+                            @endphp
+                            @foreach ($rubricOptions as $score => $rubric)
                                 <label data-score-option="{{ $score }}"
                                     class="flex cursor-pointer items-start gap-2.5 rounded-lg border p-2.5 transition {{ $selectedScore === $score ? 'border-additional bg-blue-50 ring-1 ring-inset ring-additional' : 'border-slate-200 hover:bg-slate-50' }}">
                                     <span class="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-slate-100 text-[10px] font-extrabold text-slate-700">{{ $score }}</span>
@@ -193,6 +218,9 @@
                                         <span class="mt-0.5 block text-[8px] leading-relaxed text-slate-500">{{ $rubric['description'] }}</span>
                                     </span>
                                     <input class="mt-1 h-3.5 w-3.5 shrink-0 accent-[#01568D]" type="radio" name="score" value="{{ $score }}" @checked($selectedScore === $score)>
+                                    @if (!empty($rubric['id']))
+                                        <input type="hidden" name="rubrik_ids[{{ $score }}]" value="{{ $rubric['id'] }}">
+                                    @endif
                                 </label>
                             @endforeach
                         </fieldset>
