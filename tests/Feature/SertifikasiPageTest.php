@@ -154,7 +154,7 @@ class SertifikasiPageTest extends TestCase
             ->assertSee('Tambah Sertifikasi')
             ->assertSee('name="owner_type" value="tendik"', false)
             ->assertSee('name="owner_id" value="42"', false)
-            ->assertSee('<a href="'.route('sertifikasi.index').'"', false);
+            ->assertSee('<a href="'.e(route('sertifikasi.index', ['tipe_pemilik' => 'tendik', 'id_tendik' => 42])).'"', false);
     }
 
     public function test_create_form_loads_dosen_and_tendik_names_for_owner_dropdowns(): void
