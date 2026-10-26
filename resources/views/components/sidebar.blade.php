@@ -14,30 +14,20 @@
 
 <aside
     id="sidebar"
-    class="fixed inset-y-0 left-0 z-50 flex h-screen w-64 -translate-x-full flex-col bg-[#06284F] text-white transition-all duration-300 lg:relative lg:inset-auto lg:translate-x-0 shrink-0 select-none"
+    class="fixed inset-y-0 left-0 z-50 flex h-screen w-64 -translate-x-full flex-col bg-primary text-white transition-all duration-300 lg:relative lg:inset-auto lg:translate-x-0 shrink-0 select-none shadow-xl overflow-hidden"
 >
     {{-- Logo dan identitas sistem --}}
-    <div class="relative shrink-0 px-4 pt-4 pb-5">
-        <div class="flex items-center gap-3 px-1 py-3">
-            <svg
-                class="h-10 w-10 shrink-0 text-white"
-                viewBox="0 0 48 48"
-                fill="none"
-                aria-hidden="true"
-            >
-                <path d="M4 19L24 9L44 19L24 29L4 19Z" fill="currentColor"/>
-                <path d="M10 23V36M38 23V36" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>
-                <path d="M18 30V39H30V30" stroke="currentColor" stroke-width="3" stroke-linejoin="round"/>
-            </svg>
+    <div class="relative h-36 sm:h-40 p-4 sm:p-5 flex items-center gap-3.5 bg-cover bg-center overflow-hidden shrink-0"
+        style="background-image: url('{{ asset('images/background.jpeg') }}');">
+        <div class="absolute inset-0 bg-gradient-to-r from-primary/30 to-black/20 pointer-events-none"></div>
 
-            <div class="sidebar-text min-w-0">
-                <p class="text-sm font-extrabold uppercase leading-tight tracking-tight">
-                    Sistem Akreditasi
-                </p>
-                <p class="text-xs font-semibold uppercase leading-tight tracking-wider text-white/80">
-                    Program Studi
-                </p>
-            </div>
+        <div class="relative z-10 shrink-0">
+            <img src="{{ asset('images/cap-icon.png') }}" alt="Logo" class="w-12 h-auto drop-shadow-md">
+        </div>
+        <div class="relative z-10 sidebar-text min-w-0 text-white font-black leading-[1.12] select-none">
+            <span class="block text-sm sm:text-base font-extrabold tracking-wide">SISTEM</span>
+            <span class="block text-sm sm:text-base font-extrabold tracking-wide">AKREDITASI</span>
+            <span class="block text-xs sm:text-sm font-extrabold tracking-wide">PROGRAM STUDI</span>
         </div>
     </div>
 
@@ -316,7 +306,9 @@
                     @php
                         $isTendikPage = request()->routeIs('tenaga-kependidikan.*') || request()->routeIs('tenaga-pendidikan.*') || (request()->routeIs('pendidikan.*') && (request()->filled('id_tendik') || !empty($selectedTendik)));
                         $isDosenPage = request()->routeIs('dosen.*') || (request()->routeIs('pendidikan.*') && !empty($isDosen)) || (request()->routeIs('pendidikan.*') && (request()->filled('id_dosen') || !empty($selectedDosen)));
-                        $isSdmActive = $isDosenPage || $isTendikPage || request()->routeIs('sertifikasi.*');
+                        $isMitraPage = request()->routeIs('mitra.*');
+                        $isKerjasamaSdmPage = request()->routeIs('sdm-kerjasama.*') || request()->routeIs('kerjasama-sdm.*');
+                        $isSdmActive = $isDosenPage || $isTendikPage || $isMitraPage || $isKerjasamaSdmPage;
                     @endphp
                     <div>
                         <button
@@ -339,56 +331,59 @@
                         <div id="submenu-sdm"
                             data-is-active="{{ $isSdmActive ? 'true' : 'false' }}"
                             class="submenu-container {{ $isSdmActive ? '' : 'hidden' }} pl-10 pr-2 pt-1 pb-1 space-y-1.5">
-                            <a href="{{ route('dosen.index') }}" class="flex items-center gap-2.5 py-2.5 px-3.5 rounded-xl text-sm font-semibold transition-all duration-150 {{ $isDosenPage ? 'bg-white/20 text-white shadow-xs font-bold' : 'text-white/80 hover:text-white hover:bg-white/10' }}">
+                            <a href="{{ Route::has('dosen.index') ? route('dosen.index') : '#' }}" class="flex items-center gap-2.5 py-2.5 px-3.5 rounded-xl text-sm font-semibold transition-all duration-150 {{ $isDosenPage ? 'bg-white/20 text-white shadow-xs font-bold' : 'text-white/80 hover:text-white hover:bg-white/10' }}">
                                 <span class="w-1.5 h-1.5 rounded-full {{ $isDosenPage ? 'bg-secondary' : 'bg-white/40' }} shrink-0"></span>
                                 <span class="truncate">Dosen</span>
                             </a>
-                            <a href="{{ route('tenaga-kependidikan.index') }}" class="flex items-center gap-2.5 py-2.5 px-3.5 rounded-xl text-sm font-semibold transition-all duration-150 {{ $isTendikPage ? 'bg-white/20 text-white shadow-xs font-bold' : 'text-white/80 hover:text-white hover:bg-white/10' }}">
+                            <a href="{{ Route::has('tenaga-kependidikan.index') ? route('tenaga-kependidikan.index') : '#' }}" class="flex items-center gap-2.5 py-2.5 px-3.5 rounded-xl text-sm font-semibold transition-all duration-150 {{ $isTendikPage ? 'bg-white/20 text-white shadow-xs font-bold' : 'text-white/80 hover:text-white hover:bg-white/10' }}">
                                 <span class="w-1.5 h-1.5 rounded-full {{ $isTendikPage ? 'bg-secondary' : 'bg-white/40' }} shrink-0"></span>
-                                <span class="truncate">Tenaga Kependidikan</span>
+                                <span class="truncate">Tendik (Tenaga pendidikan)</span>
                             </a>
-                            <a href="{{ route('sertifikasi.index') }}" class="flex items-center gap-2.5 py-2.5 px-3.5 rounded-xl text-sm font-semibold transition-all duration-150 {{ request()->routeIs('sertifikasi.*') ? 'bg-white/20 text-white shadow-xs font-bold' : 'text-white/80 hover:text-white hover:bg-white/10' }}">
-                                <span class="w-1.5 h-1.5 rounded-full {{ request()->routeIs('sertifikasi.*') ? 'bg-secondary' : 'bg-white/40' }} shrink-0"></span>
-                                <span class="truncate">Sertifikasi</span>
+                            <a href="#" class="flex items-center gap-2.5 py-2.5 px-3.5 rounded-xl text-sm font-semibold text-white/80 hover:text-white hover:bg-white/10 transition-all duration-150">
+                                <span class="w-1.5 h-1.5 rounded-full bg-white/40 shrink-0"></span>
+                                <span class="truncate">Mitra</span>
+                            </a>
+                            <a href="#" class="flex items-center gap-2.5 py-2.5 px-3.5 rounded-xl text-sm font-semibold text-white/80 hover:text-white hover:bg-white/10 transition-all duration-150">
+                                <span class="w-1.5 h-1.5 rounded-full bg-white/40 shrink-0"></span>
+                                <span class="truncate">Kerja Sama</span>
                             </a>
                         </div>
                     </div>
 
                     {{-- Tri Dharma --}}
+                    @php
+                        $isPenelitianPkmPage = request()->routeIs('penelitian.*') || request()->routeIs('pkm.*') || request()->routeIs('penelitian-pkm.*');
+                        $isLuaranPage = request()->routeIs('luaran.*') || request()->routeIs('luaran-tridharma.*');
+                        $isTridharmaActive = $isPenelitianPkmPage || $isLuaranPage;
+                    @endphp
                     <div>
                         <button
                             type="button"
-                            class="sidebar-link submenu-toggle-btn w-full flex items-center justify-between gap-3.5 px-3.5 py-3 rounded-2xl text-sm font-semibold text-white/80 hover:bg-white/10 hover:text-white transition-all duration-150 group cursor-pointer"
+                            class="sidebar-link submenu-toggle-btn w-full flex items-center justify-between gap-3.5 px-3.5 py-3 rounded-2xl text-sm font-semibold {{ $isTridharmaActive ? 'bg-white/15 text-white' : 'text-white/80 hover:bg-white/10 hover:text-white' }} transition-all duration-150 group cursor-pointer"
                             data-target="submenu-tridharma"
                             title="Tri Dharma"
                         >
                             <div class="flex items-center gap-3.5 min-w-0">
-                                <svg class="w-6 h-6 shrink-0 fill-current text-white/90 group-hover:text-white" viewBox="0 0 24 24">
-                                    <path d="M12 3L1 9l4 2.18v6L12 21l7-3.82v-6l2-1.09V17h2V9L12 3zm6.82 6L12 12.72 5.18 9 12 5.28 18.82 9zM17 15.99l-5 2.73-5-2.73v-3.72L12 15l5-2.73v3.72z"/>
+                                <svg class="w-6 h-6 shrink-0 fill-current text-white/90 group-hover:text-white" viewBox="0 0 70 70">
+                                    <path fill-rule="evenodd" clip-rule="evenodd" d="M59.5 0.2L60.6 1.8L60.6 58.1L57.5 61.9L60.6 65.4L60.6 69.6L59.9 70L13 70L11.2 69.1L10.2 68.2L9.4 66.2L9.4 3.8L10.2 1.8L13.2 0ZM51 21.2L35.4 14L34 14.1L31 15.9L29.6 16.1L19.1 21L19.1 22L22.1 23L23 23.9L23 27.2L22 28.6L21.8 30L22 32.9L22.9 34.2L21.2 38.9L21.9 41.5L23.5 42.6L24.6 42.6L25.8 42.1L26.9 40.5L26.9 38.2L25.5 35L26.5 31.9L26.4 28.9L25.1 26.5L25.5 25L26.8 25.1L35.1 29L48.8 23L50.8 22ZM14 64.8L14.5 65.4L54.8 65.4L55.1 64.5L53.1 62.6L52.9 61.6L54.9 59.6L55.2 58.6L54.5 58.2L14.8 58.2L14 59.1ZM44.6 29.2L42.9 29.1L34.9 32.8L31.1 31L29.8 31L29 35.6L30 39.8L32.1 40.9L37.4 41L41 39.9L42.5 38.9L44 37.1L44.6 35.2Z" />
                                 </svg>
                                 <span class="sidebar-text truncate">Tri Dharma</span>
                             </div>
-                            <svg class="submenu-chevron sidebar-chevron w-4 h-4 text-white/60 group-hover:text-white transition-transform duration-200" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                            <svg class="submenu-chevron sidebar-chevron w-4 h-4 text-white/60 group-hover:text-white transition-transform duration-200 {{ $isTridharmaActive ? 'rotate-180' : '' }}" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
                             </svg>
                         </button>
 
-                        <div id="submenu-tridharma" class="submenu-container hidden pl-10 pr-2 pt-1 pb-1 space-y-1.5">
-                            <a href="#" class="flex items-center gap-2.5 py-2.5 px-3.5 rounded-xl text-sm font-semibold text-white/80 hover:text-white hover:bg-white/10 transition">
-                                <span class="w-1.5 h-1.5 rounded-full bg-white/40 shrink-0"></span>
-                                <span class="truncate">Pendidikan &amp; Pengajaran</span>
+                        <div id="submenu-tridharma"
+                            data-is-active="{{ $isTridharmaActive ? 'true' : 'false' }}"
+                            class="submenu-container {{ $isTridharmaActive ? '' : 'hidden' }} pl-10 pr-2 pt-1 pb-1 space-y-1.5">
+                            <a href="#" class="flex items-center gap-2.5 py-2.5 px-3.5 rounded-xl text-sm font-semibold transition-all duration-150 {{ $isPenelitianPkmPage ? 'bg-white/20 text-white shadow-xs font-bold' : 'text-white/80 hover:text-white hover:bg-white/10' }}">
+                                <span class="w-1.5 h-1.5 rounded-full {{ $isPenelitianPkmPage ? 'bg-secondary' : 'bg-white/40' }} shrink-0"></span>
+                                <span class="truncate">Penelitian &amp; PKM</span>
                             </a>
-                            <a href="#" class="flex items-center gap-2.5 py-2.5 px-3.5 rounded-xl text-sm font-semibold text-white/80 hover:text-white hover:bg-white/10 transition">
-                                <span class="w-1.5 h-1.5 rounded-full bg-white/40 shrink-0"></span>
-                                <span class="truncate">Penelitian</span>
-                            </a>
-                            <a href="#" class="flex items-center gap-2.5 py-2.5 px-3.5 rounded-xl text-sm font-semibold text-white/80 hover:text-white hover:bg-white/10 transition">
-                                <span class="w-1.5 h-1.5 rounded-full bg-white/40 shrink-0"></span>
-                                <span class="truncate">Pengabdian</span>
-                            </a>
-                            <a href="#" class="flex items-center gap-2.5 py-2.5 px-3.5 rounded-xl text-sm font-semibold text-white/80 hover:text-white hover:bg-white/10 transition">
-                                <span class="w-1.5 h-1.5 rounded-full bg-white/40 shrink-0"></span>
-                                <span class="truncate">Kerja Sama</span>
+                            <a href="#" class="flex items-center gap-2.5 py-2.5 px-3.5 rounded-xl text-sm font-semibold transition-all duration-150 {{ $isLuaranPage ? 'bg-white/20 text-white shadow-xs font-bold' : 'text-white/80 hover:text-white hover:bg-white/10' }}">
+                                <span class="w-1.5 h-1.5 rounded-full {{ $isLuaranPage ? 'bg-secondary' : 'bg-white/40' }} shrink-0"></span>
+                                <span class="truncate">Luaran</span>
                             </a>
                         </div>
                     </div>

@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
 
 class DashboardTest extends TestCase
@@ -104,5 +105,58 @@ class DashboardTest extends TestCase
         $response->assertSee('UI/UX Miaw Miaw');
         $response->assertSee('2026');
         $response->assertSee('aria-label="Lihat prestasi Gerald Manunggal Fauzi"', false);
+    }
+
+    public function test_dashboard_displays_live_tridharma_metrics_from_api(): void
+    {
+        Http::fake([
+            'https://tridharma.fayra.my.id/api/v1/dosen/statistik' => Http::response([
+                'success' => true,
+                'data' => [
+                    'total_aktif' => 28,
+                    'sebaran_pendidikan' => [
+                        ['jenjang' => 'S2', 'total_dosen' => 12],
+                        ['jenjang' => 'S3', 'total_dosen' => 11],
+                    ],
+                    'sebaran_jabatan' => [
+                        ['nama_jabatan' => 'Asisten Ahli', 'total_dosen' => 6],
+                        ['nama_jabatan' => 'Lektor Kepala', 'total_dosen' => 7],
+                    ],
+                ],
+            ]),
+            'https://tridharma.fayra.my.id/api/v1/tridharma/summary*' => Http::response([
+                'success' => true,
+                'data' => [
+                    'kegiatan' => [
+                        'penelitian' => ['total' => 48],
+                        'pkm' => ['total' => 31],
+                    ],
+                    'luaran' => [
+                        'by_jenis' => [
+                            'HKI' => 19,
+                            'Jurnal Internasional' => 25,
+                        ],
+                    ],
+                ],
+            ]),
+            'https://tridharma.fayra.my.id/api/v1/kerjasama/aktif*' => Http::response([
+                'success' => true,
+                'data' => [
+                    'total_aktif' => 24,
+                ],
+            ]),
+        ]);
+
+        $response = $this->withSession($this->authSession())->get(route('dashboard'));
+
+        $response->assertOk();
+        $response->assertSee('28'); // DTPS
+        $response->assertSee('11'); // Dosen S3
+        $response->assertSee('7');  // Lektor Kepala
+        $response->assertSee('48'); // Penelitian
+        $response->assertSee('25'); // Publikasi Scopus / Internasional
+        $response->assertSee('19'); // HKI
+        $response->assertSee('31'); // PKM
+        $response->assertSee('24'); // Kerja Sama Aktif
     }
 }
