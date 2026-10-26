@@ -150,7 +150,7 @@ class PendidikanPageTest extends TestCase
             ->assertSee('Akun Dosen')
             ->assertSee('Dr. Ir. Ahmad Dahlan, M.T.')
             ->assertSee('Riwayat Pendidikan Saya')
-            ->assertSee('1 Data ditemukan')
+            ->assertSee('2 Data ditemukan')
             ->assertSee('Universitas Gadjah Mada')
             // Should NOT see another dosen's education
             ->assertDontSee('Institut Teknologi Bandung');
@@ -342,5 +342,77 @@ class PendidikanPageTest extends TestCase
         $responseS2->assertOk()
             ->assertSee('ITB')
             ->assertDontSee('Polines');
+    }
+
+    public function test_viewing_pendidikan_from_detail_dosen_only_shows_that_dosen_education(): void
+    {
+        Http::fake([
+            'https://tridharma.fayra.my.id/api/dosen/2*' => Http::response([
+                'success' => true,
+                'data' => [
+                    'id_dosen' => 2,
+                    'nama_dosen' => 'Dr. Ir. Ahmad Dahlan, M.T.',
+                    'email' => 'ahmad.dahlan@polines.ac.id',
+                    'id_pendidikan' => 2,
+                    'pendidikan' => [
+                        'id_pendidikan' => 2,
+                        'universitas' => 'Universitas Gadjah Mada',
+                        'program_studi' => 'Ilmu Komputer',
+                        'jenjang' => 'S2',
+                        'tahun_lulus' => 2021,
+                    ],
+                ],
+            ]),
+            'https://tridharma.fayra.my.id/api/pendidikan/2' => Http::response([
+                'success' => true,
+                'data' => [
+                    'id_pendidikan' => 2,
+                    'universitas' => 'Universitas Gadjah Mada',
+                    'program_studi' => 'Ilmu Komputer',
+                    'jenjang' => 'S2',
+                    'tahun_lulus' => 2021,
+                ],
+            ]),
+            'https://tridharma.fayra.my.id/api/dosen*' => Http::response([
+                'success' => true,
+                'data' => [
+                    ['id_dosen' => 1, 'nama_dosen' => 'Dr. Budi Santoso'],
+                    ['id_dosen' => 2, 'nama_dosen' => 'Dr. Ir. Ahmad Dahlan, M.T.'],
+                ],
+            ]),
+            'https://tridharma.fayra.my.id/api/tendik*' => Http::response([
+                'success' => true,
+                'data' => [],
+            ]),
+            // Global pendidikan contains other lecturers' education
+            'https://tridharma.fayra.my.id/api/pendidikan*' => Http::response([
+                'success' => true,
+                'data' => [
+                    [
+                        'id_pendidikan' => 1,
+                        'universitas' => 'Institut Teknologi Bandung (Milik Dosen Lain)',
+                        'program_studi' => 'Teknik Elektro',
+                        'jenjang' => 'S2',
+                        'tahun_lulus' => 2020,
+                    ],
+                ],
+            ]),
+        ]);
+
+        // Kaprodi navigates from Detail Dosen 2 to Pendidikan
+        $response = $this->withSession([
+            'access_token' => 'mock-jwt-token',
+            'user' => [
+                'id' => 99,
+                'role' => 'kaprodi',
+                'nama' => 'Kaprodi Admin',
+            ],
+        ])->get(route('pendidikan.index', ['id_dosen' => 2]));
+
+        $response->assertOk()
+            ->assertSee('Dr. Ir. Ahmad Dahlan, M.T.')
+            ->assertSee('Universitas Gadjah Mada')
+            // Crucial: Must NOT see education from other lecturers!
+            ->assertDontSee('Institut Teknologi Bandung (Milik Dosen Lain)');
     }
 }

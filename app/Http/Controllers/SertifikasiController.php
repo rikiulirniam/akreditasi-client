@@ -29,6 +29,9 @@ class SertifikasiController extends Controller
 
         $idTendik = ! empty($filters['id_tendik']) ? (int) $filters['id_tendik'] : null;
         $selectedTendik = null;
+        $idDosen = ! empty($filters['id_dosen']) ? (int) $filters['id_dosen'] : null;
+        $selectedDosen = null;
+        $dosenRecord = null;
 
         if ($idTendik !== null) {
             try {
@@ -51,6 +54,27 @@ class SertifikasiController extends Controller
             }
         }
 
+        if ($idDosen !== null) {
+            try {
+                $dosenResp = $this->tridharmaService->getDosenById($idDosen);
+                if ($dosenResp->successful()) {
+                    $dosenRecord = $dosenResp->json('data', []);
+                    $selectedDosen = [
+                        'id' => (int) ($dosenRecord['id_dosen'] ?? $dosenRecord['id'] ?? $idDosen),
+                        'nama' => (string) ($dosenRecord['nama_dosen'] ?? $dosenRecord['nama'] ?? 'Dosen #'.$idDosen),
+                    ];
+                }
+            } catch (\Throwable) {
+            }
+
+            if ($selectedDosen === null) {
+                $selectedDosen = [
+                    'id' => $idDosen,
+                    'nama' => 'Dosen #'.$idDosen,
+                ];
+            }
+        }
+
         try {
             $response = $this->tridharmaService->getSertifikasiList(array_filter($filters, static fn ($value) => $value !== null && $value !== ''));
         } catch (ConnectionException) {
@@ -59,6 +83,7 @@ class SertifikasiController extends Controller
                 'pagination' => ['total' => 0, 'per_page' => 10, 'current_page' => 1, 'last_page' => 1],
                 'filters' => $filters,
                 'selectedTendik' => $selectedTendik,
+                'selectedDosen' => $selectedDosen,
                 'apiError' => 'Tidak dapat terhubung ke server Tridharma. Silakan coba lagi nanti.',
             ]);
         }
@@ -73,6 +98,7 @@ class SertifikasiController extends Controller
                 'pagination' => ['total' => 0, 'per_page' => 10, 'current_page' => 1, 'last_page' => 1],
                 'filters' => $filters,
                 'selectedTendik' => $selectedTendik,
+                'selectedDosen' => $selectedDosen,
                 'apiError' => $this->responseMessage($response, 'Gagal memuat data sertifikasi.'),
             ]);
         }
@@ -82,6 +108,26 @@ class SertifikasiController extends Controller
 
         if ($idTendik !== null) {
             $certifications = $this->tridharmaService->mergeTendikSertifikasi($idTendik, $certifications);
+        }
+
+        if ($idDosen !== null && empty($certifications) && ! empty($dosenRecord['sertifikasi'])) {
+            $sertifikasiUrl = is_string($dosenRecord['sertifikasi']) ? $dosenRecord['sertifikasi'] : ($dosenRecord['sertifikasi']['url'] ?? '');
+            if ($sertifikasiUrl !== '') {
+                $certifications = [
+                    [
+                        'id' => 1,
+                        'id_sertifikasi' => 1,
+                        'id_dosen' => $idDosen,
+                        'jenis_sertifikasi' => 'Sertifikasi Dosen',
+                        'tahun_sertifikasi' => (int) date('Y'),
+                        'nomor_sertifikat' => '-',
+                        'url_sertifikasi' => $sertifikasiUrl,
+                        'status_sertifikasi' => 'Tersertifikasi',
+                        'nama' => $selectedDosen['nama'],
+                        'nama_dosen' => $selectedDosen['nama'],
+                    ],
+                ];
+            }
         }
 
         $pagination = [
@@ -98,6 +144,7 @@ class SertifikasiController extends Controller
             'pagination' => $pagination,
             'filters' => $filters,
             'selectedTendik' => $selectedTendik,
+            'selectedDosen' => $selectedDosen,
             'apiError' => null,
         ]);
     }
