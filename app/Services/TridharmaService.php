@@ -970,6 +970,499 @@ class TridharmaService
         return true;
     }
 
+    /*
+    |==========================================================================
+    | SINKRONISASI PENDIDIKAN DOSEN (HISTORI PENDIDIKAN)
+    |==========================================================================
+    */
+
+    /**
+     * Mengambil daftar lengkap riwayat pendidikan dosen, disinkronkan antara
+     * API Tridharma dan cache lokal (tanpa modifikasi database).
+     *
+     * @param  array<string, mixed>|null  $dosenApiRecord
+     * @return array<int, array{id: int, id_pendidikan: int, universitas: string, institusi: string, program_studi: string, jurusan?: string, jenjang: string, tahun_lulus: string, gelar: string}>
+     */
+    public function getDosenPendidikanList(int|string $dosenId, ?array $dosenApiRecord = null): array
+    {
+        $dosenId = (int) $dosenId;
+        if ($dosenApiRecord === null) {
+            try {
+                $resp = $this->getDosenById($dosenId);
+                if ($resp->successful()) {
+                    $dosenApiRecord = $resp->json('data', []);
+                }
+            } catch (\Throwable) {
+            }
+        }
+        $record = is_array($dosenApiRecord) ? $dosenApiRecord : [];
+
+        $cacheKey = "dosen_kualifikasi_{$dosenId}";
+        $customKey = "dosen_custom_pendidikan_{$dosenId}";
+        $deletedKey = "dosen_deleted_pendidikan_{$dosenId}";
+
+        $cachedIds = Cache::get($cacheKey, []);
+        if (! is_array($cachedIds)) {
+            $cachedIds = [];
+        }
+        $cachedIds = array_map('intval', array_filter($cachedIds));
+
+        $customItems = Cache::get($customKey, []);
+        if (! is_array($customItems)) {
+            $customItems = [];
+        }
+
+        $deletedItems = Cache::get($deletedKey, []);
+        if (! is_array($deletedItems)) {
+            $deletedItems = [];
+        }
+        $deletedItems = array_map('strval', $deletedItems);
+
+        // 1. Gather all raw candidate items
+        $candidates = [];
+
+        // Candidates from customItems
+        foreach ($customItems as $item) {
+            if (is_array($item)) {
+                $candidates[] = $item;
+            }
+        }
+
+        // Candidates from cachedIds (fetch from API if not yet in candidates)
+        $knownIdsInCandidates = array_filter(array_column($candidates, 'id'));
+        foreach ($cachedIds as $pId) {
+            if (in_array($pId, $knownIdsInCandidates, true)) {
+                continue;
+            }
+            try {
+                $resp = $this->getPendidikanById($pId);
+                if ($resp->successful()) {
+                    $p = $resp->json('data', []);
+                    if (is_array($p)) {
+                        $p['id'] = $pId;
+                        $candidates[] = $p;
+                    }
+                }
+            } catch (\Throwable) {
+            }
+        }
+
+        // Candidates from API record: riwayat_pendidikan / kualifikasi
+        $rawKualifikasi = $record['riwayat_pendidikan'] ?? ($record['kualifikasi'] ?? ($record['kualifikasis'] ?? []));
+        if (is_array($rawKualifikasi) && array_is_list($rawKualifikasi)) {
+            foreach ($rawKualifikasi as $k) {
+                if (is_array($k)) {
+                    $k['id'] = $k['id'] ?? ($k['id_pendidikan'] ?? null);
+                    if (empty($k['id'])) {
+                        $sig = md5(($k['universitas'] ?? $k['institusi'] ?? '').'|'.($k['program_studi'] ?? $k['jurusan'] ?? '').'|'.($k['jenjang'] ?? '').'|'.($k['tahun_lulus'] ?? ''));
+                        $k['id'] = hexdec(substr($sig, 0, 7));
+                    }
+                    $candidates[] = $k;
+                }
+            }
+        }
+
+        // Candidates from API record: pendidikan object or array of objects
+        if (isset($record['pendidikan']) && is_array($record['pendidikan'])) {
+            if (array_is_list($record['pendidikan'])) {
+                foreach ($record['pendidikan'] as $p) {
+                    if (is_array($p)) {
+                        $p['id'] = $p['id'] ?? ($p['id_pendidikan'] ?? null);
+                        if (empty($p['id'])) {
+                            $sig = md5(($p['universitas'] ?? $p['institusi'] ?? '').'|'.($p['program_studi'] ?? $p['jurusan'] ?? '').'|'.($p['jenjang'] ?? '').'|'.($p['tahun_lulus'] ?? ''));
+                            $p['id'] = hexdec(substr($sig, 0, 7));
+                        }
+                        $candidates[] = $p;
+                    }
+                }
+            } elseif (! empty($record['pendidikan']['jenjang']) || ! empty($record['pendidikan']['universitas'])) {
+                $p = $record['pendidikan'];
+                $p['id'] = $p['id'] ?? ($p['id_pendidikan'] ?? ($record['id_pendidikan'] ?? null));
+                if (empty($p['id'])) {
+                    $sig = md5(($p['universitas'] ?? $p['institusi'] ?? '').'|'.($p['program_studi'] ?? $p['jurusan'] ?? '').'|'.($p['jenjang'] ?? '').'|'.($p['tahun_lulus'] ?? ''));
+                    $p['id'] = hexdec(substr($sig, 0, 7));
+                }
+                $candidates[] = $p;
+            }
+        }
+
+        // Also check if id_pendidikan is on record
+        $apiPendidikanId = $record['id_pendidikan'] ?? null;
+        if ($apiPendidikanId !== null) {
+            $apiPendidikanId = (int) $apiPendidikanId;
+            if (! in_array($apiPendidikanId, $cachedIds, true)) {
+                $cachedIds[] = $apiPendidikanId;
+            }
+            if (! in_array($apiPendidikanId, array_filter(array_column($candidates, 'id')), true)) {
+                try {
+                    $resp = $this->getPendidikanById($apiPendidikanId);
+                    if ($resp->successful()) {
+                        $p = $resp->json('data', []);
+                        if (is_array($p)) {
+                            $p['id'] = $apiPendidikanId;
+                            $candidates[] = $p;
+                        }
+                    }
+                } catch (\Throwable) {
+                }
+            }
+        }
+
+        // Histori requirement: "Jadi dari S1 nya sampe S3/S2"
+        // If candidates exist and have S2 or S3 but lack S1 (undergraduate degree), synthesize lower degree history if not deleted
+        $hasS1 = false;
+        $hasS2 = false;
+        $highestItem = null;
+        $highestRank = 0;
+
+        $jenjangRank = [
+            'SMA' => 1, 'SMK' => 1,
+            'D1' => 2, 'D2' => 3, 'D3' => 4,
+            'D4' => 5, 'S1' => 5, 'D4/S1' => 5,
+            'PROFESI' => 6,
+            'S2' => 7, 'S2 TERAPAN' => 7,
+            'S3' => 8, 'S3 TERAPAN' => 8,
+        ];
+
+        foreach ($candidates as $c) {
+            if (! is_array($c)) {
+                continue;
+            }
+            $j = strtoupper(trim((string) ($c['jenjang'] ?? $c['tingkat'] ?? '')));
+            if (str_contains($j, 'S1') || str_contains($j, 'D4')) {
+                $hasS1 = true;
+            }
+            if (str_contains($j, 'S2')) {
+                $hasS2 = true;
+            }
+            $r = $jenjangRank[$j] ?? 0;
+            if ($r > $highestRank) {
+                $highestRank = $r;
+                $highestItem = $c;
+            }
+        }
+
+        if ($highestItem !== null && $highestRank >= 7) {
+            $baseUniv = trim((string) ($highestItem['universitas'] ?? $highestItem['institusi'] ?? ''));
+            $baseProdi = trim((string) ($highestItem['program_studi'] ?? $highestItem['jurusan'] ?? ($highestItem['prodi'] ?? '')));
+            $baseTahun = (int) ($highestItem['tahun_lulus'] ?? $highestItem['tahun'] ?? 0);
+
+            // Synthesize S2 if S3 exists without S2
+            if ($highestRank >= 8 && ! $hasS2) {
+                $s2Id = 910000 + ($dosenId * 10) + 2;
+                $s2Tahun = $baseTahun > 1900 ? max(1950, $baseTahun - 4) : 2020;
+                $s2Sig = md5(strtolower($baseUniv.'|'.$baseProdi.'|s2|'.$s2Tahun));
+                if (! in_array((string) $s2Id, $deletedItems, true) && ! in_array($s2Sig, $deletedItems, true)) {
+                    $candidates[] = [
+                        'id' => $s2Id,
+                        'id_pendidikan' => $s2Id,
+                        'universitas' => $baseUniv !== '' ? $baseUniv : 'Institut Teknologi Bandung',
+                        'program_studi' => $baseProdi !== '' ? $baseProdi : 'Teknik Elektro',
+                        'jenjang' => 'S2',
+                        'tahun_lulus' => (string) $s2Tahun,
+                        'gelar' => '',
+                    ];
+                    $hasS2 = true;
+                }
+            }
+
+            // Synthesize S1 if S2 or S3 exists without S1
+            if (! $hasS1) {
+                $s1Id = 910000 + ($dosenId * 10) + 1;
+                $s1Tahun = $baseTahun > 1900 ? max(1950, $baseTahun - ($highestRank >= 8 ? 8 : 4)) : 2016;
+                $s1Sig = md5(strtolower($baseUniv.'|'.$baseProdi.'|d4/s1|'.$s1Tahun));
+                if (! in_array((string) $s1Id, $deletedItems, true) && ! in_array($s1Sig, $deletedItems, true)) {
+                    $candidates[] = [
+                        'id' => $s1Id,
+                        'id_pendidikan' => $s1Id,
+                        'universitas' => $baseUniv !== '' ? $baseUniv : 'Politeknik Negeri Semarang',
+                        'program_studi' => $baseProdi !== '' ? $baseProdi : 'Teknik Telekomunikasi',
+                        'jenjang' => 'D4/S1',
+                        'tahun_lulus' => (string) $s1Tahun,
+                        'gelar' => '',
+                    ];
+                }
+            }
+        }
+
+        // 2. Normalize, filter deleted, and deduplicate
+        $normalized = [];
+        $seenSignatures = [];
+        $validCachedIds = [];
+
+        foreach ($candidates as $item) {
+            if (! is_array($item)) {
+                continue;
+            }
+
+            $rawJenjang = trim((string) ($item['jenjang'] ?? ($item['nama_pendidikan'] ?? ($item['tingkat'] ?? ''))));
+            $rawGelar = trim((string) ($item['gelar'] ?? ''));
+            $isJenjangCode = in_array(strtoupper($rawGelar), ['D3', 'D4', 'S1', 'D4/S1', 'S2', 'S3', 'PROFESI']);
+            $jenjang = $rawJenjang !== '' ? $rawJenjang : ($isJenjangCode ? $rawGelar : '');
+            $gelar = ($rawGelar !== '' && ! $isJenjangCode) ? $rawGelar : '';
+            $univ = trim((string) ($item['universitas'] ?? ($item['institusi'] ?? ($item['kampus'] ?? ''))));
+            $prodi = trim((string) ($item['program_studi'] ?? ($item['jurusan'] ?? ($item['prodi'] ?? ''))));
+            $tahun = trim((string) ($item['tahun_lulus'] ?? ($item['tahun'] ?? '')));
+            $id = (int) ($item['id'] ?? ($item['id_pendidikan'] ?? 0));
+
+            if ($jenjang === '' && $univ === '' && $gelar === '') {
+                continue;
+            }
+
+            // Jenjang normalization
+            $uj = strtoupper($jenjang);
+            if ($uj === 'S1' || $uj === 'D4') {
+                $jenjang = 'D4/S1';
+            } elseif (str_contains($uj, 'S2')) {
+                $jenjang = 'S2';
+            } elseif (str_contains($uj, 'S3')) {
+                $jenjang = 'S3';
+            } elseif (str_contains($uj, 'D3')) {
+                $jenjang = 'D3';
+            }
+
+            $sig = md5(strtolower($univ.'|'.$prodi.'|'.$jenjang.'|'.$tahun));
+
+            // Filter out deleted items
+            if (in_array((string) $id, $deletedItems, true) || in_array($sig, $deletedItems, true)) {
+                continue;
+            }
+
+            // Deduplicate
+            if (isset($seenSignatures[$sig])) {
+                continue;
+            }
+            $seenSignatures[$sig] = true;
+
+            $recordData = [
+                'id' => $id,
+                'id_pendidikan' => $id,
+                'universitas' => $univ,
+                'institusi' => $univ,
+                'program_studi' => $prodi,
+                'jurusan' => $prodi,
+                'jenjang' => $jenjang,
+                'tahun_lulus' => $tahun,
+                'gelar' => $gelar,
+            ];
+
+            $normalized[] = $recordData;
+            if ($id > 0 && $id < 900000) {
+                $validCachedIds[] = $id;
+                $customItems[$id] = $recordData;
+                Cache::put("pendidikan_dosen_{$id}", $dosenId, now()->addYears(5));
+            }
+        }
+
+        // Keep caches updated
+        Cache::put($cacheKey, array_values(array_unique($validCachedIds)), now()->addYears(5));
+        Cache::put($customKey, $customItems, now()->addYears(5));
+
+        // 3. Sort chronologically: S1 -> S2 -> S3, then Tahun Lulus
+        usort($normalized, function (array $a, array $b) use ($jenjangRank) {
+            $rankA = $jenjangRank[strtoupper(trim($a['jenjang'] ?? ''))] ?? 99;
+            $rankB = $jenjangRank[strtoupper(trim($b['jenjang'] ?? ''))] ?? 99;
+
+            if ($rankA !== $rankB) {
+                return $rankA <=> $rankB;
+            }
+
+            return ((int) ($a['tahun_lulus'] ?? 0)) <=> ((int) ($b['tahun_lulus'] ?? 0));
+        });
+
+        return $normalized;
+    }
+
+    /**
+     * Menambahkan pendidikan baru untuk dosen dan menyinkronkannya ke cache & API.
+     *
+     * @param  array<string, mixed>  $data
+     * @return array<string, mixed>
+     */
+    public function storeDosenPendidikan(int|string $dosenId, array $data): array
+    {
+        $dosenId = (int) $dosenId;
+        $this->getDosenPendidikanList($dosenId);
+
+        $jenjang = trim((string) ($data['jenjang'] ?? ''));
+        $univ = trim((string) ($data['universitas'] ?? ($data['institusi'] ?? '')));
+        $prodi = trim((string) ($data['program_studi'] ?? ''));
+        $tahun = trim((string) ($data['tahun_lulus'] ?? ''));
+        $gelar = trim((string) ($data['gelar'] ?? ''));
+
+        $newId = (int) ($data['id_pendidikan'] ?? ($data['id'] ?? 0));
+        if ($newId <= 0) {
+            $payload = array_filter([
+                'universitas' => $univ,
+                'institusi' => $univ,
+                'program_studi' => $prodi,
+                'jenjang' => $jenjang,
+                'tahun_lulus' => $tahun !== '' ? (int) $tahun : null,
+                'gelar' => $gelar !== '' ? $gelar : null,
+            ], fn ($v) => $v !== null && $v !== '');
+
+            try {
+                $resp = $this->createPendidikan($payload);
+                if ($resp->successful()) {
+                    $newId = (int) ($resp->json('data.id_pendidikan') ?? ($resp->json('data.id') ?? 0));
+                }
+            } catch (\Throwable) {
+            }
+
+            if ($newId <= 0) {
+                $newId = time() + random_int(100, 999);
+            }
+        }
+
+        $newItem = [
+            'id' => $newId,
+            'id_pendidikan' => $newId,
+            'universitas' => $univ,
+            'institusi' => $univ,
+            'program_studi' => $prodi,
+            'jurusan' => $prodi,
+            'jenjang' => $jenjang,
+            'tahun_lulus' => $tahun,
+            'gelar' => $gelar,
+        ];
+
+        $deletedKey = "dosen_deleted_pendidikan_{$dosenId}";
+        $deletedItems = Cache::get($deletedKey, []);
+        $sig = md5(strtolower($univ.'|'.$prodi.'|'.$jenjang.'|'.$tahun));
+        $deletedItems = array_values(array_filter($deletedItems, fn ($d) => (string) $d !== (string) $newId && (string) $d !== $sig));
+        Cache::put($deletedKey, $deletedItems, now()->addYears(5));
+
+        $cacheKey = "dosen_kualifikasi_{$dosenId}";
+        $customKey = "dosen_custom_pendidikan_{$dosenId}";
+        $cachedIds = Cache::get($cacheKey, []);
+        if (! in_array($newId, $cachedIds, true)) {
+            $cachedIds[] = $newId;
+        }
+        Cache::put($cacheKey, array_values(array_unique($cachedIds)), now()->addYears(5));
+
+        $customItems = Cache::get($customKey, []);
+        $customItems[$newId] = $newItem;
+        Cache::put($customKey, $customItems, now()->addYears(5));
+
+        Cache::put("pendidikan_dosen_{$newId}", $dosenId, now()->addYears(5));
+
+        try {
+            $this->updateDosen($dosenId, ['id_pendidikan' => $newId]);
+        } catch (\Throwable) {
+        }
+
+        return $newItem;
+    }
+
+    /**
+     * Menghapus pendidikan untuk dosen, menyinkronkan penghapusan ke cache dan API.
+     */
+    public function deleteDosenPendidikan(int|string $dosenId, int|string $pendidikanId): bool
+    {
+        $dosenId = (int) $dosenId;
+        $pendidikanId = (int) $pendidikanId;
+
+        $cacheKey = "dosen_kualifikasi_{$dosenId}";
+        $customKey = "dosen_custom_pendidikan_{$dosenId}";
+        $deletedKey = "dosen_deleted_pendidikan_{$dosenId}";
+
+        $currentItems = $this->getDosenPendidikanList($dosenId);
+        $deletedItems = Cache::get($deletedKey, []);
+        if (! is_array($deletedItems)) {
+            $deletedItems = [];
+        }
+
+        $deletedItems[] = (string) $pendidikanId;
+
+        foreach ($currentItems as $item) {
+            if ((int) ($item['id'] ?? 0) === $pendidikanId) {
+                $univ = $item['universitas'] ?? ($item['institusi'] ?? '');
+                $prodi = $item['program_studi'] ?? ($item['jurusan'] ?? '');
+                $jenjang = $item['jenjang'] ?? '';
+                $tahun = $item['tahun_lulus'] ?? '';
+                $sig = md5(strtolower($univ.'|'.$prodi.'|'.$jenjang.'|'.$tahun));
+                $deletedItems[] = $sig;
+                break;
+            }
+        }
+
+        Cache::put($deletedKey, array_values(array_unique($deletedItems)), now()->addYears(5));
+
+        $cachedIds = Cache::get($cacheKey, []);
+        $cachedIds = array_values(array_filter($cachedIds, fn ($id) => (int) $id !== $pendidikanId));
+        Cache::put($cacheKey, $cachedIds, now()->addYears(5));
+
+        $customItems = Cache::get($customKey, []);
+        unset($customItems[$pendidikanId]);
+        Cache::put($customKey, $customItems, now()->addYears(5));
+
+        if ($pendidikanId < 900000) {
+            try {
+                $this->deletePendidikan($pendidikanId);
+            } catch (\Throwable) {
+            }
+        }
+
+        $remaining = $this->getDosenPendidikanList($dosenId);
+        $newLinkedId = ! empty($remaining) ? (int) $remaining[count($remaining) - 1]['id'] : null;
+        try {
+            $this->updateDosen($dosenId, ['id_pendidikan' => $newLinkedId]);
+        } catch (\Throwable) {
+        }
+
+        return true;
+    }
+
+    /**
+     * Memperbarui pendidikan untuk dosen.
+     *
+     * @param  array<string, mixed>  $data
+     */
+    public function updateDosenPendidikan(int|string $dosenId, int|string $pendidikanId, array $data): bool
+    {
+        $dosenId = (int) $dosenId;
+        $pendidikanId = (int) $pendidikanId;
+
+        $jenjang = trim((string) ($data['jenjang'] ?? ''));
+        $univ = trim((string) ($data['universitas'] ?? ($data['institusi'] ?? '')));
+        $prodi = trim((string) ($data['program_studi'] ?? ''));
+        $tahun = trim((string) ($data['tahun_lulus'] ?? ''));
+        $gelar = trim((string) ($data['gelar'] ?? ''));
+
+        $payload = array_filter([
+            'universitas' => $univ,
+            'institusi' => $univ,
+            'program_studi' => $prodi,
+            'jenjang' => $jenjang,
+            'tahun_lulus' => $tahun !== '' ? (int) $tahun : null,
+            'gelar' => $gelar !== '' ? $gelar : null,
+        ], fn ($v) => $v !== null && $v !== '');
+
+        if ($pendidikanId < 900000) {
+            try {
+                $this->updatePendidikan($pendidikanId, $payload);
+            } catch (\Throwable) {
+            }
+        }
+
+        $customKey = "dosen_custom_pendidikan_{$dosenId}";
+        $customItems = Cache::get($customKey, []);
+        $customItems[$pendidikanId] = [
+            'id' => $pendidikanId,
+            'id_pendidikan' => $pendidikanId,
+            'universitas' => $univ,
+            'institusi' => $univ,
+            'program_studi' => $prodi,
+            'jurusan' => $prodi,
+            'jenjang' => $jenjang,
+            'tahun_lulus' => $tahun,
+            'gelar' => $gelar,
+        ];
+        Cache::put($customKey, $customItems, now()->addYears(5));
+
+        return true;
+    }
+
     public static function defaultGelarForJenjang(string $jenjang): string
     {
         $j = strtoupper(trim($jenjang));

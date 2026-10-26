@@ -12,13 +12,26 @@
             <span>Sertifikasi</span>
         </span>
         <span class="sr-only">{{ $selectedTendik['nama'] }}</span>
+    @elseif($selectedDosen ?? null)
+        <span class="inline-flex items-center gap-2.5 sm:gap-3.5 flex-wrap">
+            <a href="{{ route('dosen.show', $selectedDosen['id']) }}" class="hover:text-additional transition text-black">Dosen</a>
+            <svg class="w-5 h-5 sm:w-7 sm:h-7 stroke-[3] text-black shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" />
+            </svg>
+            <span>Sertifikasi</span>
+        </span>
+        <span class="sr-only">{{ $selectedDosen['nama'] }}</span>
     @else
         Sertifikasi
     @endif
 @endsection
 
 @section('subtitle')
-    @if(!$apiError)
+    @if($selectedTendik ?? null)
+        {{ $selectedTendik['nama'] }} &bull; {{ number_format((int) ($pagination['total'] ?? count($certifications)), 0, ',', '.') }} Data ditemukan
+    @elseif($selectedDosen ?? null)
+        {{ $selectedDosen['nama'] }} &bull; {{ number_format((int) ($pagination['total'] ?? count($certifications)), 0, ',', '.') }} Data ditemukan
+    @elseif(!$apiError)
         {{ number_format((int) ($pagination['total'] ?? count($certifications)), 0, ',', '.') }} Data ditemukan
     @endif
 @endsection

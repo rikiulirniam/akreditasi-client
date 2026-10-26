@@ -184,6 +184,14 @@ Route::middleware('auth.akademik')->group(function () {
     Route::post('/tenaga-kependidikan/{tendikId}/pendidikan', [TenagaKependidikanController::class, 'storePendidikan'])->name('tenaga-kependidikan.pendidikan.store');
     Route::post('/tenaga-pendidikan/{tendikId}/pendidikan', [TenagaKependidikanController::class, 'storePendidikan'])->name('tenaga-pendidikan.pendidikan.store');
 
+    Route::get('/dosen/{dosenId}/sertifikasi', function ($dosenId) {
+        return redirect()->route('sertifikasi.index', ['tipe_pemilik' => 'dosen', 'id_dosen' => $dosenId]);
+    })->name('dosen.sertifikasi.index');
+    Route::get('/dosen/{dosenId}/pendidikan', function ($dosenId) {
+        return redirect()->route('pendidikan.index', ['id_dosen' => $dosenId]);
+    })->name('dosen.pendidikan.index');
+    Route::post('/dosen/{dosenId}/pendidikan', [DosenController::class, 'storePendidikan'])->name('dosen.pendidikan.store');
+
     // Modul Pendidikan
     Route::resource('pendidikan', PendidikanController::class);
 
