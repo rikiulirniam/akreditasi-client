@@ -268,7 +268,7 @@
 
                     {{-- Kurikulum & Mata Kuliah --}}
                     @php
-                        $isKurikulumMkActive = request()->routeIs('mata-kuliah.*') || request()->routeIs('kurikulum.*');
+                        $isKurikulumMkActive = request()->routeIs('mata-kuliah.*') || request()->routeIs('kurikulum.*') || request()->routeIs('cpl.*');
                     @endphp
                     <div>
                         <button type="button"
@@ -289,7 +289,7 @@
                         <div id="submenu-kurikulum-mk"
                             data-is-active="{{ $isKurikulumMkActive ? 'true' : 'false' }}"
                             class="submenu-container {{ $isKurikulumMkActive ? '' : 'hidden' }} pl-10 pr-2 pt-1 pb-1 space-y-1.5">
-                            <a href="{{ route('kurikulum.index') }}"
+                            <a href="{{ Route::has('kurikulum.index') ? route('kurikulum.index') : '#' }}"
                                 class="flex items-center gap-2.5 py-2.5 px-3.5 rounded-xl text-sm font-semibold transition-all duration-150 {{ request()->routeIs('kurikulum.*') ? 'bg-white/20 text-white shadow-xs font-bold' : 'text-white/80 hover:text-white hover:bg-white/10' }}">
                                 <span class="w-1.5 h-1.5 rounded-full {{ request()->routeIs('kurikulum.*') ? 'bg-secondary' : 'bg-white/40' }} shrink-0"></span>
                                 <span class="truncate">Kurikulum</span>
@@ -297,8 +297,15 @@
                             <a href="{{ route('mata-kuliah.index') }}"
                                 class="flex items-center gap-2.5 py-2.5 px-3.5 rounded-xl text-sm font-semibold transition-all duration-150 {{ request()->routeIs('mata-kuliah.*') ? 'bg-white/20 text-white shadow-xs font-bold' : 'text-white/80 hover:text-white hover:bg-white/10' }}">
                                 <span class="w-1.5 h-1.5 rounded-full {{ request()->routeIs('mata-kuliah.*') ? 'bg-secondary' : 'bg-white/40' }} shrink-0"></span>
-                                <span class="truncate">Daftar Mata Kuliah</span>
+                                <span class="truncate">Mata Kuliah</span>
                             </a>
+                            @if (Route::has('cpl.index'))
+                            <a href="{{ route('cpl.index') }}"
+                                class="flex items-center gap-2.5 py-2.5 px-3.5 rounded-xl text-sm font-semibold transition-all duration-150 {{ request()->routeIs('cpl.*') ? 'bg-white/20 text-white shadow-xs font-bold' : 'text-white/80 hover:text-white hover:bg-white/10' }}">
+                                <span class="w-1.5 h-1.5 rounded-full {{ request()->routeIs('cpl.*') ? 'bg-secondary' : 'bg-white/40' }} shrink-0"></span>
+                                <span class="truncate">Capaian Pembelajaran (CPL)</span>
+                            </a>
+                            @endif
                         </div>
                     </div>
 
@@ -430,21 +437,6 @@
                             <span class="sidebar-text truncate">Laporan Akhir</span>
                         </a>
                     </div>
-                </div>
-
-                <!-- Kurikulum & Mata Kuliah -->
-                @php
-                    $isKurikulumMkActive = request()->routeIs('mata-kuliah.*') || request()->routeIs('kurikulum.*') || request()->routeIs('cpl.*');
-                @endphp
-                <div>
-                    <button type="button"
-                        class="sidebar-link submenu-toggle-btn w-full flex items-center justify-between gap-3.5 px-3.5 py-3 rounded-2xl text-sm font-medium {{ $isKurikulumMkActive ? 'bg-white/15 text-white' : 'text-white/80 hover:bg-white/10 hover:text-white' }} transition-all duration-150 group cursor-pointer"
-                        data-target="submenu-kurikulum-mk" title="Kurikulum & Mata Kuliah">
-                        <div class="flex items-center gap-3.5 min-w-0">
-                            <svg class="w-6 h-6 shrink-0 fill-none stroke-current text-white/90" stroke-width="1.8" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.042A8.967 8.967 0 0 0 6 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 0 1 6 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 0 1 6-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0 0 18 18a8.967 8.967 0 0 0-6 2.292m0-14.25v14.25" />
-                            </svg>
-                            <span class="sidebar-text truncate">Kurikulum & Mata Kuliah</span>
 
                     {{-- Data Master Akreditasi --}}
                     @php
@@ -511,12 +503,6 @@
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12.75V12A2.25 2.25 0 014.5 9.75h15A2.25 2.25 0 0121.75 12v.75m-8.69-6.44l-2.12-2.12a1.5 1.5 0 00-1.061-.44H4.5A2.25 2.25 0 002.25 6v12a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9a2.25 2.25 0 00-2.25-2.25h-5.379a1.5 1.5 0 01-1.06-.44z" />
                             </svg>
                             <span class="sidebar-text truncate">Bukti Dokumen</span>
-                        </a>
-                        <a href="{{ route('cpl.index') }}"
-                            class="flex items-center gap-2.5 py-2.5 px-3.5 rounded-xl text-sm font-semibold transition-all duration-150 {{ request()->routeIs('cpl.*') ? 'bg-white/20 text-white shadow-xs font-bold' : 'text-white/80 hover:text-white hover:bg-white/10' }}">
-                            <span
-                                class="w-1.5 h-1.5 rounded-full {{ request()->routeIs('cpl.*') ? 'bg-secondary' : 'bg-white/40' }} shrink-0"></span>
-                            <span>Capaian Pembelajaran (CPL)</span>
                         </a>
                     </div>
                     @endif
