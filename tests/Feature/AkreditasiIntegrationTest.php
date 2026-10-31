@@ -122,12 +122,31 @@ class AkreditasiIntegrationTest extends TestCase
                 'success' => true,
                 'data' => [],
             ]),
+            'https://akreditasi.fayra.my.id/api/v1/master/instrumen*' => Http::response([
+                'success' => true,
+                'data' => [
+                    'id' => 'INS-001',
+                    'jenis_instrumen' => ['nama_jenis' => 'Unggul'],
+                    'jenjang' => ['nama_jenjang' => 'Sarjana'],
+                    'versi_instrumen' => [
+                        'lembaga' => ['id' => 1, 'nama_lembaga' => 'LAM-INFOKOM'],
+                    ],
+                ],
+            ]),
+            'https://akreditasi.fayra.my.id/api/v1/master/lembaga-akreditasi*' => Http::response([
+                'success' => true,
+                'data' => [
+                    'id' => 1,
+                    'nama_lembaga' => 'LAM-INFOKOM',
+                    'keterangan' => 'Lembaga Akreditasi Mandiri Informatika',
+                ],
+            ]),
         ]);
 
         $response = $this->withSession([
             'access_token' => 'admin-token',
             'user' => ['nama' => 'Superadmin', 'role' => 'SUPERADMIN'],
-        ])->get(route('akreditasi.superadmin.kriteria'));
+        ])->get(route('akreditasi.superadmin.kriteria', ['lembagaId' => 1, 'instrumenId' => 'INS-001']));
 
         $response->assertOk()
             ->assertSee('K-1')

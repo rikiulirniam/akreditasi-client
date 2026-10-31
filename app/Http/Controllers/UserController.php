@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Services\AkademikService;
 use Closure;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -194,12 +195,19 @@ class UserController extends Controller
         ]);
     }
 
-    public function destroy(int|string $id): RedirectResponse
+    public function destroy(Request $request, int|string $id): JsonResponse|RedirectResponse
     {
         $response = $this->akademikService->deleteUser($id);
         $body = $response->json();
 
         if ($response->successful() && ($body['success'] ?? false)) {
+            if ($request->expectsJson() || $request->ajax()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => $body['message'] ?? 'Pengguna berhasil dihapus.',
+                ]);
+            }
+
             return redirect()->route('users.index')->with('toast', [
                 'type' => 'success',
                 'title' => 'Berhasil Dihapus',
@@ -207,10 +215,19 @@ class UserController extends Controller
             ]);
         }
 
+        $errorMessage = $body['message'] ?? 'Pengguna gagal dihapus.';
+
+        if ($request->expectsJson() || $request->ajax()) {
+            return response()->json([
+                'success' => false,
+                'message' => $errorMessage,
+            ], $response->status() >= 400 ? $response->status() : 400);
+        }
+
         return redirect()->route('users.index')->with('toast', [
             'type' => 'error',
             'title' => 'Gagal Menghapus',
-            'message' => $body['message'] ?? 'Pengguna gagal dihapus.',
+            'message' => $errorMessage,
         ]);
     }
 }

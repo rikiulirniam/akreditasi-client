@@ -28,7 +28,7 @@
                 @endif
             </tr>
         </thead>
-        <tbody class="text-gray-800">
+        <tbody class="divide-y divide-gray-200 bg-white">
             {{ $slot }}
         </tbody>
     </table>

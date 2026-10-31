@@ -399,12 +399,22 @@
             <!-- Field 4: Anggota UPPS -->
             <div>
                 <label class="block text-xs font-bold text-gray-900 mb-1.5">Anggota UPPS</label>
-                <input 
-                    type="text" 
-                    id="viewUppsAnggota" 
-                    readonly 
-                    class="w-full px-4 py-2.5 rounded-[10px] bg-white-form border-none text-sm font-medium text-gray-800 cursor-default select-none focus:outline-none"
+                <a 
+                    id="linkUppsAnggota" 
+                    href="#" 
+                    class="w-full flex items-center justify-between px-4 py-2.5 rounded-[10px] bg-primary/10 hover:bg-primary hover:text-white text-primary transition font-semibold text-sm cursor-pointer group"
+                    title="Kelola Anggota UPPS"
                 >
+                    <div class="flex items-center gap-2">
+                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6 0 3.375 3.375 0 016 0zm6 2.25a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0z" />
+                        </svg>
+                        <span id="viewUppsAnggotaText">Lihat Data Anggota</span>
+                    </div>
+                    <svg class="w-4 h-4 group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
+                    </svg>
+                </a>
             </div>
 
             <!-- Action Buttons: Hapus Data (Red), Edit Data (Yellow), OK (Navy) - Gambar 3 -->
@@ -773,6 +783,9 @@
         const updateAnggotaUpps = document.getElementById('updateAnggotaUpps');
         const updateKodeUpps = document.getElementById('updateKodeUpps');
 
+        const viewUppsAnggotaText = document.getElementById('viewUppsAnggotaText');
+        const linkUppsAnggota = document.getElementById('linkUppsAnggota');
+
         let activeProdiContext = null;
 
         // When Eye icon is clicked
@@ -799,7 +812,8 @@
                     if (viewUppsNama) viewUppsNama.value = uppsNama || '-';
                     if (viewUppsPimpinan) viewUppsPimpinan.value = uppsPimpinan || '-';
                     if (viewUppsJenis) viewUppsJenis.value = uppsJenis || '-';
-                    if (viewUppsAnggota) viewUppsAnggota.value = prodiNama || '-';
+                    if (viewUppsAnggotaText) viewUppsAnggotaText.innerText = 'Kelola Anggota (' + (prodiNama || 'Prodi') + ')';
+                    if (linkUppsAnggota) linkUppsAnggota.href = "{{ url('/upps') }}/" + (uppsId || 1) + "/anggota";
 
                     showModal(uppsFilledModal);
                 } else {

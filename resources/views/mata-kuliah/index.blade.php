@@ -14,6 +14,7 @@
                 silahkan tekan tombol tambah untuk Tambah Mata Kuliah.
             </p>
 
+            @haspermission('mata_kuliah.create')
             <button 
                 type="button" 
                 class="open-create-mk-btn inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-additional hover:bg-[#01426c] text-white font-bold text-sm shadow-sm transition cursor-pointer"
@@ -23,6 +24,7 @@
                 </svg>
                 Tambah Mata Kuliah
             </button>
+            @endhaspermission
         </div>
     @else
         <!-- ======================================================== -->
@@ -74,6 +76,7 @@
                 </div>
 
                 <!-- Tambah Mata Kuliah Button -->
+                @haspermission('mata_kuliah.create')
                 <div>
                     <button 
                         type="button" 
@@ -85,6 +88,7 @@
                         Tambah Mata Kuliah
                     </button>
                 </div>
+                @endhaspermission
             </div>
 
             <!-- Table: Data Mata Kuliah -->
@@ -147,6 +151,7 @@
                         <!-- Action: Edit (Yellow), Delete (Red), Detail (Navy Blue) -->
                         <x-table.cell class="w-28">
                             <div class="flex items-center justify-end gap-3">
+                                @haspermission('mata_kuliah.update')
                                 <!-- Edit Icon (Yellow) -->
                                 <button 
                                     type="button" 
@@ -161,7 +166,9 @@
                                 >
                                     <x-icon.edit class="w-5 h-5" />
                                 </button>
+                                @endhaspermission
 
+                                @haspermission('mata_kuliah.delete')
                                 <!-- Delete Icon (Red) -->
                                 <button 
                                     type="button" 
@@ -174,6 +181,7 @@
                                 >
                                     <x-icon.delete class="w-5 h-5" />
                                 </button>
+                                @endhaspermission
 
                                 <!-- View / Detail Link (Navy Blue / Eye) -->
                                 <a 

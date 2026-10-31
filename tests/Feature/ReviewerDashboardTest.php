@@ -33,7 +33,7 @@ class ReviewerDashboardTest extends TestCase
         ])->get(route('dashboard'));
 
         $response->assertOk()
-            ->assertSee('Informasi Akun Anda')
+            ->assertSee('PUSAT KENDALI SISTEM')
             ->assertDontSee('PORTAL REVIEWER AKREDITASI');
     }
 

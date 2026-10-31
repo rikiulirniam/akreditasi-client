@@ -152,6 +152,8 @@
     <div 
         id="forgotPasswordModal" 
         class="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-black/45 backdrop-blur-[2px] transition-all duration-200 opacity-0 pointer-events-none"
+        role="dialog"
+        aria-modal="true"
         aria-hidden="true"
     >
         <div 

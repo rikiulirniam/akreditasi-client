@@ -49,7 +49,7 @@
     textarea,
     select {
         background-color: var(--color-white-form, #D9D9D9);
-        border-radius: 8px;
+        border-radius: 10px;
     }
 
     input[type='checkbox'],
@@ -77,4 +77,153 @@
     input[type='file']::file-selector-button:hover {
         background-color: var(--color-additional, #01568D);
     }
+
+    .btn-primary {
+        @apply inline-flex items-center justify-center gap-2 rounded-[10px] bg-primary px-4 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-additional focus:outline-none focus:ring-2 focus:ring-primary/20;
+    }
+
+    .btn-secondary {
+        @apply inline-flex items-center justify-center gap-2 rounded-[10px] bg-[#D9D9D9] px-4 py-2.5 text-sm font-bold text-gray-900 shadow-sm transition hover:bg-[#CFCFCF] focus:outline-none focus:ring-2 focus:ring-primary/20;
+    }
+
+    .modal-card {
+        @apply rounded-[28px] bg-white p-8 shadow-2xl;
+    }
 }
+
+.flow2-tendik #sidebar:not(.is-collapsed) {
+    width: 350px;
+}
+
+.flow2-tendik .tendik-flow-table > div {
+    overflow-x: auto;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+    background: transparent;
+}
+
+.flow2-tendik .tendik-flow-table table {
+    width: 100%;
+    table-layout: fixed;
+    border-collapse: collapse;
+}
+
+.flow2-tendik .tendik-flow-table thead tr {
+    border-top: 1px solid #D1D5DB;
+    border-bottom: 1px solid #D1D5DB;
+    background: transparent;
+}
+
+.flow2-tendik .tendik-flow-table thead th {
+    padding: 14px 16px;
+    border: none;
+    background: transparent;
+    font-size: 14px;
+    font-weight: 700;
+    color: #000000;
+    line-height: 1.25;
+}
+
+.flow2-tendik .tendik-flow-table tbody tr {
+    border-bottom: 1px solid #E5E7EB;
+    background: #FFFFFF;
+    transition: background-color 0.15s ease;
+}
+
+.flow2-tendik .tendik-flow-table tbody tr:hover {
+    background: #FAFAFA;
+}
+
+.flow2-tendik .tendik-flow-table tbody td {
+    padding: 15px 16px;
+    border: none;
+    background: transparent;
+    box-shadow: none;
+    border-radius: 0;
+    font-size: 14px;
+    line-height: 1.4;
+    color: #000000;
+}
+
+/* Smooth Table Row Deletion & Upward Slide Animation */
+tr.row-deleting {
+    opacity: 0 !important;
+    transform: translateY(-8px) scaleY(0.7) !important;
+    pointer-events: none !important;
+    transition: opacity 0.3s ease, transform 0.4s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+tr.row-deleting td {
+    padding-top: 0 !important;
+    padding-bottom: 0 !important;
+    line-height: 0 !important;
+    height: 0 !important;
+    font-size: 0 !important;
+    border-top-width: 0 !important;
+    border-bottom-width: 0 !important;
+    box-shadow: none !important;
+    opacity: 0 !important;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+tr.row-deleting td * {
+    max-height: 0 !important;
+    opacity: 0 !important;
+    overflow: hidden !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+tbody tr {
+    transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Profile Card & Smooth Dropdown Animation */
+#profileDropdownContainer {
+    position: relative;
+    width: 215px;
+}
+
+#profileDropdownBtn {
+    width: 100%;
+    transition: border-radius 0.25s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.2s ease;
+}
+
+#profileDropdownMenu {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    margin-top: -2px;
+    background-color: #E5E5E5;
+    border: 2px solid #3A5675;
+    border-top: 1.5px solid #3A5675;
+    border-bottom-left-radius: 16px;
+    border-bottom-right-radius: 16px;
+    overflow: hidden;
+    max-height: 0;
+    opacity: 0;
+    transform: translateY(-8px) scaleY(0.9);
+    transform-origin: top center;
+    pointer-events: none;
+    box-shadow: 0 12px 28px -6px rgba(0, 0, 0, 0.12), 0 8px 12px -6px rgba(0, 0, 0, 0.08);
+    transition: max-height 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+                opacity 0.25s cubic-bezier(0.4, 0, 0.2, 1),
+                transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    z-index: 50;
+}
+
+#profileDropdownContainer.is-open #profileDropdownBtn {
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
+}
+
+#profileDropdownContainer.is-open #profileDropdownMenu {
+    max-height: 280px;
+    opacity: 1;
+    transform: translateY(0) scaleY(1);
+    pointer-events: auto;
+}
+

@@ -308,9 +308,18 @@ class MataKuliahController extends Controller
             'angkatan' => $this->akademikService->getAngkatanList(['per_page' => 500]),
             'tahun_akademik' => $this->akademikService->getTahunAkademikList(['per_page' => 500]),
             'enrollment_kelas' => $this->akademikService->getEnrollmentKelasList(['per_page' => 500]),
-            'enrollment_mata_kuliah' => $this->akademikService->getEnrollmentMataKuliahList(['per_page' => 500]),
-            'mata_kuliah_angkatan_kelas' => $this->akademikService->getMataKuliahAngkatanKelasList(['per_page' => 500]),
-            'nilai_mahasiswa' => $this->akademikService->getNilaiMahasiswaList(['per_page' => 500]),
+            'enrollment_mata_kuliah' => $this->akademikService->getEnrollmentMataKuliahList([
+                'mata_kuliah_id' => $id,
+                'per_page' => 500,
+            ]),
+            'mata_kuliah_angkatan_kelas' => $this->akademikService->getMataKuliahAngkatanKelasList([
+                'mata_kuliah_id' => $id,
+                'per_page' => 500,
+            ]),
+            'nilai_mahasiswa' => $this->akademikService->getNilaiMahasiswaList([
+                'mata_kuliah_id' => $id,
+                'per_page' => 500,
+            ]),
         ];
         $kelasDataError = collect($responses)->contains(fn (Response $response) => ! $response->successful());
 
@@ -362,12 +371,29 @@ class MataKuliahController extends Controller
                 ->pluck('id')
                 ->map(fn ($offeringId) => (string) $offeringId)
                 ->all();
+            $courseOfferingIds = $courseOfferings
+                ->filter(fn (array $courseOffering) => (string) ($courseOffering['angkatan_kelas_id'] ?? '') === $classId)
+                ->pluck('id')
+                ->map(fn ($offeringId) => (string) $offeringId)
+                ->all();
             $gradePoints = collect($nilaiMahasiswa)
                 ->filter(fn (array $grade) => in_array((string) ($grade['mata_kuliah_angkatan_kelas_id'] ?? ''), $classOfferingIds, true))
-                ->pluck('bobot_nilai')
+                ->map(fn (array $grade) => $grade['bobot'] ?? $grade['bobot_nilai'] ?? null)
                 ->filter(fn ($gradePoint) => is_numeric($gradePoint))
                 ->map(fn ($gradePoint) => (float) $gradePoint);
             $averageIpk = $gradePoints->isNotEmpty() ? number_format($gradePoints->avg(), 2) : '-';
+            $classGrades = collect($nilaiMahasiswa)
+                ->filter(fn (array $grade) => in_array((string) ($grade['mata_kuliah_angkatan_kelas_id'] ?? ''), $courseOfferingIds, true));
+            $gradeLinks = $classGrades->pluck('link_nilai')
+                ->filter(fn ($link) => is_string($link) && trim($link) !== '')
+                ->map(fn (string $link) => trim($link))
+                ->unique()
+                ->values();
+            $evidenceLinks = $classGrades->pluck('link_evidence')
+                ->filter(fn ($link) => is_string($link) && trim($link) !== '')
+                ->map(fn (string $link) => trim($link))
+                ->unique()
+                ->values();
 
             $kelasList[$classId] = [
                 'id' => $classId,
@@ -380,7 +406,12 @@ class MataKuliahController extends Controller
                 'rata_rata_ipk' => $averageIpk,
                 'jumlah_mata_kuliah' => $offeringsByClassId->get($classId, collect())->pluck('id')->unique()->count(),
                 'enrollment_mata_kuliah_id' => $courseEnrollment['id'] ?? null,
+                'mata_kuliah_angkatan_kelas_id' => $courseOfferingIds[0] ?? null,
                 'evidence' => $courseEnrollment['evidence'] ?? '',
+                'link_nilai' => $gradeLinks->count() === 1 ? $gradeLinks->first() : '',
+                'link_evidence' => $evidenceLinks->count() === 1 ? $evidenceLinks->first() : '',
+                'has_multiple_grade_links' => $gradeLinks->count() > 1,
+                'has_multiple_evidence_links' => $evidenceLinks->count() > 1,
             ];
         }
         $kelasList = array_values($kelasList);
@@ -392,6 +423,154 @@ class MataKuliahController extends Controller
             'kelasList' => $kelasList,
             'kurikulumList' => $kurikulumList,
             'kelasDataError' => $kelasDataError,
+        ]);
+    }
+
+    public function updateNilaiLink(Request $request, int|string $mataKuliahId, int|string $angkatanKelasId): RedirectResponse
+    {
+        return $this->updateNilaiMahasiswaLink(
+            $request,
+            $mataKuliahId,
+            $angkatanKelasId,
+            'link_nilai',
+            'Link nilai',
+            fn (int|string $id, array $payload) => $this->akademikService->updateNilaiMahasiswaLinkNilai($id, $payload)
+        );
+    }
+
+    public function updateEvidenceLink(Request $request, int|string $mataKuliahId, int|string $angkatanKelasId): RedirectResponse
+    {
+        return $this->updateNilaiMahasiswaLink(
+            $request,
+            $mataKuliahId,
+            $angkatanKelasId,
+            'link_evidence',
+            'Link evidence',
+            fn (int|string $id, array $payload) => $this->akademikService->updateNilaiMahasiswaLinkEvidence($id, $payload)
+        );
+    }
+
+    private function updateNilaiMahasiswaLink(
+        Request $request,
+        int|string $mataKuliahId,
+        int|string $angkatanKelasId,
+        string $field,
+        string $label,
+        callable $persist
+    ): RedirectResponse {
+        $validated = $request->validate([
+            $field => ['required', 'url', 'max:2048'],
+        ]);
+        $offeringsResponse = $this->akademikService->getMataKuliahAngkatanKelasList([
+            'mata_kuliah_id' => $mataKuliahId,
+            'angkatan_kelas_id' => $angkatanKelasId,
+            'per_page' => 500,
+        ]);
+        $enrollmentsResponse = $this->akademikService->getEnrollmentMataKuliahList([
+            'mata_kuliah_id' => $mataKuliahId,
+            'per_page' => 500,
+        ]);
+        $gradesResponse = $this->akademikService->getNilaiMahasiswaList([
+            'mata_kuliah_id' => $mataKuliahId,
+            'angkatan_kelas_id' => $angkatanKelasId,
+            'per_page' => 500,
+        ]);
+        foreach ([$offeringsResponse, $enrollmentsResponse, $gradesResponse] as $response) {
+            if ($response->status() === 401) {
+                return redirect()->route('login')->with('toast', [
+                    'type' => 'warning',
+                    'title' => 'Sesi Berakhir',
+                    'message' => 'Sesi Anda telah kedaluwarsa. Silakan login kembali.',
+                ]);
+            }
+            if (! $response->successful()) {
+                return back()->with('toast', [
+                    'type' => 'error',
+                    'title' => 'Gagal Memverifikasi Data Nilai',
+                    'message' => $this->extractErrorMessage($response, 'Relasi nilai, kelas, dan mata kuliah gagal diverifikasi.'),
+                ]);
+            }
+        }
+
+        $courseEnrollmentMap = collect($this->responseList($enrollmentsResponse))
+            ->keyBy(fn (array $item) => (string) ($item['id'] ?? ''));
+        $offeringIds = collect($this->responseList($offeringsResponse))
+            ->filter(function (array $offering) use ($angkatanKelasId, $mataKuliahId, $courseEnrollmentMap): bool {
+                if ((string) ($offering['angkatan_kelas_id'] ?? '') !== (string) $angkatanKelasId) {
+                    return false;
+                }
+
+                $courseEnrollment = $courseEnrollmentMap->get((string) ($offering['enrollment_mata_kuliah_id'] ?? ''));
+
+                return is_array($courseEnrollment)
+                    && (string) ($courseEnrollment['mata_kuliah_id'] ?? '') === (string) $mataKuliahId;
+            })
+            ->pluck('id')
+            ->map(fn ($offeringId) => (string) $offeringId)
+            ->all();
+
+        if ($offeringIds === []) {
+            return back()->with('toast', [
+                'type' => 'error',
+                'title' => 'Data Tidak Sesuai',
+                'message' => 'Tidak ada penawaran mata kuliah pada kelas yang dipilih.',
+            ]);
+        }
+
+        $gradeRecords = collect($this->responseList($gradesResponse))
+            ->filter(fn (array $grade) => in_array(
+                (string) ($grade['mata_kuliah_angkatan_kelas_id'] ?? ''),
+                $offeringIds,
+                true
+            ))
+            ->filter(fn (array $grade) => ! empty($grade['id']))
+            ->values();
+
+        if ($gradeRecords->isEmpty()) {
+            return back()->with('toast', [
+                'type' => 'error',
+                'title' => 'Nilai Tidak Ditemukan',
+                'message' => 'Tidak ada record nilai mahasiswa pada kelas dan mata kuliah ini.',
+            ]);
+        }
+
+        $failedUpdates = [];
+        foreach ($gradeRecords as $grade) {
+            $payload = [
+                'link_nilai' => $field === 'link_nilai'
+                    ? trim($validated[$field])
+                    : (string) ($grade['link_nilai'] ?? ''),
+                'link_evidence' => $field === 'link_evidence'
+                    ? trim($validated[$field])
+                    : (string) ($grade['link_evidence'] ?? ''),
+                'mata_kuliah_angkatan_kelas_id' => (int) ($grade['mata_kuliah_angkatan_kelas_id'] ?? 0),
+            ];
+            $response = $persist((string) $grade['id'], $payload);
+            $body = $response->json();
+
+            if (! $response->successful() || ! ($body['success'] ?? true)) {
+                $failedUpdates[] = $this->extractErrorMessage($response, "{$label} gagal disimpan untuk satu mahasiswa.");
+            }
+        }
+
+        if ($failedUpdates === []) {
+            return redirect()->route('mata-kuliah.show', $mataKuliahId)->with('toast', [
+                'type' => 'success',
+                'title' => "{$label} Disimpan",
+                'message' => "{$label} berhasil disimpan untuk {$gradeRecords->count()} mahasiswa.",
+            ]);
+        }
+
+        return back()->with('toast', [
+            'type' => 'warning',
+            'title' => "{$label} Tersimpan Sebagian",
+            'message' => sprintf(
+                '%s berhasil disimpan untuk %d dari %d mahasiswa. Error pertama: %s',
+                $label,
+                $gradeRecords->count() - count($failedUpdates),
+                $gradeRecords->count(),
+                $failedUpdates[0]
+            ),
         ]);
     }
 

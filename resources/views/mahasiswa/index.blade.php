@@ -5,26 +5,110 @@
 @section('content')
 <div class="space-y-6">
     <div class="space-y-4">
-        <!-- Top Action Bar: Search Input & Tambah Mahasiswa Button -->
-        <div class="flex items-center justify-between gap-3">
-            <div class="relative flex-1 max-w-sm">
-                <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-gray-400">
-                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
+        <!-- Top Action Bar: Search Input, Filters, & Tambah Mahasiswa Button -->
+        <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
+            <div class="flex flex-wrap items-center gap-3 flex-1">
+                <!-- Search Input -->
+                <div class="relative flex-1 min-w-[200px] max-w-xs">
+                    <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-gray-400">
+                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
+                        </svg>
+                    </span>
+                    <x-input 
+                        type="text" 
+                        id="searchMahasiswaInput"
+                        placeholder="Cari nama, NIM, tahun..." 
+                        value="{{ $search ?? '' }}"
+                        class="pl-10 text-xs"
+                    />
+                </div>
+
+                <!-- Filter: Status -->
+                <div class="relative w-36 sm:w-40">
+                    <select 
+                        id="filterStatusSelect"
+                        class="w-full appearance-none px-3.5 py-2.5 pr-9 rounded-[8px] bg-white-form border border-white-bone text-gray-900 font-medium text-xs focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary cursor-pointer transition"
+                    >
+                        <option value="">Semua Status</option>
+                        @foreach($statusOptions as $st)
+                            <option value="{{ $st }}" {{ ($selectedStatus ?? '') === $st ? 'selected' : '' }}>
+                                {{ $st }}
+                            </option>
+                        @endforeach
+                    </select>
+                    <span class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-primary">
+                        <svg class="w-4 h-4 stroke-[2.5]" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="m6 9 6 6 6-6" />
+                        </svg>
+                    </span>
+                </div>
+
+                <!-- Filter: Tahun Masuk -->
+                <div class="relative w-40 sm:w-44">
+                    <select 
+                        id="filterTahunSelect"
+                        class="w-full appearance-none px-3.5 py-2.5 pr-9 rounded-[8px] bg-white-form border border-white-bone text-gray-900 font-medium text-xs focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary cursor-pointer transition"
+                    >
+                        <option value="">Semua Tahun Masuk</option>
+                        @foreach($tahunOptions as $thn)
+                            <option value="{{ $thn }}" {{ (string)($selectedTahun ?? '') === (string)$thn ? 'selected' : '' }}>
+                                {{ $thn }}
+                            </option>
+                        @endforeach
+                    </select>
+                    <span class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-primary">
+                        <svg class="w-4 h-4 stroke-[2.5]" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="m6 9 6 6 6-6" />
+                        </svg>
+                    </span>
+                </div>
+
+                <!-- Filter: Jalur Masuk (Jenis Pendaftaran) -->
+                @if(!empty($jenisPendaftaranOptions))
+                <div class="relative w-36 sm:w-40">
+                    <select 
+                        id="filterJenisSelect"
+                        class="w-full appearance-none px-3.5 py-2.5 pr-9 rounded-[8px] bg-white-form border border-white-bone text-gray-900 font-medium text-xs focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary cursor-pointer transition"
+                    >
+                        <option value="">Semua Jalur</option>
+                        @foreach($jenisPendaftaranOptions as $jp)
+                            <option value="{{ $jp }}" {{ ($selectedJenis ?? '') === $jp ? 'selected' : '' }}>
+                                {{ $jp }}
+                            </option>
+                        @endforeach
+                    </select>
+                    <span class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-primary">
+                        <svg class="w-4 h-4 stroke-[2.5]" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="m6 9 6 6 6-6" />
+                        </svg>
+                    </span>
+                </div>
+                @endif
+
+                <!-- Reset Filter Button -->
+                @php
+                    $hasActiveFilter = !empty($search) || !empty($selectedStatus) || !empty($selectedTahun) || !empty($selectedJenis);
+                @endphp
+                <button 
+                    type="button" 
+                    id="resetFilterBtn"
+                    class="{{ $hasActiveFilter ? 'inline-flex' : 'hidden' }} items-center gap-1.5 px-3 py-2.5 rounded-[8px] bg-white-form hover:bg-gray-200 text-gray-600 hover:text-gray-900 text-xs font-semibold border border-white-bone transition cursor-pointer"
+                    title="Reset Semua Filter"
+                >
+                    <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
                     </svg>
-                </span>
-                <x-input 
-                    type="text" 
-                    id="searchMahasiswaInput"
-                    placeholder="Cari..." 
-                    class="pl-10 text-xs"
-                />
+                    Reset
+                </button>
             </div>
-            <div>
+
+            <!-- Tambah Mahasiswa Button -->
+            <div class="shrink-0">
                 <button 
                     type="button" 
                     id="openCreateMahasiswaModalBtn"
-                    class="inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-primary text-white text-sm font-bold shadow-sm hover:bg-additional transition cursor-pointer"
+                    class="inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-primary text-white text-sm font-bold shadow-sm hover:bg-additional transition cursor-pointer whitespace-nowrap"
                 >
                     <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
@@ -42,6 +126,7 @@
                 <x-table.th>NIM</x-table.th>
                 <x-table.th>Tahun Masuk</x-table.th>
                 <x-table.th>Tanggal Kelulusan</x-table.th>
+                <x-table.th class="w-32">Status</x-table.th>
                 <x-table.th class="w-28 text-right">Action</x-table.th>
             </x-slot:header>
 
@@ -56,8 +141,16 @@
                     $rawKelulusan = $item['tanggal_kelulusan'] ?? '';
                     $formattedKelulusan = !empty($rawKelulusan) ? \Carbon\Carbon::parse($rawKelulusan)->format('d-m-Y') : '-';
                     $masaStudi = $item['masa_studi_bulan'] ?? 48;
+                    $statusTerkini = $item['status_terkini'] ?? '-';
                 @endphp
-                <x-table.row class="mahasiswa-row">
+                <x-table.row 
+                    class="mahasiswa-row"
+                    data-nama="{{ strtolower($nama) }}"
+                    data-nim="{{ strtolower($nim) }}"
+                    data-tahun="{{ $tahunMasuk }}"
+                    data-status="{{ strtolower($statusTerkini) }}"
+                    data-jenis="{{ strtolower($jenisPendaftaran) }}"
+                >
                     <!-- No -->
                     <x-table.cell class="text-gray-500 font-medium w-16">
                         {{ $rowNumber }}
@@ -89,6 +182,26 @@
                         <span class="text-sm font-medium text-gray-700 mahasiswa-kelulusan">
                             {{ $formattedKelulusan }}
                         </span>
+                    </x-table.cell>
+
+                    <!-- Status Terkini -->
+                    <x-table.cell class="w-32">
+                        @php
+                            $statusColor = match($statusTerkini) {
+                                'Aktif' => 'bg-emerald-50 text-emerald-700 border-emerald-200',
+                                'Lulus' => 'bg-blue-50 text-blue-700 border-blue-200',
+                                'Cuti' => 'bg-amber-50 text-amber-700 border-amber-200',
+                                'Non-Aktif', 'Drop Out' => 'bg-red-50 text-red-700 border-red-200',
+                                default => 'bg-gray-100 text-gray-500 border-gray-200',
+                            };
+                        @endphp
+                        @if($statusTerkini !== '-')
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold border {{ $statusColor }}">
+                                {{ $statusTerkini }}
+                            </span>
+                        @else
+                            <span class="text-gray-400 text-xs">-</span>
+                        @endif
                     </x-table.cell>
 
                     <!-- Action: Edit (Yellow), Delete (Red), View / Detail (Navy) -->
@@ -124,30 +237,25 @@
                                 <x-icon.delete class="w-5 h-5" />
                             </button>
 
-                            <!-- View / Detail Mahasiswa Icon (Navy Blue) -->
-                            <button 
-                                type="button" 
-                                class="open-detail-mahasiswa-btn text-primary hover:text-additional transition p-1 cursor-pointer"
+                            <!-- View / Detail Mahasiswa — redirect ke halaman detail -->
+                            <a
+                                href="{{ route('mahasiswa.show', $id) }}"
+                                class="text-primary hover:text-additional transition p-1 cursor-pointer inline-flex"
                                 title="Detail Mahasiswa"
-                                data-id="{{ $id }}"
-                                data-action-update="{{ route('mahasiswa.update', $id) }}"
-                                data-action-destroy="{{ route('mahasiswa.destroy', $id) }}"
-                                data-nama="{{ $nama }}"
-                                data-nim="{{ $nim }}"
-                                data-tahun="{{ $tahunMasuk }}"
-                                data-jenis="{{ $jenisPendaftaran }}"
-                                data-kelulusan="{{ $formattedKelulusan }}"
-                                data-kelulusan-raw="{{ $rawKelulusan }}"
-                                data-masa-studi="{{ $masaStudi }}"
                             >
                                 <x-icon.eye class="w-5 h-5" />
-                            </button>
+                            </a>
                         </div>
                     </x-table.cell>
                 </x-table.row>
             @empty
-                <x-table.empty colspan="6" message="Belum ada data mahasiswa" submessage="Silakan klik tombol Tambah Mahasiswa untuk menambahkan data baru." />
+                <x-table.empty colspan="7" message="Belum ada data mahasiswa" submessage="Silakan klik tombol Tambah Mahasiswa untuk menambahkan data baru." />
             @endforelse
+            <tr id="noFilterMatchRow" class="hidden">
+                <td colspan="7" class="text-center py-10 text-gray-400 text-xs font-medium">
+                    Tidak ada data mahasiswa yang sesuai dengan filter yang dipilih.
+                </td>
+            </tr>
         </x-table>
 
         <!-- Pagination -->
@@ -304,122 +412,8 @@
 </div>
 
 <!-- ========================================== -->
-<!-- MODAL: Detail Data Mahasiswa (Identik dengan Detail Prodi) -->
-<!-- ========================================== -->
-<div 
-    id="detailMahasiswaModal" 
-    class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/45 opacity-0 pointer-events-none transition-all duration-200 select-none"
-    role="dialog"
-    aria-modal="true"
-    aria-labelledby="detailMahasiswaModalTitle"
->
-    <div class="mahasiswa-modal-card relative bg-white rounded-[28px] p-8 max-w-[460px] w-full shadow-2xl text-left transform scale-95 transition-all duration-200 max-h-[92vh] overflow-y-auto">
-        <h3 id="detailMahasiswaModalTitle" class="text-xl font-bold text-gray-900 tracking-tight text-center mb-6">
-            Detail Data Mahasiswa
-        </h3>
-
-        <div class="space-y-4">
-            <!-- Field 1: Nama Mahasiswa -->
-            <div>
-                <label class="block text-xs font-bold text-gray-900 mb-1.5">Nama Mahasiswa</label>
-                <input 
-                    type="text" 
-                    id="viewMahasiswaNama" 
-                    readonly 
-                    class="w-full px-4 py-2.5 rounded-[10px] bg-white-form border-none text-sm font-medium text-gray-800 cursor-default select-none focus:outline-none"
-                >
-            </div>
-
-            <!-- Field 2: NIM -->
-            <div>
-                <label class="block text-xs font-bold text-gray-900 mb-1.5">NIM</label>
-                <input 
-                    type="text" 
-                    id="viewMahasiswaNim" 
-                    readonly 
-                    class="w-full px-4 py-2.5 rounded-[10px] bg-white-form border-none text-sm font-medium font-mono text-gray-800 cursor-default select-none focus:outline-none"
-                >
-            </div>
-
-            <!-- Field 3: Tahun Masuk -->
-            <div>
-                <label class="block text-xs font-bold text-gray-900 mb-1.5">Tahun Masuk</label>
-                <input 
-                    type="text" 
-                    id="viewMahasiswaTahun" 
-                    readonly 
-                    class="w-full px-4 py-2.5 rounded-[10px] bg-white-form border-none text-sm font-medium text-gray-800 cursor-default select-none focus:outline-none"
-                >
-            </div>
-
-            <!-- Field 4: Jenis Pendaftaran -->
-            <div>
-                <label class="block text-xs font-bold text-gray-900 mb-1.5">Jenis Pendaftaran</label>
-                <input 
-                    type="text" 
-                    id="viewMahasiswaJenis" 
-                    readonly 
-                    class="w-full px-4 py-2.5 rounded-[10px] bg-white-form border-none text-sm font-medium text-gray-800 cursor-default select-none focus:outline-none"
-                >
-            </div>
-
-            <!-- Field 5: Tanggal Kelulusan -->
-            <div>
-                <label class="block text-xs font-bold text-gray-900 mb-1.5">Tanggal Kelulusan</label>
-                <input 
-                    type="text" 
-                    id="viewMahasiswaKelulusan" 
-                    readonly 
-                    class="w-full px-4 py-2.5 rounded-[10px] bg-white-form border-none text-sm font-medium text-gray-800 cursor-default select-none focus:outline-none"
-                >
-            </div>
-
-            <!-- Field 6: Masa Studi -->
-            <div>
-                <label class="block text-xs font-bold text-gray-900 mb-1.5">Masa Studi</label>
-                <input 
-                    type="text" 
-                    id="viewMahasiswaMasaStudi" 
-                    readonly 
-                    class="w-full px-4 py-2.5 rounded-[10px] bg-white-form border-none text-sm font-medium text-gray-800 cursor-default select-none focus:outline-none"
-                >
-            </div>
-
-            <!-- Action Buttons: Hapus Data (Red), Edit Data (Yellow), OK (Navy) - Identik dengan Detail Prodi -->
-            <div class="grid grid-cols-3 gap-2.5 pt-4">
-                <button 
-                    type="button" 
-                    id="btnDetailHapusMahasiswa"
-                    class="w-full flex items-center justify-center gap-1.5 py-3 px-2 rounded-xl bg-[#C9352B] hover:bg-[#b02c23] text-white font-bold text-xs sm:text-sm transition cursor-pointer text-center"
-                >
-                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
-                    </svg>
-                    Hapus Data
-                </button>
-                <button 
-                    type="button" 
-                    id="btnDetailEditMahasiswa"
-                    class="w-full flex items-center justify-center gap-1.5 py-3 px-2 rounded-xl bg-[#EAB308] hover:bg-[#ca8a04] text-white font-bold text-xs sm:text-sm transition cursor-pointer text-center"
-                >
-                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10" />
-                    </svg>
-                    Edit Data
-                </button>
-                <button 
-                    type="button" 
-                    class="close-mahasiswa-modal w-full py-3 px-2 rounded-xl bg-additional hover:bg-[#01426c] text-white font-bold text-xs sm:text-sm transition cursor-pointer text-center"
-                >
-                    OK
-                </button>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- ========================================== -->
 <!-- MODAL: Update Mahasiswa -->
+
 <!-- ========================================== -->
 <div 
     id="editMahasiswaModal" 
@@ -568,19 +562,135 @@
 
 <script>
     document.addEventListener('DOMContentLoaded', function () {
-        // Table Search Filtering
+        // Table Search & Filter Handling
         const searchInput = document.getElementById('searchMahasiswaInput');
+        const statusFilter = document.getElementById('filterStatusSelect');
+        const tahunFilter = document.getElementById('filterTahunSelect');
+        const jenisFilter = document.getElementById('filterJenisSelect');
+        const resetBtn = document.getElementById('resetFilterBtn');
+        const noFilterMatchRow = document.getElementById('noFilterMatchRow');
         const rows = document.querySelectorAll('.mahasiswa-row');
+
+        let debounceTimer = null;
+
+        function applyClientFilter() {
+            const keyword = searchInput ? searchInput.value.toLowerCase().trim() : '';
+            const selectedStatus = statusFilter ? statusFilter.value.toLowerCase().trim() : '';
+            const selectedTahun = tahunFilter ? tahunFilter.value.toString().trim() : '';
+            const selectedJenis = jenisFilter ? jenisFilter.value.toLowerCase().trim() : '';
+
+            let visibleCount = 0;
+
+            rows.forEach(row => {
+                const rowNama = row.getAttribute('data-nama') || '';
+                const rowNim = row.getAttribute('data-nim') || '';
+                const rowTahun = (row.getAttribute('data-tahun') || '').toString().trim();
+                const rowStatus = row.getAttribute('data-status') || '';
+                const rowJenis = row.getAttribute('data-jenis') || '';
+
+                const matchesKeyword = !keyword || (rowNama.includes(keyword) || rowNim.includes(keyword) || rowTahun.includes(keyword));
+                const matchesStatus = !selectedStatus || rowStatus === selectedStatus;
+                const matchesTahun = !selectedTahun || rowTahun === selectedTahun;
+                const matchesJenis = !selectedJenis || rowJenis === selectedJenis;
+
+                if (matchesKeyword && matchesStatus && matchesTahun && matchesJenis) {
+                    row.style.display = '';
+                    visibleCount++;
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+
+            if (noFilterMatchRow) {
+                noFilterMatchRow.classList.toggle('hidden', visibleCount > 0 || rows.length === 0);
+            }
+
+            const hasActiveFilter = !!(keyword || selectedStatus || selectedTahun || selectedJenis);
+            if (resetBtn) {
+                if (hasActiveFilter) {
+                    resetBtn.classList.remove('hidden');
+                    resetBtn.classList.add('inline-flex');
+                } else {
+                    resetBtn.classList.remove('inline-flex');
+                    resetBtn.classList.add('hidden');
+                }
+            }
+        }
+
+        function syncUrlParams() {
+            const params = new URLSearchParams(window.location.search);
+            const searchVal = searchInput ? searchInput.value.trim() : '';
+            const statusVal = statusFilter ? statusFilter.value : '';
+            const tahunVal = tahunFilter ? tahunFilter.value : '';
+            const jenisVal = jenisFilter ? jenisFilter.value : '';
+
+            if (searchVal) {
+                params.set('search', searchVal);
+            } else {
+                params.delete('search');
+            }
+
+            if (statusVal) {
+                params.set('status', statusVal);
+            } else {
+                params.delete('status');
+            }
+
+            if (tahunVal) {
+                params.set('tahun', tahunVal);
+            } else {
+                params.delete('tahun');
+            }
+
+            if (jenisVal) {
+                params.set('jenis', jenisVal);
+            } else {
+                params.delete('jenis');
+            }
+
+            params.set('page', '1');
+
+            window.location.search = params.toString();
+        }
 
         if (searchInput) {
             searchInput.addEventListener('input', function () {
-                const keyword = this.value.toLowerCase().trim();
-                rows.forEach(row => {
-                    const nama = row.querySelector('.mahasiswa-nama')?.textContent.toLowerCase() || '';
-                    const nim = row.querySelector('.mahasiswa-nim')?.textContent.toLowerCase() || '';
-                    const tahun = row.querySelector('.mahasiswa-tahun')?.textContent.toLowerCase() || '';
-                    row.style.display = (!keyword || nama.includes(keyword) || nim.includes(keyword) || tahun.includes(keyword)) ? '' : 'none';
+                applyClientFilter();
+                clearTimeout(debounceTimer);
+                debounceTimer = setTimeout(() => {
+                    syncUrlParams();
+                }, 600);
+            });
+
+            searchInput.addEventListener('keydown', function (e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    clearTimeout(debounceTimer);
+                    syncUrlParams();
+                }
+            });
+        }
+
+        [statusFilter, tahunFilter, jenisFilter].forEach(selectEl => {
+            if (selectEl) {
+                selectEl.addEventListener('change', function () {
+                    applyClientFilter();
+                    syncUrlParams();
                 });
+            }
+        });
+
+        if (resetBtn) {
+            resetBtn.addEventListener('click', function () {
+                if (window.location.search) {
+                    window.location.href = "{{ route('mahasiswa.index') }}";
+                } else {
+                    if (searchInput) searchInput.value = '';
+                    if (statusFilter) statusFilter.value = '';
+                    if (tahunFilter) tahunFilter.value = '';
+                    if (jenisFilter) jenisFilter.value = '';
+                    applyClientFilter();
+                }
             });
         }
 
@@ -642,7 +752,6 @@
             if (editJenis) editJenis.value = data.jenis || '';
             if (editKelulusan) editKelulusan.value = data.kelulusan || '';
             if (editMasaStudi) editMasaStudi.value = data.masaStudi || '48';
-
             showModal(editModal);
             setTimeout(() => editNama?.focus(), 100);
         }
@@ -661,80 +770,6 @@
             });
         });
 
-        // Detail Modal
-        const detailModal = document.getElementById('detailMahasiswaModal');
-        const viewNama = document.getElementById('viewMahasiswaNama');
-        const viewNim = document.getElementById('viewMahasiswaNim');
-        const viewTahun = document.getElementById('viewMahasiswaTahun');
-        const viewJenis = document.getElementById('viewMahasiswaJenis');
-        const viewKelulusan = document.getElementById('viewMahasiswaKelulusan');
-        const viewMasaStudi = document.getElementById('viewMahasiswaMasaStudi');
-        const btnDetailHapus = document.getElementById('btnDetailHapusMahasiswa');
-        const btnDetailEdit = document.getElementById('btnDetailEditMahasiswa');
-
-        let currentDetailData = null;
-
-        document.querySelectorAll('.open-detail-mahasiswa-btn').forEach(btn => {
-            btn.addEventListener('click', function () {
-                currentDetailData = {
-                    id: this.getAttribute('data-id'),
-                    actionUpdate: this.getAttribute('data-action-update'),
-                    actionDestroy: this.getAttribute('data-action-destroy'),
-                    nama: this.getAttribute('data-nama'),
-                    nim: this.getAttribute('data-nim'),
-                    tahun: this.getAttribute('data-tahun'),
-                    jenis: this.getAttribute('data-jenis'),
-                    kelulusan: this.getAttribute('data-kelulusan'),
-                    kelulusanRaw: this.getAttribute('data-kelulusan-raw'),
-                    masaStudi: this.getAttribute('data-masa-studi')
-                };
-
-                if (viewNama) viewNama.value = currentDetailData.nama || '-';
-                if (viewNim) viewNim.value = currentDetailData.nim || '-';
-                if (viewTahun) viewTahun.value = currentDetailData.tahun || '-';
-                if (viewJenis) viewJenis.value = currentDetailData.jenis || '-';
-                if (viewKelulusan) viewKelulusan.value = currentDetailData.kelulusan || '-';
-                if (viewMasaStudi) viewMasaStudi.value = (currentDetailData.masaStudi || '48') + ' Bulan';
-
-                showModal(detailModal);
-            });
-        });
-
-        // Trigger "Edit Data" from Detail Modal
-        if (btnDetailEdit) {
-            btnDetailEdit.addEventListener('click', function () {
-                if (!currentDetailData) return;
-                hideModal(detailModal);
-                setTimeout(() => {
-                    populateAndShowEdit({
-                        action: currentDetailData.actionUpdate,
-                        nama: currentDetailData.nama,
-                        nim: currentDetailData.nim,
-                        tahun: currentDetailData.tahun,
-                        jenis: currentDetailData.jenis,
-                        kelulusan: currentDetailData.kelulusanRaw,
-                        masaStudi: currentDetailData.masaStudi
-                    });
-                }, 150);
-            });
-        }
-
-        // Trigger "Hapus Data" from Detail Modal (using global openConfirmDeleteModal)
-        if (btnDetailHapus) {
-            btnDetailHapus.addEventListener('click', function () {
-                if (!currentDetailData) return;
-                hideModal(detailModal);
-
-                if (window.openConfirmDeleteModal) {
-                    window.openConfirmDeleteModal({
-                        action: currentDetailData.actionDestroy,
-                        title: 'Hapus Data Mahasiswa?',
-                        message: `Apakah Anda yakin ingin menghapus data mahasiswa ${currentDetailData.nama} (NIM: ${currentDetailData.nim})? Tindakan ini bersifat permanen dan data tidak dapat dikembalikan.`
-                    });
-                }
-            });
-        }
-
         // Close Buttons on all modals
         document.querySelectorAll('.close-mahasiswa-modal').forEach(btn => {
             btn.addEventListener('click', function () {
@@ -743,7 +778,7 @@
         });
 
         // Close on Backdrop Click
-        [createModal, editModal, detailModal].forEach(m => {
+        [createModal, editModal].forEach(m => {
             m?.addEventListener('click', function (e) {
                 if (e.target === m) hideModal(m);
             });
@@ -754,7 +789,6 @@
             if (e.key === 'Escape') {
                 hideModal(createModal);
                 hideModal(editModal);
-                hideModal(detailModal);
             }
         });
     });

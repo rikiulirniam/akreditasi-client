@@ -52,43 +52,58 @@ Mengoptimalkan mutu manajemen institusi secara berkelanjutan dengan menerapkan p
             $pt['logo_url'] = session('custom_pt_logo');
         }
 
-        // Fetch UPPS & Prodi
+        // Fetch UPPS & Prodi — build prodiList with same structure as ProdiController
         $uppsResponse = $this->akademikService->getUppsList();
         $prodiResponse = $this->akademikService->getProdiList();
 
         $uppsData = $uppsResponse->json('data') ?? [];
         $prodiData = $prodiResponse->json('data') ?? [];
 
+        // Map UPPS by prodi_id for fast lookup (same as ProdiController)
+        $allUpps = is_array($uppsData) ? $uppsData : [];
+        $uppsByProdiId = [];
+        foreach ($allUpps as $u) {
+            if (! empty($u['prodi_id'])) {
+                $uppsByProdiId[$u['prodi_id']] = $u;
+            }
+        }
+
         $prodiList = [];
 
-        if (! empty($uppsData)) {
-            foreach ($uppsData as $item) {
+        if (is_array($prodiData) && ! empty($prodiData)) {
+            foreach ($prodiData as $item) {
+                $pId = $item['id'] ?? null;
+                $matchedUpps = $uppsByProdiId[$pId] ?? ($item['upps'][0] ?? null);
+
                 $prodiList[] = [
-                    'nama_prodi' => $item['prodi']['nama_prodi'] ?? 'Teknik Listrik',
-                    'akreditasi' => $item['prodi']['akreditasi'] ?? 'Unggul',
-                    'nama_upps' => $item['nama_upps'] ?? 'Teknik Elektro',
-                    'upps_id' => $item['id'] ?? null,
-                ];
-            }
-        } elseif (! empty($prodiData)) {
-            foreach ($prodiData as $p) {
-                $prodiList[] = [
-                    'nama_prodi' => $p['nama_prodi'] ?? 'Teknik Listrik',
-                    'akreditasi' => $p['akreditasi'] ?? 'Unggul',
-                    'nama_upps' => $p['upps'][0]['nama_upps'] ?? 'Teknik Elektro',
-                    'upps_id' => null,
+                    'id' => $pId,
+                    'kode_prodi' => $item['kode_prodi'] ?? '',
+                    'nama_prodi' => $item['nama_prodi'] ?? '-',
+                    'akreditasi' => $item['akreditasi'] ?? '-',
+                    'nama_upps' => $matchedUpps['nama_upps'] ?? '-',
+                    'upps' => $matchedUpps,
                 ];
             }
         }
 
-        // Fallback prodi list matching screenshot if empty
+        // Fallback matching reference screenshot if no data
         if (empty($prodiList)) {
-            for ($i = 0; $i < 11; $i++) {
+            for ($i = 1; $i <= 4; $i++) {
+                $uppsObj = [
+                    'id' => $i,
+                    'kode_upps' => 'TE0'.$i,
+                    'nama_upps' => 'Teknik Elektro',
+                    'pimpinan_upps' => 'Dr. Garup Lambang Goro, S.T., M.T.',
+                    'jenis' => 'Jurusan',
+                    'prodi_id' => $i,
+                ];
                 $prodiList[] = [
+                    'id' => $i,
+                    'kode_prodi' => 'TL0'.$i,
                     'nama_prodi' => 'Teknik Listrik',
                     'akreditasi' => 'Unggul',
-                    'nama_upps' => 'Teknik Elektro',
-                    'upps_id' => null,
+                    'nama_upps' => $uppsObj['nama_upps'],
+                    'upps' => $uppsObj,
                 ];
             }
         }

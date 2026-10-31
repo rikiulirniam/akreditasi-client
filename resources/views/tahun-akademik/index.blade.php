@@ -20,6 +20,7 @@
                     class="pl-10 text-xs"
                 />
             </div>
+            @haspermission('tahun_akademik.create')
             <div>
                 <button 
                     type="button" 
@@ -32,6 +33,7 @@
                     Tambah Tahun Akademik
                 </button>
             </div>
+            @endhaspermission
         </div>
 
         <!-- Table: Data Tahun Akademik -->
@@ -39,8 +41,9 @@
             <x-slot:header>
                 <x-table.th class="w-16">No</x-table.th>
                 <x-table.th>Tahun Akademik</x-table.th>
-                <x-table.th class="w-36">Semester</x-table.th>
-                <x-table.th class="w-36">Status</x-table.th>
+                <x-table.th class="w-32">Jumlah Kelas</x-table.th>
+                <x-table.th class="w-32">Status</x-table.th>
+                <x-table.th>Prodi</x-table.th>
                 <x-table.th class="w-28 text-right">Action</x-table.th>
             </x-slot:header>
 
@@ -50,6 +53,8 @@
                     $tahun = $item['tahun'] ?? '-';
                     $semester = $item['semester'] ?? 'Ganjil';
                     $isActive = ! empty($item['is_active']);
+                    $jumlahKelas = $item['jumlah_kelas'] ?? 12;
+                    $prodi = $item['prodi']['nama'] ?? 'Teknologi Rekayasa Komputer';
                 @endphp
                 <x-table.row class="tahun-akademik-row">
                     <!-- No -->
@@ -59,34 +64,43 @@
 
                     <!-- Tahun Akademik -->
                     <x-table.cell>
-                        <span class="font-extrabold text-sm text-gray-900 tracking-tight font-mono tahun-text">
-                            {{ $tahun }}
-                        </span>
+                        <div class="flex items-center gap-2">
+                            <span class="font-extrabold text-sm text-gray-900 tracking-tight font-mono tahun-text">
+                                {{ $tahun }}
+                            </span>
+                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold bg-primary/10 text-primary">
+                                {{ $semester }}
+                            </span>
+                        </div>
                     </x-table.cell>
 
-                    <!-- Semester -->
-                    <x-table.cell class="w-36">
-                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold {{ strtolower($semester) === 'ganjil' ? 'bg-indigo-50 text-indigo-700 border border-indigo-200' : 'bg-purple-50 text-purple-700 border border-purple-200' }} semester-text">
-                            {{ $semester }}
-                        </span>
+                    <!-- Jumlah Kelas -->
+                    <x-table.cell class="w-32 text-gray-700 font-medium">
+                        {{ $jumlahKelas }} Kelas
                     </x-table.cell>
 
                     <!-- Status -->
-                    <x-table.cell class="w-36">
+                    <x-table.cell class="w-32">
                         @if($isActive)
                             <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 status-text">
-                                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 mr-1.5"></span> Aktif
+                                Aktif
                             </span>
                         @else
                             <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-gray-100 text-gray-600 border border-gray-200 status-text">
-                                <span class="w-1.5 h-1.5 rounded-full bg-gray-400 mr-1.5"></span> Tidak Aktif
+                                Tidak Aktif
                             </span>
                         @endif
                     </x-table.cell>
 
+                    <!-- Prodi -->
+                     <x-table.cell class="text-gray-700 font-medium">
+                        {{ $prodi }}
+                    </x-table.cell>
+
                     <!-- Action (Yellow Edit, Red Delete) -->
                     <x-table.cell class="w-28">
-                        <div class="flex items-center justify-end gap-3">
+                        <div class="flex items-center justify-end gap-2.5">
+                            @haspermission('tahun_akademik.update')
                             <!-- Edit Icon (Yellow) -->
                             <button 
                                 type="button" 
@@ -100,7 +114,9 @@
                             >
                                 <x-icon.edit class="w-5 h-5" />
                             </button>
+                            @endhaspermission
 
+                            @haspermission('tahun_akademik.delete')
                             <!-- Delete Icon (Red) -->
                             <button 
                                 type="button" 
@@ -113,6 +129,16 @@
                             >
                                 <x-icon.delete class="w-5 h-5" />
                             </button>
+                            @endhaspermission
+
+                            <!-- Eye / View Icon (Navy) -> ke Halaman 2 (Daftar Kelas) -->
+                            <a 
+                                href="{{ route('tahun-akademik.kelas', $item['id']) }}" 
+                                class="text-primary hover:text-additional transition p-1 cursor-pointer"
+                                title="Lihat Daftar Kelas"
+                            >
+                                <x-icon.eye class="w-5 h-5" />
+                            </a>
                         </div>
                     </x-table.cell>
                 </x-table.row>

@@ -3,113 +3,439 @@
 @section('title', 'Dashboard')
 
 @section('content')
-<div class="space-y-6">
-    
-    <!-- Welcome Hero Banner -->
-    <div class="relative overflow-hidden rounded-3xl bg-primary p-6 sm:p-10 text-white shadow-lg">
-        <div class="relative z-10 max-w-2xl">
-            <span class="inline-block py-1 px-3 rounded-full bg-secondary/20 text-secondary text-xs font-bold tracking-wide uppercase mb-3">
-                Sistem Penjaminan Mutu & Portal Akreditasi
-            </span>
-            <h2 class="text-2xl sm:text-3xl font-extrabold tracking-tight mb-2">
-                Selamat Datang, {{ $user['nama'] ?? 'Pengguna' }}!
-            </h2>
-            <p class="text-white/80 text-xs sm:text-sm leading-relaxed">
-                Anda masuk sebagai <strong class="text-secondary">{{ $user['role'] ?? 'Dosen' }}</strong>. Pantau dan kelola instrumen akreditasi, data borang, serta dokumen penilaian mutu secara terintegrasi.
-            </p>
-        </div>
+<div class="space-y-6 max-w-[1140px]">
 
-        <!-- Decorative Background Glows -->
-        <div class="absolute -right-16 -top-16 w-64 h-64 rounded-full bg-additional/30 blur-2xl pointer-events-none"></div>
-        <div class="absolute right-12 -bottom-16 w-72 h-72 rounded-full bg-secondary/15 blur-3xl pointer-events-none"></div>
+    <!-- 1. Hero Banner: Pusat Kendali Sistem -->
+    <div class="relative overflow-hidden rounded-2xl bg-[#0F3560] p-6 sm:p-8 text-white shadow-sm">
+        <div class="relative z-10 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+            <div class="max-w-2xl">
+                <p class="text-xs font-bold text-secondary uppercase tracking-wider mb-2">
+                    PUSAT KENDALI SISTEM
+                </p>
+                <h2 class="text-2xl sm:text-3xl font-bold tracking-tight text-white mb-2 leading-tight">
+                    Selamat datang, {{ $user['nama'] ?? 'Superadmin' }}
+                </h2>
+                <p class="text-white/80 text-xs sm:text-sm font-normal leading-relaxed">
+                    Pantau indikator kerja utama dan kesiapan data akreditasi Program Studi dari satu tempat
+                </p>
+            </div>
+
+            <!-- Status Sistem Badge -->
+            <div class="shrink-0 self-start lg:self-center">
+                <div class="border border-white/25 rounded-xl px-5 py-3.5 bg-white/5 min-w-[200px]">
+                    <p class="text-[11px] font-semibold text-white/70 uppercase tracking-wider mb-1">STATUS SISTEM</p>
+                    <div class="flex items-center gap-2 text-xs sm:text-sm font-medium text-white">
+                        <span class="w-2.5 h-2.5 rounded-full bg-secondary inline-block shrink-0"></span>
+                        <span>Semua layanan normal</span>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
-    <!-- Quick Stats Cards Grid -->
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-        
-        <!-- Stat Card 1 -->
-        <div class="p-5 rounded-2xl bg-white border border-[#EAEAEA] shadow-xs hover:shadow-md transition">
-            <div class="flex items-center justify-between mb-3">
-                <span class="text-xs font-bold text-gray-form uppercase tracking-wider">Instrumen</span>
-                <div class="w-9 h-9 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
-                    <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" />
+    <!-- 2. Top 6 KPI Cards Grid -->
+    <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5 sm:gap-3">
+
+        <!-- KPI 1: Mahasiswa Aktif -->
+        <div class="p-3 sm:p-3.5 rounded-2xl bg-[#D6DEE5] border border-[#CAD5DE] border-b-[3px] border-b-[#B8C6D4] shadow-[0_8px_16px_-2px_rgba(15,23,42,0.12),0_3px_6px_-2px_rgba(15,23,42,0.08),inset_0_1px_0_0_rgba(255,255,255,0.7)] hover:-translate-y-1 hover:shadow-[0_12px_24px_-4px_rgba(15,23,42,0.16),0_6px_10px_-3px_rgba(15,23,42,0.1),inset_0_1px_0_0_rgba(255,255,255,0.8)] transition-all duration-200 flex flex-col justify-between group min-h-[140px]">
+            <div class="flex items-center justify-between">
+                <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-[#6BB8EB] text-gray-900 flex items-center justify-center shadow-xs border-b-2 border-black/10 shrink-0">
+                    <svg class="w-5 h-5 sm:w-5.5 sm:h-5.5 text-gray-900" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+                        <circle cx="9" cy="7" r="4" />
+                        <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
+                        <path d="M16 3.13a4 4 0 0 1 0 7.75" />
                     </svg>
                 </div>
             </div>
-            <p class="text-2xl font-extrabold text-primary">9 Kriteria</p>
-            <p class="text-xs text-[#5A6E85] mt-1">Standar Akreditasi BAN-PT</p>
+            <div class="mt-2.5 sm:mt-3 min-w-0">
+                <span class="text-[9.5px] sm:text-[10px] font-semibold text-gray-700 uppercase tracking-tight block whitespace-nowrap" title="Mahasiswa Aktif">Mahasiswa Aktif</span>
+                <p class="text-2xl sm:text-[28px] font-black text-[#183A5F] tracking-tight mt-0.5 leading-none">{{ $kpi['mahasiswa_aktif'] ?? 425 }}</p>
+                <p class="text-[8.5px] sm:text-[9px] font-semibold text-gray-500 uppercase tracking-tight mt-1 whitespace-nowrap">SEMESTER BERJALAN</p>
+            </div>
         </div>
 
-        <!-- Stat Card 2 -->
-        <div class="p-5 rounded-2xl bg-white border border-[#EAEAEA] shadow-xs hover:shadow-md transition">
-            <div class="flex items-center justify-between mb-3">
-                <span class="text-xs font-bold text-gray-form uppercase tracking-wider">Borang Dokumen</span>
-                <div class="w-9 h-9 rounded-xl bg-additional/10 text-additional flex items-center justify-center">
-                    <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
+        <!-- KPI 2: Mahasiswa Baru -->
+        <div class="p-3 sm:p-3.5 rounded-2xl bg-[#D6DEE5] border border-[#CAD5DE] border-b-[3px] border-b-[#B8C6D4] shadow-[0_8px_16px_-2px_rgba(15,23,42,0.12),0_3px_6px_-2px_rgba(15,23,42,0.08),inset_0_1px_0_0_rgba(255,255,255,0.7)] hover:-translate-y-1 hover:shadow-[0_12px_24px_-4px_rgba(15,23,42,0.16),0_6px_10px_-3px_rgba(15,23,42,0.1),inset_0_1px_0_0_rgba(255,255,255,0.8)] transition-all duration-200 flex flex-col justify-between group min-h-[140px]">
+            <div class="flex items-center justify-between">
+                <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-[#6BE877] text-gray-900 flex items-center justify-center shadow-xs border-b-2 border-black/10 shrink-0">
+                    <svg class="w-5 h-5 sm:w-5.5 sm:h-5.5 text-gray-900" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+                        <circle cx="9" cy="7" r="4" />
+                        <line x1="19" y1="8" x2="19" y2="14" />
+                        <line x1="22" y1="11" x2="16" y2="11" />
                     </svg>
                 </div>
             </div>
-            <p class="text-2xl font-extrabold text-primary">78%</p>
-            <p class="text-xs text-emerald-600 font-semibold mt-1 flex items-center gap-1">
-                <span>↑</span> Dokumen Terverifikasi
-            </p>
+            <div class="mt-2.5 sm:mt-3 min-w-0">
+                <span class="text-[9.5px] sm:text-[10px] font-semibold text-gray-700 uppercase tracking-tight block whitespace-nowrap" title="Mahasiswa Baru">Mahasiswa Baru</span>
+                <p class="text-2xl sm:text-[28px] font-black text-[#183A5F] tracking-tight mt-0.5 leading-none">{{ $kpi['mahasiswa_baru'] ?? 112 }}</p>
+                <p class="text-[8.5px] sm:text-[9px] font-semibold text-gray-500 uppercase tracking-tight mt-1 whitespace-nowrap">ANGKATAN 2026</p>
+            </div>
         </div>
 
-        <!-- Stat Card 3 -->
-        <div class="p-5 rounded-2xl bg-white border border-[#EAEAEA] shadow-xs hover:shadow-md transition">
-            <div class="flex items-center justify-between mb-3">
-                <span class="text-xs font-bold text-gray-form uppercase tracking-wider">Status Mutu</span>
-                <div class="w-9 h-9 rounded-xl bg-secondary/20 text-[#B38F00] flex items-center justify-center">
-                    <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.84.61l-4.725-2.885a.563.563 0 00-.586 0L6.982 20.54a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.182-.557l-4.204-3.602a.563.563 0 01.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z" />
+        <!-- KPI 3: Lulus Tepat Waktu -->
+        <div class="p-3 sm:p-3.5 rounded-2xl bg-[#D6DEE5] border border-[#CAD5DE] border-b-[3px] border-b-[#B8C6D4] shadow-[0_8px_16px_-2px_rgba(15,23,42,0.12),0_3px_6px_-2px_rgba(15,23,42,0.08),inset_0_1px_0_0_rgba(255,255,255,0.7)] hover:-translate-y-1 hover:shadow-[0_12px_24px_-4px_rgba(15,23,42,0.16),0_6px_10px_-3px_rgba(15,23,42,0.1),inset_0_1px_0_0_rgba(255,255,255,0.8)] transition-all duration-200 flex flex-col justify-between group min-h-[140px]">
+            <div class="flex items-center justify-between">
+                <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-[#E3BF22] text-gray-900 flex items-center justify-center shadow-xs border-b-2 border-black/10 shrink-0">
+                    <svg class="w-5 h-5 sm:w-5.5 sm:h-5.5 text-gray-900" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M22 10v6M2 10l10-5 10 5-10 5z" />
+                        <path d="M6 12v5c3 3 9 3 12 0v-5" />
                     </svg>
                 </div>
             </div>
-            <p class="text-2xl font-extrabold text-primary">Baik Sekali</p>
-            <p class="text-xs text-[#5A6E85] mt-1">Skor Evaluasi Terakhir</p>
+            <div class="mt-2.5 sm:mt-3 min-w-0">
+                <span class="text-[9.5px] sm:text-[10px] font-semibold text-gray-700 uppercase tracking-tight block whitespace-nowrap" title="Lulus Tepat Waktu">Lulus Tepat Waktu</span>
+                <p class="text-2xl sm:text-[28px] font-black text-[#183A5F] tracking-tight mt-0.5 leading-none">{{ $kpi['lulus_tepat_waktu'] ?? 87 }} %</p>
+                <p class="text-[8.5px] sm:text-[9px] font-semibold text-gray-500 uppercase tracking-tight mt-1 whitespace-nowrap">TARGET MINIMUM : 85%</p>
+            </div>
         </div>
 
-        <!-- Stat Card 4 -->
-        <div class="p-5 rounded-2xl bg-white border border-[#EAEAEA] shadow-xs hover:shadow-md transition">
-            <div class="flex items-center justify-between mb-3">
-                <span class="text-xs font-bold text-gray-form uppercase tracking-wider">Koneksi API</span>
-                <div class="w-9 h-9 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
-                    <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+        <!-- KPI 4: Rata-Rata IPK -->
+        <div class="p-3 sm:p-3.5 rounded-2xl bg-[#D6DEE5] border border-[#CAD5DE] border-b-[3px] border-b-[#B8C6D4] shadow-[0_8px_16px_-2px_rgba(15,23,42,0.12),0_3px_6px_-2px_rgba(15,23,42,0.08),inset_0_1px_0_0_rgba(255,255,255,0.7)] hover:-translate-y-1 hover:shadow-[0_12px_24px_-4px_rgba(15,23,42,0.16),0_6px_10px_-3px_rgba(15,23,42,0.1),inset_0_1px_0_0_rgba(255,255,255,0.8)] transition-all duration-200 flex flex-col justify-between group min-h-[140px]">
+            <div class="flex items-center justify-between">
+                <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-[#C57841] text-gray-900 flex items-center justify-center shadow-xs border-b-2 border-black/10 shrink-0">
+                    <svg class="w-5 h-5 sm:w-5.5 sm:h-5.5 text-gray-900" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="10" y1="2" x2="14" y2="2" />
+                        <line x1="12" y1="2" x2="12" y2="5" />
+                        <circle cx="12" cy="14" r="8" />
+                        <path d="M7 14h2.5l1.5-3 2 6 1.5-3h2.5" />
                     </svg>
                 </div>
             </div>
-            <p class="text-2xl font-extrabold text-primary">Aktif</p>
-            <p class="text-xs text-gray-form mt-1">Layanan Akademik Online</p>
+            <div class="mt-2.5 sm:mt-3 min-w-0">
+                <span class="text-[9.5px] sm:text-[10px] font-semibold text-gray-700 uppercase tracking-tight block whitespace-nowrap" title="Rata-Rata IPK">Rata-Rata IPK</span>
+                <p class="text-2xl sm:text-[28px] font-black text-[#183A5F] tracking-tight mt-0.5 leading-none">{{ number_format($kpi['rata_rata_ipk'] ?? 3.78, 2) }}</p>
+                <p class="text-[8.5px] sm:text-[9px] font-semibold text-gray-500 uppercase tracking-tight mt-1 whitespace-nowrap">SKALA 4.00</p>
+            </div>
+        </div>
+
+        <!-- KPI 5: Prestasi Nasional -->
+        <div class="p-3 sm:p-3.5 rounded-2xl bg-[#D6DEE5] border border-[#CAD5DE] border-b-[3px] border-b-[#B8C6D4] shadow-[0_8px_16px_-2px_rgba(15,23,42,0.12),0_3px_6px_-2px_rgba(15,23,42,0.08),inset_0_1px_0_0_rgba(255,255,255,0.7)] hover:-translate-y-1 hover:shadow-[0_12px_24px_-4px_rgba(15,23,42,0.16),0_6px_10px_-3px_rgba(15,23,42,0.1),inset_0_1px_0_0_rgba(255,255,255,0.8)] transition-all duration-200 flex flex-col justify-between group min-h-[140px]">
+            <div class="flex items-center justify-between">
+                <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-[#B79EE6] text-gray-900 flex items-center justify-center shadow-xs border-b-2 border-black/10 shrink-0">
+                    <svg class="w-5 h-5 sm:w-5.5 sm:h-5.5 text-gray-900" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="m8 9-3-6h2.5l2 4.5" />
+                        <path d="m16 9 3-6h-2.5l-2 4.5" />
+                        <circle cx="12" cy="15" r="6" />
+                        <path d="m12 12.5.8 1.7 1.8.2-1.3 1.3.4 1.8-1.7-.9-1.7.9.4-1.8-1.3-1.3 1.8-.2z" fill="currentColor" stroke="none" />
+                    </svg>
+                </div>
+            </div>
+            <div class="mt-2.5 sm:mt-3 min-w-0">
+                <span class="text-[9.5px] sm:text-[10px] font-semibold text-gray-700 uppercase tracking-tight block whitespace-nowrap" title="Prestasi Nasional">Prestasi Nasional</span>
+                <p class="text-2xl sm:text-[28px] font-black text-[#183A5F] tracking-tight mt-0.5 leading-none">{{ $kpi['prestasi_nasional'] ?? 97 }}</p>
+                <p class="text-[8.5px] sm:text-[9px] font-semibold text-gray-500 uppercase tracking-tight mt-1 whitespace-nowrap">TAHUN 2026</p>
+            </div>
+        </div>
+
+        <!-- KPI 6: Prestasi Internasional -->
+        <div class="p-3 sm:p-3.5 rounded-2xl bg-[#D6DEE5] border border-[#CAD5DE] border-b-[3px] border-b-[#B8C6D4] shadow-[0_8px_16px_-2px_rgba(15,23,42,0.12),0_3px_6px_-2px_rgba(15,23,42,0.08),inset_0_1px_0_0_rgba(255,255,255,0.7)] hover:-translate-y-1 hover:shadow-[0_12px_24px_-4px_rgba(15,23,42,0.16),0_6px_10px_-3px_rgba(15,23,42,0.1),inset_0_1px_0_0_rgba(255,255,255,0.8)] transition-all duration-200 flex flex-col justify-between group min-h-[140px]">
+            <div class="flex items-center justify-between">
+                <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-[#E36F75] text-gray-900 flex items-center justify-center shadow-xs border-b-2 border-black/10 shrink-0">
+                    <svg class="w-5 h-5 sm:w-5.5 sm:h-5.5 text-gray-900" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M7 4h10v6a5 5 0 0 1-10 0V4Z" />
+                        <path d="M7 6H4v4h3" />
+                        <path d="M17 6h3v4h-3" />
+                        <line x1="12" y1="15" x2="12" y2="19" />
+                        <line x1="8" y1="19" x2="16" y2="19" />
+                    </svg>
+                </div>
+            </div>
+            <div class="mt-2.5 sm:mt-3 min-w-0">
+                <span class="text-[9px] sm:text-[9.5px] font-semibold text-gray-700 uppercase tracking-tight block whitespace-nowrap" title="Prestasi Internasional">Prestasi Internasional</span>
+                <p class="text-2xl sm:text-[28px] font-black text-[#183A5F] tracking-tight mt-0.5 leading-none">{{ $kpi['prestasi_internasional'] ?? 34 }}</p>
+                <p class="text-[8.5px] sm:text-[9px] font-semibold text-gray-500 uppercase tracking-tight mt-1 whitespace-nowrap">TAHUN 2026</p>
+            </div>
         </div>
 
     </div>
 
-    <!-- User Information Detail Section -->
-    <div class="bg-white rounded-3xl border border-[#EAEAEA] p-6 sm:p-8 shadow-xs">
-        <h3 class="text-base font-extrabold text-primary tracking-tight mb-4 flex items-center gap-2">
-            <svg class="w-5 h-5 text-additional" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
-            </svg>
-            Informasi Akun Anda
-        </h3>
+    <!-- 3. Section: Ringkasan Tri Dharma -->
+    <div class="space-y-3">
+        <h3 class="text-base sm:text-lg font-black text-[#183A5F] tracking-tight uppercase">RINGKASAN TRI DHARMA</h3>
 
-        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2">
-            <div class="p-4 rounded-2xl bg-gray-50 border border-gray-100">
-                <p class="text-xs text-gray-form uppercase tracking-wider font-semibold">Nama Lengkap</p>
-                <p class="text-sm font-bold text-primary mt-1">{{ $user['nama'] ?? 'Kuwat' }}</p>
+        <!-- 8 Cards Grid (4x2 on desktop) -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-2.5 sm:gap-3">
+
+            <!-- Card 1: DTPS -->
+            <div class="p-3 sm:p-3.5 rounded-2xl bg-[#D6DEE5] border border-[#CAD5DE] border-b-[3px] border-b-[#B8C6D4] shadow-[0_8px_16px_-2px_rgba(15,23,42,0.12),0_3px_6px_-2px_rgba(15,23,42,0.08),inset_0_1px_0_0_rgba(255,255,255,0.7)] hover:-translate-y-1 hover:shadow-[0_12px_24px_-4px_rgba(15,23,42,0.16),0_6px_10px_-3px_rgba(15,23,42,0.1),inset_0_1px_0_0_rgba(255,255,255,0.8)] transition-all duration-200 flex items-center gap-3 sm:gap-3.5 group min-h-[88px]">
+                <div class="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-[#E8C86A] text-gray-900 flex items-center justify-center shrink-0 shadow-xs border-b-2 border-black/10">
+                    <svg class="w-5 h-5 sm:w-5.5 sm:h-5.5 text-gray-900" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="7" r="4" />
+                        <path d="M5.5 20a6.5 6.5 0 0 1 13 0" />
+                    </svg>
+                </div>
+                <div class="min-w-0 flex-1">
+                    <span class="text-[9.5px] sm:text-[10px] font-semibold text-gray-600 uppercase tracking-tight block truncate" title="DTPS">DTPS</span>
+                    <p class="text-2xl sm:text-[28px] font-black text-[#183A5F] tracking-tight mt-0.5 leading-none">{{ $tridharma['dtps'] ?? 20 }}</p>
+                </div>
             </div>
-            <div class="p-4 rounded-2xl bg-gray-50 border border-gray-100">
-                <p class="text-xs text-gray-form uppercase tracking-wider font-semibold">Email Terdaftar</p>
-                <p class="text-sm font-bold text-primary mt-1">{{ $user['email'] ?? '-' }}</p>
+
+            <!-- Card 2: Dosen S3 -->
+            <div class="p-3 sm:p-3.5 rounded-2xl bg-[#D6DEE5] border border-[#CAD5DE] border-b-[3px] border-b-[#B8C6D4] shadow-[0_8px_16px_-2px_rgba(15,23,42,0.12),0_3px_6px_-2px_rgba(15,23,42,0.08),inset_0_1px_0_0_rgba(255,255,255,0.7)] hover:-translate-y-1 hover:shadow-[0_12px_24px_-4px_rgba(15,23,42,0.16),0_6px_10px_-3px_rgba(15,23,42,0.1),inset_0_1px_0_0_rgba(255,255,255,0.8)] transition-all duration-200 flex items-center gap-3 sm:gap-3.5 group min-h-[88px]">
+                <div class="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-[#7B6EE2] text-gray-900 flex items-center justify-center shrink-0 shadow-xs border-b-2 border-black/10">
+                    <svg class="w-5 h-5 sm:w-5.5 sm:h-5.5 text-gray-900" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M22 10v6M2 10l10-5 10 5-10 5z" />
+                        <path d="M6 12v5c3 3 9 3 12 0v-5" />
+                    </svg>
+                </div>
+                <div class="min-w-0 flex-1">
+                    <span class="text-[9.5px] sm:text-[10px] font-semibold text-gray-600 uppercase tracking-tight block truncate" title="Dosen S3">Dosen S3</span>
+                    <p class="text-2xl sm:text-[28px] font-black text-[#183A5F] tracking-tight mt-0.5 leading-none">{{ $tridharma['dosen_s3'] ?? 8 }}</p>
+                </div>
             </div>
-            <div class="p-4 rounded-2xl bg-gray-50 border border-gray-100">
-                <p class="text-xs text-gray-form uppercase tracking-wider font-semibold">Peran / Jabatan</p>
-                <p class="text-sm font-bold text-additional mt-1">{{ $user['role'] ?? 'Kaprodi' }}</p>
+
+            <!-- Card 3: Lektor Kepala -->
+            <div class="p-3 sm:p-3.5 rounded-2xl bg-[#D6DEE5] border border-[#CAD5DE] border-b-[3px] border-b-[#B8C6D4] shadow-[0_8px_16px_-2px_rgba(15,23,42,0.12),0_3px_6px_-2px_rgba(15,23,42,0.08),inset_0_1px_0_0_rgba(255,255,255,0.7)] hover:-translate-y-1 hover:shadow-[0_12px_24px_-4px_rgba(15,23,42,0.16),0_6px_10px_-3px_rgba(15,23,42,0.1),inset_0_1px_0_0_rgba(255,255,255,0.8)] transition-all duration-200 flex items-center gap-3 sm:gap-3.5 group min-h-[88px]">
+                <div class="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-[#E3906F] text-gray-900 flex items-center justify-center shrink-0 shadow-xs border-b-2 border-black/10">
+                    <svg class="w-5 h-5 sm:w-5.5 sm:h-5.5 text-gray-900" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="7" r="4" />
+                        <path d="M5 21v-2a4 4 0 0 1 4-4h6a4 4 0 0 1 4 4v2" />
+                        <path d="M12 15v4" />
+                    </svg>
+                </div>
+                <div class="min-w-0 flex-1">
+                    <span class="text-[9.5px] sm:text-[10px] font-semibold text-gray-600 uppercase tracking-tight block truncate" title="Lektor Kepala">Lektor Kepala</span>
+                    <p class="text-2xl sm:text-[28px] font-black text-[#183A5F] tracking-tight mt-0.5 leading-none">{{ $tridharma['lektor_kepala'] ?? 3 }}</p>
+                </div>
+            </div>
+
+            <!-- Card 4: Penelitian -->
+            <div class="p-3 sm:p-3.5 rounded-2xl bg-[#D6DEE5] border border-[#CAD5DE] border-b-[3px] border-b-[#B8C6D4] shadow-[0_8px_16px_-2px_rgba(15,23,42,0.12),0_3px_6px_-2px_rgba(15,23,42,0.08),inset_0_1px_0_0_rgba(255,255,255,0.7)] hover:-translate-y-1 hover:shadow-[0_12px_24px_-4px_rgba(15,23,42,0.16),0_6px_10px_-3px_rgba(15,23,42,0.1),inset_0_1px_0_0_rgba(255,255,255,0.8)] transition-all duration-200 flex items-center gap-3 sm:gap-3.5 group min-h-[88px]">
+                <div class="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-[#2CD4D9] text-gray-900 flex items-center justify-center shrink-0 shadow-xs border-b-2 border-black/10">
+                    <svg class="w-5 h-5 sm:w-5.5 sm:h-5.5 text-gray-900" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="3.5" y="3.5" width="4.5" height="17" rx="2" />
+                        <rect x="10" y="10" width="4.5" height="10.5" rx="2" />
+                        <rect x="16.5" y="14" width="4" height="6.5" rx="1.5" />
+                        <circle cx="15.5" cy="8.5" r="4" fill="#2CD4D9" />
+                        <line x1="18.5" y1="11.5" x2="21.5" y2="14.5" />
+                    </svg>
+                </div>
+                <div class="min-w-0 flex-1">
+                    <span class="text-[9.5px] sm:text-[10px] font-semibold text-gray-600 uppercase tracking-tight block truncate" title="Penelitian">Penelitian</span>
+                    <p class="text-2xl sm:text-[28px] font-black text-[#183A5F] tracking-tight mt-0.5 leading-none">{{ $tridharma['penelitian'] ?? 35 }}</p>
+                </div>
+            </div>
+
+            <!-- Card 5: Publikasi Scopus -->
+            <div class="p-3 sm:p-3.5 rounded-2xl bg-[#D6DEE5] border border-[#CAD5DE] border-b-[3px] border-b-[#B8C6D4] shadow-[0_8px_16px_-2px_rgba(15,23,42,0.12),0_3px_6px_-2px_rgba(15,23,42,0.08),inset_0_1px_0_0_rgba(255,255,255,0.7)] hover:-translate-y-1 hover:shadow-[0_12px_24px_-4px_rgba(15,23,42,0.16),0_6px_10px_-3px_rgba(15,23,42,0.1),inset_0_1px_0_0_rgba(255,255,255,0.8)] transition-all duration-200 flex items-center gap-3 sm:gap-3.5 group min-h-[88px]">
+                <div class="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-[#9990E4] text-gray-900 flex items-center justify-center shrink-0 shadow-xs border-b-2 border-black/10">
+                    <svg class="w-5 h-5 sm:w-5.5 sm:h-5.5 text-gray-900" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="4" y="3" width="16" height="18" rx="3" />
+                        <line x1="7.5" y1="7" x2="16.5" y2="7" />
+                        <rect x="7.5" y="10" width="9" height="5" rx="1" />
+                        <line x1="7.5" y1="18" x2="12.5" y2="18" />
+                    </svg>
+                </div>
+                <div class="min-w-0 flex-1">
+                    <span class="text-[9.5px] sm:text-[10px] font-semibold text-gray-600 uppercase tracking-tight block truncate" title="Publikasi Scopus">Publikasi Scopus</span>
+                    <p class="text-2xl sm:text-[28px] font-black text-[#183A5F] tracking-tight mt-0.5 leading-none">{{ $tridharma['publikasi_scopus'] ?? 14 }}</p>
+                </div>
+            </div>
+
+            <!-- Card 6: HKI -->
+            <div class="p-3 sm:p-3.5 rounded-2xl bg-[#D6DEE5] border border-[#CAD5DE] border-b-[3px] border-b-[#B8C6D4] shadow-[0_8px_16px_-2px_rgba(15,23,42,0.12),0_3px_6px_-2px_rgba(15,23,42,0.08),inset_0_1px_0_0_rgba(255,255,255,0.7)] hover:-translate-y-1 hover:shadow-[0_12px_24px_-4px_rgba(15,23,42,0.16),0_6px_10px_-3px_rgba(15,23,42,0.1),inset_0_1px_0_0_rgba(255,255,255,0.8)] transition-all duration-200 flex items-center gap-3 sm:gap-3.5 group min-h-[88px]">
+                <div class="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-[#DCF06B] text-gray-900 flex items-center justify-center shrink-0 shadow-xs border-b-2 border-black/10">
+                    <svg class="w-5 h-5 sm:w-5.5 sm:h-5.5 text-gray-900" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="9" />
+                        <path d="M14.5 9.5a3.5 3.5 0 0 0-2.5-1 3.5 3.5 0 0 0-3.5 3.5 3.5 3.5 0 0 0 3.5 3.5c1 0 1.9-.4 2.5-1" />
+                    </svg>
+                </div>
+                <div class="min-w-0 flex-1">
+                    <span class="text-[9.5px] sm:text-[10px] font-semibold text-gray-600 uppercase tracking-tight block truncate" title="HKI">HKI</span>
+                    <p class="text-2xl sm:text-[28px] font-black text-[#183A5F] tracking-tight mt-0.5 leading-none">{{ $tridharma['hki'] ?? 8 }}</p>
+                </div>
+            </div>
+
+            <!-- Card 7: PKM -->
+            <div class="p-3 sm:p-3.5 rounded-2xl bg-[#D6DEE5] border border-[#CAD5DE] border-b-[3px] border-b-[#B8C6D4] shadow-[0_8px_16px_-2px_rgba(15,23,42,0.12),0_3px_6px_-2px_rgba(15,23,42,0.08),inset_0_1px_0_0_rgba(255,255,255,0.7)] hover:-translate-y-1 hover:shadow-[0_12px_24px_-4px_rgba(15,23,42,0.16),0_6px_10px_-3px_rgba(15,23,42,0.1),inset_0_1px_0_0_rgba(255,255,255,0.8)] transition-all duration-200 flex items-center gap-3 sm:gap-3.5 group min-h-[88px]">
+                <div class="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-[#5EECE3] text-gray-900 flex items-center justify-center shrink-0 shadow-xs border-b-2 border-black/10">
+                    <svg class="w-5 h-5 sm:w-5.5 sm:h-5.5 text-gray-900" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H19a1 1 0 0 1 1 1v18a1 1 0 0 1-1 1H6.5a2.5 2.5 0 0 1-2.5-2.5Z" />
+                        <path d="M8 2v8l2.5-2 2.5 2V2" />
+                        <line x1="8" y1="17" x2="16" y2="17" />
+                    </svg>
+                </div>
+                <div class="min-w-0 flex-1">
+                    <span class="text-[9.5px] sm:text-[10px] font-semibold text-gray-600 uppercase tracking-tight block truncate" title="PKM">PKM</span>
+                    <p class="text-2xl sm:text-[28px] font-black text-[#183A5F] tracking-tight mt-0.5 leading-none">{{ $tridharma['pkm'] ?? 22 }}</p>
+                </div>
+            </div>
+
+            <!-- Card 8: Kerja Sama Aktif -->
+            <div class="p-3 sm:p-3.5 rounded-2xl bg-[#D6DEE5] border border-[#CAD5DE] border-b-[3px] border-b-[#B8C6D4] shadow-[0_8px_16px_-2px_rgba(15,23,42,0.12),0_3px_6px_-2px_rgba(15,23,42,0.08),inset_0_1px_0_0_rgba(255,255,255,0.7)] hover:-translate-y-1 hover:shadow-[0_12px_24px_-4px_rgba(15,23,42,0.16),0_6px_10px_-3px_rgba(15,23,42,0.1),inset_0_1px_0_0_rgba(255,255,255,0.8)] transition-all duration-200 flex items-center gap-3 sm:gap-3.5 group min-h-[88px]">
+                <div class="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-[#5DE386] text-gray-900 flex items-center justify-center shrink-0 shadow-xs border-b-2 border-black/10">
+                    <svg class="w-6 h-6 sm:w-6.5 sm:h-6.5 text-gray-900" viewBox="0 0 122.88 67.72" fill="currentColor">
+                        <path fill-rule="evenodd" d="M3.24,16.78l2.3,28.47c.31,2.94,1,4.83,1.84,5.87a2.82,2.82,0,0,0,2.85.85l.27,0H21.78a3.84,3.84,0,0,0,3.31-1.32l.05-.06A8.31,8.31,0,0,0,26.32,46V14.57a1.21,1.21,0,0,1-.07-.43.49.49,0,0,1,0-.12A2.93,2.93,0,0,0,25,11.92a7.16,7.16,0,0,0-3.88-.78H7a4.3,4.3,0,0,0-3.19,1.17c-.67.8-.91,2.18-.58,4.33v.14ZM93.1,15.57a10.86,10.86,0,0,1,.09-1.43L88,10.65c-.75-.5-1.57-1.08-2.4-1.66-3-2.08-6-4.22-9.33-5.09a26.12,26.12,0,0,0-5.94-.82,20.38,20.38,0,0,0-5.46.6,14,14,0,0,0-3,1.14,10.75,10.75,0,0,0-2.31,1.64L56,10.63a1.59,1.59,0,0,1-.44.52L45.89,22.66a4.21,4.21,0,0,0,.84,1.85,4.09,4.09,0,0,0,1.78,1.26,5.77,5.77,0,0,0,2.52.31,8.21,8.21,0,0,0,4.42-1.83L58.14,22c.68-.56,1.25-1.08,1.81-1.59a24.11,24.11,0,0,1,3.78-3c3-1.8,6-1.86,9,3.12L87.93,48H93.1V15.57Zm1.23-4.39a5.67,5.67,0,0,1,.8-.9A8.24,8.24,0,0,1,100.8,8.5H114c2.77,0,5,.49,6.58,1.69,1.73,1.34,2.55,3.37,2.2,6.29l-2.92,30.21a10.68,10.68,0,0,1-2.2,6.27,6.74,6.74,0,0,1-5.7,2.22H100.09a6.06,6.06,0,0,1-4.26-1.31,8,8,0,0,1-2.15-2.81H89.57a7.09,7.09,0,0,1,.08,4.52,7.43,7.43,0,0,1-2.47,3.5,8.47,8.47,0,0,1-3.87,1.71,7.68,7.68,0,0,1-4.17-.46,10.83,10.83,0,0,1-4.91,3.13A8.53,8.53,0,0,1,69,63.22a10.44,10.44,0,0,1-5.56,3.46,10.22,10.22,0,0,1-6.62-1,9.76,9.76,0,0,1-2.29,1.35,8.61,8.61,0,0,1-3.55.65,9.66,9.66,0,0,1-6.55-2.39,19.2,19.2,0,0,1-3.68-5.09L34.19,48.8H29.11a9,9,0,0,1-1.51,3.63l-.07.1A6.74,6.74,0,0,1,21.7,55H10.61a5.66,5.66,0,0,1-5.56-1.89c-1.3-1.51-2.2-4-2.58-7.57v-.13L.17,17.05c-.46-3.06,0-5.23,1.28-6.71A7.13,7.13,0,0,1,6.87,8.06H21.1a10,10,0,0,1,5.57,1.27h0a5.73,5.73,0,0,1,2.43,3.25h9.55a27.48,27.48,0,0,1,7.13-3.67A19.39,19.39,0,0,1,54,8.27l3.27-3.89.12-.13a13.71,13.71,0,0,1,3-2.16A17.83,17.83,0,0,1,64.06.69,24.23,24.23,0,0,1,70.35,0,29.26,29.26,0,0,1,77,.92h0c3.81,1,7.1,3.31,10.3,5.55.77.54,1.53,1.07,2.35,1.62l4.65,3.09ZM15.77,38.76a2.66,2.66,0,1,1-2.65,2.65,2.66,2.66,0,0,1,2.65-2.65ZM86.36,50.92a1.57,1.57,0,0,1-.88-1L70.06,22.09c-1.71-2.86-3.25-2.94-4.75-2.05A22.52,22.52,0,0,0,62,22.71c-.68.62-1.36,1.24-1.92,1.7l-2.73,2.25a11.38,11.38,0,0,1-6.09,2.5,9,9,0,0,1-3.86-.5,7.28,7.28,0,0,1-3.11-2.22,7.44,7.44,0,0,1-1.59-4.11,1.58,1.58,0,0,1,.45-1.22l8.33-9.91a15,15,0,0,0-4.81.67,25.56,25.56,0,0,0-6.63,3.48,1.5,1.5,0,0,1-1,.33H29.41v30h5.67a1.55,1.55,0,0,1,1.38.84l7,12.15a17.79,17.79,0,0,0,3,4.34,6.77,6.77,0,0,0,4.58,1.6,5.63,5.63,0,0,0,2.3-.42,5.8,5.8,0,0,0,1.31-.75L50.14,55a1.54,1.54,0,0,1,2.71-1.45l4.94,9.23a6.67,6.67,0,0,0,8.87-1.54L59.55,50.06A1.54,1.54,0,0,1,60,47.93a1.56,1.56,0,0,1,2.13.47l7.49,11.77a5.81,5.81,0,0,0,3.78.32,7.65,7.65,0,0,0,3.44-2.24L70.07,45.47A1.55,1.55,0,0,1,72.8,44l7,13.22a4.44,4.44,0,0,0,3,.5,5.27,5.27,0,0,0,2.45-1.08,4.27,4.27,0,0,0,1.45-2,4.12,4.12,0,0,0-.23-3,1.48,1.48,0,0,1-.12-.71Zm20.32-12.16A2.66,2.66,0,1,1,104,41.41a2.66,2.66,0,0,1,2.65-2.65Z" />
+                    </svg>
+                </div>
+                <div class="min-w-0 flex-1">
+                    <span class="text-[9.5px] sm:text-[10px] font-semibold text-gray-600 uppercase tracking-tight block truncate" title="Kerja Sama Aktif">Kerja Sama Aktif</span>
+                    <p class="text-2xl sm:text-[28px] font-black text-[#183A5F] tracking-tight mt-0.5 leading-none">{{ $tridharma['kerjasama_aktif'] ?? 17 }}</p>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- 4. Bottom Grid: Tren Chart & Prestasi Mahasiswa Terbaru -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+
+        <!-- Left: Tren Rata-Rata IPK & Kelulusan -->
+        <div class="bg-[#D6DEE5] rounded-2xl border border-[#CAD5DE] border-b-[3px] border-b-[#B8C6D4] p-5 sm:p-6 shadow-[0_8px_16px_-2px_rgba(15,23,42,0.12),0_3px_6px_-2px_rgba(15,23,42,0.08),inset_0_1px_0_0_rgba(255,255,255,0.7)] flex flex-col justify-between">
+            <div>
+                <h3 class="text-base sm:text-lg font-black text-[#183A5F] tracking-tight uppercase">
+                    TREN RATA-RATA IPK & KELULUSAN
+                </h3>
+
+                <!-- Custom Dual-Axis Visual SVG Chart -->
+                <div class="relative w-full mt-4">
+                    <svg viewBox="0 0 520 280" class="w-full h-auto overflow-visible select-none" preserveAspectRatio="xMidYMid meet">
+                        <!-- Horizontal Gridlines & Y-Axis values -->
+                        <!-- Row: 3.50 / 90% -->
+                        <line x1="52" y1="45" x2="465" y2="45" stroke="#CAD5DE" stroke-width="1" />
+                        <text x="44" y="49" text-anchor="end" font-size="10.5" font-weight="700" fill="#334155">3.50</text>
+                        <text x="473" y="49" text-anchor="start" font-size="10.5" font-weight="700" fill="#334155">90%</text>
+
+                        <!-- Row: 3.40 -->
+                        <line x1="48" y1="70" x2="55" y2="70" stroke="#CAD5DE" stroke-width="1" />
+                        <text x="44" y="74" text-anchor="end" font-size="10.5" font-weight="700" fill="#334155">3.40</text>
+
+                        <!-- Row: 3.30 / 80% -->
+                        <line x1="52" y1="95" x2="465" y2="95" stroke="#CAD5DE" stroke-width="1" />
+                        <text x="44" y="99" text-anchor="end" font-size="10.5" font-weight="700" fill="#334155">3.30</text>
+                        <text x="473" y="99" text-anchor="start" font-size="10.5" font-weight="700" fill="#334155">80%</text>
+
+                        <!-- Row: 3.00 / 70% -->
+                        <line x1="52" y1="145" x2="465" y2="145" stroke="#CAD5DE" stroke-width="1" />
+                        <text x="44" y="149" text-anchor="end" font-size="10.5" font-weight="700" fill="#334155">3.00</text>
+                        <text x="473" y="149" text-anchor="start" font-size="10.5" font-weight="700" fill="#334155">70%</text>
+
+                        <!-- Row: 2.50 -->
+                        <line x1="52" y1="190" x2="465" y2="190" stroke="#CAD5DE" stroke-width="1" />
+                        <text x="44" y="194" text-anchor="end" font-size="10.5" font-weight="700" fill="#334155">2.50</text>
+
+                        <!-- Row: 2.20 / 60% -->
+                        <line x1="52" y1="225" x2="465" y2="225" stroke="#CAD5DE" stroke-width="1" />
+                        <text x="44" y="229" text-anchor="end" font-size="10.5" font-weight="700" fill="#334155">2.20</text>
+                        <text x="473" y="200" text-anchor="start" font-size="10.5" font-weight="700" fill="#334155">60%</text>
+
+                        <!-- Baseline: 2.10 / 50% -->
+                        <line x1="52" y1="250" x2="465" y2="250" stroke="#94A3B8" stroke-width="1.5" />
+                        <text x="44" y="254" text-anchor="end" font-size="10.5" font-weight="700" fill="#334155">2.10</text>
+                        <text x="473" y="254" text-anchor="start" font-size="10.5" font-weight="700" fill="#334155">50%</text>
+
+                        <!-- Ticks on Baseline for 5 years -->
+                        <line x1="90" y1="243" x2="90" y2="257" stroke="#94A3B8" stroke-width="1.5" />
+                        <line x1="180" y1="243" x2="180" y2="257" stroke="#94A3B8" stroke-width="1.5" />
+                        <line x1="270" y1="243" x2="270" y2="257" stroke="#94A3B8" stroke-width="1.5" />
+                        <line x1="360" y1="243" x2="360" y2="257" stroke="#94A3B8" stroke-width="1.5" />
+                        <line x1="450" y1="243" x2="450" y2="257" stroke="#94A3B8" stroke-width="1.5" />
+
+                        <!-- IPK Line (Navy #183A5F) -->
+                        <path d="M 90 95 C 120 86, 150 75, 180 70 C 210 65, 240 40, 270 40 L 360 40 L 450 40" fill="none" stroke="#183A5F" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" />
+
+                        <!-- Kelulusan Line (Green #52A776) -->
+                        <path d="M 90 130 C 125 115, 155 82, 180 82 C 210 82, 240 110, 270 110 C 300 110, 330 68, 360 68 C 390 68, 420 76, 450 76" fill="none" stroke="#52A776" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" />
+
+                        <!-- IPK Points & Text Above -->
+                        <circle cx="90" cy="95" r="4.5" fill="#183A5F" />
+                        <text x="90" y="82" text-anchor="middle" font-size="11" font-weight="800" fill="#183A5F">3.30</text>
+
+                        <circle cx="180" cy="70" r="4.5" fill="#183A5F" />
+                        <text x="180" y="57" text-anchor="middle" font-size="11" font-weight="800" fill="#183A5F">3.40</text>
+
+                        <circle cx="270" cy="40" r="4.5" fill="#183A5F" />
+                        <text x="270" y="27" text-anchor="middle" font-size="11" font-weight="800" fill="#183A5F">3.52</text>
+
+                        <circle cx="360" cy="40" r="4.5" fill="#183A5F" />
+                        <text x="360" y="27" text-anchor="middle" font-size="11" font-weight="800" fill="#183A5F">3.52</text>
+
+                        <circle cx="450" cy="40" r="4.5" fill="#183A5F" />
+                        <text x="450" y="27" text-anchor="middle" font-size="11" font-weight="800" fill="#183A5F">3.52</text>
+
+                        <!-- Kelulusan Points & Text Below -->
+                        <circle cx="90" cy="130" r="4.5" fill="#52A776" />
+                        <text x="90" y="148" text-anchor="middle" font-size="11" font-weight="800" fill="#334155">73%</text>
+
+                        <circle cx="180" cy="82" r="4.5" fill="#52A776" />
+                        <text x="180" y="100" text-anchor="middle" font-size="11" font-weight="800" fill="#334155">88%</text>
+
+                        <circle cx="270" cy="110" r="4.5" fill="#52A776" />
+                        <text x="270" y="128" text-anchor="middle" font-size="11" font-weight="800" fill="#334155">77%</text>
+
+                        <circle cx="360" cy="68" r="4.5" fill="#52A776" />
+                        <text x="360" y="86" text-anchor="middle" font-size="11" font-weight="800" fill="#334155">87%</text>
+
+                        <circle cx="450" cy="76" r="4.5" fill="#52A776" />
+                        <text x="450" y="94" text-anchor="middle" font-size="11" font-weight="800" fill="#334155">85%</text>
+
+                        <!-- X-Axis Years Labels -->
+                        <text x="90" y="270" text-anchor="middle" font-size="11.5" font-weight="700" fill="#334155">2022</text>
+                        <text x="180" y="270" text-anchor="middle" font-size="11.5" font-weight="700" fill="#334155">2023</text>
+                        <text x="270" y="270" text-anchor="middle" font-size="11.5" font-weight="700" fill="#334155">2024</text>
+                        <text x="360" y="270" text-anchor="middle" font-size="11.5" font-weight="700" fill="#334155">2025</text>
+                        <text x="450" y="270" text-anchor="middle" font-size="11.5" font-weight="700" fill="#334155">2026</text>
+                    </svg>
+                </div>
             </div>
         </div>
+
+        <!-- Right: Prestasi Mahasiswa Terbaru -->
+        <div class="bg-[#D6DEE5] rounded-2xl border border-[#CAD5DE] border-b-[3px] border-b-[#B8C6D4] p-5 sm:p-6 shadow-[0_8px_16px_-2px_rgba(15,23,42,0.12),0_3px_6px_-2px_rgba(15,23,42,0.08),inset_0_1px_0_0_rgba(255,255,255,0.7)] flex flex-col justify-between overflow-hidden">
+            <div>
+                <h3 class="text-base sm:text-lg font-black text-[#183A5F] tracking-tight uppercase">
+                    PRESTASI MAHASISWA TERBARU
+                </h3>
+
+                <!-- Table -->
+                <div class="mt-4 w-full">
+                    <table class="w-full text-left text-[11px] sm:text-xs">
+                        <thead>
+                            <tr class="border-y border-[#CAD5DE] text-[#2D3748] font-bold whitespace-nowrap">
+                                <th class="py-2.5 px-1.5 sm:px-2 font-bold w-7 text-left">No</th>
+                                <th class="py-2.5 px-1.5 sm:px-2 font-bold text-left">Nama Mahasiswa</th>
+                                <th class="py-2.5 px-1.5 sm:px-2 font-bold text-left">Nama Lomba</th>
+                                <th class="py-2.5 px-1.5 sm:px-2 font-bold text-left">Tingkat</th>
+                                <th class="py-2.5 px-1.5 sm:px-2 font-bold text-center w-12">Tahun</th>
+                                <th class="py-2.5 px-1.5 sm:px-2 font-bold text-center w-12">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-[#CAD5DE]">
+                            @forelse($prestasiTerbaru as $item)
+                                <tr class="hover:bg-white/30 transition border-b border-[#CAD5DE] whitespace-nowrap">
+                                    <td class="py-2.5 px-1.5 sm:px-2 text-gray-700 font-medium">{{ $item['no'] }}.</td>
+                                    <td class="py-2.5 px-1.5 sm:px-2 text-[#1E293B] font-medium">{{ $item['nama'] }}</td>
+                                    <td class="py-2.5 px-1.5 sm:px-2 text-gray-700 font-medium" title="{{ $item['lomba'] }}">
+                                        {{ $item['lomba'] }}
+                                    </td>
+                                    <td class="py-2.5 px-1.5 sm:px-2 text-gray-700 font-medium">
+                                        {{ $item['tingkat'] }}
+                                    </td>
+                                    <td class="py-2.5 px-1.5 sm:px-2 text-gray-700 font-medium text-center">{{ $item['tahun'] }}</td>
+                                    <td class="py-2.5 px-1.5 sm:px-2 text-center">
+                                        <a href="{{ route('prestasi-mahasiswa.index') }}" class="text-[#183A5F] hover:text-[#0f2742] transition inline-flex items-center justify-center p-0.5" aria-label="Lihat prestasi {{ $item['nama'] }}">
+                                            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z" />
+                                                <circle cx="12" cy="12" r="3" />
+                                            </svg>
+                                        </a>
+                                    </td>
+                                </tr>
+                            @empty
+                                <tr>
+                                    <td colspan="6" class="py-6 text-center text-gray-500 font-medium">
+                                        Belum ada data prestasi mahasiswa.
+                                    </td>
+                                </tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
     </div>
 
 </div>

@@ -21,6 +21,21 @@ class EnsureAkademikAuthenticated
     public function handle(Request $request, Closure $next): Response
     {
         if (! $request->session()->has('access_token')) {
+            $isApiBackedTendikRoute = $request->routeIs('tenaga-kependidikan.*', 'tenaga-pendidikan.*');
+
+            if (app()->environment('local') && ! $isApiBackedTendikRoute) {
+                $request->session()->put([
+                    'access_token' => 'local-dev-token',
+                    'user' => [
+                        'nama' => 'Kuwat',
+                        'email' => 'kuwat@example.com',
+                        'role' => 'Kaprodi',
+                    ],
+                ]);
+
+                return $next($request);
+            }
+
             if ($request->expectsJson() || $request->is('api/*')) {
                 return response()->json([
                     'success' => false,
@@ -38,14 +53,22 @@ class EnsureAkademikAuthenticated
         $accessToken = (string) $request->session()->get('access_token');
         $expiresAt = $request->session()->get('token_expires_at');
 
-        // Jika token_expires_at belum ada di session, ekstrak dari payload JWT
-        if (! $expiresAt && str_contains($accessToken, '.')) {
+        // Jika data token/user belum lengkap di session, ekstrak dari payload JWT
+        if (str_contains($accessToken, '.')) {
             $parts = explode('.', $accessToken);
             if (isset($parts[1])) {
                 $jwtPayload = json_decode(base64_decode(strtr($parts[1], '-_', '+/')), true);
-                if (is_array($jwtPayload) && isset($jwtPayload['exp'])) {
-                    $expiresAt = (int) $jwtPayload['exp'];
-                    $request->session()->put('token_expires_at', $expiresAt);
+                if (is_array($jwtPayload)) {
+                    if (! $expiresAt && isset($jwtPayload['exp'])) {
+                        $expiresAt = (int) $jwtPayload['exp'];
+                        $request->session()->put('token_expires_at', $expiresAt);
+                    }
+                    if (! $request->session()->has('user') && isset($jwtPayload['user']) && is_array($jwtPayload['user'])) {
+                        $request->session()->put('user', $jwtPayload['user']);
+                    }
+                    if (! $request->session()->has('permissions') && isset($jwtPayload['permissions']) && is_array($jwtPayload['permissions'])) {
+                        $request->session()->put('permissions', $jwtPayload['permissions']);
+                    }
                 }
             }
         }

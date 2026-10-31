@@ -132,7 +132,7 @@
         <div id="daftar-prioritas" class="divide-y divide-gray-100">
             @forelse ($prioritas as $item)
                 <a
-                    href="{{ route('akreditasi.superadmin.kriteria') }}"
+                    href="{{ route('akreditasi.superadmin.lembaga_akreditasi') }}"
                     class="group flex flex-col gap-3 px-5 py-4 transition hover:bg-gray-50 sm:flex-row sm:items-center sm:justify-between sm:px-6"
                 >
                     <div class="flex min-w-0 items-start gap-4">
