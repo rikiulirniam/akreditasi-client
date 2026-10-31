@@ -11,6 +11,14 @@
             </svg>
             <span>Pendidikan</span>
         </span>
+    @elseif($selectedDosen)
+        <span class="inline-flex items-center gap-2.5 sm:gap-3.5 flex-wrap">
+            <a href="{{ route('dosen.show', $selectedDosen['id']) }}" class="hover:text-additional transition text-black">Dosen</a>
+            <svg class="w-5 h-5 sm:w-7 sm:h-7 stroke-[3] text-black shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" />
+            </svg>
+            <span>Pendidikan</span>
+        </span>
     @else
         Pendidikan
     @endif
@@ -19,6 +27,8 @@
 @section('subtitle')
     @if($selectedTendik)
         {{ $selectedTendik['nama'] }}
+    @elseif($selectedDosen && !($isDosen ?? false))
+        {{ $selectedDosen['nama'] }} &bull; {{ number_format((int) ($pagination['total'] ?? 0), 0, ',', '.') }} Data ditemukan
     @elseif(!$apiError)
         @if($isDosen ?? false)
             Riwayat Pendidikan Saya &bull; {{ number_format((int) ($pagination['total'] ?? 0), 0, ',', '.') }} Data ditemukan
