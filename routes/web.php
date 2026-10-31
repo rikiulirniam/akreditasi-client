@@ -13,6 +13,7 @@ use App\Http\Controllers\Akreditasi\Superadmin\SubkriteriaController;
 use App\Http\Controllers\AngkatanController;
 use App\Http\Controllers\AngkatanKelasController;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\CplController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DosenController;
 use App\Http\Controllers\KaprodiController;
@@ -99,6 +100,9 @@ Route::middleware('auth.akademik')->group(function () {
     Route::middleware('permission:angkatan')->resource('angkatan', AngkatanController::class);
     Route::middleware('permission:angkatan_kelas')->resource('angkatan-kelas', AngkatanKelasController::class)->only(['store', 'update', 'destroy']);
     Route::middleware('permission:kelas')->resource('kelas', KelasController::class);
+    Route::middleware('permission:kelas.update,enrollment_mata_kuliah.create')->post('/kelas/{id}/mata-kuliah', [KelasController::class, 'storeMataKuliah'])->name('kelas.mata-kuliah.store');
+    Route::middleware('permission:kelas.update,enrollment_mata_kuliah.update')->put('/kelas/{id}/mata-kuliah/{enrollmentId}', [KelasController::class, 'updateMataKuliah'])->name('kelas.mata-kuliah.update');
+    Route::middleware('permission:kelas.update,mata_kuliah_angkatan_kelas.delete')->delete('/kelas/{id}/mata-kuliah/{mkAkId}', [KelasController::class, 'destroyMataKuliah'])->name('kelas.mata-kuliah.destroy');
     Route::middleware('permission:mahasiswa')->resource('mahasiswa', MahasiswaController::class);
     Route::middleware('permission:prestasi_mahasiswa')->resource('prestasi-mahasiswa', PrestasiMahasiswaController::class)->only(['index', 'show', 'store', 'update', 'destroy']);
     Route::middleware('permission:evidence_prestasi_mahasiswa.create')->post('/prestasi-mahasiswa/{prestasiId}/evidence', [PrestasiMahasiswaController::class, 'storeEvidence'])->name('prestasi-mahasiswa.evidence.store');
@@ -131,6 +135,7 @@ Route::middleware('auth.akademik')->group(function () {
 
     Route::middleware('permission:kurikulum')->resource('kurikulum', KurikulumController::class);
     Route::middleware('permission:kurikulum.update')->put('kurikulum/{kurikulum}/cpl-mata-kuliah', [KurikulumController::class, 'updateMataKuliahCpl'])->name('kurikulum.update-mk-cpl');
+    Route::middleware('permission:cpl')->resource('cpl', CplController::class);
 
     // ==========================================
     // MODUL NILAI MAHASISWA & AKADEMIK
@@ -183,6 +188,14 @@ Route::middleware('auth.akademik')->group(function () {
     })->name('tenaga-pendidikan.pendidikan.index');
     Route::post('/tenaga-kependidikan/{tendikId}/pendidikan', [TenagaKependidikanController::class, 'storePendidikan'])->name('tenaga-kependidikan.pendidikan.store');
     Route::post('/tenaga-pendidikan/{tendikId}/pendidikan', [TenagaKependidikanController::class, 'storePendidikan'])->name('tenaga-pendidikan.pendidikan.store');
+
+    Route::get('/dosen/{dosenId}/sertifikasi', function ($dosenId) {
+        return redirect()->route('sertifikasi.index', ['tipe_pemilik' => 'dosen', 'id_dosen' => $dosenId]);
+    })->name('dosen.sertifikasi.index');
+    Route::get('/dosen/{dosenId}/pendidikan', function ($dosenId) {
+        return redirect()->route('pendidikan.index', ['id_dosen' => $dosenId]);
+    })->name('dosen.pendidikan.index');
+    Route::post('/dosen/{dosenId}/pendidikan', [DosenController::class, 'storePendidikan'])->name('dosen.pendidikan.store');
 
     // Modul Pendidikan
     Route::resource('pendidikan', PendidikanController::class);
