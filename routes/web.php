@@ -71,6 +71,7 @@ Route::middleware('auth.akademik')->group(function () {
         Route::get('/project/detail/{id?}', [KaprodiController::class, 'projectDetail'])->name('project.detail');
 
         Route::get('/plotting', [KaprodiController::class, 'plotting'])->name('plotting');
+        Route::post('/plotting', [KaprodiController::class, 'storePlotting'])->name('plotting.store');
     });
 
     // ==========================================
