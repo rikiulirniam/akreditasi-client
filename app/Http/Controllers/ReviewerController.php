@@ -15,8 +15,12 @@ class ReviewerController extends Controller
         protected ReviewerService $reviewerService,
     ) {}
 
-    public function dashboard(): View
+    public function dashboard(Request $request): View
     {
+        if ($request->has('demo')) {
+            $request->session()->put('reviewer_demo_mode', $request->boolean('demo'));
+        }
+
         [$projects, $error, $isDemo] = $this->projects();
 
         $completedProjects = array_filter($projects, fn (array $project): bool => $this->isCompleted($project));
@@ -211,6 +215,10 @@ class ReviewerController extends Controller
      */
     protected function projects(): array
     {
+        if (session('reviewer_demo_mode', false)) {
+            return $this->projectsFromDemoMode();
+        }
+
         try {
             $response = $this->reviewerService->getProjects();
         } catch (ConnectionException) {
@@ -296,6 +304,20 @@ class ReviewerController extends Controller
         }
 
         return [[], $error, false];
+    }
+
+    /**
+     * @return array{0: array<int, array<string, mixed>>, 1: ?string, 2: bool}
+     */
+    protected function projectsFromDemoMode(): array
+    {
+        $projects = $this->reviewerService->getDummyProjects();
+
+        if ($projects !== null) {
+            return [$this->prepareProjects($projects), null, true];
+        }
+
+        return [[], 'File data dummy reviewer tidak ditemukan.', false];
     }
 
     /**

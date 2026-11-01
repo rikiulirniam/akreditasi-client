@@ -88,6 +88,40 @@ class ReviewerDashboardTest extends TestCase
             && $request->hasHeader('Authorization', 'Bearer reviewer-token'));
     }
 
+    public function test_hidden_dashboard_title_button_toggles_reviewer_demo_data(): void
+    {
+        Http::fake([
+            'https://akreditasi.example.test/api/v1/projects' => Http::response([
+                'success' => true,
+                'data' => [
+                    ['id' => 77, 'nama_project' => 'Project asli dari API', 'tahun_target_submit' => 2026, 'status_project' => 'review'],
+                ],
+            ]),
+            'https://akreditasi.example.test/api/v1/mapping-tim' => Http::response([
+                'data' => [
+                    ['id_project' => 77, 'id_user' => 77, 'id_indikator' => 51],
+                ],
+            ]),
+        ]);
+
+        $demoResponse = $this->withSession([
+            'access_token' => 'reviewer-token',
+            'user' => ['id' => 77, 'nama' => 'Kuwat', 'role' => 'Reviewer'],
+        ])->get(route('reviewer.dashboard', ['demo' => 1]));
+
+        $demoResponse->assertOk()
+            ->assertSee('DATA DUMMY')
+            ->assertSee('Akreditasi Teknik Informatika 2025')
+            ->assertSee('aria-label="Kembali ke data API"', false);
+
+        $apiResponse = $this->get(route('reviewer.dashboard', ['demo' => 0]));
+
+        $apiResponse->assertOk()
+            ->assertSee('Project asli dari API')
+            ->assertSee('aria-label="Buka data dummy reviewer"', false)
+            ->assertDontSee('Akreditasi Teknik Informatika 2025');
+    }
+
     public function test_reviewer_loads_api_indicators_for_an_assigned_project(): void
     {
         Http::fake([
