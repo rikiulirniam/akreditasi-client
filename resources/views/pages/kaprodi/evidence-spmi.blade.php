@@ -58,7 +58,7 @@
                 <p class="text-3xl font-bold text-sky-950 leading-tight">
                     {{ $summary['terisi'] }}
                 </p>
-                <p class="text-xs font-bold text-green-700 tracking-wider uppercase mt-0.5">
+                <p class="text-xs font-bold text-black-700 tracking-wider uppercase mt-0.5">
                     TERVERIFIKASI
                 </p>
             </div>
@@ -75,7 +75,7 @@
                 <p class="text-3xl font-bold text-sky-950 leading-tight">
                     {{ $summary['belum_terisi'] }}
                 </p>
-                <p class="text-xs font-bold text-red-600 tracking-wider uppercase mt-0.5">
+                <p class="text-xs font-bold text-black-600 tracking-wider uppercase mt-0.5">
                     BELUM TERISI
                 </p>
             </div>
