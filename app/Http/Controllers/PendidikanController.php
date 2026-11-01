@@ -46,29 +46,51 @@ class PendidikanController extends Controller
         $dosenOptions = ! $isDosen ? $this->fetchDosenOptions() : [];
         $tendikOptions = ! $isDosen ? $this->fetchTendikOptions() : [];
 
-        // If user is logged in as Dosen, they should ONLY see their own education data
-        if ($isDosen && $authDosen) {
-            $allItems = [];
-            $dosenPendidikanId = $authDosen['id_pendidikan'] ?? null;
-            $dosenPendidikanObj = $authDosen['pendidikan'] ?? null;
+        // If viewing education for a specific Dosen (from Dosen Detail page, filter, or logged-in Dosen)
+        if ($idDosen !== null) {
+            $selectedDosen = null;
+            $dosenApiRecord = null;
 
-            if ($dosenPendidikanObj && is_array($dosenPendidikanObj) && ! empty($dosenPendidikanObj['jenjang'] ?? $dosenPendidikanObj['universitas'] ?? null)) {
-                $allItems[] = $dosenPendidikanObj;
-            } elseif ($dosenPendidikanId) {
+            if ($isDosen && $authDosen) {
+                $selectedDosen = [
+                    'id' => $authDosen['id_dosen'],
+                    'nama' => $authDosen['nama_dosen'],
+                ];
+                $dosenApiRecord = $authDosen;
+            } else {
+                foreach ($dosenOptions as $dosen) {
+                    if ($dosen['id'] === $idDosen) {
+                        $selectedDosen = $dosen;
+                        break;
+                    }
+                }
+
                 try {
-                    $pendResp = $this->tridharmaService->getPendidikanById($dosenPendidikanId);
-                    if ($pendResp->successful() && is_array($pendResp->json('data'))) {
-                        $allItems[] = $pendResp->json('data');
+                    $singleDosenResp = $this->tridharmaService->getDosenById($idDosen);
+                    if ($singleDosenResp->successful()) {
+                        $dosenApiRecord = $singleDosenResp->json('data', []);
+                        if ($selectedDosen === null) {
+                            $selectedDosen = [
+                                'id' => (int) ($dosenApiRecord['id_dosen'] ?? $dosenApiRecord['id'] ?? $idDosen),
+                                'nama' => (string) ($dosenApiRecord['nama_dosen'] ?? $dosenApiRecord['nama'] ?? 'Dosen #'.$idDosen),
+                            ];
+                        }
                     }
                 } catch (\Throwable) {
                 }
+
+                if ($selectedDosen === null) {
+                    $selectedDosen = ['id' => $idDosen, 'nama' => 'Dosen #'.$idDosen];
+                }
             }
+
+            $allItems = $this->tridharmaService->getDosenPendidikanList($idDosen, $dosenApiRecord);
 
             // Apply search filter if specified
             if ($search !== '') {
                 $allItems = array_values(array_filter($allItems, function (array $item) use ($search) {
-                    $univ = (string) ($item['universitas'] ?? '');
-                    $prodi = (string) ($item['program_studi'] ?? '');
+                    $univ = (string) ($item['universitas'] ?? $item['institusi'] ?? '');
+                    $prodi = (string) ($item['program_studi'] ?? $item['jurusan'] ?? '');
                     $jenjang = (string) ($item['jenjang'] ?? '');
 
                     return stripos($univ, $search) !== false
@@ -97,14 +119,11 @@ class PendidikanController extends Controller
                 'pagination' => $pagination,
                 'filters' => $filters,
                 'jenjangOptions' => $this->defaultJenjangOptions(),
-                'dosenOptions' => [],
-                'tendikOptions' => [],
-                'selectedDosen' => [
-                    'id' => $authDosen['id_dosen'],
-                    'nama' => $authDosen['nama_dosen'],
-                ],
+                'dosenOptions' => $isDosen ? [] : $dosenOptions,
+                'tendikOptions' => $isDosen ? [] : $tendikOptions,
+                'selectedDosen' => $selectedDosen,
                 'selectedTendik' => null,
-                'isDosen' => true,
+                'isDosen' => $isDosen,
                 'authDosen' => $authDosen,
                 'apiError' => null,
             ]);
@@ -399,7 +418,7 @@ class PendidikanController extends Controller
         // If user is Dosen, automatically link newly created pendidikan to this Dosen
         if ($isDosen && $authDosen && $newPendidikanId) {
             try {
-                $this->tridharmaService->updateDosen($authDosen['id_dosen'], ['id_pendidikan' => (int) $newPendidikanId]);
+                $this->tridharmaService->storeDosenPendidikan($authDosen['id_dosen'], array_merge($payload, ['id_pendidikan' => (int) $newPendidikanId, 'id' => (int) $newPendidikanId]));
             } catch (\Throwable) {
             }
 
@@ -426,7 +445,7 @@ class PendidikanController extends Controller
         if ($newPendidikanId) {
             if (($targetType === 'dosen' || ($targetType === null && $idDosen !== null)) && $idDosen) {
                 try {
-                    $this->tridharmaService->updateDosen($idDosen, ['id_pendidikan' => (int) $newPendidikanId]);
+                    $this->tridharmaService->storeDosenPendidikan($idDosen, array_merge($payload, ['id_pendidikan' => (int) $newPendidikanId, 'id' => (int) $newPendidikanId]));
                 } catch (\Throwable) {
                 }
             } elseif (($targetType === 'tendik' || ($targetType === null && $idTendik !== null)) && $idTendik) {
@@ -624,7 +643,13 @@ class PendidikanController extends Controller
         // If user is Dosen, ensure their record stays linked
         if ($isDosen && $authDosen) {
             try {
-                $this->tridharmaService->updateDosen($authDosen['id_dosen'], ['id_pendidikan' => $id]);
+                $this->tridharmaService->updateDosenPendidikan($authDosen['id_dosen'], $id, [
+                    'universitas' => trim($validated['universitas']),
+                    'program_studi' => trim($validated['program_studi']),
+                    'jenjang' => $normalizedJenjang,
+                    'tahun_lulus' => (int) $validated['tahun_lulus'],
+                    'gelar' => TridharmaService::defaultGelarForJenjang($normalizedJenjang),
+                ]);
             } catch (\Throwable) {
             }
 
@@ -650,7 +675,13 @@ class PendidikanController extends Controller
 
         if (($targetType === 'dosen' || ($targetType === null && $idDosen !== null)) && $idDosen) {
             try {
-                $this->tridharmaService->updateDosen($idDosen, ['id_pendidikan' => $id]);
+                $this->tridharmaService->updateDosenPendidikan($idDosen, $id, [
+                    'universitas' => trim($validated['universitas']),
+                    'program_studi' => trim($validated['program_studi']),
+                    'jenjang' => $normalizedJenjang,
+                    'tahun_lulus' => (int) $validated['tahun_lulus'],
+                    'gelar' => TridharmaService::defaultGelarForJenjang($normalizedJenjang),
+                ]);
             } catch (\Throwable) {
             }
         } elseif (($targetType === 'tendik' || ($targetType === null && $idTendik !== null)) && $idTendik) {
@@ -683,6 +714,14 @@ class PendidikanController extends Controller
 
     public function destroy(Request $request, int $id): JsonResponse|RedirectResponse
     {
+        $idDosen = $request->input('id_dosen');
+        if (! $idDosen) {
+            $idDosen = Cache::get("pendidikan_dosen_{$id}");
+        }
+        if ($idDosen) {
+            $this->tridharmaService->deleteDosenPendidikan((int) $idDosen, $id);
+        }
+
         $idTendik = $request->input('id_tendik');
         if (! $idTendik) {
             $idTendik = Cache::get("pendidikan_tendik_{$id}");
@@ -745,7 +784,7 @@ class PendidikanController extends Controller
         // If user is Dosen, unlink their profile
         if ($isDosen && $authDosen) {
             try {
-                $this->tridharmaService->updateDosen($authDosen['id_dosen'], ['id_pendidikan' => null]);
+                $this->tridharmaService->deleteDosenPendidikan($authDosen['id_dosen'], $id);
             } catch (\Throwable) {
             }
         }
