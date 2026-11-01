@@ -207,8 +207,9 @@ Route::middleware('auth.akademik')->group(function () {
     Route::get('/validasi-monitoring', [ValidasiMonitoringController::class, 'index'])->name('validasi-monitoring.index');
     Route::post('/validasi-monitoring/status', [ValidasiMonitoringController::class, 'updateStatus'])->name('validasi-monitoring.update-status');
 
-    Route::get('/spmi/tindak-lanjut', [SpmiController::class, 'tindakLanjut'])->name('spmi.tindak-lanjut');
-    Route::post('/spmi/tindak-lanjut', [SpmiController::class, 'storeTindakLanjut'])->name('spmi.tindak-lanjut.store');
+    Route::get('/spmi/evidence', [SpmiController::class, 'evidenceSpmi'])->name('spmi.evidence');
+    Route::post('/spmi/evidence', [SpmiController::class, 'storeEvidence'])->name('spmi.evidence.store');
+    Route::put('/spmi/evidence/{id}', [SpmiController::class, 'updateEvidence'])->name('spmi.evidence.update');
 
     Route::get('/laporan-akhir', [LaporanAkhirController::class, 'index'])->name('laporan-akhir.index');
     Route::get('/laporan-akhir/download', [LaporanAkhirController::class, 'download'])->name('laporan-akhir.download');
