@@ -30,7 +30,17 @@ class ReviewerService
 
     public function getProjects(): Response
     {
-        return $this->http()->get($this->apiUrl().'/reviewer/projects');
+        return $this->http()->get($this->apiUrl().'/projects');
+    }
+
+    public function getTeamAssignments(): Response
+    {
+        return $this->http()->get($this->apiUrl().'/mapping-tim');
+    }
+
+    public function getIndicators(): Response
+    {
+        return $this->http()->get($this->apiUrl().'/master/indikator');
     }
 
     protected function http(): PendingRequest
@@ -51,6 +61,14 @@ class ReviewerService
     {
         $baseUrl = rtrim((string) config('services.akreditasi.base_url'), '/');
 
-        return str_ends_with($baseUrl, '/api') ? $baseUrl : $baseUrl.'/api';
+        if (str_ends_with($baseUrl, '/api/v1')) {
+            return $baseUrl;
+        }
+
+        if (str_ends_with($baseUrl, '/api')) {
+            return $baseUrl.'/v1';
+        }
+
+        return $baseUrl.'/api/v1';
     }
 }
