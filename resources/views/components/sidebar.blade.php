@@ -81,12 +81,11 @@
 
                     {{-- Dashboard --}}
                     @php
-                        $isSuperadminContext = request()->routeIs('akreditasi.superadmin.*');
                         $isKaprodiContext = request()->routeIs('kaprodi.*');
-                        $dashboardRoute = $isSuperadminContext && Route::has('akreditasi.superadmin.dashboard')
-                            ? route('akreditasi.superadmin.dashboard')
-                            : ($isKaprodiContext && Route::has('kaprodi.dashboard') ? route('kaprodi.dashboard') : route('dashboard'));
-                        $isDashboardActive = request()->routeIs('dashboard') || request()->routeIs('akreditasi.superadmin.dashboard') || request()->routeIs('kaprodi.dashboard');
+                        $dashboardRoute = $isKaprodiContext && Route::has('kaprodi.dashboard')
+                            ? route('kaprodi.dashboard')
+                            : route('dashboard');
+                        $isDashboardActive = request()->routeIs('dashboard') || ($isKaprodiContext && request()->routeIs('kaprodi.dashboard'));
                     @endphp
                     <div>
                         <a href="{{ $dashboardRoute }}"
