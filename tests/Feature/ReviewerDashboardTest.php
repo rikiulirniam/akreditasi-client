@@ -40,35 +40,139 @@ class ReviewerDashboardTest extends TestCase
     public function test_reviewer_dashboard_displays_api_project_data_and_summary(): void
     {
         Http::fake([
-            'https://akreditasi.example.test/api/reviewer/projects' => Http::response([
+            'https://akreditasi.example.test/api/v1/projects' => Http::response([
                 'success' => true,
                 'data' => [
-                    ['nama_project' => 'Akreditasi Teknik Informatika', 'program_studi' => 'Teknik Informatika', 'status' => 'Sedang dinilai', 'progress_percentage' => 53],
-                    ['nama_project' => 'Akreditasi Sistem Informasi', 'program_studi' => 'Sistem Informasi', 'status' => 'Menunggu', 'progress_percentage' => 0],
-                    ['nama_project' => 'Akreditasi Manajemen Informatika', 'program_studi' => 'Manajemen Informatika', 'status' => 'Selesai', 'progress_percentage' => 100],
+                    [
+                        'id' => 1,
+                        'nama_project' => 'Akreditasi Teknik Informatika',
+                        'tahun_target_submit' => 2025,
+                        'status_project' => 'review',
+                        'prodi' => ['nama_prodi' => 'Teknik Informatika', 'jenjang' => ['nama_jenjang' => 'S1']],
+                        'jenis_instrumen' => ['nama_jenis_instrumen' => 'LAM INFOKOM'],
+                        'progress_percentage' => 53,
+                    ],
+                    [
+                        'id' => 2,
+                        'nama_project' => 'Akreditasi Sistem Informasi',
+                        'tahun_target_submit' => 2025,
+                        'status_project' => 'draft',
+                        'prodi' => ['nama_prodi' => 'Sistem Informasi', 'jenjang' => ['nama_jenjang' => 'S1']],
+                        'jenis_instrumen' => ['nama_jenis_instrumen' => 'LAM INFOKOM'],
+                    ],
+                ],
+            ]),
+            'https://akreditasi.example.test/api/v1/mapping-tim' => Http::response([
+                'data' => [
+                    ['id_project' => 1, 'id_user' => 77, 'id_indikator' => 51, 'indikator' => ['id' => 51, 'kode_indikator' => 'C.2.1.1', 'nama_indikator' => 'Visi program studi']],
+                    ['id_project' => 2, 'id_user' => 88, 'id_indikator' => 52, 'indikator' => ['id' => 52, 'kode_indikator' => 'C.2.1.2', 'nama_indikator' => 'Misi program studi']],
                 ],
             ]),
         ]);
 
         $response = $this->withSession([
             'access_token' => 'reviewer-token',
-            'user' => ['nama' => 'Kuwat', 'role' => 'Reviewer'],
+            'user' => ['id' => 77, 'nama' => 'Kuwat', 'role' => 'Reviewer'],
         ])->get(route('reviewer.dashboard'));
 
         $response->assertOk()
             ->assertSee('Halo, Kuwat!')
             ->assertSee('Akreditasi Teknik Informatika')
             ->assertSee('Project ditugaskan')
-            ->assertSee('53%');
+            ->assertSee('53%')
+            ->assertDontSee('Akreditasi Sistem Informasi');
 
-        Http::assertSent(fn (HttpRequest $request): bool => $request->url() === 'https://akreditasi.example.test/api/reviewer/projects'
+        Http::assertSent(fn (HttpRequest $request): bool => $request->url() === 'https://akreditasi.example.test/api/v1/projects'
+            && $request->hasHeader('Authorization', 'Bearer reviewer-token'));
+        Http::assertSent(fn (HttpRequest $request): bool => $request->url() === 'https://akreditasi.example.test/api/v1/mapping-tim'
+            && $request->hasHeader('Authorization', 'Bearer reviewer-token'));
+    }
+
+    public function test_hidden_dashboard_title_button_toggles_reviewer_demo_data(): void
+    {
+        Http::fake([
+            'https://akreditasi.example.test/api/v1/projects' => Http::response([
+                'success' => true,
+                'data' => [
+                    ['id' => 77, 'nama_project' => 'Project asli dari API', 'tahun_target_submit' => 2026, 'status_project' => 'review'],
+                ],
+            ]),
+            'https://akreditasi.example.test/api/v1/mapping-tim' => Http::response([
+                'data' => [
+                    ['id_project' => 77, 'id_user' => 77, 'id_indikator' => 51],
+                ],
+            ]),
+        ]);
+
+        $demoResponse = $this->withSession([
+            'access_token' => 'reviewer-token',
+            'user' => ['id' => 77, 'nama' => 'Kuwat', 'role' => 'Reviewer'],
+        ])->get(route('reviewer.dashboard', ['demo' => 1]));
+
+        $demoResponse->assertOk()
+            ->assertSee('DATA DUMMY')
+            ->assertSee('Akreditasi Teknik Informatika 2025')
+            ->assertSee('aria-label="Kembali ke data API"', false);
+
+        $apiResponse = $this->get(route('reviewer.dashboard', ['demo' => 0]));
+
+        $apiResponse->assertOk()
+            ->assertSee('Project asli dari API')
+            ->assertSee('aria-label="Buka data dummy reviewer"', false)
+            ->assertDontSee('Akreditasi Teknik Informatika 2025');
+    }
+
+    public function test_reviewer_loads_api_indicators_for_an_assigned_project(): void
+    {
+        Http::fake([
+            'https://akreditasi.example.test/api/v1/reviewer/projects' => Http::response(['message' => 'Not Found'], 404),
+            'https://akreditasi.example.test/api/v1/projects' => Http::response([
+                'success' => true,
+                'data' => [
+                    ['id' => 9, 'nama_project' => 'Akreditasi Teknik Informatika', 'tahun_target_submit' => 2025, 'status_project' => 'review'],
+                ],
+            ]),
+            'https://akreditasi.example.test/api/v1/mapping-tim' => Http::response([
+                'data' => [
+                    ['id_project' => 9, 'id_user' => 77, 'id_indikator' => 51],
+                ],
+            ]),
+            'https://akreditasi.example.test/api/v1/master/indikator' => Http::response([
+                'success' => true,
+                'data' => [
+                    ['id' => 51, 'kode_indikator' => 'C.2.1.1', 'nama_indikator' => 'Kesesuaian visi program studi'],
+                    ['id' => 52, 'kode_indikator' => 'C.2.1.2', 'nama_indikator' => 'Indikator yang tidak ditugaskan'],
+                ],
+            ]),
+            'https://akreditasi.example.test/api/v1/master/rubrik*' => Http::response(['success' => true, 'data' => []]),
+            'https://akreditasi.example.test/api/v1/self-assessment*' => Http::response(['success' => true, 'data' => []]),
+        ]);
+
+        $response = $this->withSession([
+            'access_token' => 'reviewer-token',
+            'user' => ['id' => 77, 'nama' => 'Kuwat', 'role' => 'Reviewer'],
+        ])->get(route('reviewer.assessment-detail', ['projectId' => 9]));
+
+        $indicatorRequest = Http::recorded(
+            fn (HttpRequest $request): bool => $request->url() === 'https://akreditasi.example.test/api/v1/master/indikator',
+        )->first();
+        $this->assertNotNull($indicatorRequest);
+        $this->assertTrue($indicatorRequest[1]->successful(), $indicatorRequest[1]->body());
+        $this->assertNotEmpty($indicatorRequest[1]->json('data'));
+
+        $response->assertOk()
+            ->assertSee('C.2.1.1')
+            ->assertSee('Kesesuaian visi program studi')
+            ->assertDontSee('Indikator yang tidak ditugaskan');
+
+        Http::assertSent(fn (HttpRequest $request): bool => $request->url() === 'https://akreditasi.example.test/api/v1/master/indikator'
             && $request->hasHeader('Authorization', 'Bearer reviewer-token'));
     }
 
     public function test_reviewer_uses_the_single_dummy_data_file_when_api_is_unavailable(): void
     {
         Http::fake([
-            'https://akreditasi.example.test/api/reviewer/projects' => Http::response([
+            'https://akreditasi.example.test/api/v1/projects' => Http::response([
                 'message' => 'Endpoint belum tersedia.',
             ], 403),
         ]);
@@ -88,7 +192,7 @@ class ReviewerDashboardTest extends TestCase
     public function test_reviewer_assessments_have_colored_statuses_and_filter_by_status_and_year(): void
     {
         Http::fake([
-            'https://akreditasi.example.test/api/reviewer/projects' => Http::response([
+            'https://akreditasi.example.test/api/v1/projects' => Http::response([
                 'message' => 'Endpoint belum tersedia.',
             ], 403),
         ]);
@@ -125,7 +229,7 @@ class ReviewerDashboardTest extends TestCase
     public function test_reviewer_can_open_indicator_detail_and_save_a_score_and_notes(): void
     {
         Http::fake([
-            'https://akreditasi.example.test/api/reviewer/projects' => Http::response([
+            'https://akreditasi.example.test/api/v1/projects' => Http::response([
                 'message' => 'Endpoint belum tersedia.',
             ], 403),
         ]);
@@ -174,7 +278,7 @@ class ReviewerDashboardTest extends TestCase
     public function test_reviewer_cannot_save_a_score_outside_the_rubric(): void
     {
         Http::fake([
-            'https://akreditasi.example.test/api/reviewer/projects' => Http::response([
+            'https://akreditasi.example.test/api/v1/projects' => Http::response([
                 'message' => 'Endpoint belum tersedia.',
             ], 403),
         ]);
@@ -192,10 +296,35 @@ class ReviewerDashboardTest extends TestCase
         $response->assertSessionHasErrors('score');
     }
 
+    public function test_reviewer_demo_assessments_are_not_sent_to_the_api(): void
+    {
+        Http::fake();
+
+        $response = $this->withSession([
+            'reviewer_demo_mode' => true,
+            'access_token' => 'reviewer-token',
+            'user' => ['id' => 77, 'nama' => 'Kuwat', 'role' => 'Reviewer'],
+        ])->post(route('reviewer.assessment-save', [
+            'projectId' => 1,
+            'indicatorId' => '2-1-1',
+        ]), [
+            'score' => 3,
+            'notes' => 'Catatan untuk data contoh.',
+        ]);
+
+        $response->assertRedirect(route('reviewer.assessment-detail', [
+            'projectId' => 1,
+            'indikator' => '2-1-1',
+        ]));
+        $this->assertSame(3, session('reviewer_assessments.1.2-1-1.score'));
+        Http::assertNothingSent();
+    }
+
     public function test_reviewer_can_load_dynamic_projects_and_indicators_from_akreditasi_api(): void
     {
         Http::fake([
             'https://akreditasi.example.test/api/reviewer/projects' => Http::response(['message' => 'Not Found'], 404),
+            'https://akreditasi.example.test/api/v1/reviewer/projects' => Http::response(['message' => 'Not Found'], 404),
             'https://akreditasi.example.test/api/v1/projects' => Http::response([
                 'success' => true,
                 'data' => [
@@ -207,6 +336,11 @@ class ReviewerDashboardTest extends TestCase
                         'jenjang' => ['nama_jenjang' => 'Program Diploma'],
                         'jenis_instrumen' => ['nama_jenis' => 'LAM-INFOKOM 2.1'],
                     ],
+                ],
+            ]),
+            'https://akreditasi.example.test/api/v1/mapping-tim' => Http::response([
+                'data' => [
+                    ['id_project' => 8, 'id_user' => 10, 'id_indikator' => 5],
                 ],
             ]),
             'https://akreditasi.example.test/api/v1/master/indikator' => Http::response([
@@ -281,6 +415,7 @@ class ReviewerDashboardTest extends TestCase
     {
         Http::fake([
             'https://akreditasi.example.test/api/reviewer/projects' => Http::response(['message' => 'Not Found'], 404),
+            'https://akreditasi.example.test/api/v1/reviewer/projects' => Http::response(['message' => 'Not Found'], 404),
             'https://akreditasi.example.test/api/v1/projects' => Http::response([
                 'success' => true,
                 'data' => [
@@ -290,6 +425,11 @@ class ReviewerDashboardTest extends TestCase
                         'tahun_target_submit' => 2026,
                         'status_project' => 'In Progress',
                     ],
+                ],
+            ]),
+            'https://akreditasi.example.test/api/v1/mapping-tim' => Http::response([
+                'data' => [
+                    ['id_project' => 8, 'id_user' => 10, 'id_indikator' => 5],
                 ],
             ]),
             'https://akreditasi.example.test/api/v1/master/indikator' => Http::response([
@@ -346,6 +486,7 @@ class ReviewerDashboardTest extends TestCase
             && $request->method() === 'POST'
             && $request['id_project'] === 8
             && $request['id_indikator'] === 5
-            && $request['id_rubrik'] === 15);
+            && $request['id_rubrik'] === 15
+            && $request['reviewer_id'] === 10);
     }
 }
