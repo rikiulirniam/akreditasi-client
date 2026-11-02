@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\KerjaSamaController;
 use App\Http\Controllers\PermissionController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\SertifikasiController;
@@ -31,6 +32,13 @@ Route::middleware('auth.akademik')->group(function () {
     Route::put('/sertifikasi/{sertifikasi}', [SertifikasiController::class, 'update'])->whereNumber('sertifikasi')->name('sertifikasi.update');
     Route::delete('/sertifikasi/{sertifikasi}', [SertifikasiController::class, 'destroy'])->whereNumber('sertifikasi')->name('sertifikasi.destroy');
     Route::get('/sertifikasi/{sertifikasi}', [SertifikasiController::class, 'show'])->whereNumber('sertifikasi')->name('sertifikasi.show');
+
+    Route::get('/kerja-sama', [KerjaSamaController::class, 'index'])->name('kerja-sama.index');
+    Route::post('/kerja-sama', [KerjaSamaController::class, 'store'])->name('kerja-sama.store');
+    Route::get('/kerja-sama/{id}/edit', [KerjaSamaController::class, 'edit'])->whereNumber('id')->name('kerja-sama.edit');
+    Route::put('/kerja-sama/{id}', [KerjaSamaController::class, 'update'])->whereNumber('id')->name('kerja-sama.update');
+    Route::delete('/kerja-sama/{id}', [KerjaSamaController::class, 'destroy'])->whereNumber('id')->name('kerja-sama.destroy');
+    Route::get('/kerja-sama/{id}', [KerjaSamaController::class, 'show'])->whereNumber('id')->name('kerja-sama.show');
 
     Route::resource('tenaga-kependidikan', TenagaKependidikanController::class);
     Route::get('/tenaga-pendidikan', [TenagaKependidikanController::class, 'index'])->name('tenaga-pendidikan.index');

@@ -57,6 +57,41 @@ class TridharmaService
         return $this->http()->get($this->buildUrl('tendik'), $query);
     }
 
+    public function getKerjaSamaList(array $query = []): Response
+    {
+        return $this->http()->get($this->buildUrl('kerja-sama'), $query);
+    }
+
+    public function getKerjaSamaById(int|string $id): Response
+    {
+        return $this->http()->get($this->buildUrl("kerja-sama/{$id}"));
+    }
+
+    public function createKerjaSama(array $data): Response
+    {
+        return $this->http()->post($this->buildUrl('kerja-sama'), $data);
+    }
+
+    public function updateKerjaSama(int|string $id, array $data): Response
+    {
+        return $this->http()->put($this->buildUrl("kerja-sama/{$id}"), $data);
+    }
+
+    public function deleteKerjaSama(int|string $id): Response
+    {
+        return $this->http()->delete($this->buildUrl("kerja-sama/{$id}"));
+    }
+
+    public function getMitraList(array $query = []): Response
+    {
+        return $this->http()->get($this->buildUrl('mitra'), $query);
+    }
+
+    public function getJenisKerjaSamaList(array $query = []): Response
+    {
+        return $this->http()->get($this->buildUrl('jenis-kerja-sama'), $query);
+    }
+
     public function getSertifikasiById(int|string $id): Response
     {
         return $this->http()->get($this->buildUrl("sertifikasi/{$id}"));
