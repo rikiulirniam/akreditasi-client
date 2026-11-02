@@ -21,6 +21,7 @@ use App\Http\Controllers\KegiatanMahasiswaController;
 use App\Http\Controllers\KelasController;
 use App\Http\Controllers\KurikulumController;
 use App\Http\Controllers\LaporanAkhirController;
+use App\Http\Controllers\LuaranController;
 use App\Http\Controllers\MahasiswaController;
 use App\Http\Controllers\MataKuliahController;
 use App\Http\Controllers\NilaiMahasiswaController;
@@ -155,6 +156,14 @@ Route::middleware('auth.akademik')->group(function () {
     Route::get('/dosen/template', [DosenController::class, 'template'])->name('dosen.template');
     Route::post('/dosen/import', [DosenController::class, 'import'])->name('dosen.import');
     Route::resource('dosen', DosenController::class);
+
+    // ==========================================
+    // MODUL TRI DHARMA: LUARAN (Publikasi, HKI, Buku)
+    // ==========================================
+    Route::get('/luaran', [LuaranController::class, 'index'])->name('luaran.index');
+    Route::post('/luaran', [LuaranController::class, 'store'])->name('luaran.store');
+    Route::put('/luaran/{id}', [LuaranController::class, 'update'])->name('luaran.update');
+    Route::delete('/luaran/{id}', [LuaranController::class, 'destroy'])->name('luaran.destroy');
 
     // Modul Sertifikasi
     Route::get('/sertifikasi', [SertifikasiController::class, 'index'])->name('sertifikasi.index');

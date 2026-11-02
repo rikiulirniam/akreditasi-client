@@ -387,7 +387,7 @@
                                 <span class="w-1.5 h-1.5 rounded-full {{ $isPenelitianPkmPage ? 'bg-secondary' : 'bg-white/40' }} shrink-0"></span>
                                 <span class="truncate">Penelitian &amp; PKM</span>
                             </a>
-                            <a href="#" class="flex items-center gap-2.5 py-2.5 px-3.5 rounded-xl text-sm font-semibold transition-all duration-150 {{ $isLuaranPage ? 'bg-white/20 text-white shadow-xs font-bold' : 'text-white/80 hover:text-white hover:bg-white/10' }}">
+                            <a href="{{ route('luaran.index') }}" class="flex items-center gap-2.5 py-2.5 px-3.5 rounded-xl text-sm font-semibold transition-all duration-150 {{ $isLuaranPage ? 'bg-white/20 text-white shadow-xs font-bold' : 'text-white/80 hover:text-white hover:bg-white/10' }}">
                                 <span class="w-1.5 h-1.5 rounded-full {{ $isLuaranPage ? 'bg-secondary' : 'bg-white/40' }} shrink-0"></span>
                                 <span class="truncate">Luaran</span>
                             </a>
