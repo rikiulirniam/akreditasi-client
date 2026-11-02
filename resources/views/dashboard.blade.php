@@ -279,6 +279,124 @@
         </div>
     </div>
 
+    <!-- Project Aktif, Instrumen Aktif, Progres Keseluruhan & Prioritas Pengisian -->
+    @php
+        $projectAktif = $projectAktif ?? 0;
+        $totalProject = $totalProject ?? 0;
+        $instrumenAktif = $instrumenAktif ?? 0;
+        $prioritas = $prioritas ?? [];
+        $totalIndikator = $totalIndikator ?? 0;
+        $indikatorTerisi = $indikatorTerisi ?? 0;
+        $persentase = $persentase ?? 0;
+
+        // Ganti nama route di bawah jika berbeda (cek: php artisan route:list --path=lembar-kerja)
+        $linkLembarKerja = \Illuminate\Support\Facades\Route::has('akreditasi.superadmin.lembar_kerja')
+            ? route('akreditasi.superadmin.lembar_kerja')
+            : '#';
+    @endphp
+
+    <div class="space-y-4 sm:space-y-6">
+
+        <!-- Kartu: Project Aktif & Instrumen Aktif -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+
+            <!-- Project Aktif -->
+            <div class="relative flex min-h-[120px] flex-col justify-between p-4 sm:p-5 rounded-2xl bg-[#D6DEE5] border border-[#CAD5DE] border-b-[3px] border-b-[#B8C6D4] shadow-[0_8px_16px_-2px_rgba(15,23,42,0.12),0_3px_6px_-2px_rgba(15,23,42,0.08),inset_0_1px_0_0_rgba(255,255,255,0.7)] hover:-translate-y-1 hover:shadow-[0_12px_24px_-4px_rgba(15,23,42,0.16),0_6px_10px_-3px_rgba(15,23,42,0.1),inset_0_1px_0_0_rgba(255,255,255,0.8)] transition-all duration-200">
+                <span class="absolute right-4 top-4 h-2.5 w-2.5 rounded-full bg-[#FFC400]"></span>
+
+                <div class="flex flex-1 items-center gap-3 sm:gap-4">
+                    <div class="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-[#FF6B6B] text-gray-900 flex items-center justify-center shrink-0 shadow-xs border-b-2 border-black/10">
+                        <svg class="w-5 h-5 text-gray-900" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="12" cy="12" r="10" />
+                            <line x1="12" y1="8" x2="12" y2="12" />
+                            <line x1="12" y1="16" x2="12.01" y2="16" />
+                        </svg>
+                    </div>
+                    <div class="min-w-0">
+                        <span class="text-[10px] sm:text-[11px] font-semibold text-gray-600 uppercase tracking-tight block truncate" title="Project Aktif">Project Aktif</span>
+                        <p class="text-3xl sm:text-4xl font-black text-[#183A5F] tracking-tight mt-0.5 leading-none">{{ $projectAktif }}</p>
+                    </div>
+                </div>
+
+                <p class="text-right text-[9px] sm:text-[10px] font-semibold text-gray-500 tracking-tight">{{ $totalProject }} Total Project</p>
+            </div>
+
+            <!-- Instrumen Aktif -->
+            <div class="relative flex min-h-[120px] flex-col justify-between p-4 sm:p-5 rounded-2xl bg-[#D6DEE5] border border-[#CAD5DE] border-b-[3px] border-b-[#B8C6D4] shadow-[0_8px_16px_-2px_rgba(15,23,42,0.12),0_3px_6px_-2px_rgba(15,23,42,0.08),inset_0_1px_0_0_rgba(255,255,255,0.7)] hover:-translate-y-1 hover:shadow-[0_12px_24px_-4px_rgba(15,23,42,0.16),0_6px_10px_-3px_rgba(15,23,42,0.1),inset_0_1px_0_0_rgba(255,255,255,0.8)] transition-all duration-200">
+                <span class="absolute right-4 top-4 h-2.5 w-2.5 rounded-full bg-[#0B5394]"></span>
+
+                <div class="flex flex-1 items-center gap-3 sm:gap-4">
+                    <div class="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-[#EEFF00] text-gray-900 flex items-center justify-center shrink-0 shadow-xs border-b-2 border-black/10">
+                        <svg class="w-5 h-5 text-gray-900" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="12" cy="12" r="10" />
+                            <line x1="12" y1="8" x2="12" y2="12" />
+                            <line x1="12" y1="16" x2="12.01" y2="16" />
+                        </svg>
+                    </div>
+                    <div class="min-w-0">
+                        <span class="text-[10px] sm:text-[11px] font-semibold text-gray-600 uppercase tracking-tight block truncate" title="Instrumen Aktif">Instrumen Aktif</span>
+                        <p class="text-3xl sm:text-4xl font-black text-[#183A5F] tracking-tight mt-0.5 leading-none">{{ $instrumenAktif }}</p>
+                    </div>
+                </div>
+
+                <p class="text-right text-[9px] sm:text-[10px] font-semibold text-gray-500 tracking-tight">{{ $totalIndikator }} indikator tersedia</p>
+            </div>
+
+        </div>
+
+        <!-- Progres Keseluruhan -->
+        <div class="bg-[#D6DEE5] rounded-2xl border border-[#CAD5DE] border-b-[3px] border-b-[#B8C6D4] p-5 sm:p-6 shadow-[0_8px_16px_-2px_rgba(15,23,42,0.12),0_3px_6px_-2px_rgba(15,23,42,0.08),inset_0_1px_0_0_rgba(255,255,255,0.7)]">
+            <div class="flex items-start justify-between gap-3">
+                <div>
+                    <h3 class="text-sm sm:text-base font-bold text-[#183A5F] tracking-tight">Progres keseluruhan</h3>
+                    <p class="mt-1 text-[11px] sm:text-xs text-gray-600">{{ $indikatorTerisi }} dari {{ $totalIndikator }} indikator sudah diisi</p>
+                </div>
+                <span class="text-xl sm:text-2xl font-black text-[#183A5F]">{{ $persentase }}%</span>
+            </div>
+            <div class="mt-3 h-2.5 w-full overflow-hidden rounded-full bg-gray-300">
+                <div class="h-full rounded-full bg-[#183A5F] transition-all duration-500" style="width: {{ $persentase }}%"></div>
+            </div>
+        </div>
+
+        <!-- Prioritas Pengisian -->
+        <div class="bg-[#D6DEE5] rounded-2xl border border-[#CAD5DE] border-b-[3px] border-b-[#B8C6D4] shadow-[0_8px_16px_-2px_rgba(15,23,42,0.12),0_3px_6px_-2px_rgba(15,23,42,0.08),inset_0_1px_0_0_rgba(255,255,255,0.7)] overflow-hidden">
+            <div class="flex flex-col gap-3 p-5 sm:p-6 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                    <h3 class="text-base sm:text-lg font-bold text-[#183A5F] tracking-tight">Prioritas Pengisian</h3>
+                    <p class="mt-0.5 text-xs sm:text-sm text-gray-600">Indikator terdekat dengan tenggat pengumpulan.</p>
+                </div>
+                <a href="{{ $linkLembarKerja }}" class="inline-flex items-center justify-center rounded-xl bg-gray-300/80 px-4 py-2 text-xs sm:text-sm font-semibold text-gray-700 transition hover:bg-gray-300">
+                    Lihat semua
+                </a>
+            </div>
+
+            <div class="divide-y divide-[#CAD5DE] border-t border-[#CAD5DE]">
+                @forelse ($prioritas as $item)
+                    <a href="{{ $linkLembarKerja }}" class="group flex flex-col gap-2 px-5 py-4 sm:px-6 transition hover:bg-white/30 sm:flex-row sm:items-center sm:justify-between">
+                        <div class="flex min-w-0 items-start gap-4">
+                            <span class="w-14 shrink-0 text-xs sm:text-sm font-bold text-[#0F5C8E]">{{ $item['kode'] }}</span>
+                            <div class="min-w-0">
+                                <p class="text-sm font-semibold text-gray-900 group-hover:text-[#183A5F] transition">{{ $item['judul'] }}</p>
+                                <p class="mt-0.5 text-xs text-gray-600">Deadline {{ $item['deadline'] }}</p>
+                            </div>
+                        </div>
+                        <div class="flex shrink-0 items-center gap-3">
+                            <span class="inline-flex items-center rounded-full bg-gray-300/80 px-3 py-1 text-xs font-semibold text-gray-600">{{ $item['status'] }}</span>
+                            <svg class="h-5 w-5 text-[#0F5C8E]" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M5 12h14M13 6l6 6-6 6" />
+                            </svg>
+                        </div>
+                    </a>
+                @empty
+                    <div class="p-8 text-center text-sm text-gray-600 font-medium">
+                        Belum ada indikator atau tugas pengisian yang terdaftar.
+                    </div>
+                @endforelse
+            </div>
+        </div>
+
+    </div>
+
     <!-- 4. Bottom Grid: Tren Chart & Prestasi Mahasiswa Terbaru -->
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
 
