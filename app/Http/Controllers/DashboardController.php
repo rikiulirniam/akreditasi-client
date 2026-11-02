@@ -24,8 +24,14 @@ class DashboardController extends Controller
             'role' => 'SUPERADMIN',
         ]);
 
-        if (str_contains(strtolower((string) ($user['role'] ?? $user['role_name'] ?? '')), 'reviewer')) {
+        $role = strtolower((string) ($user['role'] ?? $user['role_name'] ?? ($user['roles'][0]['name'] ?? '')));
+
+        if (str_contains($role, 'reviewer')) {
             return redirect()->route('reviewer.dashboard');
+        }
+
+        if (str_contains($role, 'kaprodi')) {
+            return redirect()->route('kaprodi.dashboard');
         }
 
         // Default KPI data matching Figma design
