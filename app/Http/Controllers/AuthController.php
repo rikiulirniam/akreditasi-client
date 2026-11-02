@@ -21,7 +21,7 @@ class AuthController extends Controller
     public function showLoginForm(): View|RedirectResponse
     {
         if (session()->has('access_token')) {
-            return redirect()->route('dashboard');
+            return redirect()->to($this->resolveDashboardUrl(session('user', [])));
         }
 
         return view('auth.login');
@@ -45,9 +45,9 @@ class AuthController extends Controller
             $body = $response->json();
 
             if ($response->successful() && ($body['success'] ?? false) === true) {
-                $this->extractAndStoreAuthSession($body, $request, true);
+                $sessionData = $this->extractAndStoreAuthSession($body, $request, true);
 
-                return redirect()->intended(route('dashboard'))->with('toast', [
+                return redirect()->intended($this->resolveDashboardUrl($sessionData['user'] ?? []))->with('toast', [
                     'type' => 'success',
                     'title' => 'Login Berhasil',
                     'message' => $body['message'] ?? 'Selamat datang kembali!',
@@ -117,9 +117,9 @@ class AuthController extends Controller
             $body = $response->json();
 
             if ($response->successful() && ($body['success'] ?? false) === true) {
-                $this->extractAndStoreAuthSession($body, $request, true);
+                $sessionData = $this->extractAndStoreAuthSession($body, $request, true);
 
-                return redirect()->intended(route('dashboard'))->with('toast', [
+                return redirect()->intended($this->resolveDashboardUrl($sessionData['user'] ?? []))->with('toast', [
                     'type' => 'success',
                     'title' => 'Login Berhasil',
                     'message' => $body['message'] ?? 'Selamat datang kembali!',
@@ -260,5 +260,25 @@ class AuthController extends Controller
         $request->session()->put($sessionData);
 
         return $sessionData;
+    }
+
+    /**
+     * Resolve destination dashboard URL based on the user's role.
+     *
+     * @param  array<string, mixed>|null  $user
+     */
+    protected function resolveDashboardUrl(?array $user = null): string
+    {
+        $role = strtolower((string) ($user['role'] ?? $user['role_name'] ?? ($user['roles'][0]['name'] ?? '')));
+
+        if (str_contains($role, 'reviewer')) {
+            return route('reviewer.dashboard');
+        }
+
+        if (str_contains($role, 'kaprodi')) {
+            return route('kaprodi.dashboard');
+        }
+
+        return route('dashboard');
     }
 }

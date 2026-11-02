@@ -81,11 +81,14 @@
 
                     {{-- Dashboard --}}
                     @php
+                        $isKaprodiRole = str_contains($userRole, 'kaprodi');
                         $isKaprodiContext = request()->routeIs('kaprodi.*');
-                        $dashboardRoute = $isKaprodiContext && Route::has('kaprodi.dashboard')
+                        $dashboardRoute = ($isKaprodiRole || ($isKaprodiContext && !in_array($userRole, ['admin', 'superadmin', 'administrator']))) && Route::has('kaprodi.dashboard')
                             ? route('kaprodi.dashboard')
                             : route('dashboard');
-                        $isDashboardActive = request()->routeIs('dashboard') || ($isKaprodiContext && request()->routeIs('kaprodi.dashboard'));
+                        $isDashboardActive = $isKaprodiRole
+                            ? request()->routeIs('kaprodi.dashboard')
+                            : (request()->routeIs('dashboard') || ($isKaprodiContext && request()->routeIs('kaprodi.dashboard')));
                     @endphp
                     <div>
                         <a href="{{ $dashboardRoute }}"

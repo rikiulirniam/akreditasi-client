@@ -29,7 +29,7 @@ class ReviewerDashboardTest extends TestCase
     {
         $response = $this->withSession([
             'access_token' => 'admin-token',
-            'user' => ['nama' => 'Kuwat', 'role' => 'Kaprodi'],
+            'user' => ['nama' => 'Kuwat', 'role' => 'Administrator'],
         ])->get(route('dashboard'));
 
         $response->assertOk()
