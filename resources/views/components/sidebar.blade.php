@@ -383,7 +383,7 @@
                         <div id="submenu-tridharma"
                             data-is-active="{{ $isTridharmaActive ? 'true' : 'false' }}"
                             class="submenu-container {{ $isTridharmaActive ? '' : 'hidden' }} pl-10 pr-2 pt-1 pb-1 space-y-1.5">
-                            <a href="#" class="flex items-center gap-2.5 py-2.5 px-3.5 rounded-xl text-sm font-semibold transition-all duration-150 {{ $isPenelitianPkmPage ? 'bg-white/20 text-white shadow-xs font-bold' : 'text-white/80 hover:text-white hover:bg-white/10' }}">
+                            <a href="{{ route('penelitian-pkm.index') }}" class="flex items-center gap-2.5 py-2.5 px-3.5 rounded-xl text-sm font-semibold transition-all duration-150 {{ $isPenelitianPkmPage ? 'bg-white/20 text-white shadow-xs font-bold' : 'text-white/80 hover:text-white hover:bg-white/10' }}">
                                 <span class="w-1.5 h-1.5 rounded-full {{ $isPenelitianPkmPage ? 'bg-secondary' : 'bg-white/40' }} shrink-0"></span>
                                 <span class="truncate">Penelitian &amp; PKM</span>
                             </a>

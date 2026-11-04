@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\PenelitianPkmController;
 use App\Http\Controllers\Akreditasi\Superadmin\BuktiDokumenController;
 use App\Http\Controllers\Akreditasi\Superadmin\DashboardController as SuperadminDashboard;
 use App\Http\Controllers\Akreditasi\Superadmin\IndikatorController;
@@ -59,6 +60,7 @@ Route::middleware('auth.akademik')->group(function () {
     Route::post('/auth/refresh-token', [AuthController::class, 'refreshToken'])->name('auth.refresh-token');
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
     Route::get('/reviewer/dashboard', [ReviewerController::class, 'dashboard'])->name('reviewer.dashboard');
+    Route::get('/penelitian-pkm', [PenelitianPkmController::class, 'index'])->name('penelitian-pkm.index');
     Route::get('/reviewer/penilaian', [ReviewerController::class, 'assessments'])->name('reviewer.assessments');
     Route::get('/reviewer/penilaian/{projectId}', [ReviewerController::class, 'assessmentDetail'])->name('reviewer.assessment-detail');
     Route::post('/reviewer/penilaian/{projectId}/indikator/{indicatorId}', [ReviewerController::class, 'saveAssessment'])->name('reviewer.assessment-save');
