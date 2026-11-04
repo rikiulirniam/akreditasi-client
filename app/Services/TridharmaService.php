@@ -1510,4 +1510,30 @@ class TridharmaService
     {
         return $this->http($token)->get($this->url('v1/tren-tridharma'), $query);
     }
+
+        public function getKegiatanList(array $query = [], ?string $token = null): Response
+    {
+        return $this->get('kegiatan', $query, $token);
+    }
+
+    public function getKegiatan(int|string $id, ?string $token = null): Response
+    {
+        return $this->get("kegiatan/{$id}", [], $token);
+    }
+
+    public function createKegiatan(array $data, ?string $token = null): Response
+    {
+        return $this->post('kegiatan', $data, $token);
+    }
+
+    public function updateKegiatan(int|string $id, array $data, ?string $token = null): Response
+    {
+        return $this->put("kegiatan/{$id}", $data, $token);
+    }
+
+    public function deleteKegiatan(int|string $id, ?string $token = null): Response
+    {
+        return $this->delete("kegiatan/{$id}", [], $token);
+    }
+
 }
