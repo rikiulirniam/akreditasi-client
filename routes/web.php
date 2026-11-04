@@ -61,6 +61,8 @@ Route::middleware('auth.akademik')->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
     Route::get('/reviewer/dashboard', [ReviewerController::class, 'dashboard'])->name('reviewer.dashboard');
     Route::get('/penelitian-pkm', [PenelitianPkmController::class, 'index'])->name('penelitian-pkm.index');
+    Route::get('/penelitian-pkm/create', [PenelitianPkmController::class, 'create'])->name('penelitian-pkm.create');
+    Route::post('/penelitian-pkm', [PenelitianPkmController::class, 'store'])->name('penelitian-pkm.store');
     Route::get('/reviewer/penilaian', [ReviewerController::class, 'assessments'])->name('reviewer.assessments');
     Route::get('/reviewer/penilaian/{projectId}', [ReviewerController::class, 'assessmentDetail'])->name('reviewer.assessment-detail');
     Route::post('/reviewer/penilaian/{projectId}/indikator/{indicatorId}', [ReviewerController::class, 'saveAssessment'])->name('reviewer.assessment-save');

@@ -1536,4 +1536,8 @@ class TridharmaService
         return $this->delete("kegiatan/{$id}", [], $token);
     }
 
+    public function getJenisKegiatanList(array $query = [], ?string $token = null): Response
+    {
+        return $this->get('jenis-kegiatan', $query, $token);
+    }
 }

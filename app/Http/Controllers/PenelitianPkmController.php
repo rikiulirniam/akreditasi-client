@@ -58,6 +58,55 @@ class PenelitianPkmController extends Controller
         return view('penelitian-pkm.index', compact('kegiatan', 'pagination', 'filters', 'apiError'));
     }
 
+        public function create()
+    {
+        return view('penelitian-pkm.create', ['jenisKegiatan' => $this->jenisKegiatan()]);
+    }
+
+    public function store(Request $request)
+    {
+        $validated = $request->validate([
+            'id_jenis_kegiatan' => ['required', 'integer'],
+            'judul_kegiatan' => ['required', 'string', 'max:255'],
+            'status_kegiatan' => ['required', 'string', 'max:50'],
+            'tahun_usulan' => ['required', 'integer', 'between:1900,2100'],
+            'tahun_kegiatan' => ['required', 'integer', 'between:1900,2100'],
+            'tahun_pelaksanaan' => ['required', 'integer', 'between:1900,2100'],
+            'lokasi_kegiatan' => ['nullable', 'string', 'max:255'],
+            'lama_kegiatan' => ['nullable', 'string', 'max:50'],
+        ]);
+
+        $payload = array_filter($validated, fn ($value) => $value !== null && $value !== '');
+        $payload += ['in_kind' => '-', 'anggota' => [], 'pendanaan' => []];
+
+        try {
+            $response = $this->tridharmaService->createKegiatan($payload);
+        } catch (ConnectionException) {
+            return back()->withInput()->with('error', 'Tidak dapat terhubung ke server Tridharma. Silakan coba lagi nanti.');
+        }
+
+        if ($response->status() === 401) {
+            return redirect()->route('login');
+        }
+
+        if (! $response->successful()) {
+            return back()
+                ->withInput()
+                ->withErrors($response->json('errors') ?? [])
+                ->with('error', $response->json('message') ?: 'Gagal menyimpan kegiatan.');
+        }
+
+        return redirect()->route('penelitian-pkm.index')->with('success', 'Kegiatan berhasil ditambahkan.');
+    }
+
+       private function jenisKegiatan()
+    {
+        return [
+            ['id_jenis_kegiatan' => 1, 'nama_jenis_kegiatan' => 'Penelitian'],
+            ['id_jenis_kegiatan' => 2, 'nama_jenis_kegiatan' => 'PkM'],
+        ];
+    }
+
     private function namaKetua($anggota)
     {
         foreach ($anggota as $item) {
