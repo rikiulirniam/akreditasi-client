@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('meta_title', 'Penelitian & PKM')
+@section('meta_title')Penelitian & PKM @endsection
 @section('title', 'Penelitian & PKM')
 
 @section('subtitle')
