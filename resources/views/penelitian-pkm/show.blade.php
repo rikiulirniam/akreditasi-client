@@ -71,7 +71,7 @@
         </div>
 
         <section class="{{ $kartu }} self-start lg:col-span-4">
-            <h3 class="{{ $judulKartu }}">Dosen</h3>
+            <h3 class="{{ $judulKartu }}">Nama Anggota</h3>
             <ul class="divide-y divide-[#BAC7D5] px-5">
                 @forelse($anggota as $item)
                     <li class="flex items-center gap-3 py-3">
