@@ -42,6 +42,17 @@ use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
     if (session()->has('access_token')) {
+        $user = session('user', []);
+        $role = strtolower((string) ($user['role'] ?? $user['role_name'] ?? ($user['roles'][0]['name'] ?? '')));
+
+        if (str_contains($role, 'reviewer')) {
+            return redirect()->route('reviewer.dashboard');
+        }
+
+        if (str_contains($role, 'kaprodi')) {
+            return redirect()->route('kaprodi.dashboard');
+        }
+
         return redirect()->route('dashboard');
     }
 
@@ -71,6 +82,7 @@ Route::middleware('auth.akademik')->group(function () {
         Route::get('/project/detail/{id?}', [KaprodiController::class, 'projectDetail'])->name('project.detail');
 
         Route::get('/plotting', [KaprodiController::class, 'plotting'])->name('plotting');
+        Route::post('/plotting', [KaprodiController::class, 'storePlotting'])->name('plotting.store');
     });
 
     // ==========================================
