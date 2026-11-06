@@ -165,6 +165,7 @@ class ProdiController extends Controller
         return view('prodi.index', [
             'prodiList' => $pagedProdiList,
             'allProdis' => $allProdis,
+            'allUpps' => $allUpps,
             'pagination' => $pagination,
         ]);
     }
@@ -172,18 +173,22 @@ class ProdiController extends Controller
     public function store(Request $request): RedirectResponse
     {
         $validated = $request->validate([
+            'kode_prodi' => ['required', 'string', 'max:50'],
             'nama_prodi' => ['required', 'string', 'max:255'],
-            'akreditasi' => ['required', 'string', 'max:50'],
-            'kode_prodi' => ['nullable', 'string', 'max:50'],
+            'jenjang' => ['required', 'in:D1,D2,D3,D4,S1,S2,S3'],
+            'sk_pendirian' => ['nullable', 'string', 'max:255'],
+            'tanggal_sk_pendirian' => ['nullable', 'date'],
+            'status_akreditasi' => ['required', 'in:Terakreditasi,Terakreditasi Unggul,Tidak Terakreditasi'],
+            'masa_berlaku_akreditasi' => ['nullable', 'date'],
+            'id_upps' => ['nullable'],
         ], [
             'nama_prodi.required' => 'Nama Program Studi wajib diisi.',
-            'akreditasi.required' => 'Akreditasi wajib dipilih.',
+            'status_akreditasi.required' => 'Status Akreditasi wajib dipilih.',
         ]);
 
         $namaProdi = trim($validated['nama_prodi']);
-        $akreditasi = trim($validated['akreditasi']);
-
         $kodeProdi = trim($validated['kode_prodi'] ?? '');
+
         if (empty($kodeProdi)) {
             $words = preg_split('/\s+/', $namaProdi);
             $acronym = '';
@@ -200,7 +205,14 @@ class ProdiController extends Controller
         $payload = [
             'kode_prodi' => $kodeProdi,
             'nama_prodi' => $namaProdi,
-            'akreditasi' => $akreditasi,
+            'nama' => $namaProdi,
+            'jenjang' => $validated['jenjang'],
+            'sk_pendirian' => $validated['sk_pendirian'] ?? null,
+            'tanggal_sk_pendirian' => $validated['tanggal_sk_pendirian'] ?? null,
+            'status_akreditasi' => $validated['status_akreditasi'],
+            'akreditasi' => $validated['status_akreditasi'],
+            'masa_berlaku_akreditasi' => $validated['masa_berlaku_akreditasi'] ?? null,
+            'id_upps' => $validated['id_upps'] ?? null,
         ];
 
         $response = $this->akademikService->createProdi($payload);
@@ -221,7 +233,12 @@ class ProdiController extends Controller
             'id' => $newId,
             'kode_prodi' => $kodeProdi,
             'nama_prodi' => $namaProdi,
-            'akreditasi' => $akreditasi,
+            'jenjang' => $validated['jenjang'],
+            'sk_pendirian' => $validated['sk_pendirian'] ?? null,
+            'tanggal_sk_pendirian' => $validated['tanggal_sk_pendirian'] ?? null,
+            'status_akreditasi' => $validated['status_akreditasi'],
+            'masa_berlaku_akreditasi' => $validated['masa_berlaku_akreditasi'] ?? null,
+            'id_upps' => $validated['id_upps'] ?? null,
             'nama_upps' => '-',
             'upps' => null,
         ];
@@ -237,16 +254,20 @@ class ProdiController extends Controller
     public function update(Request $request, int|string $id): RedirectResponse
     {
         $validated = $request->validate([
-            'nama_prodi' => ['required', 'string', 'max:255'],
-            'akreditasi' => ['required', 'string', 'max:50'],
             'kode_prodi' => ['nullable', 'string', 'max:50'],
+            'nama_prodi' => ['required', 'string', 'max:255'],
+            'jenjang' => ['required', 'in:D1,D2,D3,D4,S1,S2,S3'],
+            'sk_pendirian' => ['nullable', 'string', 'max:255'],
+            'tanggal_sk_pendirian' => ['nullable', 'date'],
+            'status_akreditasi' => ['required', 'in:Terakreditasi,Terakreditasi Unggul,Tidak Terakreditasi'],
+            'masa_berlaku_akreditasi' => ['nullable', 'date'],
+            'id_upps' => ['nullable'],
         ], [
             'nama_prodi.required' => 'Nama Program Studi wajib diisi.',
-            'akreditasi.required' => 'Akreditasi wajib dipilih.',
+            'status_akreditasi.required' => 'Status Akreditasi wajib dipilih.',
         ]);
 
         $namaProdi = trim($validated['nama_prodi']);
-        $akreditasi = trim($validated['akreditasi']);
         $kodeProdi = trim($validated['kode_prodi'] ?? '');
 
         if (empty($kodeProdi)) {
@@ -256,7 +277,14 @@ class ProdiController extends Controller
         $payload = [
             'kode_prodi' => $kodeProdi,
             'nama_prodi' => $namaProdi,
-            'akreditasi' => $akreditasi,
+            'nama' => $namaProdi,
+            'jenjang' => $validated['jenjang'],
+            'sk_pendirian' => $validated['sk_pendirian'] ?? null,
+            'tanggal_sk_pendirian' => $validated['tanggal_sk_pendirian'] ?? null,
+            'status_akreditasi' => $validated['status_akreditasi'],
+            'akreditasi' => $validated['status_akreditasi'],
+            'masa_berlaku_akreditasi' => $validated['masa_berlaku_akreditasi'] ?? null,
+            'id_upps' => $validated['id_upps'] ?? null,
         ];
 
         $response = $this->akademikService->updateProdi($id, $payload);
@@ -265,22 +293,16 @@ class ProdiController extends Controller
         $found = false;
         foreach ($customProdi as &$cp) {
             if ((string) $cp['id'] === (string) $id) {
-                $cp['nama_prodi'] = $namaProdi;
-                $cp['akreditasi'] = $akreditasi;
-                $cp['kode_prodi'] = $kodeProdi;
+                $cp = array_merge($cp, $payload);
                 $found = true;
                 break;
             }
         }
         if (! $found) {
-            $customProdi[] = [
-                'id' => $id,
-                'kode_prodi' => $kodeProdi,
-                'nama_prodi' => $namaProdi,
-                'akreditasi' => $akreditasi,
-                'nama_upps' => '-',
-                'upps' => null,
-            ];
+            $customProdi[] = array_merge(
+                ['id' => $id, 'nama_upps' => '-', 'upps' => null],
+                $payload
+            );
         }
         session(['custom_prodi_list' => $customProdi]);
 
@@ -316,5 +338,20 @@ class ProdiController extends Controller
             'title' => 'Berhasil Dihapus',
             'message' => $response->json('message') ?? 'Data Program Studi berhasil dihapus.',
         ]);
+    }
+
+    /* Helper privat untuk mengekstrak pesan error dari response API service. */
+    private function extractErrorMessage($response, string $defaultMessage): string
+    {
+        if (! $response) {
+            return $defaultMessage;
+        }
+
+        $json = $response->json();
+
+        return $json['message']
+            ?? $json['error']
+            ?? (is_string($json['errors'] ?? null) ? $json['errors'] : null)
+            ?? $defaultMessage;
     }
 }
