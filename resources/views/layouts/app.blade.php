@@ -103,7 +103,7 @@
 
                     <!-- Page Title & Subtitle -->
                     <div>
-                        <h1 class="text-3xl sm:text-4xl lg:text-[44px] font-black text-black tracking-tight leading-tight flex items-center gap-1.5 flex-wrap">
+                        <h1 class="text-2xl sm:text-3xl lg:text-[36px] font-black text-black tracking-tight leading-tight flex items-center gap-1.5 flex-wrap">
                             @yield('title', $title ?? 'Dashboard')
                         </h1>
                         @hasSection('subtitle')
@@ -115,11 +115,11 @@
                 </div>
 
                 <!-- Right: Profile Pill (Matches User Reference Image) -->
-                <div class="relative w-[215px]" id="profileDropdownContainer">
+                <div class="relative w-[190px] sm:w-[200px]" id="profileDropdownContainer">
                     <button 
                         type="button" 
                         id="profileDropdownBtn"
-                        class="w-full bg-[#E5E5E5] border-2 border-[#3A5675] rounded-[16px] px-3.5 py-2 flex items-center justify-between cursor-pointer select-none transition-all duration-200"
+                        class="w-full bg-[#E5E5E5] border-2 border-[#3A5675] rounded-[16px] px-2.5 sm:px-3 py-1.5 flex items-center justify-between cursor-pointer select-none transition-all duration-200"
                         aria-expanded="false"
                         aria-haspopup="true"
                     >
@@ -134,11 +134,11 @@
                         </svg>
 
                         <!-- Middle: Greeting & Role -->
-                        <div class="text-left leading-tight min-w-0 flex-1 px-2.5">
-                            <span class="block font-bold text-[13.5px] text-black tracking-tight truncate">
+                        <div class="text-left leading-tight min-w-0 flex-1 px-2">
+                            <span class="block font-bold text-xs text-black tracking-tight truncate">
                                 Halo, {{ $currentUser['nama'] ?? 'Kuwat' }}
                             </span>
-                            <span class="block text-[11px] text-[#656565] font-semibold truncate">
+                            <span class="block text-[10px] text-[#656565] font-semibold truncate">
                                 {{ ucfirst(strtolower($currentUser['role'] ?? 'Kaprodi')) }}
                             </span>
                         </div>
@@ -162,8 +162,8 @@
                         <div class="px-4 pt-3.5 pb-4 space-y-3.5 select-none">
                             <!-- User Full Name & Role -->
                             <div class="text-left leading-tight">
-                                <p class="text-[15px] font-bold text-black tracking-tight">{{ $currentUser['nama'] ?? 'Kuwat Santoso' }}</p>
-                                <p class="text-[12px] font-normal text-gray-700 mt-0.5">{{ ucfirst(strtolower($currentUser['role'] ?? 'Kaprodi')) }}</p>
+                                <p class="text-sm font-bold text-black tracking-tight">{{ $currentUser['nama'] ?? 'Kuwat Santoso' }}</p>
+                                <p class="text-[11px] font-normal text-gray-700 mt-0.5">{{ ucfirst(strtolower($currentUser['role'] ?? 'Kaprodi')) }}</p>
                             </div>
 
                             <!-- Menu Items -->
