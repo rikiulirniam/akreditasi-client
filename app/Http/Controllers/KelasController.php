@@ -3,8 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Services\AkademikService;
+use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Illuminate\View\View;
 
 class KelasController extends Controller
@@ -260,6 +262,15 @@ class KelasController extends Controller
                 }
             }
         }
+
+        // Attach structured Bukti Pembelajaran (Evidence) to each course
+        foreach ($mataKuliahList as &$mkItem) {
+            $emkId = (string) ($mkItem['enrollment_mata_kuliah_id'] ?? ($mkItem['id'] ?? ''));
+            $mkAkId = (string) ($mkItem['mata_kuliah_angkatan_kelas_id'] ?? '');
+            $mkItem['evidence_list'] = $this->parseEvidenceList($mkItem['evidence'] ?? '');
+            $mkItem['evidence_count'] = count($mkItem['evidence_list']);
+        }
+        unset($mkItem);
 
         // Fetch master list of Mata Kuliah for create modal
         $masterMkResponse = $this->akademikService->getMataKuliahList(['per_page' => 500]);
@@ -578,6 +589,278 @@ class KelasController extends Controller
             'type' => 'error',
             'title' => 'Gagal Menghapus',
             'message' => $errorMessage,
+        ]);
+    }
+
+    /**
+     * @return array<int, array<string, mixed>>
+     */
+    private function parseEvidenceList(mixed $rawEvidence): array
+    {
+        $list = [];
+        if (is_array($rawEvidence)) {
+            $list = $rawEvidence;
+        } elseif (is_string($rawEvidence) && trim($rawEvidence) !== '') {
+            $decoded = json_decode($rawEvidence, true);
+            if (is_array($decoded)) {
+                $list = $decoded;
+            } elseif (filter_var($rawEvidence, FILTER_VALIDATE_URL)) {
+                $list = [
+                    [
+                        'id' => 1,
+                        'jenis_dokumen' => 'Lainnya',
+                        'judul' => 'Tautan Dokumen Pembelajaran',
+                        'url' => $rawEvidence,
+                        'created_at' => now()->format('Y-m-d H:i'),
+                    ],
+                ];
+            }
+        }
+
+        return array_values(array_filter($list, 'is_array'));
+    }
+
+    public function storeBuktiPembelajaran(Request $request, int|string $id, int|string $enrollmentId): RedirectResponse
+    {
+        $validated = $request->validate([
+            'jenis_dokumen' => ['required', 'string', 'in:RPS,Kontrak Kuliah,Presensi,Soal Ujian,Portofolio Tugas,Lainnya'],
+            'judul' => ['required', 'string', 'max:255'],
+            'url' => ['required', 'url', 'max:2048'],
+        ], [
+            'jenis_dokumen.required' => 'Jenis dokumen bukti pembelajaran wajib dipilih.',
+            'jenis_dokumen.in' => 'Pilihan jenis dokumen tidak valid.',
+            'judul.required' => 'Judul / nama dokumen bukti pembelajaran wajib diisi.',
+            'url.required' => 'Tautan / URL dokumen bukti pembelajaran wajib diisi.',
+            'url.url' => 'Tautan harus berupa URL yang valid (misal: link Google Drive atau Cloud).',
+        ]);
+
+        $loadResult = $this->loadClassEnrollment($id, $enrollmentId);
+        if ($loadResult['unauthorized']) {
+            return redirect()->route('login')->with('toast', [
+                'type' => 'warning',
+                'title' => 'Sesi Berakhir',
+                'message' => 'Sesi Anda telah kedaluwarsa. Silakan login kembali.',
+            ]);
+        }
+
+        if (! $loadResult['success']) {
+            return back()->with('toast', [
+                'type' => 'error',
+                'title' => 'Gagal Memuat Enrollment',
+                'message' => $loadResult['message'],
+            ]);
+        }
+
+        $enrollment = $loadResult['enrollment'];
+        if ((string) ($enrollment['mata_kuliah_id'] ?? '') === '' || ! isset($enrollment['tahun_akademik_id'])) {
+            return back()->with('toast', [
+                'type' => 'error',
+                'title' => 'Data Enrollment Tidak Lengkap',
+                'message' => 'Bukti tidak dapat disimpan karena data enrollment tidak memiliki mata kuliah atau tahun akademik.',
+            ]);
+        }
+
+        $evidence = $this->parseEvidenceList($enrollment['evidence'] ?? null);
+        $evidence[] = [
+            'jenis_dokumen' => $validated['jenis_dokumen'],
+            'judul' => trim($validated['judul']),
+            'url' => trim($validated['url']),
+        ];
+        $result = $this->updateEnrollmentEvidenceList($enrollmentId, $enrollment, $evidence);
+
+        return $this->evidenceUpdateRedirect($result, 'Bukti Pembelajaran Disimpan', 'Bukti Pembelajaran berhasil disimpan.');
+    }
+
+    public function destroyBuktiPembelajaran(Request $request, int|string $id, int|string $enrollmentId, int|string $buktiId): RedirectResponse
+    {
+        $loadResult = $this->loadClassEnrollment($id, $enrollmentId);
+        if ($loadResult['unauthorized']) {
+            return redirect()->route('login')->with('toast', [
+                'type' => 'warning',
+                'title' => 'Sesi Berakhir',
+                'message' => 'Sesi Anda telah kedaluwarsa. Silakan login kembali.',
+            ]);
+        }
+
+        if (! $loadResult['success']) {
+            return back()->with('toast', [
+                'type' => 'error',
+                'title' => 'Gagal Memuat Enrollment',
+                'message' => $loadResult['message'],
+            ]);
+        }
+
+        $enrollment = $loadResult['enrollment'];
+        $evidence = $this->parseEvidenceList($enrollment['evidence'] ?? null);
+        $updatedEvidence = array_values(array_filter(
+            $evidence,
+            fn (array $item, int $index): bool => (string) ($item['id'] ?? $index) !== (string) $buktiId,
+            ARRAY_FILTER_USE_BOTH
+        ));
+
+        if (count($updatedEvidence) === count($evidence)) {
+            return back()->with('toast', [
+                'type' => 'error',
+                'title' => 'Bukti Tidak Ditemukan',
+                'message' => 'Dokumen bukti pembelajaran yang dipilih sudah tidak tersedia.',
+            ]);
+        }
+
+        $result = $this->updateEnrollmentEvidenceList($enrollmentId, $enrollment, $updatedEvidence);
+
+        return $this->evidenceUpdateRedirect($result, 'Bukti Pembelajaran Dihapus', 'Dokumen bukti pembelajaran berhasil dihapus.');
+    }
+
+    /**
+     * @return array{success: bool, unauthorized: bool, enrollment?: array<string, mixed>, message: string}
+     */
+    private function loadClassEnrollment(int|string $classId, int|string $enrollmentId): array
+    {
+        try {
+            $enrollmentResponse = $this->akademikService->getEnrollmentMataKuliahById($enrollmentId);
+            if ($enrollmentResponse->status() === 401) {
+                return ['success' => false, 'unauthorized' => true, 'message' => 'Sesi Anda telah kedaluwarsa.'];
+            }
+            if (! $enrollmentResponse->successful() || ! is_array($enrollmentResponse->json('data'))) {
+                return [
+                    'success' => false,
+                    'unauthorized' => false,
+                    'message' => $this->extractErrorMessage($enrollmentResponse, 'Data enrollment mata kuliah tidak dapat ditemukan.'),
+                ];
+            }
+
+            $classResponse = $this->akademikService->getMataKuliahByKelasId($classId);
+            if ($classResponse->status() === 401) {
+                return ['success' => false, 'unauthorized' => true, 'message' => 'Sesi Anda telah kedaluwarsa.'];
+            }
+            if (! $classResponse->successful()) {
+                return [
+                    'success' => false,
+                    'unauthorized' => false,
+                    'message' => $this->extractErrorMessage($classResponse, 'Mata kuliah pada kelas ini tidak dapat dimuat.'),
+                ];
+            }
+
+            $classCourses = $classResponse->json('data') ?? [];
+            if (isset($classCourses['data']) && is_array($classCourses['data'])) {
+                $classCourses = $classCourses['data'];
+            }
+            $isAssigned = is_array($classCourses) && collect($classCourses)->contains(
+                fn ($course): bool => is_array($course)
+                    && (string) ($course['enrollment_mata_kuliah_id'] ?? $course['enrollment_id'] ?? $course['enrollment_mata_kuliah']['id'] ?? '') === (string) $enrollmentId
+            );
+
+            if (! $isAssigned) {
+                return [
+                    'success' => false,
+                    'unauthorized' => false,
+                    'message' => 'Enrollment tersebut tidak terkait dengan kelas yang dipilih.',
+                ];
+            }
+
+            return [
+                'success' => true,
+                'unauthorized' => false,
+                'enrollment' => $enrollmentResponse->json('data'),
+                'message' => '',
+            ];
+        } catch (ConnectionException $exception) {
+            Log::warning('Tidak dapat terhubung ke API untuk memuat bukti pembelajaran.', [
+                'kelas_id' => $classId,
+                'enrollment_id' => $enrollmentId,
+                'message' => $exception->getMessage(),
+            ]);
+
+            return [
+                'success' => false,
+                'unauthorized' => false,
+                'message' => 'Server enrollment sedang tidak dapat dihubungi. Perubahan belum disimpan.',
+            ];
+        }
+    }
+
+    /**
+     * @param  array<string, mixed>  $enrollment
+     * @param  array<int, array<string, mixed>>  $evidence
+     * @return array{success: bool, unauthorized: bool, message: string}
+     */
+    private function updateEnrollmentEvidenceList(int|string $enrollmentId, array $enrollment, array $evidence): array
+    {
+        $payload = [
+            'mata_kuliah_id' => $enrollment['mata_kuliah_id'] ?? null,
+            'tahun_akademik_id' => $enrollment['tahun_akademik_id'] ?? null,
+            'evidence' => $evidence,
+        ];
+        foreach (['dosen_id', 'mata_kuliah_angkatan_kelas_id'] as $optionalField) {
+            if (array_key_exists($optionalField, $enrollment)) {
+                $payload[$optionalField] = $enrollment[$optionalField];
+            }
+        }
+
+        if (empty($payload['mata_kuliah_id']) || empty($payload['tahun_akademik_id'])) {
+            return [
+                'success' => false,
+                'unauthorized' => false,
+                'message' => 'Data enrollment tidak memiliki mata kuliah atau tahun akademik.',
+            ];
+        }
+
+        try {
+            $response = $this->akademikService->updateEnrollmentMataKuliah($enrollmentId, $payload);
+        } catch (ConnectionException $exception) {
+            Log::warning('Tidak dapat terhubung ke API untuk memperbarui bukti pembelajaran.', [
+                'enrollment_id' => $enrollmentId,
+                'message' => $exception->getMessage(),
+            ]);
+
+            return [
+                'success' => false,
+                'unauthorized' => false,
+                'message' => 'Server enrollment sedang tidak dapat dihubungi. Perubahan belum disimpan.',
+            ];
+        }
+
+        if ($response->status() === 401) {
+            return [
+                'success' => false,
+                'unauthorized' => true,
+                'message' => 'Sesi Anda telah kedaluwarsa.',
+            ];
+        }
+
+        $body = $response->json();
+        $successful = $response->successful() && ($body['success'] ?? true);
+
+        return [
+            'success' => $successful,
+            'unauthorized' => false,
+            'message' => $successful
+                ? (string) ($body['message'] ?? 'Bukti pembelajaran berhasil diperbarui.')
+                : $this->extractErrorMessage($response, 'Bukti pembelajaran gagal diperbarui.'),
+        ];
+    }
+
+    /**
+     * @param  array{success: bool, unauthorized: bool, message: string}  $result
+     */
+    private function evidenceUpdateRedirect(array $result, string $successTitle, string $successMessage): RedirectResponse
+    {
+        if ($result['unauthorized']) {
+            return redirect()->route('login')->with('toast', [
+                'type' => 'warning',
+                'title' => 'Sesi Berakhir',
+                'message' => 'Sesi Anda telah kedaluwarsa. Silakan login kembali.',
+            ]);
+        }
+
+        return back()->with('toast', $result['success'] ? [
+            'type' => 'success',
+            'title' => $successTitle,
+            'message' => $successMessage,
+        ] : [
+            'type' => 'error',
+            'title' => 'Gagal Memperbarui Bukti',
+            'message' => $result['message'],
         ]);
     }
 

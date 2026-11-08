@@ -300,6 +300,26 @@
                                 </a>
                             @endif
 
+                            <!-- Bukti Pembelajaran Button (Navy / Document Icon) -->
+                            <button 
+                                type="button" 
+                                class="open-bukti-pembelajaran-btn text-primary hover:text-additional p-1 cursor-pointer transition relative disabled:cursor-not-allowed disabled:opacity-40"
+                                title="Kelola Bukti Pembelajaran (RPS, Kontrak, Presensi, Soal Ujian)"
+                                data-action="{{ route('kelas.mata-kuliah.bukti.store', [$kelas['id'], $enrollmentId ?: ($mkAkId ?: $mk['id'])]) }}"
+                                data-destroy-base-url="{{ url('/kelas/'.$kelas['id'].'/mata-kuliah/'.($enrollmentId ?: ($mkAkId ?: $mk['id'])).'/bukti') }}"
+                                data-mk-nama="{{ $namaMk }}"
+                                data-mk-kode="{{ $kodeMk }}"
+                                data-items='@json($mk['evidence_list'] ?? [])'
+                                @if(empty($enrollmentId)) disabled @endif
+                            >
+                                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
+                                </svg>
+                                @if(!empty($mk['evidence_count']) && $mk['evidence_count'] > 0)
+                                    <span class="absolute -top-1 -right-1 px-1.5 py-0.2 rounded-full text-[9px] font-extrabold bg-emerald-600 text-white shadow-2xs">{{ $mk['evidence_count'] }}</span>
+                                @endif
+                            </button>
+
                             @haspermission('kelas.update')
                             @if(!empty($enrollmentId))
                                 <!-- Edit Dosen Button (Yellow) -->
@@ -518,6 +538,129 @@
     </div>
 </div>
 
+<!-- ======================================================== -->
+<!-- MODAL: Kelola Bukti Kegiatan Pembelajaran (Detail Kelas) -->
+<!-- ======================================================== -->
+<div 
+    id="buktiPembelajaranModal" 
+    class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/45 opacity-0 pointer-events-none transition-all duration-200 select-none"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="buktiPembelajaranModalTitle"
+>
+    <div class="mk-kelas-modal-card relative bg-white rounded-[28px] p-6 sm:p-8 max-w-[620px] w-full shadow-2xl text-left transform scale-95 transition-all duration-200 max-h-[92vh] overflow-y-auto space-y-5">
+        <div class="flex items-start justify-between gap-3 border-b border-gray-100 pb-4">
+            <div>
+                <h3 id="buktiPembelajaranModalTitle" class="text-lg sm:text-xl font-bold text-gray-900 tracking-tight">
+                    Bukti Kegiatan Pembelajaran
+                </h3>
+                <p class="text-xs text-gray-500 mt-0.5">
+                    <span id="buktiModalMkNama" class="font-bold text-primary"></span>
+                    <span id="buktiModalMkKode" class="font-mono text-gray-600 ml-1"></span>
+                </p>
+            </div>
+            <button type="button" class="close-bukti-modal text-gray-400 hover:text-gray-700 transition p-1 cursor-pointer">
+                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+        </div>
+
+        <!-- Daftar Dokumen Terunggah / Ditautkan -->
+        <div class="space-y-2.5">
+            <h4 class="text-xs font-bold text-gray-700 uppercase tracking-wider flex items-center justify-between">
+                <span>Daftar Bukti Ditautkan</span>
+                <span id="buktiCountBadge" class="text-[11px] font-bold px-2 py-0.5 rounded-full bg-primary/10 text-primary">0 Dokumen</span>
+            </h4>
+            <div id="buktiItemsContainer" class="space-y-2 max-h-56 overflow-y-auto pr-1">
+                <!-- Injected via JavaScript -->
+            </div>
+            <div id="buktiEmptyState" class="p-4 rounded-xl border border-dashed border-gray-300 text-center text-xs text-gray-500 bg-gray-50/70 hidden">
+                Belum ada bukti kegiatan pembelajaran yang ditautkan untuk mata kuliah ini di kelas ini.
+            </div>
+        </div>
+
+        <!-- Form Tambah Bukti Baru -->
+        <div class="border-t border-gray-100 pt-4 space-y-3">
+            <h4 class="text-xs font-bold text-gray-900 uppercase tracking-wider">
+                + Tambah Tautan Bukti Baru
+            </h4>
+
+            <form id="storeBuktiForm" action="" method="POST" class="space-y-3">
+                @csrf
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                        <label for="buktiJenisDokumenSelect" class="block text-xs font-bold text-gray-900 mb-1">
+                            Jenis Dokumen <span class="text-red-500">*</span>
+                        </label>
+                        <select 
+                            name="jenis_dokumen" 
+                            id="buktiJenisDokumenSelect" 
+                            required 
+                            class="w-full px-3.5 py-2.5 rounded-xl bg-white-form border border-gray-200 text-xs font-semibold text-gray-900 focus:ring-2 focus:ring-primary/20 focus:border-primary focus:outline-none cursor-pointer"
+                        >
+                            <option value="RPS">RPS (Rencana Pembelajaran Semester)</option>
+                            <option value="Kontrak Kuliah">Kontrak Kuliah</option>
+                            <option value="Presensi">Presensi / Daftar Hadir</option>
+                            <option value="Soal Ujian">Soal Ujian (UTS / UAS / Kuis)</option>
+                            <option value="Portofolio Tugas">Portofolio Tugas & Rubrik</option>
+                            <option value="Lainnya">Lainnya / Dokumentasi</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label for="buktiJudulInput" class="block text-xs font-bold text-gray-900 mb-1">
+                            Judul / Keterangan Dokumen <span class="text-red-500">*</span>
+                        </label>
+                        <input 
+                            type="text" 
+                            name="judul" 
+                            id="buktiJudulInput" 
+                            placeholder="Contoh: Kontrak Kuliah Gasal 2026" 
+                            required 
+                            maxlength="255"
+                            class="w-full px-3.5 py-2.5 rounded-xl bg-white-form border border-gray-200 text-xs font-medium text-gray-900 focus:ring-2 focus:ring-primary/20 focus:border-primary focus:outline-none"
+                        >
+                    </div>
+                </div>
+
+                <div>
+                    <label for="buktiUrlInput" class="block text-xs font-bold text-gray-900 mb-1">
+                        Tautan / URL Dokumen <span class="text-red-500">*</span>
+                    </label>
+                    <input 
+                        type="url" 
+                        name="url" 
+                        id="buktiUrlInput" 
+                        placeholder="https://drive.google.com/... atau tautan penyimpanan cloud" 
+                        required 
+                        maxlength="2048"
+                        class="w-full px-3.5 py-2.5 rounded-xl bg-white-form border border-gray-200 text-xs font-medium text-gray-900 focus:ring-2 focus:ring-primary/20 focus:border-primary focus:outline-none font-mono"
+                    >
+                    <p class="text-[11px] text-gray-500 mt-1">
+                        Pastikan link dapat diakses oleh auditor LAM INFOKOM (set permission publik atau shared drive).
+                    </p>
+                </div>
+
+                <div class="flex items-center justify-end gap-3 pt-2">
+                    <button 
+                        type="button" 
+                        class="close-bukti-modal px-4 py-2.5 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-bold transition cursor-pointer"
+                    >
+                        Tutup
+                    </button>
+                    <button 
+                        type="submit" 
+                        class="px-5 py-2.5 rounded-xl bg-primary hover:bg-additional text-white text-xs font-bold shadow-sm transition cursor-pointer inline-flex items-center gap-1.5"
+                    >
+                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/></svg>
+                        <span>Simpan Bukti Pembelajaran</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 <script>
     document.addEventListener('DOMContentLoaded', function () {
         // Modal Helper Functions
@@ -547,6 +690,137 @@
 
         const createModal = document.getElementById('createMataKuliahKelasModal');
         const editModal = document.getElementById('editDosenKelasModal');
+        const buktiModal = document.getElementById('buktiPembelajaranModal');
+
+        // Bukti Pembelajaran Modal Handlers
+        const storeBuktiForm = document.getElementById('storeBuktiForm');
+        const buktiModalMkNama = document.getElementById('buktiModalMkNama');
+        const buktiModalMkKode = document.getElementById('buktiModalMkKode');
+        const buktiItemsContainer = document.getElementById('buktiItemsContainer');
+        const buktiEmptyState = document.getElementById('buktiEmptyState');
+        const buktiCountBadge = document.getElementById('buktiCountBadge');
+
+        function getBadgeClassByJenis(jenis) {
+            switch ((jenis || '').toLowerCase()) {
+                case 'rps':
+                    return 'bg-blue-50 text-blue-700 border-blue-200';
+                case 'kontrak kuliah':
+                    return 'bg-purple-50 text-purple-700 border-purple-200';
+                case 'presensi':
+                    return 'bg-emerald-50 text-emerald-700 border-emerald-200';
+                case 'soal ujian':
+                    return 'bg-amber-50 text-amber-700 border-amber-200';
+                case 'portofolio tugas':
+                    return 'bg-cyan-50 text-cyan-700 border-cyan-200';
+                default:
+                    return 'bg-gray-100 text-gray-700 border-gray-200';
+            }
+        }
+
+        document.querySelectorAll('.open-bukti-pembelajaran-btn').forEach(btn => {
+            btn.addEventListener('click', function () {
+                const action = this.dataset.action;
+                const destroyBaseUrl = this.dataset.destroyBaseUrl;
+                const mkNama = this.dataset.mkNama;
+                const mkKode = this.dataset.mkKode;
+                const items = JSON.parse(this.dataset.items || '[]');
+
+                if (storeBuktiForm && action) {
+                    storeBuktiForm.action = action;
+                }
+                const submitBuktiButton = storeBuktiForm?.querySelector('button[type="submit"]');
+                if (submitBuktiButton) {
+                    submitBuktiButton.disabled = !action;
+                    submitBuktiButton.classList.toggle('opacity-50', !action);
+                }
+                if (buktiModalMkNama) buktiModalMkNama.textContent = mkNama || 'Mata Kuliah';
+                if (buktiModalMkKode) buktiModalMkKode.textContent = mkKode ? `(${mkKode})` : '';
+
+                if (buktiCountBadge) {
+                    buktiCountBadge.textContent = `${items.length} Dokumen`;
+                }
+
+                if (buktiItemsContainer) {
+                    buktiItemsContainer.innerHTML = '';
+                    if (items.length === 0) {
+                        buktiEmptyState?.classList.remove('hidden');
+                    } else {
+                        buktiEmptyState?.classList.add('hidden');
+                        items.forEach((item, index) => {
+                            const badgeClass = getBadgeClassByJenis(item.jenis_dokumen);
+                            const itemEl = document.createElement('div');
+                            itemEl.className = 'flex items-center justify-between p-3 rounded-xl border border-gray-100 bg-gray-50/80 hover:bg-gray-100/60 transition gap-3';
+                            const content = document.createElement('div');
+                            content.className = 'flex min-w-0 items-center gap-2.5';
+                            const badge = document.createElement('span');
+                            badge.className = `inline-flex shrink-0 items-center rounded-full border px-2 py-0.5 text-[10px] font-extrabold ${badgeClass}`;
+                            badge.textContent = item.jenis_dokumen || 'Dokumen';
+                            const detail = document.createElement('div');
+                            detail.className = 'min-w-0';
+                            const title = document.createElement('p');
+                            title.className = 'truncate text-xs font-bold text-gray-900';
+                            title.textContent = item.judul || 'Bukti Pembelajaran';
+                            const link = document.createElement('a');
+                            link.className = 'block truncate font-mono text-[11px] text-primary underline hover:text-additional';
+                            link.target = '_blank';
+                            link.rel = 'noopener noreferrer';
+                            link.textContent = item.url || 'Tautan tidak tersedia';
+                            try {
+                                const parsedUrl = new URL(item.url);
+                                if (['http:', 'https:'].includes(parsedUrl.protocol)) {
+                                    link.href = parsedUrl.href;
+                                } else {
+                                    link.removeAttribute('target');
+                                    link.removeAttribute('rel');
+                                }
+                            } catch {
+                                link.removeAttribute('target');
+                                link.removeAttribute('rel');
+                            }
+                            detail.append(title, link);
+                            content.append(badge, detail);
+                            itemEl.append(content);
+
+                            if (destroyBaseUrl) {
+                                const form = document.createElement('form');
+                                form.action = `${destroyBaseUrl}/${encodeURIComponent(item.id ?? index)}`;
+                                form.method = 'POST';
+                                form.addEventListener('submit', event => {
+                                    if (!confirm('Apakah Anda yakin ingin menghapus dokumen ini?')) {
+                                        event.preventDefault();
+                                    }
+                                });
+                                const token = document.createElement('input');
+                                token.type = 'hidden';
+                                token.name = '_token';
+                                token.value = document.querySelector('meta[name="csrf-token"]')?.content || '';
+                                const method = document.createElement('input');
+                                method.type = 'hidden';
+                                method.name = '_method';
+                                method.value = 'DELETE';
+                                const deleteButton = document.createElement('button');
+                                deleteButton.type = 'submit';
+                                deleteButton.className = 'rounded-lg p-1 text-rose-600 transition hover:bg-rose-50 hover:text-rose-800';
+                                deleteButton.title = 'Hapus Bukti';
+                                deleteButton.textContent = 'Hapus';
+                                form.append(token, method, deleteButton);
+                                itemEl.append(form);
+                            }
+
+                            buktiItemsContainer.appendChild(itemEl);
+                        });
+                    }
+                }
+
+                showModal(buktiModal);
+            });
+        });
+
+        document.querySelectorAll('.close-bukti-modal').forEach(btn => {
+            btn.addEventListener('click', function () {
+                hideModal(buktiModal);
+            });
+        });
 
         // Open Create Modal
         document.querySelectorAll('.open-create-mk-kelas-btn').forEach(btn => {
@@ -604,7 +878,7 @@
         });
 
         // Click Backdrop to Close
-        [createModal, editModal].forEach(modal => {
+        [createModal, editModal, buktiModal].forEach(modal => {
             if (modal) {
                 modal.addEventListener('click', function (e) {
                     if (e.target === modal) {
@@ -619,6 +893,7 @@
             if (e.key === 'Escape') {
                 hideModal(createModal);
                 hideModal(editModal);
+                hideModal(buktiModal);
             }
         });
 

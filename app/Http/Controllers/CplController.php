@@ -3,9 +3,11 @@
 namespace App\Http\Controllers;
 
 use App\Services\AkademikService;
+use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Illuminate\View\View;
 
 class CplController extends Controller
@@ -294,6 +296,153 @@ class CplController extends Controller
             'title' => 'Gagal Menghapus',
             'message' => $errorMessage,
         ]);
+    }
+
+    /**
+     * Display the Evaluasi Ketercapaian CPL interface.
+     */
+    public function evaluasi(Request $request): View|RedirectResponse
+    {
+        $kurikulumResponse = $this->akademikService->getKurikulumList();
+        $kurikulumList = $kurikulumResponse->json('data') ?? [];
+        if (isset($kurikulumList['data']) && is_array($kurikulumList['data'])) {
+            $kurikulumList = $kurikulumList['data'];
+        }
+        $kurikulumList = is_array($kurikulumList) ? array_values(array_filter($kurikulumList, 'is_array')) : [];
+
+        $defaultKurikulumId = $kurikulumList[0]['id'] ?? '';
+        $selectedKurikulum = (string) $request->query('id_kurikulum', $defaultKurikulumId);
+
+        $angkatanResponse = $this->akademikService->getAngkatanList();
+        $angkatanList = $angkatanResponse->json('data') ?? [];
+        if (isset($angkatanList['data']) && is_array($angkatanList['data'])) {
+            $angkatanList = $angkatanList['data'];
+        }
+        $angkatanList = is_array($angkatanList) ? array_values(array_filter($angkatanList, 'is_array')) : [];
+        $defaultAngkatan = $angkatanList[0]['angkatan'] ?? ($angkatanList[0]['tahun'] ?? '');
+        $selectedAngkatan = (string) $request->query('angkatan', $defaultAngkatan);
+
+        $search = trim((string) $request->query('search', ''));
+        $kategoriFilter = trim((string) $request->query('kategori', ''));
+        $apiError = null;
+        $items = [];
+
+        if ($selectedKurikulum === '' || $selectedAngkatan === '') {
+            $apiError = 'Pilih kurikulum dan angkatan yang tersedia untuk memuat hasil evaluasi.';
+        } else {
+            try {
+                $response = $this->akademikService->getAssessmentCpl([
+                    'id_kurikulum' => $selectedKurikulum,
+                    'angkatan' => $selectedAngkatan,
+                ]);
+
+                if ($response->status() === 401) {
+                    return redirect()->route('login')->with('toast', [
+                        'type' => 'warning',
+                        'title' => 'Sesi Berakhir',
+                        'message' => 'Sesi Anda telah kedaluwarsa. Silakan login kembali.',
+                    ]);
+                }
+
+                if (! $response->successful()) {
+                    $apiError = (string) ($response->json('message') ?? 'Hasil evaluasi CPL tidak dapat dimuat dari API.');
+                } else {
+                    $data = $response->json('data') ?? [];
+                    $rawItems = $data['items'] ?? $data['cpl'] ?? $data['results'] ?? $data;
+
+                    if (is_array($rawItems)) {
+                        foreach ($rawItems as $item) {
+                            if (! is_array($item)) {
+                                continue;
+                            }
+
+                            $score = $item['skor_aktual']
+                                ?? $item['persentase_ketercapaian']
+                                ?? $item['persentase']
+                                ?? $item['skor']
+                                ?? null;
+                            $target = $item['target'] ?? $item['ambang_batas'] ?? 70;
+                            $scoreValue = $this->numericAssessmentValue($score);
+                            $targetValue = $this->numericAssessmentValue($target) ?? 70.0;
+                            $status = trim((string) ($item['status'] ?? ''));
+
+                            if (strcasecmp($status, 'tercapai') === 0) {
+                                $status = 'Tercapai';
+                            } elseif (strcasecmp($status, 'belum tercapai') === 0) {
+                                $status = 'Belum Tercapai';
+                            } elseif ($scoreValue !== null) {
+                                $status = $scoreValue >= $targetValue ? 'Tercapai' : 'Belum Tercapai';
+                            } else {
+                                $status = 'Data tidak tersedia';
+                            }
+
+                            $items[] = [
+                                'id' => $item['id'] ?? null,
+                                'kode_cpl' => $item['kode_cpl'] ?? $item['kode'] ?? '-',
+                                'kategori' => $item['kategori'] ?? '-',
+                                'deskripsi_cpl' => $item['deskripsi_cpl'] ?? $item['deskripsi'] ?? '-',
+                                'skor_aktual' => $scoreValue,
+                                'target' => $targetValue,
+                                'status' => $status,
+                                'mata_kuliah_pendukung' => $item['mata_kuliah_pendukung'] ?? $item['mata_kuliah'] ?? [],
+                                'rekomendasi' => $item['rekomendasi'] ?? null,
+                            ];
+                        }
+                    }
+                }
+            } catch (ConnectionException $exception) {
+                Log::warning('Tidak dapat terhubung ke API evaluasi CPL.', [
+                    'message' => $exception->getMessage(),
+                ]);
+                $apiError = 'Server evaluasi CPL sedang tidak dapat dihubungi. Silakan coba kembali.';
+            }
+        }
+
+        $filteredItems = array_values(array_filter($items, function ($item) use ($search, $kategoriFilter) {
+            if ($kategoriFilter !== '' && strtolower((string) $item['kategori']) !== strtolower($kategoriFilter)) {
+                return false;
+            }
+
+            if ($search !== '') {
+                $matchCode = str_contains(strtolower((string) $item['kode_cpl']), strtolower($search));
+                $matchDesc = str_contains(strtolower((string) $item['deskripsi_cpl']), strtolower($search));
+
+                return $matchCode || $matchDesc;
+            }
+
+            return true;
+        }));
+
+        $scores = array_values(array_filter(array_column($items, 'skor_aktual'), 'is_numeric'));
+        $achievedCount = count(array_filter($items, fn ($item) => $item['status'] === 'Tercapai'));
+        $stats = [
+            'total_cpl' => count($items),
+            'tercapai_count' => $achievedCount,
+            'belum_tercapai_count' => count(array_filter($items, fn ($item) => $item['status'] === 'Belum Tercapai')),
+            'rata_rata_skor' => count($scores) > 0 ? round(array_sum($scores) / count($scores), 1) : null,
+            'persentase_tercapai' => count($items) > 0 ? round(($achievedCount / count($items)) * 100, 1) : null,
+        ];
+
+        return view('cpl.evaluasi', [
+            'evaluasiList' => $filteredItems,
+            'kurikulumList' => $kurikulumList,
+            'angkatanList' => $angkatanList,
+            'selectedKurikulum' => $selectedKurikulum,
+            'selectedAngkatan' => $selectedAngkatan,
+            'search' => $search,
+            'selectedKategori' => $kategoriFilter,
+            'stats' => $stats,
+            'apiError' => $apiError,
+        ]);
+    }
+
+    private function numericAssessmentValue(mixed $value): ?float
+    {
+        if (! is_numeric($value) && is_string($value)) {
+            $value = str_replace(',', '.', trim($value));
+        }
+
+        return is_numeric($value) ? (float) $value : null;
     }
 
     protected function extractErrorMessage($response, string $fallback): string

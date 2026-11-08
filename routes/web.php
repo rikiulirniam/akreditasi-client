@@ -16,6 +16,7 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CplController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DosenController;
+use App\Http\Controllers\GapAnalysisController;
 use App\Http\Controllers\KaprodiController;
 use App\Http\Controllers\KegiatanMahasiswaController;
 use App\Http\Controllers\KelasController;
@@ -103,6 +104,8 @@ Route::middleware('auth.akademik')->group(function () {
     Route::middleware('permission:kelas.update,enrollment_mata_kuliah.create')->post('/kelas/{id}/mata-kuliah', [KelasController::class, 'storeMataKuliah'])->name('kelas.mata-kuliah.store');
     Route::middleware('permission:kelas.update,enrollment_mata_kuliah.update')->put('/kelas/{id}/mata-kuliah/{enrollmentId}', [KelasController::class, 'updateMataKuliah'])->name('kelas.mata-kuliah.update');
     Route::middleware('permission:kelas.update,mata_kuliah_angkatan_kelas.delete')->delete('/kelas/{id}/mata-kuliah/{mkAkId}', [KelasController::class, 'destroyMataKuliah'])->name('kelas.mata-kuliah.destroy');
+    Route::middleware('permission:kelas.update,enrollment_mata_kuliah.update')->post('/kelas/{id}/mata-kuliah/{enrollmentId}/bukti', [KelasController::class, 'storeBuktiPembelajaran'])->name('kelas.mata-kuliah.bukti.store');
+    Route::middleware('permission:kelas.update,enrollment_mata_kuliah.update')->delete('/kelas/{id}/mata-kuliah/{enrollmentId}/bukti/{buktiId}', [KelasController::class, 'destroyBuktiPembelajaran'])->name('kelas.mata-kuliah.bukti.destroy');
     Route::middleware('permission:mahasiswa')->resource('mahasiswa', MahasiswaController::class);
     Route::middleware('permission:prestasi_mahasiswa')->resource('prestasi-mahasiswa', PrestasiMahasiswaController::class)->only(['index', 'show', 'store', 'update', 'destroy']);
     Route::middleware('permission:evidence_prestasi_mahasiswa.create')->post('/prestasi-mahasiswa/{prestasiId}/evidence', [PrestasiMahasiswaController::class, 'storeEvidence'])->name('prestasi-mahasiswa.evidence.store');
@@ -125,6 +128,10 @@ Route::middleware('auth.akademik')->group(function () {
     // MODUL AKADEMIK, KURIKULUM, & MATA KULIAH
     // ==========================================
     Route::middleware('permission:mata_kuliah')->resource('mata-kuliah', MataKuliahController::class);
+    Route::middleware('permission:mata_kuliah.update')->post('/mata-kuliah/{id}/rps', [MataKuliahController::class, 'storeRps'])->name('mata-kuliah.rps.store');
+    Route::middleware('permission:mata_kuliah.update')->delete('/mata-kuliah/{mataKuliahId}/rps/{rpsId}', [MataKuliahController::class, 'destroyRps'])->name('mata-kuliah.rps.destroy');
+    Route::middleware('permission:mata_kuliah.update,enrollment_mata_kuliah.update')->post('/mata-kuliah/{mataKuliahId}/enrollment/{enrollmentId}/bukti', [MataKuliahController::class, 'storeBuktiPembelajaran'])->name('mata-kuliah.bukti.store');
+    Route::middleware('permission:mata_kuliah.update,enrollment_mata_kuliah.update')->delete('/mata-kuliah/{mataKuliahId}/enrollment/{enrollmentId}/bukti/{buktiId}', [MataKuliahController::class, 'destroyBuktiPembelajaran'])->name('mata-kuliah.bukti.destroy');
     Route::middleware('permission:mata_kuliah.update,enrollment_mata_kuliah.update')->put('/mata-kuliah-enrollment/{enrollmentId}/evidence', [MataKuliahController::class, 'updateEvidence'])->name('mata-kuliah.update-evidence');
     Route::middleware('permission:mata_kuliah.update,enrollment_mata_kuliah.update')->patch('/mata-kuliah/{mataKuliahId}/kelas/{angkatanKelasId}/link-nilai', [MataKuliahController::class, 'updateNilaiLink'])->name('mata-kuliah.update-grade-link');
     Route::middleware('permission:mata_kuliah.update,enrollment_mata_kuliah.update')->patch('/mata-kuliah/{mataKuliahId}/kelas/{angkatanKelasId}/link-evidence', [MataKuliahController::class, 'updateEvidenceLink'])->name('mata-kuliah.update-grade-evidence');
@@ -135,6 +142,7 @@ Route::middleware('auth.akademik')->group(function () {
 
     Route::middleware('permission:kurikulum')->resource('kurikulum', KurikulumController::class);
     Route::middleware('permission:kurikulum.update')->put('kurikulum/{kurikulum}/cpl-mata-kuliah', [KurikulumController::class, 'updateMataKuliahCpl'])->name('kurikulum.update-mk-cpl');
+    Route::middleware('permission:cpl.read')->get('/cpl/evaluasi', [CplController::class, 'evaluasi'])->name('cpl.evaluasi');
     Route::middleware('permission:cpl')->resource('cpl', CplController::class);
 
     // ==========================================
@@ -203,6 +211,7 @@ Route::middleware('auth.akademik')->group(function () {
 
     Route::get('/laporan-akhir', [LaporanAkhirController::class, 'index'])->name('laporan-akhir.index');
     Route::get('/laporan-akhir/download', [LaporanAkhirController::class, 'download'])->name('laporan-akhir.download');
+    Route::get('/gap-analysis-pendidikan', [GapAnalysisController::class, 'index'])->name('gap-analysis.index');
 });
 
 // =====================================================================

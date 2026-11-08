@@ -286,13 +286,15 @@ class MataKuliahTest extends TestCase
         $response->assertSee('Input Nilai Mata Kuliah');
         $response->assertSee('Input Link Nilai');
         $response->assertSee('Input Evidence');
-        $response->assertSee('Input Link Evidence');
+        $response->assertSee('Tautan / URL Dokumen');
         $response->assertSee('id="classDetailLinkNilaiEmpty">-</span>', false);
-        $response->assertSee('id="classDetailLinkEvidenceEmpty">-</span>', false);
         $response->assertDontSee('gradeStudentSelect');
         $response->assertDontSee('evidenceStudentSelect');
         $response->assertSee('data-link-nilai="https://example.com/nilai/21"', false);
         $response->assertSee('data-link-evidence="https://example.com/evidence/21"', false);
+        $response->assertSee('data-evidence-count="0"', false);
+        $response->assertSee('data-bukti-store-url="'.route('mata-kuliah.bukti.store', [1, 12]).'"', false);
+        $response->assertSee('data-bukti-destroy-base="'.url('/mata-kuliah/1/enrollment/12/bukti').'"', false);
         $response->assertDontSee('data-link-nilai="https://example.com/other-course"', false);
         $response->assertDontSee('data-link-evidence="https://example.com/other-evidence"', false);
     }
@@ -377,6 +379,45 @@ class MataKuliahTest extends TestCase
                     'mata_kuliah_angkatan_kelas_id' => 93,
                 ]);
         }
+    }
+
+    public function test_user_can_add_a_learning_evidence_link_to_a_mata_kuliah_enrollment(): void
+    {
+        Http::fake([
+            '*/api/enrollment-mata-kuliah/12' => Http::sequence()
+                ->push([
+                    'success' => true,
+                    'data' => [
+                        'id' => 12,
+                        'tahun_akademik_id' => 4,
+                        'mata_kuliah_id' => 1,
+                        'dosen_id' => 6,
+                        'mata_kuliah_angkatan_kelas_id' => 93,
+                        'evidence' => [],
+                    ],
+                ], 200)
+                ->push(['success' => true], 200),
+        ]);
+
+        $response = $this->from(route('mata-kuliah.show', 1))
+            ->withSession(['access_token' => $this->getFakeToken()])
+            ->post(route('mata-kuliah.bukti.store', [1, 12]), [
+                'jenis_dokumen' => 'RPS',
+                'judul' => 'RPS Semester Ganjil',
+                'url' => 'https://example.com/rps',
+            ]);
+
+        $response->assertRedirect(route('mata-kuliah.show', 1));
+        $response->assertSessionHas('toast');
+        $this->assertSame('success', session('toast.type'));
+
+        Http::assertSent(fn (HttpRequest $request) => $request->method() === 'PUT'
+            && str_ends_with($request->url(), '/api/enrollment-mata-kuliah/12')
+            && ($request->data()['evidence'] ?? null) === [[
+                'jenis_dokumen' => 'RPS',
+                'judul' => 'RPS Semester Ganjil',
+                'url' => 'https://example.com/rps',
+            ]]);
     }
 
     public function test_user_can_save_a_mata_kuliah_evidence_link_to_akademik_service(): void
