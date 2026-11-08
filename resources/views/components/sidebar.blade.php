@@ -4,6 +4,9 @@
     $sidebarUser = session('user', []);
     $userRole = strtolower((string) (($sidebarUser['role'] ?? null) ?: ($sidebarUser['role_name'] ?? '')));
     $isReviewerRole = str_contains($userRole, 'reviewer');
+    $isKaprodiRole  = str_contains($userRole, 'kaprodi');
+    // Sembunyikan menu admin akreditasi hanya dari Kaprodi
+    $canSeeAdminAkreditasiMenu = ! $isKaprodiRole && ! $isReviewerRole;
 @endphp
 
 {{-- Backdrop untuk sidebar mobile --}}
@@ -454,7 +457,8 @@
                         </a>
                     </div>
 
-                    {{-- Data Master Akreditasi --}}
+                    {{-- Data Master Akreditasi (hanya Admin/Superadmin, disembunyikan dari Kaprodi) --}}
+                    @if ($canSeeAdminAkreditasiMenu)
                     @php
                         $isMasterActive = request()->routeIs('akreditasi.superadmin.lembaga_akreditasi', 'akreditasi.superadmin.instrumen', 'akreditasi.superadmin.kriteria', 'akreditasi.superadmin.subkriteria', 'akreditasi.superadmin.indikator', 'akreditasi.superadmin.rubrik', 'akreditasi.superadmin.standar_spmi');
                     @endphp
@@ -494,9 +498,10 @@
                             @endif
                         </div>
                     </div>
+                    @endif {{-- $canSeeAdminAkreditasiMenu --}}
 
-                    {{-- Lembar Kerja Prodi --}}
-                    @if (Route::has('akreditasi.superadmin.lembar_kerja'))
+                    {{-- Lembar Kerja Prodi (disembunyikan dari Kaprodi) --}}
+                    @if ($canSeeAdminAkreditasiMenu && Route::has('akreditasi.superadmin.lembar_kerja'))
                     <div>
                         <a href="{{ route('akreditasi.superadmin.lembar_kerja') }}"
                             class="sidebar-link w-full flex items-center gap-3.5 px-3.5 py-3 rounded-2xl text-sm font-semibold transition-all duration-150 group {{ request()->routeIs('akreditasi.superadmin.lembar_kerja') ? 'bg-white/20 text-white shadow-xs font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}"
@@ -509,8 +514,8 @@
                     </div>
                     @endif
 
-                    {{-- Manajemen Bukti Dokumen --}}
-                    @if (Route::has('akreditasi.superadmin.bukti_dokumen'))
+                    {{-- Manajemen Bukti Dokumen (disembunyikan dari Kaprodi) --}}
+                    @if ($canSeeAdminAkreditasiMenu && Route::has('akreditasi.superadmin.bukti_dokumen'))
                     <div>
                         <a href="{{ route('akreditasi.superadmin.bukti_dokumen') }}"
                             class="sidebar-link w-full flex items-center gap-3.5 px-3.5 py-3 rounded-2xl text-sm font-semibold transition-all duration-150 group {{ request()->routeIs('akreditasi.superadmin.bukti_dokumen') ? 'bg-white/20 text-white shadow-xs font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}"
