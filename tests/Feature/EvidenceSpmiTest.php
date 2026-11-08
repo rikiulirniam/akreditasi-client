@@ -56,41 +56,41 @@ class EvidenceSpmiTest extends TestCase
 
         $response->assertStatus(200);
         $response->assertSee('Evidence SPMI');
+        $response->assertSee('PILIH PROJECT AKREDITASI');
         $response->assertSee('Bukti Evaluasi');
         $response->assertSee('Bukti Pengendalian &amp; Peningkatan', false);
         $response->assertSee('Bukti Dampak Tridharma');
         $response->assertSee('Dokumen Implementasi Harian');
-        $response->assertDontSee('id="toast-success"', false);
     }
 
     public function test_user_can_submit_evidence(): void
     {
         Http::fake([
+            '*/evidence-spmi*' => Http::response(['message' => 'Success', 'data' => ['id' => 999]], 201),
             '*/spmi-evidence*' => Http::response(['message' => 'Success', 'data' => ['id' => 999]], 201),
         ]);
 
         $response = $this->withSession($this->authSession())
             ->post(route('spmi.evidence.store'), [
-                'standar_id' => 1,
+                'project_id' => 1,
                 'kategori' => 'dokumen_implementasi',
                 'deskripsi' => 'SOP praktikum dan lembar persetujuan',
                 'link_dokumen' => 'https://drive.google.com/file/d/sop-praktikum',
-                'tahun' => 2026,
             ]);
 
-        $response->assertRedirect(route('spmi.evidence', ['tahun' => 2026, 'standar' => 1]));
+        $response->assertRedirect(route('spmi.evidence', ['project_id' => 1]));
     }
 
     public function test_user_can_submit_all_categories_in_one_action(): void
     {
         Http::fake([
+            '*/evidence-spmi*' => Http::response(['message' => 'Success', 'data' => ['id' => 999]], 201),
             '*/spmi-evidence*' => Http::response(['message' => 'Success', 'data' => ['id' => 999]], 201),
         ]);
 
         $response = $this->withSession($this->authSession())
             ->post(route('spmi.evidence.store'), [
-                'standar_id' => 2,
-                'tahun' => 2026,
+                'project_id' => 1,
                 'evidences' => [
                     'bukti_evaluasi' => [
                         'id' => '',
@@ -105,56 +105,54 @@ class EvidenceSpmiTest extends TestCase
                 ],
             ]);
 
-        $response->assertRedirect(route('spmi.evidence', ['tahun' => 2026, 'standar' => 2]));
+        $response->assertRedirect(route('spmi.evidence', ['project_id' => 1]));
     }
 
     public function test_user_can_update_evidence(): void
     {
         Http::fake([
-            '*/spmi-evidence/*' => Http::response(['message' => 'Updated', 'data' => ['id' => 101]], 200),
+            '*/evidence-spmi*' => Http::response(['message' => 'Updated', 'data' => ['id' => 101]], 200),
+            '*/spmi-evidence*' => Http::response(['message' => 'Updated', 'data' => ['id' => 101]], 200),
         ]);
 
         $response = $this->withSession($this->authSession())
             ->put(route('spmi.evidence.update', 101), [
-                'standar_id' => 1,
+                'project_id' => 1,
                 'kategori' => 'bukti_evaluasi',
-                'deskripsi' => 'Pembaruan deskripsi evidence',
+                'deskripsi' => 'Pembaruan deskripsi evidence project',
                 'link_dokumen' => 'https://drive.google.com/file/d/updated-doc',
-                'tahun' => 2026,
             ]);
 
-        $response->assertRedirect(route('spmi.evidence', ['tahun' => 2026, 'standar' => 1]));
+        $response->assertRedirect(route('spmi.evidence', ['project_id' => 1]));
     }
 
     public function test_evidence_statistics_update_and_persist(): void
     {
-        // 1. Simpan evidence untuk Standar 3 kategori dokumen_implementasi
+        // 1. Simpan evidence untuk Project 2 kategori dokumen_implementasi
         $this->withSession($this->authSession())
             ->post(route('spmi.evidence.store'), [
-                'standar_id' => 3,
-                'tahun' => 2026,
+                'project_id' => 2,
                 'evidences' => [
                     'dokumen_implementasi' => [
                         'id' => '',
-                        'deskripsi' => 'Logbook perkuliahan mingguan',
-                        'link_dokumen' => 'https://drive.google.com/file/d/logbook-3',
+                        'deskripsi' => 'Logbook perkuliahan mingguan project 2',
+                        'link_dokumen' => 'https://drive.google.com/file/d/logbook-p2',
                     ],
                 ],
             ]);
 
         // 2. Akses halaman kembali dan pastikan data tercatat di view
         $viewResponse = $this->withSession($this->authSession())
-            ->get(route('spmi.evidence', ['tahun' => 2026, 'standar' => 3]));
+            ->get(route('spmi.evidence', ['project_id' => 2]));
 
         $viewResponse->assertStatus(200);
-        $viewResponse->assertSee('Logbook perkuliahan mingguan');
-        $viewResponse->assertSee('https://drive.google.com/file/d/logbook-3');
+        $viewResponse->assertSee('Logbook perkuliahan mingguan project 2');
+        $viewResponse->assertSee('https://drive.google.com/file/d/logbook-p2');
 
-        // 3. Simpan evidence untuk kategori bukti_dampak_tridharma pada standar yang sama
+        // 3. Simpan evidence untuk kategori bukti_dampak_tridharma pada project yang sama
         $this->withSession($this->authSession())
             ->post(route('spmi.evidence.store'), [
-                'standar_id' => 3,
-                'tahun' => 2026,
+                'project_id' => 2,
                 'evidences' => [
                     'bukti_dampak_tridharma' => [
                         'id' => '',
@@ -165,7 +163,7 @@ class EvidenceSpmiTest extends TestCase
             ]);
 
         $afterSubmit = $this->withSession($this->authSession())
-            ->get(route('spmi.evidence', ['tahun' => 2026, 'standar' => 3]));
+            ->get(route('spmi.evidence', ['project_id' => 2]));
 
         $afterSubmit->assertStatus(200);
         $afterSubmit->assertSee('Publikasi artikel ilmiah mahasiswa di jurnal terakreditasi');

@@ -723,13 +723,18 @@ class AkreditasiService
     */
 
     /**
-     * Mengambil daftar evidence SPMI.
+     * Mengambil daftar evidence SPMI (mendukung query project_id).
      *
      * @param  array<string, mixed>  $query
      */
     public function getEvidenceSpmi(array $query = []): Response
     {
-        return $this->get('/spmi-evidence', $query);
+        $res = $this->get('/evidence-spmi', $query);
+        if ($res->status() === 404) {
+            return $this->get('/spmi-evidence', $query);
+        }
+
+        return $res;
     }
 
     /**
@@ -737,7 +742,27 @@ class AkreditasiService
      */
     public function getEvidenceSpmiDetail(int|string $id): Response
     {
-        return $this->get("/spmi-evidence/{$id}");
+        $res = $this->get("/evidence-spmi/{$id}");
+        if ($res->status() === 404) {
+            return $this->get("/spmi-evidence/{$id}");
+        }
+
+        return $res;
+    }
+
+    /**
+     * Menyimpan atau memperbarui data evidence SPMI project.
+     *
+     * @param  array<string, mixed>  $data
+     */
+    public function saveEvidenceSpmi(array $data): Response
+    {
+        $res = $this->post('/evidence-spmi', $data);
+        if ($res->status() === 404) {
+            return $this->post('/spmi-evidence', $data);
+        }
+
+        return $res;
     }
 
     /**
@@ -747,7 +772,7 @@ class AkreditasiService
      */
     public function createEvidenceSpmi(array $data): Response
     {
-        return $this->post('/spmi-evidence', $data);
+        return $this->saveEvidenceSpmi($data);
     }
 
     /**
@@ -757,7 +782,12 @@ class AkreditasiService
      */
     public function updateEvidenceSpmi(int|string $id, array $data): Response
     {
-        return $this->put("/spmi-evidence/{$id}", $data);
+        $res = $this->put("/evidence-spmi/{$id}", $data);
+        if ($res->status() === 404) {
+            return $this->put("/spmi-evidence/{$id}", $data);
+        }
+
+        return $res;
     }
 
     /**
@@ -765,7 +795,12 @@ class AkreditasiService
      */
     public function deleteEvidenceSpmi(int|string $id): Response
     {
-        return $this->delete("/spmi-evidence/{$id}");
+        $res = $this->delete("/evidence-spmi/{$id}");
+        if ($res->status() === 404) {
+            return $this->delete("/spmi-evidence/{$id}");
+        }
+
+        return $res;
     }
 
     /*
