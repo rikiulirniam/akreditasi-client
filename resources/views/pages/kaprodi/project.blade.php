@@ -169,16 +169,6 @@
                     <!-- Action -->
                     <x-table.cell class="text-right">
                         <div class="flex items-center justify-end gap-3">
-                            @if(Route::has('kaprodi.plotting'))
-                            <a 
-                                href="{{ route('kaprodi.plotting', ['project_id' => $id]) }}" 
-                                class="text-gray-500 hover:text-primary text-xs font-semibold transition-colors"
-                                title="Plotting Tim"
-                            >
-                                Plotting Tim
-                            </a>
-                            @endif
-
                             <a 
                                 href="{{ route('kaprodi.project.detail', $id) }}" 
                                 class="text-additional hover:text-primary text-xs font-bold transition-colors"

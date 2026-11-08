@@ -2,7 +2,6 @@
 
 namespace App\Services;
 
-use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Http;
@@ -51,8 +50,8 @@ class ReviewerService
             if ($response->successful()) {
                 return $response;
             }
-        } catch (ConnectionException) {
-            // Coba endpoint standar bila endpoint khusus tidak dapat dijangkau.
+        } catch (\Throwable $e) {
+            // Lanjut ke endpoint utama jika endpoint khusus tidak tersedia
         }
 
         return $this->akreditasiService->getProjects($query);
@@ -67,27 +66,11 @@ class ReviewerService
     }
 
     /**
-     * Mengambil daftar penugasan reviewer per project.
-     */
-    public function getTeamAssignments(array $query = []): Response
-    {
-        return $this->akreditasiService->getMappingTim($query);
-    }
-
-    /**
      * Mengambil master indikator akreditasi dari API.
      */
     public function getIndikators(array $query = []): Response
     {
         return $this->akreditasiService->getIndikators($query);
-    }
-
-    /**
-     * Alias berbahasa Inggris untuk menjaga kompatibilitas pemanggil lama.
-     */
-    public function getIndicators(array $query = []): Response
-    {
-        return $this->getIndikators($query);
     }
 
     /**
@@ -163,14 +146,6 @@ class ReviewerService
     {
         $baseUrl = rtrim((string) config('services.akreditasi.base_url'), '/');
 
-        if (str_ends_with($baseUrl, '/api/v1')) {
-            return $baseUrl;
-        }
-
-        if (str_ends_with($baseUrl, '/api')) {
-            return $baseUrl.'/v1';
-        }
-
-        return $baseUrl.'/api/v1';
+        return str_ends_with($baseUrl, '/api') ? $baseUrl : $baseUrl.'/api';
     }
 }

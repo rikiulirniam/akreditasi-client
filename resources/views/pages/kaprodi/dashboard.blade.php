@@ -14,10 +14,57 @@
         <p class="text-xs sm:text-sm text-[#5A6E85] mt-1">Monitoring progress pengisian borang prodi, rekap skor sementara, dan status audit SPMI terintegrasi API.</p>
     </div>
 
-    <!-- Grid (2 Kolom): Rekap Skor Sementara & Status Audit SPMI -->
+    <!-- Card 1: Monitoring Progres -->
+    <div class="bg-white rounded-2xl border border-[#EAEAEA] p-6 shadow-xs">
+        <div class="flex justify-between items-start mb-6">
+            <div>
+                <h2 class="text-base font-extrabold text-primary tracking-tight">Monitoring progres pengisian borang prodi</h2>
+                <p class="text-xs text-gray-500 mt-1">Indikator yang sudah diisi tim, per kriteria dari API</p>
+            </div>
+            <div class="text-right">
+                <div class="text-3xl font-extrabold text-additional">61%</div>
+                <div class="text-[11px] text-gray-400 mt-0.5">122 dari 200 indikator</div>
+            </div>
+        </div>
+
+        <x-table>
+            <x-slot:header>
+                <x-table.th class="w-1/3">Kriteria</x-table.th>
+                <x-table.th class="w-1/2">Progres</x-table.th>
+                <x-table.th class="text-center">Terisi</x-table.th>
+                <x-table.th class="text-right">Status</x-table.th>
+            </x-slot:header>
+
+            @foreach($kriteriaProgress as $row)
+                <x-table.row>
+                    <x-table.cell class="font-semibold text-gray-800 text-xs">
+                        {{ $row['kriteria'] }}
+                    </x-table.cell>
+                    <x-table.cell class="pr-4">
+                        <div class="flex items-center gap-3">
+                            <div class="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
+                                <div class="h-full {{ $row['bar_color'] }} rounded-full" style="width: {{ $row['persen'] }}%"></div>
+                            </div>
+                            <span class="text-xs font-bold text-gray-700 min-w-8">{{ $row['persen'] }}%</span>
+                        </div>
+                    </x-table.cell>
+                    <x-table.cell class="text-xs text-gray-500 text-center font-medium">
+                        {{ $row['terisi'] }}
+                    </x-table.cell>
+                    <x-table.cell class="text-right">
+                        <span class="inline-block px-2.5 py-1 {{ $row['badge'] }} text-[10px] font-bold rounded-md border">
+                            {{ $row['status'] }}
+                        </span>
+                    </x-table.cell>
+                </x-table.row>
+            @endforeach
+        </x-table>
+    </div>
+
+    <!-- Grid Bawah (2 Kolom) -->
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
         
-        <!-- Card: Rekap Skor Sementara -->
+        <!-- Card 2: Rekap Skor Sementara -->
         <div class="bg-white rounded-2xl border border-[#EAEAEA] p-6 shadow-xs flex flex-col justify-between">
             <div>
                 <div class="flex justify-between items-start mb-6">
@@ -92,7 +139,7 @@
             </div>
         </div>
 
-        <!-- Card: Status Audit SPMI -->
+        <!-- Card 3: Status Audit SPMI -->
         <div class="bg-white rounded-2xl border border-[#EAEAEA] p-6 shadow-xs">
             <h2 class="text-base font-extrabold text-primary tracking-tight">Status audit SPMI</h2>
             <p class="text-xs text-gray-500 mt-1">Siklus PPEPP, AMI, dan RTM</p>
@@ -155,53 +202,6 @@
             </div>
         </div>
 
-    </div>
-
-    <!-- Card: Monitoring Progres Pengisian Borang Prodi -->
-    <div class="bg-white rounded-2xl border border-[#EAEAEA] p-6 shadow-xs">
-        <div class="flex justify-between items-start mb-6">
-            <div>
-                <h2 class="text-base font-extrabold text-primary tracking-tight">Monitoring progres pengisian borang prodi</h2>
-                <p class="text-xs text-gray-500 mt-1">Indikator yang sudah diisi tim, per kriteria dari API</p>
-            </div>
-            <div class="text-right">
-                <div class="text-3xl font-extrabold text-additional">61%</div>
-                <div class="text-[11px] text-gray-400 mt-0.5">122 dari 200 indikator</div>
-            </div>
-        </div>
-
-        <x-table>
-            <x-slot:header>
-                <x-table.th class="w-1/3">Kriteria</x-table.th>
-                <x-table.th class="w-1/2">Progres</x-table.th>
-                <x-table.th class="text-center">Terisi</x-table.th>
-                <x-table.th class="text-right">Status</x-table.th>
-            </x-slot:header>
-
-            @foreach($kriteriaProgress as $row)
-                <x-table.row>
-                    <x-table.cell class="font-semibold text-gray-800 text-xs">
-                        {{ $row['kriteria'] }}
-                    </x-table.cell>
-                    <x-table.cell class="pr-4">
-                        <div class="flex items-center gap-3">
-                            <div class="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
-                                <div class="h-full {{ $row['bar_color'] }} rounded-full" style="width: {{ $row['persen'] }}%"></div>
-                            </div>
-                            <span class="text-xs font-bold text-gray-700 min-w-8">{{ $row['persen'] }}%</span>
-                        </div>
-                    </x-table.cell>
-                    <x-table.cell class="text-xs text-gray-500 text-center font-medium">
-                        {{ $row['terisi'] }}
-                    </x-table.cell>
-                    <x-table.cell class="text-right">
-                        <span class="inline-block px-2.5 py-1 {{ $row['badge'] }} text-[10px] font-bold rounded-md border">
-                            {{ $row['status'] }}
-                        </span>
-                    </x-table.cell>
-                </x-table.row>
-            @endforeach
-        </x-table>
     </div>
 </div>
 @endsection

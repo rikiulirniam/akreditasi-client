@@ -81,14 +81,11 @@
 
                     {{-- Dashboard --}}
                     @php
-                        $isKaprodiRole = str_contains($userRole, 'kaprodi');
                         $isKaprodiContext = request()->routeIs('kaprodi.*');
-                        $dashboardRoute = ($isKaprodiRole || ($isKaprodiContext && !in_array($userRole, ['admin', 'superadmin', 'administrator']))) && Route::has('kaprodi.dashboard')
+                        $dashboardRoute = $isKaprodiContext && Route::has('kaprodi.dashboard')
                             ? route('kaprodi.dashboard')
                             : route('dashboard');
-                        $isDashboardActive = $isKaprodiRole
-                            ? request()->routeIs('kaprodi.dashboard')
-                            : (request()->routeIs('dashboard') || ($isKaprodiContext && request()->routeIs('kaprodi.dashboard')));
+                        $isDashboardActive = request()->routeIs('dashboard') || ($isKaprodiContext && request()->routeIs('kaprodi.dashboard'));
                     @endphp
                     <div>
                         <a href="{{ $dashboardRoute }}"
@@ -404,20 +401,6 @@
                         <p class="sidebar-text text-[11px] font-bold uppercase tracking-wider text-white/50">Akreditasi & SPMI</p>
                     </div>
 
-                    {{-- Plotting Tim Akreditasi (Kaprodi) --}}
-                    @if (Route::has('kaprodi.plotting'))
-                    <div>
-                        <a href="{{ route('kaprodi.plotting') }}"
-                            class="sidebar-link w-full flex items-center gap-3.5 px-3.5 py-3 rounded-2xl text-sm font-semibold transition-all duration-150 group {{ request()->routeIs('kaprodi.plotting*') ? 'bg-white/20 text-white shadow-xs font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}"
-                            title="Plotting Tim Akreditasi">
-                            <svg class="w-6 h-6 shrink-0 text-white/90 group-hover:text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M18 18.72a9.094 9.094 0 0 0 3.741-.479 3 3 0 0 0-4.682-2.72m.94 3.198l.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0 1 12 21c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 0 1 6 18.719m12 0a5.971 5.971 0 0 0-.941-3.197m0 0A5.995 5.995 0 0 0 12 12.75a5.995 5.995 0 0 0-5.058 2.772m0 0a3 3 0 0 0-4.681 2.72 8.986 8.986 0 0 0 3.74.477m.94-3.197a5.971 5.971 0 0 0-.94 3.197M15 6.75a3 3 0 1 1-6 0 3 3 0 0 1 6 0Zm6 3a2.25 2.25 0 1 1-4.5 0 2.25 2.25 0 0 1 4.5 0Zm-13.5 0a2.25 2.25 0 1 1-4.5 0 2.25 2.25 0 0 1 4.5 0Z" />
-                            </svg>
-                            <span class="sidebar-text truncate">Plotting Tim Akreditasi</span>
-                        </a>
-                    </div>
-                    @endif
-
                     {{-- Validasi & Monitoring --}}
                     <div>
                         <a href="{{ route('validasi-monitoring.index') }}"
@@ -430,15 +413,15 @@
                         </a>
                     </div>
 
-                    {{-- Evidence SPMI --}}
+                    {{-- Tindak Lanjut SPMI --}}
                     <div>
-                        <a href="{{ route('spmi.evidence') }}"
+                        <a href="{{ route('spmi.tindak-lanjut') }}"
                             class="sidebar-link w-full flex items-center gap-3.5 px-3.5 py-3 rounded-2xl text-sm font-semibold transition-all duration-150 group {{ request()->routeIs('spmi.*') ? 'bg-white/20 text-white shadow-xs font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}"
-                            title="Evidence SPMI">
+                            title="Tindak Lanjut SPMI">
                             <svg class="w-6 h-6 shrink-0 text-white/90 group-hover:text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                             </svg>
-                            <span class="sidebar-text truncate">Evidence SPMI</span>
+                            <span class="sidebar-text truncate">Tindak Lanjut SPMI</span>
                         </a>
                     </div>
 
