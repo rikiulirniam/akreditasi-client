@@ -118,17 +118,17 @@
                                     <div class="min-w-0">
                                         @if (isset($project['id']) || isset($project['project_id']))
                                             <a href="{{ route('reviewer.assessment-detail', ['projectId' => $project['id'] ?? $project['project_id']]) }}"
-                                                class="truncate text-base font-bold text-slate-800 hover:text-additional">{{ $projectName }}</a>
+                                                class="block max-w-full truncate text-base font-bold text-slate-800 hover:text-additional">{{ $projectName }}</a>
                                         @else
-                                            <p class="truncate text-base font-bold text-slate-800">{{ $projectName }}</p>
+                                            <p class="block max-w-full truncate text-base font-bold text-slate-800">{{ $projectName }}</p>
                                         @endif
                                         <p class="mt-1 truncate text-sm text-slate-500">{{ $programName }} · {{ $instrument }} · {{ $targetYear }}</p>
                                     </div>
                                 </div>
                                 <div>
                                     <div class="mb-1.5 flex items-center justify-between gap-3 text-sm">
-                                        <span class="text-slate-500">Progres penilaian</span>
-                                        <span class="font-bold text-slate-700">{{ $progressText }}%</span>
+                                        <span class="min-w-0 truncate text-slate-500">Progres penilaian</span>
+                                        <span class="shrink-0 font-bold text-slate-700">{{ $progressText }}%</span>
                                     </div>
                                     <div class="h-2 overflow-hidden rounded-full bg-slate-100">
                                         <div class="h-full rounded-full bg-additional transition-all" style="width: {{ $progress }}%"></div>
