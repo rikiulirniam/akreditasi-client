@@ -25,11 +25,7 @@ class ReviewerController extends Controller
 
     public function dashboard(Request $request): View
     {
-        if ($request->has('demo')) {
-            $request->session()->put('reviewer_demo_mode', $request->boolean('demo'));
-        }
-
-        [$projects, $error, $isDemo] = $this->projects();
+        [$projects, $error] = $this->projects();
 
         $completedProjects = array_filter($projects, fn (array $project): bool => $this->isCompleted($project));
         $inProgressProjects = array_filter($projects, fn (array $project): bool => $this->isInProgress($project));
@@ -45,13 +41,12 @@ class ReviewerController extends Controller
             'completedCount' => count($completedProjects),
             'averageProgress' => $averageProgress,
             'apiError' => $error,
-            'isDemo' => $isDemo,
         ]);
     }
 
     public function assessments(Request $request): View
     {
-        [$projects, $error, $isDemo] = $this->projects();
+        [$projects, $error] = $this->projects();
         $statusFilter = (string) $request->query('status', '');
         $yearFilter = (string) $request->query('tahun', '');
         $statuses = array_values(array_unique(array_column($projects, '_reviewer_status_key')));
@@ -71,13 +66,12 @@ class ReviewerController extends Controller
             'statusFilter' => $statusFilter,
             'yearFilter' => $yearFilter,
             'apiError' => $error,
-            'isDemo' => $isDemo,
         ]);
     }
 
     public function assessmentDetail(Request $request, string $projectId): View|RedirectResponse
     {
-        [$projects, $error, $isDemo] = $this->projects();
+        [$projects, $error] = $this->projects();
         $project = $this->findProject($projects, $projectId);
 
         if ($project === null) {
@@ -124,7 +118,6 @@ class ReviewerController extends Controller
                 'indicatorIndex' => 0,
                 'savedAssessment' => [],
                 'savedAssessments' => [],
-                'isDemo' => $isDemo,
                 'apiError' => $detailError ?? 'Detail indikator penilaian belum tersedia dari server.',
             ]);
         }
@@ -150,7 +143,6 @@ class ReviewerController extends Controller
             'indicatorIndex' => $indicatorIndex,
             'savedAssessment' => is_array($savedAssessment) ? $savedAssessment : [],
             'savedAssessments' => $savedAssessments,
-            'isDemo' => $isDemo,
             'apiError' => $detailError,
         ]);
     }
@@ -235,33 +227,31 @@ class ReviewerController extends Controller
             'evidence_status' => $evidenceStatuses,
         ]);
 
-        if (! (bool) $request->session()->get('reviewer_demo_mode', false)) {
-            try {
-                $user = $request->session()->get('user', []);
-                $reviewerId = is_array($user) ? ($user['id'] ?? $user['id_user'] ?? $user['user_id'] ?? null) : null;
-                $assessment = [
-                    'id_project' => (int) $projectId,
-                    'id_indikator' => (int) $indicatorId,
-                    'id_rubrik' => $rubrikId !== null ? (int) $rubrikId : null,
-                    'catatan_reviewer' => (string) ($validated['notes'] ?? ''),
-                ];
+        try {
+            $user = $request->session()->get('user', []);
+            $reviewerId = is_array($user) ? ($user['id'] ?? $user['id_user'] ?? $user['user_id'] ?? null) : null;
+            $assessment = [
+                'id_project' => (int) $projectId,
+                'id_indikator' => (int) $indicatorId,
+                'id_rubrik' => $rubrikId !== null ? (int) $rubrikId : null,
+                'catatan_reviewer' => (string) ($validated['notes'] ?? ''),
+            ];
 
-                if ($reviewerId !== null) {
-                    $assessment['reviewer_id'] = (int) $reviewerId;
-                }
-
-                $response = $this->reviewerService->saveSelfAssessment($assessment);
-
-                if (! $response->successful()) {
-                    Log::warning('Reviewer save assessment API returned an unsuccessful response.', [
-                        'status' => $response->status(),
-                        'project_id' => $projectId,
-                        'indicator_id' => $indicatorId,
-                    ]);
-                }
-            } catch (\Throwable $e) {
-                Log::warning('Reviewer save assessment to API: '.$e->getMessage());
+            if ($reviewerId !== null) {
+                $assessment['reviewer_id'] = (int) $reviewerId;
             }
+
+            $response = $this->reviewerService->saveSelfAssessment($assessment);
+
+            if (! $response->successful()) {
+                Log::warning('Reviewer save assessment API returned an unsuccessful response.', [
+                    'status' => $response->status(),
+                    'project_id' => $projectId,
+                    'indicator_id' => $indicatorId,
+                ]);
+            }
+        } catch (\Throwable $e) {
+            Log::warning('Reviewer save assessment to API: '.$e->getMessage());
         }
 
         return redirect()->route('reviewer.assessment-detail', [
@@ -412,62 +402,43 @@ class ReviewerController extends Controller
         return $savedAssessments;
     }
 
-    /**
-     * @return array{0: array<int, array<string, mixed>>, 1: ?string, 2: bool}
-     */
+    /** @return array{0: array<int, array<string, mixed>>, 1: ?string} */
     protected function projects(): array
     {
-        if (session('reviewer_demo_mode', false)) {
-            return $this->projectsFromDemoMode();
-        }
-
         try {
             $response = $this->reviewerService->getProjects();
         } catch (ConnectionException) {
-            return $this->projectsFromFallback('Tidak dapat terhubung ke server akreditasi. Silakan coba lagi nanti.');
+            return [[], 'Tidak dapat terhubung ke server akreditasi. Silakan coba lagi nanti.'];
         }
 
         if (! $response->successful()) {
-            return $this->projectsFromFallback($this->apiErrorMessage($response));
+            return [[], $this->apiErrorMessage($response)];
         }
 
         $projects = $this->responseList($response->json());
 
         if ($projects === null) {
-            return [[], 'Format data project dari server akreditasi tidak sesuai.', false];
-        }
-
-        $user = session('user', []);
-        $reviewerId = is_array($user) ? ($user['id'] ?? $user['id_user'] ?? $user['user_id'] ?? null) : null;
-
-        if ($reviewerId === null || $reviewerId === '') {
-            return [[], 'ID reviewer tidak ditemukan pada sesi login.', false];
+            return [[], 'Format data project dari server akreditasi tidak sesuai.'];
         }
 
         try {
             $mappingResponse = $this->reviewerService->getTeamAssignments();
         } catch (ConnectionException) {
-            return $this->projectsFromFallback('Tidak dapat memuat penugasan reviewer dari server akreditasi.');
+            return [[], 'Tidak dapat memuat daftar indikator project dari server akreditasi.'];
         }
 
         if (! $mappingResponse->successful()) {
-            return $this->projectsFromFallback($this->apiErrorMessage($mappingResponse));
+            return [[], $this->apiErrorMessage($mappingResponse)];
         }
 
         $assignments = $this->responseList($mappingResponse->json());
 
         if ($assignments === null) {
-            return [[], 'Format data penugasan reviewer dari server akreditasi tidak sesuai.', false];
+            return [[], 'Format data indikator project dari server akreditasi tidak sesuai.'];
         }
 
         $assignmentsByProject = [];
         foreach ($assignments as $assignment) {
-            $assignmentReviewerId = $this->assignmentReviewerId($assignment);
-
-            if (! is_scalar($assignmentReviewerId) || (string) $assignmentReviewerId !== (string) $reviewerId) {
-                continue;
-            }
-
             $projectId = $this->assignmentProjectId($assignment);
 
             if ($projectId === null) {
@@ -477,58 +448,29 @@ class ReviewerController extends Controller
             $assignmentsByProject[(string) $projectId][] = $assignment;
         }
 
-        $assignedProjects = array_values(array_filter($projects, function (array $project) use ($assignmentsByProject): bool {
-            $projectId = $project['id'] ?? $project['id_project'] ?? $project['project_id'] ?? null;
+        $projectsNeedingReview = array_values(array_filter(
+            $projects,
+            fn (array $project): bool => $this->statusKey($project) === 'sedang_dinilai',
+        ));
 
-            return $projectId !== null && isset($assignmentsByProject[(string) $projectId]);
-        }));
-
-        foreach ($assignedProjects as &$project) {
+        foreach ($projectsNeedingReview as &$project) {
             $projectId = (string) ($project['id'] ?? $project['id_project'] ?? $project['project_id']);
-            $project['indicators'] = $this->indicatorsFromAssignments($assignmentsByProject[$projectId]);
+            $project['indicators'] = $this->indicatorsFromAssignments($assignmentsByProject[$projectId] ?? []);
             $project['total_indicators'] = $project['total_indicators'] ?? count($project['indicators']);
             $project = $this->normalizeProject($project);
         }
         unset($project);
 
-        return [$this->prepareProjects($assignedProjects), null, false];
-    }
-
-    /**
-     * @return array{0: array<int, array<string, mixed>>, 1: ?string, 2: bool}
-     */
-    protected function projectsFromFallback(string $error): array
-    {
-        $projects = $this->reviewerService->getDummyProjects();
-
-        if ($projects !== null) {
-            return [$this->prepareProjects($projects, true), null, true];
-        }
-
-        return [[], $error, false];
-    }
-
-    /**
-     * @return array{0: array<int, array<string, mixed>>, 1: ?string, 2: bool}
-     */
-    protected function projectsFromDemoMode(): array
-    {
-        $projects = $this->reviewerService->getDummyProjects();
-
-        if ($projects !== null) {
-            return [$this->prepareProjects($projects, true), null, true];
-        }
-
-        return [[], 'File data dummy reviewer tidak ditemukan.', false];
+        return [$this->prepareProjects($projectsNeedingReview), null];
     }
 
     /**
      * @param  array<int, array<string, mixed>>  $projects
      * @return array<int, array<string, mixed>>
      */
-    protected function prepareProjects(array $projects, bool $isDemo = false): array
+    protected function prepareProjects(array $projects): array
     {
-        $needsProdiMap = ! $isDemo && collect($projects)->contains(
+        $needsProdiMap = collect($projects)->contains(
             fn (array $project): bool => empty($project['program_studi'])
                 && empty($project['prodi'])
                 && empty($project['nama_prodi'])
@@ -537,7 +479,7 @@ class ReviewerController extends Controller
         $prodiMap = $needsProdiMap ? $this->reviewerService->getProdiMap() : [];
 
         $assessmentsByProject = [];
-        $needsProgressFromAssessments = ! $isDemo && collect($projects)->contains(
+        $needsProgressFromAssessments = collect($projects)->contains(
             fn (array $project): bool => ! isset($project['progress_percentage'])
                 && ! isset($project['completed_indicators']),
         );
@@ -628,20 +570,6 @@ class ReviewerController extends Controller
         }
 
         return $data;
-    }
-
-    /**
-     * @param  array<string, mixed>  $assignment
-     */
-    protected function assignmentReviewerId(array $assignment): mixed
-    {
-        return $assignment['id_user']
-            ?? $assignment['reviewer_id']
-            ?? $assignment['id_reviewer']
-            ?? $assignment['user_id']
-            ?? $assignment['user']['id']
-            ?? $assignment['reviewer']['id']
-            ?? null;
     }
 
     /**
