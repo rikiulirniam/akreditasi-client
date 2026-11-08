@@ -2,8 +2,9 @@
 
 namespace App\Http\Controllers;
 
-use App\Services\TridharmaService;
 use App\Services\AkreditasiService;
+use App\Services\TridharmaService;
+use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -201,7 +202,7 @@ class DashboardController extends Controller
                 'kode' => $ind['kode_indikator'] ?? 'IND',
                 'judul' => $ind['deskripsi_indikator'] ?? $ind['nama_indikator'] ?? '-',
                 'deadline' => (is_string($deadline) && strtotime($deadline))
-                    ? \Carbon\Carbon::parse($deadline)->locale('id')->translatedFormat('d M Y')
+                    ? Carbon::parse($deadline)->locale('id')->translatedFormat('d M Y')
                     : 'Tahap Berjalan',
                 'status' => 'Belum diisi',
             ];

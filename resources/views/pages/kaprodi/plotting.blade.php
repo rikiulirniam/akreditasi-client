@@ -59,25 +59,25 @@
     </div>
 
     <!-- 2. Project Card Banner & Selector -->
-    <div class="bg-white rounded-2xl border border-[#EAEAEA] p-5 sm:p-6 shadow-xs flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+    <div class="bg-white rounded-2xl border border-[#EAEAEA] p-5 sm:p-6 shadow-xs flex flex-col xl:flex-row xl:items-center justify-between gap-6">
         
         <!-- Dropdown Selector -->
-        <div class="w-full lg:w-96 max-w-full space-y-1.5">
+        <div class="w-full xl:w-auto flex-1 min-w-0 max-w-3xl space-y-1.5">
             <label for="projectSelector" class="block text-gray-500 text-[11px] font-bold tracking-wider uppercase">
                 PILIH PROJECT AKREDITASI
             </label>
-            <div class="relative">
+            <div class="relative w-full xl:w-fit max-w-full">
                 <select id="projectSelector" name="project_id"
-                    class="w-full h-11 bg-gray-50/80 hover:bg-gray-100/80 text-primary font-bold text-xs sm:text-sm rounded-xl px-4 pr-10 appearance-none border border-gray-200 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary shadow-xs cursor-pointer transition-colors">
+                    class="w-full xl:w-auto min-w-full xl:min-w-fit max-w-full h-11 bg-gray-50/80 hover:bg-gray-100/80 text-primary font-bold text-xs sm:text-sm rounded-xl px-4 pr-11 appearance-none border border-gray-200 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary shadow-xs cursor-pointer transition-colors">
                     @if(!empty($projects))
                         @foreach($projects as $p)
-                            <option value="{{ $p['id'] }}" {{ (string)request('project_id', $projectId ?? $projects[0]['id'] ?? '') === (string)($p['id'] ?? '') ? 'selected' : '' }}>
+                            <option value="{{ $p['id'] }}" title="{{ $p['nama_project'] ?? 'Project Akreditasi' }} ({{ $p['tahun_target_submit'] ?? 2026 }})" {{ (string)request('project_id', $projectId ?? $projects[0]['id'] ?? '') === (string)($p['id'] ?? '') ? 'selected' : '' }}>
                                 {{ $p['nama_project'] ?? 'Project Akreditasi' }} ({{ $p['tahun_target_submit'] ?? 2026 }})
                             </option>
                         @endforeach
                     @else
-                        <option value="1">Akreditasi LAM INFOKOM D4 TRK 2027</option>
-                        <option value="2">Akreditasi LAM INFOKOM D4 TRK 2026</option>
+                        <option value="1" title="Akreditasi LAM INFOKOM D4 TRK 2027">Akreditasi LAM INFOKOM D4 TRK 2027</option>
+                        <option value="2" title="Akreditasi LAM INFOKOM D4 TRK 2026">Akreditasi LAM INFOKOM D4 TRK 2026</option>
                     @endif
                 </select>
                 <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3.5 text-primary">
@@ -238,7 +238,7 @@
                                 <label class="flex items-center gap-3 cursor-pointer flex-1 min-w-0">
                                     <input type="checkbox" value="K1.1" class="ind-checkbox w-4 h-4 rounded text-primary focus:ring-primary/20 border-gray-300 cursor-pointer shrink-0">
                                     <span class="text-xs font-extrabold text-additional shrink-0">K1.1</span>
-                                    <span class="text-xs sm:text-sm text-gray-700 font-medium truncate">Kejelasan visi, misi, dan ketercapaian strategi prodi</span>
+                                    <span class="text-xs sm:text-sm text-gray-700 font-medium break-words leading-tight">Kejelasan visi, misi, dan ketercapaian strategi prodi</span>
                                 </label>
                                 
                                 <div class="indicator-badges-wrapper flex items-center gap-2 shrink-0">
@@ -289,7 +289,7 @@
                                 <label class="flex items-center gap-3 cursor-pointer flex-1 min-w-0">
                                     <input type="checkbox" value="K2.1" class="ind-checkbox w-4 h-4 rounded text-primary focus:ring-primary/20 border-gray-300 cursor-pointer shrink-0">
                                     <span class="text-xs font-extrabold text-additional shrink-0">K2.1</span>
-                                    <span class="text-xs sm:text-sm text-gray-700 font-medium truncate">Sistem tata pamong dan efektivitas kepemimpinan</span>
+                                    <span class="text-xs sm:text-sm text-gray-700 font-medium break-words leading-tight">Sistem tata pamong dan efektivitas kepemimpinan</span>
                                 </label>
                                 
                                 <div class="indicator-badges-wrapper flex items-center gap-2 shrink-0">
@@ -327,7 +327,7 @@
                                 <label class="flex items-center gap-3 cursor-pointer flex-1 min-w-0">
                                     <input type="checkbox" value="K2.2" class="ind-checkbox w-4 h-4 rounded text-primary focus:ring-primary/20 border-gray-300 cursor-pointer shrink-0">
                                     <span class="text-xs font-extrabold text-additional shrink-0">K2.2</span>
-                                    <span class="text-xs sm:text-sm text-gray-700 font-medium truncate">Siklus penjaminan mutu internal (SPMI)</span>
+                                    <span class="text-xs sm:text-sm text-gray-700 font-medium break-words leading-tight">Siklus penjaminan mutu internal (SPMI)</span>
                                 </label>
                                 
                                 <div class="indicator-badges-wrapper flex items-center gap-2 shrink-0">
@@ -365,7 +365,7 @@
                                 <label class="flex items-center gap-3 cursor-pointer flex-1 min-w-0">
                                     <input type="checkbox" value="K2.3" class="ind-checkbox w-4 h-4 rounded text-primary focus:ring-primary/20 border-gray-300 cursor-pointer shrink-0">
                                     <span class="text-xs font-extrabold text-additional shrink-0">K2.3</span>
-                                    <span class="text-xs sm:text-sm text-gray-700 font-medium truncate">Kepuasan dan keberlanjutan kerja sama mitra</span>
+                                    <span class="text-xs sm:text-sm text-gray-700 font-medium break-words leading-tight">Kepuasan dan keberlanjutan kerja sama mitra</span>
                                 </label>
                                 
                                 <div class="indicator-badges-wrapper flex items-center gap-2 shrink-0">
@@ -416,7 +416,7 @@
                                 <label class="flex items-center gap-3 cursor-pointer flex-1 min-w-0">
                                     <input type="checkbox" value="K3.1" class="ind-checkbox w-4 h-4 rounded text-primary focus:ring-primary/20 border-gray-300 cursor-pointer shrink-0">
                                     <span class="text-xs font-extrabold text-additional shrink-0">K3.1</span>
-                                    <span class="text-xs sm:text-sm text-gray-700 font-medium truncate">Kualitas input dan rasio pendaftar mahasiswa baru</span>
+                                    <span class="text-xs sm:text-sm text-gray-700 font-medium break-words leading-tight">Kualitas input dan rasio pendaftar mahasiswa baru</span>
                                 </label>
                                 
                                 <div class="indicator-badges-wrapper flex items-center gap-2 shrink-0">
@@ -454,7 +454,7 @@
                                 <label class="flex items-center gap-3 cursor-pointer flex-1 min-w-0">
                                     <input type="checkbox" value="K3.2" class="ind-checkbox w-4 h-4 rounded text-primary focus:ring-primary/20 border-gray-300 cursor-pointer shrink-0">
                                     <span class="text-xs font-extrabold text-additional shrink-0">K3.2</span>
-                                    <span class="text-xs sm:text-sm text-gray-700 font-medium truncate">Layanan kemahasiswaan dan bimbingan karir</span>
+                                    <span class="text-xs sm:text-sm text-gray-700 font-medium break-words leading-tight">Layanan kemahasiswaan dan bimbingan karir</span>
                                 </label>
                                 
                                 <div class="indicator-badges-wrapper flex items-center gap-2 shrink-0">
@@ -492,7 +492,7 @@
                                 <label class="flex items-center gap-3 cursor-pointer flex-1 min-w-0">
                                     <input type="checkbox" value="K3.3" class="ind-checkbox w-4 h-4 rounded text-primary focus:ring-primary/20 border-gray-300 cursor-pointer shrink-0">
                                     <span class="text-xs font-extrabold text-additional shrink-0">K3.3</span>
-                                    <span class="text-xs sm:text-sm text-gray-700 font-medium truncate">Prestasi akademik dan non-akademik mahasiswa</span>
+                                    <span class="text-xs sm:text-sm text-gray-700 font-medium break-words leading-tight">Prestasi akademik dan non-akademik mahasiswa</span>
                                 </label>
                                 
                                 <div class="indicator-badges-wrapper flex items-center gap-2 shrink-0">
@@ -530,7 +530,7 @@
                                 <label class="flex items-center gap-3 cursor-pointer flex-1 min-w-0">
                                     <input type="checkbox" value="K3.4" class="ind-checkbox w-4 h-4 rounded text-primary focus:ring-primary/20 border-gray-300 cursor-pointer shrink-0">
                                     <span class="text-xs font-extrabold text-additional shrink-0">K3.4</span>
-                                    <span class="text-xs sm:text-sm text-gray-700 font-medium truncate">Masa tunggu lulusan dan kesesuaian bidang kerja</span>
+                                    <span class="text-xs sm:text-sm text-gray-700 font-medium break-words leading-tight">Masa tunggu lulusan dan kesesuaian bidang kerja</span>
                                 </label>
                                 
                                 <div class="indicator-badges-wrapper flex items-center gap-2 shrink-0">
@@ -708,13 +708,52 @@
         const actionHint = document.getElementById('action-hint');
         const projectSelector = document.getElementById('projectSelector');
 
+        // Menyesuaikan lebar select box agar selalu mengikuti panjang teks project yang dipilih
+        function adjustProjectSelectorWidth() {
+            if (!projectSelector) return;
+            const selectedOption = projectSelector.options[projectSelector.selectedIndex];
+            const text = selectedOption ? (selectedOption.text || selectedOption.innerText) : projectSelector.value;
+            if (!text) return;
+
+            const tempSpan = document.createElement('span');
+            const computed = window.getComputedStyle(projectSelector);
+            tempSpan.style.position = 'absolute';
+            tempSpan.style.visibility = 'hidden';
+            tempSpan.style.whiteSpace = 'pre';
+            tempSpan.style.fontFamily = computed.fontFamily;
+            tempSpan.style.fontSize = computed.fontSize;
+            tempSpan.style.fontWeight = computed.fontWeight || '700';
+            tempSpan.style.letterSpacing = computed.letterSpacing;
+            tempSpan.textContent = text;
+
+            document.body.appendChild(tempSpan);
+            const textWidth = Math.ceil(tempSpan.getBoundingClientRect().width);
+            document.body.removeChild(tempSpan);
+
+            const totalPadding = 76;
+            const requiredWidth = textWidth + totalPadding;
+            const parentWidth = projectSelector.parentElement?.parentElement?.clientWidth || window.innerWidth;
+
+            if (window.innerWidth < 1280) {
+                projectSelector.style.width = '100%';
+            } else {
+                projectSelector.style.width = `${Math.min(requiredWidth, Math.max(parentWidth - 10, 360))}px`;
+            }
+        }
+
         // Navigasi saat Project Akreditasi diubah
         if (projectSelector) {
+            adjustProjectSelectorWidth();
             projectSelector.addEventListener('change', function() {
+                adjustProjectSelectorWidth();
                 const currentUrl = new URL(window.location.href);
                 currentUrl.searchParams.set('project_id', this.value);
                 window.location.href = currentUrl.toString();
             });
+            window.addEventListener('resize', adjustProjectSelectorWidth);
+            if (document.fonts && document.fonts.ready) {
+                document.fonts.ready.then(adjustProjectSelectorWidth);
+            }
         }
 
         // Cek status form tombol dan counter

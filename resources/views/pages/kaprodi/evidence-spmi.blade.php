@@ -26,7 +26,7 @@
                     onchange="adjustProjectSelectorWidth(); window.location.href='{{ route('spmi.evidence') }}?project_id=' + this.value"
                     class="w-full sm:w-auto min-w-full sm:min-w-fit max-w-full h-11 bg-gray-50/80 hover:bg-gray-100/80 text-primary font-bold text-xs sm:text-sm rounded-xl px-4 pr-11 appearance-none border border-gray-200 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary shadow-xs cursor-pointer transition-colors">
                     @foreach ($projects as $p)
-                        <option value="{{ $p['id'] }}" {{ (int) $p['id'] === (int) $selectedProjectId ? 'selected' : '' }}>
+                        <option value="{{ $p['id'] }}" title="{{ $p['nama_project'] }} ({{ $p['tahun_target_submit'] ?? 2026 }})" {{ (int) $p['id'] === (int) $selectedProjectId ? 'selected' : '' }}>
                             {{ $p['nama_project'] }} ({{ $p['tahun_target_submit'] ?? 2026 }})
                         </option>
                     @endforeach
@@ -280,8 +280,8 @@
         const textWidth = Math.ceil(tempSpan.getBoundingClientRect().width);
         document.body.removeChild(tempSpan);
 
-        // Tambahkan padding kiri (16px) + padding kanan untuk chevron (44px) + margin pengaman (12px)
-        const totalPadding = 72;
+        // Tambahkan padding kiri (16px) + padding kanan untuk chevron (44px) + margin pengaman (16px)
+        const totalPadding = 76;
         const requiredWidth = textWidth + totalPadding;
 
         // Pada mobile, gunakan lebar penuh; pada desktop/tablet, ikuti panjang teks
@@ -289,7 +289,7 @@
         if (window.innerWidth < 640) {
             sel.style.width = '100%';
         } else {
-            sel.style.width = `${Math.min(requiredWidth, Math.max(parentWidth - 20, 360))}px`;
+            sel.style.width = `${Math.min(requiredWidth, Math.max(parentWidth - 10, 360))}px`;
         }
     }
 

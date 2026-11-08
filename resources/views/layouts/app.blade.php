@@ -43,6 +43,19 @@
             margin-top: 0.5rem !important;
             margin-bottom: 0.5rem !important;
         }
+
+        /* Sidebar Scrollbar: sembunyikan scrollbar agar bersih dan menyatu dengan tema */
+        .sidebar-scroll-container,
+        #sidebar .overflow-y-auto {
+            scrollbar-width: none !important;
+            -ms-overflow-style: none !important;
+        }
+        .sidebar-scroll-container::-webkit-scrollbar,
+        #sidebar .overflow-y-auto::-webkit-scrollbar {
+            display: none !important;
+            width: 0 !important;
+            height: 0 !important;
+        }
     </style>
 </head>
 <body class="h-full font-sans antialiased text-black overflow-hidden {{ request()->routeIs('tenaga-kependidikan.*', 'tenaga-pendidikan.*') ? 'flow2-tendik' : '' }}">

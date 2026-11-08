@@ -8,7 +8,6 @@ use App\Http\Controllers\Akreditasi\Superadmin\KriteriaController;
 use App\Http\Controllers\Akreditasi\Superadmin\LembagaAkreditasiController;
 use App\Http\Controllers\Akreditasi\Superadmin\LembarKerjaController;
 use App\Http\Controllers\Akreditasi\Superadmin\RubrikController;
-use App\Http\Controllers\Akreditasi\Superadmin\StandarSpmiController;
 use App\Http\Controllers\Akreditasi\Superadmin\SubkriteriaController;
 use App\Http\Controllers\AngkatanController;
 use App\Http\Controllers\AngkatanKelasController;
@@ -78,6 +77,8 @@ Route::middleware('auth.akademik')->group(function () {
         Route::get('/dashboard', [KaprodiController::class, 'dashboard'])->name('dashboard');
         Route::get('/project', [KaprodiController::class, 'project'])->name('project');
         Route::post('/project', [KaprodiController::class, 'storeProject'])->name('project.store');
+        Route::put('/project/{id}', [KaprodiController::class, 'updateProject'])->name('project.update');
+        Route::patch('/project/{id}/status', [KaprodiController::class, 'updateStatusProject'])->name('project.update-status');
         Route::delete('/project/{id}', [KaprodiController::class, 'destroyProject'])->name('project.destroy');
         Route::get('/project/detail/{id?}', [KaprodiController::class, 'projectDetail'])->name('project.detail');
 
@@ -284,9 +285,6 @@ Route::prefix('pages')->name('akreditasi.superadmin.')->group(function () {
     Route::get('/superadmin/rubrik', function () {
         return redirect()->route('akreditasi.superadmin.lembaga_akreditasi');
     });
-
-    Route::get('/superadmin/standar-spmi', [StandarSpmiController::class, 'index'])->name('standar_spmi');
-    Route::post('/superadmin/standar-spmi', [StandarSpmiController::class, 'store'])->name('standar_spmi.store');
 
     Route::get('/superadmin/lembar-kerja', [LembarKerjaController::class, 'index'])->name('lembar_kerja');
     Route::get('/superadmin/bukti-dokumen', [BuktiDokumenController::class, 'index'])->name('bukti_dokumen');

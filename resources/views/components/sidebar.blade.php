@@ -5,8 +5,7 @@
     $userRole = strtolower((string) (($sidebarUser['role'] ?? null) ?: ($sidebarUser['role_name'] ?? '')));
     $isReviewerRole = str_contains($userRole, 'reviewer');
     $isKaprodiRole  = str_contains($userRole, 'kaprodi');
-    // Sembunyikan menu admin akreditasi hanya dari Kaprodi
-    $canSeeAdminAkreditasiMenu = ! $isKaprodiRole && ! $isReviewerRole;
+    $isAdminRole = ! $isKaprodiRole && ! $isReviewerRole;
 @endphp
 
 {{-- Backdrop untuk sidebar mobile --}}
@@ -36,7 +35,7 @@
 
     {{-- Curved card envelope --}}
     <div class="relative -mt-5 flex-1 flex flex-col bg-secondary rounded-t-[32px] pt-[5px] overflow-hidden">
-        <div class="flex-1 bg-primary rounded-t-[27px] px-3.5 py-4 overflow-y-auto overflow-x-hidden">
+        <div class="flex-1 bg-primary rounded-t-[27px] px-3.5 py-4 overflow-y-auto overflow-x-hidden sidebar-scroll-container" style="scrollbar-width: none; -ms-overflow-style: none;">
 
             <nav class="space-y-2" aria-label="Menu Utama">
 
@@ -84,7 +83,6 @@
 
                     {{-- Dashboard --}}
                     @php
-                        $isKaprodiRole = str_contains($userRole, 'kaprodi');
                         $isKaprodiContext = request()->routeIs('kaprodi.*');
                         $dashboardRoute = ($isKaprodiRole || ($isKaprodiContext && !in_array($userRole, ['admin', 'superadmin', 'administrator']))) && Route::has('kaprodi.dashboard')
                             ? route('kaprodi.dashboard')
@@ -104,7 +102,14 @@
                         </a>
                     </div>
 
-                    {{-- Project Akreditasi (Kaprodi) --}}
+                    {{-- ============================================================== --}}
+                    {{-- SEKSI: PENJAMINAN MUTU & AKREDITASI --}}
+                    {{-- ============================================================== --}}
+                    <div class="sidebar-section-header pt-3 pb-1 px-3.5 border-t border-white/10 mt-3 mb-1">
+                        <p class="sidebar-text text-[11px] font-bold uppercase tracking-wider text-white/50">Akreditasi & SPMI</p>
+                    </div>
+
+                    {{-- 1. Project Akreditasi (Admin & Kaprodi) --}}
                     @if (Route::has('kaprodi.project'))
                     <div>
                         <a href="{{ route('kaprodi.project') }}"
@@ -116,6 +121,89 @@
                             <span class="sidebar-text truncate">Project Akreditasi</span>
                         </a>
                     </div>
+                    @endif
+
+                    @if ($isAdminRole)
+                        {{-- Urutan Role Admin / Superadmin:
+                             1. Project Akreditasi
+                             2. Instrumen Akreditasi (Single link tanpa dropdown)
+                             3. Evidence SPMI
+                        --}}
+                        {{-- 2. Instrumen Akreditasi (Single link tanpa dropdown) --}}
+                        @if (Route::has('akreditasi.superadmin.lembaga_akreditasi'))
+                        @php
+                            $isInstrumenActive = request()->routeIs('akreditasi.superadmin.*');
+                        @endphp
+                        <div>
+                            <a href="{{ route('akreditasi.superadmin.lembaga_akreditasi') }}"
+                                class="sidebar-link w-full flex items-center gap-3.5 px-3.5 py-3 rounded-2xl text-sm font-semibold transition-all duration-150 group {{ $isInstrumenActive ? 'bg-white/20 text-white shadow-xs font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}"
+                                title="Instrumen Akreditasi">
+                                <svg class="w-6 h-6 shrink-0 fill-current text-white/90 group-hover:text-white" viewBox="0 0 24 24">
+                                    <path d="M19.4 13a7.7 7.7 0 0 0 0-2l2-1.6-2-3.4-2.4 1a7.8 7.8 0 0 0-1.7-1L15 3h-4l-.4 2.9a7.8 7.8 0 0 0-1.7 1l-2.4-1-2 3.4 2 1.6a7.7 7.7 0 0 0 0 2l-2 1.6 2 3.4 2.4-1a7.8 7.8 0 0 0 1.7 1L11 21h4l.4-2.9a7.8 7.8 0 0 0 1.7-1l2.4 1 2-3.4-2.1-1.7ZM13 15a3 3 0 1 1 0-6 3 3 0 0 1 0 6Z"/>
+                                </svg>
+                                <span class="sidebar-text truncate">Instrumen Akreditasi</span>
+                            </a>
+                        </div>
+                        @endif
+
+                        {{-- 3. Evidence SPMI --}}
+                        @if (Route::has('spmi.evidence'))
+                        <div>
+                            <a href="{{ route('spmi.evidence') }}"
+                                class="sidebar-link w-full flex items-center gap-3.5 px-3.5 py-3 rounded-2xl text-sm font-semibold transition-all duration-150 group {{ request()->routeIs('spmi.*') ? 'bg-white/20 text-white shadow-xs font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}"
+                                title="Evidence SPMI">
+                                <svg class="w-6 h-6 shrink-0 text-white/90 group-hover:text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                </svg>
+                                <span class="sidebar-text truncate">Evidence SPMI</span>
+                            </a>
+                        </div>
+                        @endif
+
+                    @else
+                        {{-- Urutan Role Kaprodi:
+                             1. Project Akreditasi
+                             2. Plotting Tim Akreditasi
+                             3. Evidence SPMI
+                             4. Laporan Akhir
+                        --}}
+                        {{-- 2. Plotting Tim Akreditasi (Kaprodi) --}}
+                        @if (Route::has('kaprodi.plotting'))
+                        <div>
+                            <a href="{{ route('kaprodi.plotting') }}"
+                                class="sidebar-link w-full flex items-center gap-3.5 px-3.5 py-3 rounded-2xl text-sm font-semibold transition-all duration-150 group {{ request()->routeIs('kaprodi.plotting*') ? 'bg-white/20 text-white shadow-xs font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}"
+                                title="Plotting Tim Akreditasi">
+                                <svg class="w-6 h-6 shrink-0 text-white/90 group-hover:text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M18 18.72a9.094 9.094 0 0 0 3.741-.479 3 3 0 0 0-4.682-2.72m.94 3.198l.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0 1 12 21c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 0 1 6 18.719m12 0a5.971 5.971 0 0 0-.941-3.197m0 0A5.995 5.995 0 0 0 12 12.75a5.995 5.995 0 0 0-5.058 2.772m0 0a3 3 0 0 0-4.681 2.72 8.986 8.986 0 0 0 3.74.477m.94-3.197a5.971 5.971 0 0 0-.94 3.197M15 6.75a3 3 0 1 1-6 0 3 3 0 0 1 6 0Zm6 3a2.25 2.25 0 1 1-4.5 0 2.25 2.25 0 0 1 4.5 0Zm-13.5 0a2.25 2.25 0 1 1-4.5 0 2.25 2.25 0 0 1 4.5 0Z" />
+                                </svg>
+                                <span class="sidebar-text truncate">Plotting Tim Akreditasi</span>
+                            </a>
+                        </div>
+                        @endif
+
+                        {{-- 3. Evidence SPMI --}}
+                        <div>
+                            <a href="{{ route('spmi.evidence') }}"
+                                class="sidebar-link w-full flex items-center gap-3.5 px-3.5 py-3 rounded-2xl text-sm font-semibold transition-all duration-150 group {{ request()->routeIs('spmi.*') ? 'bg-white/20 text-white shadow-xs font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}"
+                                title="Evidence SPMI">
+                                <svg class="w-6 h-6 shrink-0 text-white/90 group-hover:text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                </svg>
+                                <span class="sidebar-text truncate">Evidence SPMI</span>
+                            </a>
+                        </div>
+
+                        {{-- 4. Laporan Akhir --}}
+                        <div>
+                            <a href="{{ route('laporan-akhir.index') }}"
+                                class="sidebar-link w-full flex items-center gap-3.5 px-3.5 py-3 rounded-2xl text-sm font-semibold transition-all duration-150 group {{ request()->routeIs('laporan-akhir.*') ? 'bg-white/20 text-white shadow-xs font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}"
+                                title="Laporan Akhir">
+                                <svg class="w-6 h-6 shrink-0 text-white/90 group-hover:text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
+                                </svg>
+                                <span class="sidebar-text truncate">Laporan Akhir</span>
+                            </a>
+                        </div>
                     @endif
 
                     {{-- ============================================================== --}}
@@ -399,134 +487,6 @@
                             </a>
                         </div>
                     </div>
-
-                    {{-- ============================================================== --}}
-                    {{-- SEKSI: PENJAMINAN MUTU & AKREDITASI --}}
-                    {{-- ============================================================== --}}
-                    <div class="sidebar-section-header pt-3 pb-1 px-3.5 border-t border-white/10 mt-3 mb-1">
-                        <p class="sidebar-text text-[11px] font-bold uppercase tracking-wider text-white/50">Akreditasi & SPMI</p>
-                    </div>
-
-                    {{-- Plotting Tim Akreditasi (Kaprodi) --}}
-                    @if (Route::has('kaprodi.plotting'))
-                    <div>
-                        <a href="{{ route('kaprodi.plotting') }}"
-                            class="sidebar-link w-full flex items-center gap-3.5 px-3.5 py-3 rounded-2xl text-sm font-semibold transition-all duration-150 group {{ request()->routeIs('kaprodi.plotting*') ? 'bg-white/20 text-white shadow-xs font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}"
-                            title="Plotting Tim Akreditasi">
-                            <svg class="w-6 h-6 shrink-0 text-white/90 group-hover:text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M18 18.72a9.094 9.094 0 0 0 3.741-.479 3 3 0 0 0-4.682-2.72m.94 3.198l.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0 1 12 21c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 0 1 6 18.719m12 0a5.971 5.971 0 0 0-.941-3.197m0 0A5.995 5.995 0 0 0 12 12.75a5.995 5.995 0 0 0-5.058 2.772m0 0a3 3 0 0 0-4.681 2.72 8.986 8.986 0 0 0 3.74.477m.94-3.197a5.971 5.971 0 0 0-.94 3.197M15 6.75a3 3 0 1 1-6 0 3 3 0 0 1 6 0Zm6 3a2.25 2.25 0 1 1-4.5 0 2.25 2.25 0 0 1 4.5 0Zm-13.5 0a2.25 2.25 0 1 1-4.5 0 2.25 2.25 0 0 1 4.5 0Z" />
-                            </svg>
-                            <span class="sidebar-text truncate">Plotting Tim Akreditasi</span>
-                        </a>
-                    </div>
-                    @endif
-
-                    {{-- Validasi & Monitoring --}}
-                    <div>
-                        <a href="{{ route('validasi-monitoring.index') }}"
-                            class="sidebar-link w-full flex items-center gap-3.5 px-3.5 py-3 rounded-2xl text-sm font-semibold transition-all duration-150 group {{ request()->routeIs('validasi-monitoring.*') ? 'bg-white/20 text-white shadow-xs font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}"
-                            title="Validasi & Monitoring">
-                            <svg class="w-6 h-6 shrink-0 text-white/90 group-hover:text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M11.35 3.836c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 00.75-.75 2.25 2.25 0 00-.1-.664m-5.8 0A2.251 2.251 0 0113.5 2.25H15a2.25 2.25 0 011.65 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25m8.9-4.414c.376.023.75.05 1.124.08 1.131.094 1.976 1.057 1.976 2.192V16.5A2.25 2.25 0 0118 18.75h-2.25m-7.5-10.5H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V18.75m-7.5-10.5h6.375c.621 0 1.125.504 1.125 1.125v9.375m-8.25-3l1.5 1.5 3-3.75" />
-                            </svg>
-                            <span class="sidebar-text truncate">Validasi & Monitoring</span>
-                        </a>
-                    </div>
-
-                    {{-- Evidence SPMI --}}
-                    <div>
-                        <a href="{{ route('spmi.evidence') }}"
-                            class="sidebar-link w-full flex items-center gap-3.5 px-3.5 py-3 rounded-2xl text-sm font-semibold transition-all duration-150 group {{ request()->routeIs('spmi.*') ? 'bg-white/20 text-white shadow-xs font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}"
-                            title="Evidence SPMI">
-                            <svg class="w-6 h-6 shrink-0 text-white/90 group-hover:text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                            </svg>
-                            <span class="sidebar-text truncate">Evidence SPMI</span>
-                        </a>
-                    </div>
-
-                    {{-- Laporan Akhir --}}
-                    <div>
-                        <a href="{{ route('laporan-akhir.index') }}"
-                            class="sidebar-link w-full flex items-center gap-3.5 px-3.5 py-3 rounded-2xl text-sm font-semibold transition-all duration-150 group {{ request()->routeIs('laporan-akhir.*') ? 'bg-white/20 text-white shadow-xs font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}"
-                            title="Laporan Akhir">
-                            <svg class="w-6 h-6 shrink-0 text-white/90 group-hover:text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
-                            </svg>
-                            <span class="sidebar-text truncate">Laporan Akhir</span>
-                        </a>
-                    </div>
-
-                    {{-- Data Master Akreditasi (hanya Admin/Superadmin, disembunyikan dari Kaprodi) --}}
-                    @if ($canSeeAdminAkreditasiMenu)
-                    @php
-                        $isMasterActive = request()->routeIs('akreditasi.superadmin.lembaga_akreditasi', 'akreditasi.superadmin.instrumen', 'akreditasi.superadmin.kriteria', 'akreditasi.superadmin.subkriteria', 'akreditasi.superadmin.indikator', 'akreditasi.superadmin.rubrik', 'akreditasi.superadmin.standar_spmi');
-                    @endphp
-                    <div>
-                        <button type="button"
-                            class="sidebar-link submenu-toggle-btn w-full flex items-center justify-between gap-3.5 px-3.5 py-3 rounded-2xl text-sm font-semibold {{ $isMasterActive ? 'bg-white/15 text-white' : 'text-white/80 hover:bg-white/10 hover:text-white' }} transition-all duration-150 group cursor-pointer"
-                            data-target="submenu-master" title="Data Master Akreditasi">
-                            <div class="flex items-center gap-3.5 min-w-0">
-                                <svg class="w-6 h-6 shrink-0 fill-current text-white/90 group-hover:text-white" viewBox="0 0 24 24">
-                                    <path d="M19.4 13a7.7 7.7 0 0 0 0-2l2-1.6-2-3.4-2.4 1a7.8 7.8 0 0 0-1.7-1L15 3h-4l-.4 2.9a7.8 7.8 0 0 0-1.7 1l-2.4-1-2 3.4 2 1.6a7.7 7.7 0 0 0 0 2l-2 1.6 2 3.4 2.4-1a7.8 7.8 0 0 0 1.7 1L11 21h4l.4-2.9a7.8 7.8 0 0 0 1.7-1l2.4 1 2-3.4-2.1-1.7ZM13 15a3 3 0 1 1 0-6 3 3 0 0 1 0 6Z"/>
-                                </svg>
-                                <span class="sidebar-text truncate">Data Master Akreditasi</span>
-                            </div>
-                            <svg class="submenu-chevron sidebar-chevron w-4 h-4 text-white/60 group-hover:text-white transition-transform duration-200 {{ $isMasterActive ? 'rotate-180' : '' }}"
-                                fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
-                            </svg>
-                        </button>
-
-                        <div id="submenu-master"
-                            data-is-active="{{ $isMasterActive ? 'true' : 'false' }}"
-                            class="submenu-container {{ $isMasterActive ? '' : 'hidden' }} pl-10 pr-2 pt-1 pb-1 space-y-1.5">
-                            @if (Route::has('akreditasi.superadmin.lembaga_akreditasi'))
-                            <a href="{{ route('akreditasi.superadmin.lembaga_akreditasi') }}"
-                                class="flex items-center gap-2.5 py-2.5 px-3.5 rounded-xl text-sm font-semibold transition-all duration-150 {{ request()->routeIs('akreditasi.superadmin.lembaga_akreditasi', 'akreditasi.superadmin.instrumen', 'akreditasi.superadmin.kriteria', 'akreditasi.superadmin.subkriteria', 'akreditasi.superadmin.indikator', 'akreditasi.superadmin.rubrik') ? 'bg-white/20 text-white shadow-xs font-bold' : 'text-white/80 hover:text-white hover:bg-white/10' }}">
-                                <span class="w-1.5 h-1.5 rounded-full {{ request()->routeIs('akreditasi.superadmin.lembaga_akreditasi', 'akreditasi.superadmin.instrumen', 'akreditasi.superadmin.kriteria', 'akreditasi.superadmin.subkriteria', 'akreditasi.superadmin.indikator', 'akreditasi.superadmin.rubrik') ? 'bg-secondary' : 'bg-white/40' }} shrink-0"></span>
-                                <span class="truncate">Instrumen Akreditasi</span>
-                            </a>
-                            @endif
-
-                            @if (Route::has('akreditasi.superadmin.standar_spmi'))
-                            <a href="{{ route('akreditasi.superadmin.standar_spmi') }}"
-                                class="flex items-center gap-2.5 py-2.5 px-3.5 rounded-xl text-sm font-semibold transition-all duration-150 {{ request()->routeIs('akreditasi.superadmin.standar_spmi') ? 'bg-white/20 text-white shadow-xs font-bold' : 'text-white/80 hover:text-white hover:bg-white/10' }}">
-                                <span class="w-1.5 h-1.5 rounded-full {{ request()->routeIs('akreditasi.superadmin.standar_spmi') ? 'bg-secondary' : 'bg-white/40' }} shrink-0"></span>
-                                <span class="truncate">Standar SPMI</span>
-                            </a>
-                            @endif
-                        </div>
-                    </div>
-                    @endif {{-- $canSeeAdminAkreditasiMenu --}}
-
-                    {{-- Lembar Kerja Prodi (disembunyikan dari Kaprodi) --}}
-                    @if ($canSeeAdminAkreditasiMenu && Route::has('akreditasi.superadmin.lembar_kerja'))
-                    <div>
-                        <a href="{{ route('akreditasi.superadmin.lembar_kerja') }}"
-                            class="sidebar-link w-full flex items-center gap-3.5 px-3.5 py-3 rounded-2xl text-sm font-semibold transition-all duration-150 group {{ request()->routeIs('akreditasi.superadmin.lembar_kerja') ? 'bg-white/20 text-white shadow-xs font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}"
-                            title="Lembar Kerja Prodi">
-                            <svg class="w-6 h-6 shrink-0 text-white/90 group-hover:text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25H12" />
-                            </svg>
-                            <span class="sidebar-text truncate">Lembar Kerja Prodi</span>
-                        </a>
-                    </div>
-                    @endif
-
-                    {{-- Manajemen Bukti Dokumen (disembunyikan dari Kaprodi) --}}
-                    @if ($canSeeAdminAkreditasiMenu && Route::has('akreditasi.superadmin.bukti_dokumen'))
-                    <div>
-                        <a href="{{ route('akreditasi.superadmin.bukti_dokumen') }}"
-                            class="sidebar-link w-full flex items-center gap-3.5 px-3.5 py-3 rounded-2xl text-sm font-semibold transition-all duration-150 group {{ request()->routeIs('akreditasi.superadmin.bukti_dokumen') ? 'bg-white/20 text-white shadow-xs font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}"
-                            title="Manajemen Bukti Dokumen">
-                            <svg class="w-6 h-6 shrink-0 text-white/90 group-hover:text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12.75V12A2.25 2.25 0 014.5 9.75h15A2.25 2.25 0 0121.75 12v.75m-8.69-6.44l-2.12-2.12a1.5 1.5 0 00-1.061-.44H4.5A2.25 2.25 0 002.25 6v12a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9a2.25 2.25 0 00-2.25-2.25h-5.379a1.5 1.5 0 01-1.06-.44z" />
-                            </svg>
-                            <span class="sidebar-text truncate">Bukti Dokumen</span>
-                        </a>
-                    </div>
-                    @endif
 
                 @endif
 
