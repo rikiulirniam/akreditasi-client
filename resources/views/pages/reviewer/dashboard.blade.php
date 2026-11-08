@@ -1,17 +1,6 @@
 @extends('layouts.app')
 
-@section('title')
-    <span class="relative inline-flex">
-        Dashboard
-        <form method="GET" action="{{ route('reviewer.dashboard') }}" class="absolute inset-0">
-            <button type="submit" name="demo" value="{{ $isDemo ? '0' : '1' }}"
-                aria-label="{{ $isDemo ? 'Kembali ke data API' : 'Buka data dummy reviewer' }}"
-                title="{{ $isDemo ? 'Kembali ke data API' : 'Buka data dummy reviewer' }}"
-                class="h-full w-full cursor-pointer rounded-sm opacity-0 focus-visible:opacity-20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-additional">
-            </button>
-        </form>
-    </span>
-@endsection
+@section('title', 'Dashboard')
 
 @section('content')
     @php
@@ -26,17 +15,11 @@
                     <span class="inline-flex rounded-full bg-white/10 px-3 py-1 text-sm font-bold tracking-wide text-secondary">
                         PORTAL REVIEWER AKREDITASI
                     </span>
-                    @if ($isDemo)
-                        <span class="inline-flex rounded-full bg-amber-300/20 px-3 py-1 text-sm font-bold text-amber-100">DATA DUMMY</span>
-                    @endif
                 </div>
                 <h2 class="text-2xl font-extrabold tracking-tight sm:text-3xl">Halo, {{ $firstName }}!</h2>
                 <p class="mt-2 max-w-xl text-base leading-relaxed text-white/75">
-                    Pantau project akreditasi yang ditugaskan dan lanjutkan penilaian indikator program studi.
+                    Pantau project akreditasi yang perlu direview dan lanjutkan penilaian indikator program studi.
                 </p>
-                @if ($isDemo)
-                    <p class="mt-2 text-sm text-white/60">Data contoh aktif. Hapus <code class="text-white">resources/reviewer-dummy-data.php</code> untuk memakai API.</p>
-                @endif
                 <a href="{{ route('reviewer.assessments') }}"
                     class="mt-5 inline-flex items-center gap-2 rounded-xl bg-secondary px-4 py-2.5 text-base font-bold text-primary transition hover:brightness-95">
                     Buka penilaian
@@ -60,7 +43,7 @@
 
         <section class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4" aria-label="Ringkasan penilaian">
             @foreach ([
-                ['label' => 'Project ditugaskan', 'value' => $projectCount, 'caption' => 'Project akreditasi untuk Anda', 'tone' => 'bg-blue-50 text-additional', 'icon' => 'M4.5 6.75h15m-15 5.25h15m-15 5.25h9m-10.5-13.5h18v16.5h-18z'],
+                ['label' => 'Project perlu direview', 'value' => $projectCount, 'caption' => 'Project akreditasi yang perlu direview', 'tone' => 'bg-blue-50 text-additional', 'icon' => 'M4.5 6.75h15m-15 5.25h15m-15 5.25h9m-10.5-13.5h18v16.5h-18z'],
                 ['label' => 'Sedang dinilai', 'value' => $inProgressCount, 'caption' => 'Project dalam proses penilaian', 'tone' => 'bg-amber-50 text-amber-600', 'icon' => 'M12 6v6l4 2m5-2a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z'],
                 ['label' => 'Selesai dinilai', 'value' => $completedCount, 'caption' => 'Project sudah diselesaikan', 'tone' => 'bg-emerald-50 text-emerald-600', 'icon' => 'm5 12 4 4L19 6'],
                 ['label' => 'Rata-rata progres', 'value' => $averageProgress.'%', 'caption' => 'Progres seluruh project', 'tone' => 'bg-rose-50 text-rose-500', 'icon' => 'M12 3v18m9-9H3'],
@@ -87,7 +70,7 @@
                 <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 px-5 py-4 sm:px-6">
                     <div>
                         <h3 class="font-bold text-slate-800">Ringkasan progres penilaian</h3>
-                        <p class="mt-1 text-sm text-slate-500">Project yang ditugaskan kepada Anda.</p>
+                        <p class="mt-1 text-sm text-slate-500">Project akreditasi yang perlu direview.</p>
                     </div>
                     <a href="{{ route('reviewer.assessments') }}" class="text-sm font-bold text-additional hover:text-primary">
                         Lihat semua <span aria-hidden="true">&rarr;</span>
@@ -146,7 +129,7 @@
                             </svg>
                         </span>
                         <p class="mt-3 font-semibold text-slate-700">Belum ada project penilaian</p>
-                        <p class="mt-1 text-base text-slate-500">Project yang ditugaskan akan muncul di sini.</p>
+                        <p class="mt-1 text-base text-slate-500">Project yang perlu direview akan muncul di sini.</p>
                     </div>
                 @endif
             </article>
@@ -154,7 +137,7 @@
             <article class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
                 <div>
                     <h3 class="font-bold text-slate-800">Kinerja penilaian</h3>
-                    <p class="mt-1 text-sm text-slate-500">Ringkasan project yang ditugaskan.</p>
+                    <p class="mt-1 text-sm text-slate-500">Ringkasan project yang perlu direview.</p>
                 </div>
                 <div class="mt-6 flex flex-col items-center gap-6 sm:flex-row xl:flex-col 2xl:flex-row">
                     <div class="relative flex h-36 w-36 shrink-0 items-center justify-center rounded-full"

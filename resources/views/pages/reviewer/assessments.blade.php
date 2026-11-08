@@ -8,7 +8,7 @@
             <div>
                 <p class="text-base font-medium text-slate-500">Ruang kerja reviewer</p>
                 <h2 class="mt-1 text-3xl font-extrabold tracking-tight text-primary">Project akreditasi</h2>
-                <p class="mt-2 text-base text-slate-500">Project yang ditugaskan dan progres penilaian indikator.</p>
+                <p class="mt-2 text-base text-slate-500">Project yang perlu direview dan progres penilaian indikator.</p>
             </div>
             <a href="{{ route('reviewer.dashboard') }}"
                 class="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-base font-semibold text-slate-700 shadow-sm transition hover:border-additional hover:text-additional">
@@ -32,12 +32,9 @@
             <div class="flex flex-wrap items-center justify-between gap-4 border-b border-slate-100 bg-slate-50/70 px-5 py-4 sm:px-6">
                 <div>
                     <h3 class="text-lg font-bold text-slate-800">Daftar project penilaian</h3>
-                    <p class="mt-1 text-sm text-slate-500">{{ count($projects) }} dari {{ $totalProjects }} project ditugaskan</p>
+                    <p class="mt-1 text-sm text-slate-500">{{ count($projects) }} dari {{ $totalProjects }} project perlu direview</p>
                 </div>
                 <form method="GET" action="{{ route('reviewer.assessments') }}" class="flex flex-wrap items-center gap-2">
-                    @if ($isDemo)
-                        <span class="rounded-lg bg-amber-50 px-3 py-2 text-sm font-bold text-amber-700">Data dummy</span>
-                    @endif
                     <label class="sr-only" for="status-filter">Filter status</label>
                     <select id="status-filter" name="status" class="rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm font-medium text-slate-700 shadow-sm focus:border-additional focus:outline-none focus:ring-2 focus:ring-blue-100">
                         <option value="">Semua status</option>
@@ -68,20 +65,30 @@
             </div>
 
             <div class="overflow-x-auto">
-                <table class="w-full min-w-[1050px] text-left">
+                <table class="w-full min-w-[920px] table-fixed text-left">
+                    <colgroup>
+                        <col class="w-[18%]">
+                        <col class="w-[14%]">
+                        <col class="w-[12%]">
+                        <col class="w-[16%]">
+                        <col class="w-[8%]">
+                        <col class="w-[12%]">
+                        <col class="w-[11%]">
+                        <col class="w-[9%]">
+                    </colgroup>
                     <thead class="bg-slate-50 text-xs font-bold uppercase tracking-wide text-slate-500">
                         <tr>
-                            <th scope="col" class="px-5 py-3.5 sm:px-6">Nama project</th>
-                            <th scope="col" class="px-4 py-3.5">Program studi</th>
-                            <th scope="col" class="px-4 py-3.5">Jenjang</th>
-                            <th scope="col" class="px-4 py-3.5">Jenis instrumen</th>
-                            <th scope="col" class="px-4 py-3.5">Target submit</th>
-                            <th scope="col" class="px-4 py-3.5">Progres penilaian</th>
-                            <th scope="col" class="px-4 py-3.5">Status</th>
-                            <th scope="col" class="px-4 py-3.5">Aksi</th>
+                            <th scope="col" class="px-2.5 py-3.5 sm:px-3">Nama project</th>
+                            <th scope="col" class="px-2 py-3.5">Program studi</th>
+                            <th scope="col" class="px-2 py-3.5">Jenjang</th>
+                            <th scope="col" class="px-2 py-3.5">Jenis instrumen</th>
+                            <th scope="col" class="px-2 py-3.5">Target submit</th>
+                            <th scope="col" class="px-2 py-3.5">Progres penilaian</th>
+                            <th scope="col" class="px-2 py-3.5">Status</th>
+                            <th scope="col" class="px-2 py-3.5">Aksi</th>
                         </tr>
                     </thead>
-                    <tbody class="divide-y divide-slate-100 text-base">
+                    <tbody class="divide-y divide-slate-100 text-sm">
                         @forelse ($projects as $project)
                             @php
                                 $projectName = $project['nama_project'] ?? $project['name'] ?? $project['nama'] ?? 'Project akreditasi';
@@ -101,39 +108,43 @@
                                     default => 'border border-slate-200 bg-slate-50 text-slate-700',
                                 };
                             @endphp
-                            <tr class="transition hover:bg-slate-50/80">
-                                <td class="px-5 py-4 sm:px-6">
+                            <tr class="align-middle transition hover:bg-slate-50/80">
+                                <td class="px-2.5 py-4 sm:px-3">
                                     <div class="flex items-center gap-3">
                                         <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-blue-50 text-additional">
                                             <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.7">
                                                 <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h6l2.25 2.25h8.25v9.75H3.75V6.75Z" />
                                             </svg>
                                         </span>
-                                        <span class="max-w-[220px] font-bold text-slate-800">{{ $projectName }}</span>
+                                        <span class="line-clamp-2 min-w-0 break-words font-bold leading-5 text-slate-800" title="{{ $projectName }}">{{ $projectName }}</span>
                                     </div>
                                 </td>
-                                <td class="px-4 py-4 text-slate-600">{{ $programName }}</td>
-                                <td class="px-4 py-4">
-                                    <span class="rounded-md border border-slate-200 bg-slate-50 px-2 py-1 text-sm font-semibold text-slate-600">{{ $degree }}</span>
+                                <td class="px-2 py-4 text-slate-600">
+                                    <span class="line-clamp-2 break-words leading-5" title="{{ $programName }}">{{ $programName }}</span>
                                 </td>
-                                <td class="px-4 py-4 text-slate-600">{{ $instrument }}</td>
-                                <td class="px-4 py-4 text-slate-600">{{ $targetYear }}</td>
-                                <td class="px-4 py-4">
-                                    <div class="flex min-w-28 items-center gap-2">
+                                <td class="px-2 py-4">
+                                    <span class="inline-flex max-w-full whitespace-normal break-words rounded-md border border-slate-200 bg-slate-50 px-2 py-1 text-center text-sm font-semibold leading-tight text-slate-600">{{ $degree }}</span>
+                                </td>
+                                <td class="px-2 py-4 text-slate-600">
+                                    <span class="line-clamp-2 break-words leading-5" title="{{ $instrument }}">{{ $instrument }}</span>
+                                </td>
+                                <td class="whitespace-nowrap px-2 py-4 text-slate-600">{{ $targetYear }}</td>
+                                <td class="px-2 py-4">
+                                    <div class="flex items-center gap-2">
                                         <div class="h-1.5 flex-1 overflow-hidden rounded-full bg-slate-100">
                                             <div class="h-full rounded-full bg-additional" style="width: {{ $progress }}%"></div>
                                         </div>
-                                        <span class="text-sm font-bold text-slate-700">{{ $progressText }}%</span>
+                                        <span class="shrink-0 text-xs font-bold text-slate-700">{{ $progressText }}%</span>
                                     </div>
                                 </td>
-                                <td class="px-4 py-4">
-                                    <span class="inline-flex whitespace-nowrap rounded-full px-2.5 py-1 text-sm font-semibold {{ $statusClasses }}">{{ $status }}</span>
+                                <td class="px-2 py-4">
+                                    <span class="inline-flex whitespace-nowrap rounded-full px-2 py-1 text-xs font-semibold {{ $statusClasses }}">{{ $status }}</span>
                                 </td>
-                                <td class="px-4 py-4">
+                                <td class="px-2 py-4">
                                     @if (isset($project['id']) || isset($project['project_id']))
                                         <a href="{{ route('reviewer.assessment-detail', ['projectId' => $project['id'] ?? $project['project_id']]) }}"
-                                            class="inline-flex whitespace-nowrap items-center justify-center rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-bold text-additional transition hover:border-additional hover:bg-blue-50">
-                                            {{ $progress > 0 ? 'Lanjutkan' : 'Mulai menilai' }}
+                                            class="inline-flex whitespace-nowrap items-center justify-center rounded-lg border border-slate-200 bg-white px-2 py-2 text-xs font-bold text-additional transition hover:border-additional hover:bg-blue-50">
+                                            {{ $progress > 0 ? 'Lanjut' : 'Mulai' }}
                                         </a>
                                     @else
                                         <span class="text-sm text-slate-400">Belum tersedia</span>
@@ -144,7 +155,7 @@
                             <tr>
                                 <td colspan="8" class="px-6 py-14 text-center">
                                     <p class="font-semibold text-slate-700">Belum ada project penilaian</p>
-                                    <p class="mt-1 text-base text-slate-500">Project yang ditugaskan akan muncul di halaman ini.</p>
+                                    <p class="mt-1 text-base text-slate-500">Project yang perlu direview akan muncul di halaman ini.</p>
                                 </td>
                             </tr>
                         @endforelse

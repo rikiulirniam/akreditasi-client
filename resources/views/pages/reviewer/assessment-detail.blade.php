@@ -26,9 +26,6 @@
                 <h2 class="mt-1 truncate text-xl font-extrabold tracking-tight text-primary sm:text-2xl">{{ $projectName }}</h2>
                 <p class="text-sm text-slate-500">{{ $programName }} · {{ $project['jenis_instrumen'] ?? $project['instrumen'] ?? 'Instrumen akreditasi' }}</p>
             </div>
-            @if ($isDemo)
-                <span class="rounded-lg bg-amber-50 px-3 py-1.5 text-sm font-bold text-amber-700">Data dummy</span>
-            @endif
         </div>
 
         @if ($apiError)
