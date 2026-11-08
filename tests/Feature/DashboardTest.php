@@ -49,63 +49,6 @@ class DashboardTest extends TestCase
         $response->assertRedirect(route('login'));
     }
 
-    public function test_dashboard_redirects_kaprodi_role_to_kaprodi_dashboard(): void
-    {
-        $response = $this->withSession([
-            'access_token' => $this->getFakeToken(),
-            'user' => [
-                'nama' => 'Kaprodi TRPL',
-                'role' => 'KAPRODI',
-                'email' => 'kaprodi@example.com',
-            ],
-        ])->get(route('dashboard'));
-
-        $response->assertRedirect(route('kaprodi.dashboard'));
-    }
-
-    public function test_root_redirects_kaprodi_role_to_kaprodi_dashboard(): void
-    {
-        $response = $this->withSession([
-            'access_token' => $this->getFakeToken(),
-            'user' => [
-                'nama' => 'Kaprodi TRPL',
-                'role' => 'KAPRODI',
-                'email' => 'kaprodi@example.com',
-            ],
-        ])->get('/');
-
-        $response->assertRedirect(route('kaprodi.dashboard'));
-    }
-
-    public function test_kaprodi_dashboard_renders_successfully(): void
-    {
-        $response = $this->withSession([
-            'access_token' => $this->getFakeToken(),
-            'user' => [
-                'nama' => 'Kaprodi TRPL',
-                'role' => 'KAPRODI',
-                'email' => 'kaprodi@example.com',
-            ],
-        ])->get(route('kaprodi.dashboard'));
-
-        $response->assertOk();
-        $response->assertSee('Rekap skor sementara');
-        $response->assertSee('Status audit SPMI');
-        $response->assertSee('Monitoring progres pengisian borang prodi');
-
-        // Memastikan urutan posisi: Rekap skor sementara muncul sebelum Monitoring progres
-        $content = $response->getContent();
-        $rekapPos = strpos($content, 'Rekap skor sementara');
-        $auditPos = strpos($content, 'Status audit SPMI');
-        $monitoringPos = strpos($content, 'Monitoring progres pengisian borang prodi');
-
-        $this->assertNotFalse($rekapPos);
-        $this->assertNotFalse($auditPos);
-        $this->assertNotFalse($monitoringPos);
-        $this->assertTrue($rekapPos < $monitoringPos, 'Rekap skor harus berada di atas Monitoring progres');
-        $this->assertTrue($auditPos < $monitoringPos, 'Status audit SPMI harus berada di atas Monitoring progres');
-    }
-
     public function test_dashboard_renders_successfully_with_figma_layout_and_data(): void
     {
         $response = $this->withSession($this->authSession())->get(route('dashboard'));

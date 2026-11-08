@@ -269,124 +269,13 @@ class KaprodiController extends Controller
         $projects = $this->extractData($this->akreditasiService->getProjects());
         $rawKriteria = $this->extractData($this->akreditasiService->getKriteria());
         $rawIndikator = $this->extractData($this->akreditasiService->getIndikator());
-        
-        $projectId = (string) $request->query('project_id', $projects[0]['id'] ?? '1');
-
-        $mappingTim = [];
-        try {
-            $mappingTim = $this->extractData($this->akreditasiService->getMappingTim(['project_id' => $projectId]));
-        } catch (\Throwable $e) {
-            $mappingTim = [];
-        }
-
-        // Mapping default awal jika belum ada perubahan
-        $defaultAssignments = [
-            'K1.1' => ['pj' => 'Dr. Rina Kusuma', 'pic' => 'Budi Santoso M.Kom.'],
-            'K2.1' => ['pj' => 'Dr. Rina Kusuma', 'pic' => 'Budi Santoso M.Kom.'],
-            'K2.2' => ['pj' => 'Dr. Rina Kusuma', 'pic' => null],
-            'K2.3' => ['pj' => null, 'pic' => 'Sari Wulandari'],
-            'K3.1' => ['pj' => 'Budi Santoso M.Kom.', 'pic' => 'Andi Pratama'],
-            'K3.2' => ['pj' => 'Budi Santoso M.Kom.', 'pic' => 'Budi Santoso M.Kom.'],
-            'K3.3' => ['pj' => null, 'pic' => null],
-            'K3.4' => ['pj' => 'Dr. Rina Kusuma', 'pic' => 'Dr. Rina Kusuma'],
-        ];
-
-        // Jika mapping dari API ada, sinkronkan
-        if (!empty($mappingTim) && is_array($mappingTim)) {
-            foreach ($mappingTim as $m) {
-                $code = $m['indikator']['kode_indikator'] ?? null;
-                $role = strtolower($m['role'] ?? '');
-                $userName = $m['user']['nama'] ?? null;
-                if ($code && $role && $userName) {
-                    if (!isset($defaultAssignments[$code])) {
-                        $defaultAssignments[$code] = ['pj' => null, 'pic' => null];
-                    }
-                    $defaultAssignments[$code][$role] = $userName;
-                }
-            }
-        }
-
-        // Ambil mapping yang tersimpan di session untuk project ini
-        $sessionAssignments = session("plotting_assignments_{$projectId}", null);
-        $assignments = is_array($sessionAssignments) ? array_merge($defaultAssignments, $sessionAssignments) : $defaultAssignments;
+        $mappingTim = $this->extractData($this->akreditasiService->getMappingTim());
 
         return view('pages.kaprodi.plotting', [
             'projects' => $projects,
             'kriteriaList' => $rawKriteria,
             'indikatorList' => $rawIndikator,
             'mappingTim' => $mappingTim,
-            'projectId' => $projectId,
-            'assignments' => $assignments,
-        ]);
-    }
-
-    /**
-     * Simpan penugasan PJ atau PIC indikator tim akreditasi ke server dan session.
-     */
-    public function storePlotting(Request $request): \Illuminate\Http\JsonResponse
-    {
-        $projectId = (string) $request->input('project_id', '1');
-        $role = strtolower($request->input('role', 'pic'));
-        $assignments = $request->input('assignments', []);
-
-        if (empty($projectId)) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Project ID wajib diisi.',
-            ], 422);
-        }
-
-        $sessionKey = "plotting_assignments_{$projectId}";
-        $current = session($sessionKey, [
-            'K1.1' => ['pj' => 'Dr. Rina Kusuma', 'pic' => 'Budi Santoso M.Kom.'],
-            'K2.1' => ['pj' => 'Dr. Rina Kusuma', 'pic' => 'Budi Santoso M.Kom.'],
-            'K2.2' => ['pj' => 'Dr. Rina Kusuma', 'pic' => null],
-            'K2.3' => ['pj' => null, 'pic' => 'Sari Wulandari'],
-            'K3.1' => ['pj' => 'Budi Santoso M.Kom.', 'pic' => 'Andi Pratama'],
-            'K3.2' => ['pj' => 'Budi Santoso M.Kom.', 'pic' => 'Budi Santoso M.Kom.'],
-            'K3.3' => ['pj' => null, 'pic' => null],
-            'K3.4' => ['pj' => 'Dr. Rina Kusuma', 'pic' => 'Dr. Rina Kusuma'],
-        ]);
-
-        foreach ($assignments as $item) {
-            $code = $item['code'] ?? null;
-            if (!$code) continue;
-
-            if (!isset($current[$code])) {
-                $current[$code] = ['pj' => null, 'pic' => null];
-            }
-
-            if (!empty($item['remove'])) {
-                $current[$code][$role] = null;
-            } else {
-                $current[$code][$role] = $item['user_name'] ?? null;
-            }
-        }
-
-        // Simpan ke session agar saat refresh data langsung tetap ada
-        session([$sessionKey => $current]);
-
-        // Coba kirim ke API backend
-        try {
-            $payload = [
-                'assignments' => array_map(function ($item) use ($role) {
-                    return [
-                        'id_indikator' => is_array($item) ? ($item['id_indikator'] ?? (int) preg_replace('/\D/', '', $item['code'] ?? '1')) : (int) $item,
-                        'id_user' => 101,
-                        'role' => strtoupper($role),
-                    ];
-                }, $assignments),
-            ];
-
-            $this->akreditasiService->saveMappingTim($projectId, $payload);
-        } catch (\Throwable $e) {
-            // Silently fallback to session
-        }
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Penugasan ' . strtoupper($role) . ' berhasil disimpan.',
-            'assignments' => $current,
         ]);
     }
 }

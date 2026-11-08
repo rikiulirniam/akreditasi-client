@@ -38,6 +38,7 @@ class AkademikService
 
         $client = Http::acceptJson()
             ->asJson()
+            ->withoutVerifying() // kalau-commit-dihapus
             ->timeout(20);
 
         if (! empty($resolvedToken)) {
