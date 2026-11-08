@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Services\TridharmaService;
+use App\Services\AkreditasiService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -10,7 +11,8 @@ use Illuminate\View\View;
 class DashboardController extends Controller
 {
     public function __construct(
-        protected TridharmaService $tridharmaService
+        protected TridharmaService $tridharmaService,
+        protected AkreditasiService $akreditasiService
     ) {}
 
     /**
@@ -24,8 +26,14 @@ class DashboardController extends Controller
             'role' => 'SUPERADMIN',
         ]);
 
-        if (str_contains(strtolower((string) ($user['role'] ?? $user['role_name'] ?? '')), 'reviewer')) {
+        $role = strtolower((string) ($user['role'] ?? $user['role_name'] ?? ($user['roles'][0]['name'] ?? '')));
+
+        if (str_contains($role, 'reviewer')) {
             return redirect()->route('reviewer.dashboard');
+        }
+
+        if (str_contains($role, 'kaprodi')) {
+            return redirect()->route('kaprodi.dashboard');
         }
 
         // Default KPI data matching Figma design
@@ -151,12 +159,74 @@ class DashboardController extends Controller
             'tahun' => '2026',
         ])->all();
 
+        // === TAMBAHAN: Project Aktif, Instrumen Aktif, Progres & Prioritas Pengisian ===
+        $projects = [];
+        $versis = [];
+        $indikators = [];
+
+        try {
+            $projects = $this->akreditasiService->getProjects()->json('data') ?? [];
+        } catch (\Throwable) {
+        }
+
+        try {
+            $versis = $this->akreditasiService->getVersiInstrumen()->json('data') ?? [];
+        } catch (\Throwable) {
+        }
+
+        try {
+            $indikators = $this->akreditasiService->getIndikators()->json('data') ?? [];
+        } catch (\Throwable) {
+        }
+
+        $activeProjects = array_filter($projects, function ($project): bool {
+            $status = strtolower((string) ($project['status_project'] ?? $project['status'] ?? ''));
+
+            return ! in_array($status, ['selesai', 'complete', 'ditolak']);
+        });
+
+        $activeVersi = array_filter($versis, function ($versi): bool {
+            return ! empty($versi['status_aktif']);
+        });
+
+        $projectAktif = count($activeProjects);
+        $totalProject = count($projects);
+        $instrumenAktif = count($activeVersi);
+
+        $prioritas = [];
+        foreach (array_slice($indikators, 0, 5) as $ind) {
+            $deadline = $ind['deadline'] ?? null;
+
+            $prioritas[] = [
+                'kode' => $ind['kode_indikator'] ?? 'IND',
+                'judul' => $ind['deskripsi_indikator'] ?? $ind['nama_indikator'] ?? '-',
+                'deadline' => (is_string($deadline) && strtotime($deadline))
+                    ? \Carbon\Carbon::parse($deadline)->locale('id')->translatedFormat('d M Y')
+                    : 'Tahap Berjalan',
+                'status' => 'Belum diisi',
+            ];
+        }
+
+        $totalIndikator = count($indikators);
+        $indikatorTerisi = 0;
+        $persentase = $totalIndikator > 0
+            ? (int) round(($indikatorTerisi / $totalIndikator) * 100)
+            : 0;
+        // === AKHIR TAMBAHAN ===
+
         return view('dashboard', [
             'user' => $user,
             'kpi' => $kpi,
             'tridharma' => $tridharma,
             'tren' => $tren,
             'prestasiTerbaru' => $prestasiTerbaru,
+            'projectAktif' => $projectAktif,
+            'totalProject' => $totalProject,
+            'instrumenAktif' => $instrumenAktif,
+            'prioritas' => $prioritas,
+            'totalIndikator' => $totalIndikator,
+            'indikatorTerisi' => $indikatorTerisi,
+            'persentase' => $persentase,
         ]);
     }
 }

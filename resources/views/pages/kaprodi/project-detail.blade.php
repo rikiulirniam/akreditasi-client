@@ -23,6 +23,17 @@
             <p class="text-xs sm:text-sm text-[#5A6E85] mt-1">Detail parameter instrumen, capaian kriteria, dan simulasi penilaian mandiri dari server akreditasi.</p>
         </div>
         <div class="flex items-center gap-3">
+            @if(Route::has('kaprodi.plotting'))
+            <a 
+                href="{{ route('kaprodi.plotting') }}" 
+                class="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-primary hover:bg-primary/90 text-white text-xs font-bold transition-colors cursor-pointer shadow-xs"
+            >
+                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M18 18.72a9.094 9.094 0 003.741-.479 3 3 0 00-4.682-2.72m.94 3.198l.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0112 21c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 016 18.719m12 0a5.971 5.971 0 00-.941-3.197m0 0A5.995 5.995 0 0012 12.75a5.995 5.995 0 00-5.058 2.772m0 0a3 3 0 00-4.681 2.72 8.986 8.986 0 003.74.477m.94-3.197a5.971 5.971 0 00-.94 3.197M15 6.75a3 3 0 11-6 0 3 3 0 016 0zm6 3a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0zm-13.5 0a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0z" />
+                </svg>
+                Plotting Tim
+            </a>
+            @endif
             <a 
                 href="{{ route('kaprodi.project') }}" 
                 class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-bold transition-colors cursor-pointer"
@@ -87,13 +98,16 @@
     </div>
 
     @php
-        // Ambil data dari API atau gunakan fallback lengkap 9 kriteria
-        $apiC1 = !empty($apiKriteria[0]) ? $apiKriteria[0] : null;
+        // Ambil data kriteria 1 (Visi, Misi, Tujuan, dan Strategi) dari API jika ada
+        $apiC1 = collect($apiKriteria ?? [])->first(function ($item) {
+            $nama = strtolower($item['nama_kriteria'] ?? '');
+            return str_contains($nama, 'visi') || str_contains($nama, 'vmts');
+        });
 
         $kriteriaList = [
             [
-                'code' => $apiC1['kode_kriteria'] ?? 'C1',
-                'name' => $apiC1['nama_kriteria'] ?? 'Visi, Misi, Tujuan, dan Strategi',
+                'code' => 'C1',
+                'name' => !empty($apiC1['nama_kriteria']) ? $apiC1['nama_kriteria'] : 'Visi, Misi, Tujuan, dan Strategi',
                 'isOpen' => true,
                 'subkriteria' => [
                     [

@@ -142,36 +142,39 @@
             </div>
         </div>
 
-        <!-- 4. Top Action Bar (Cetak / Simpan PDF) -->
-        <div
-            class="bg-white rounded-2xl border border-[#EAEAEA] p-4 sm:px-6 sm:py-4 shadow-xs flex flex-wrap items-center justify-between gap-4 sticky top-4 z-10 backdrop-blur-md bg-white/95">
-            <div class="flex items-center gap-2 text-xs sm:text-sm text-[#5A6E85] font-medium">
-                <span id="selectedCount" class="font-extrabold text-primary text-base">4</span>
-                <span>bagian dipilih</span>
-                <span class="text-gray-300">·</span>
-                <span>format</span>
-                <span class="inline-flex items-center px-2.5 py-0.5 rounded-lg bg-primary/10 text-primary font-bold text-xs uppercase tracking-wider">
-                    PDF
-                </span>
-            </div>
-            <div class="flex items-center gap-3">
-                <button type="button" onclick="window.print()"
-                    class="h-10 px-6 bg-primary hover:bg-additional text-white text-xs sm:text-sm font-bold rounded-xl shadow-xs hover:shadow transition cursor-pointer flex items-center gap-2">
-                    <svg class="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24"
-                        stroke="currentColor" stroke-width="2">
-                        <path stroke-linecap="round" stroke-linejoin="round"
-                            d="M6.72 13.829c-.24-1.03-.42-2.11-.52-3.23C5.74 5.92 9.4 2.5 14 2.5s8.26 3.42 7.8 8.099c-.1 1.12-.28 2.2-.52 3.23M17 17v4H7v-4m10 0H7m10 0h3.5a1.5 1.5 0 001.5-1.5v-4a1.5 1.5 0 00-1.5-1.5H4a1.5 1.5 0 00-1.5 1.5v4A1.5 1.5 0 004 17h3" />
-                    </svg>
-                    <span>Cetak / Simpan PDF</span>
-                </button>
-            </div>
-        </div>
-
-        <!-- 5. Split Panel: Form Pilihan (Kiri) & Pratinjau Dokumen (Kanan) -->
+        <!-- 4. Split Panel: Form Pilihan (Kiri) & Pratinjau Dokumen (Kanan) -->
         <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
 
-            <!-- Panel Kiri: Form Pilihan & Format (5 / 12) -->
-            <div class="lg:col-span-5 bg-white rounded-2xl border border-[#EAEAEA] p-6 space-y-6 shadow-xs">
+            <!-- Panel Kiri: Form Pilihan & Cetak (5 / 12) — sticky saat scroll -->
+            <div class="lg:col-span-5 lg:sticky lg:top-4 space-y-4 z-10">
+
+                <!-- Action Bar (Cetak / Simpan PDF) -->
+                <div
+                    class="bg-white rounded-2xl border border-[#EAEAEA] p-4 sm:px-6 sm:py-4 shadow-xs flex flex-wrap items-center justify-between gap-4">
+                    <div class="flex items-center gap-2 text-xs sm:text-sm text-[#5A6E85] font-medium">
+                        <span id="selectedCount" class="font-extrabold text-primary text-base">4</span>
+                        <span>bagian dipilih</span>
+                        <span class="text-gray-300">·</span>
+                        <span>format</span>
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-lg bg-primary/10 text-primary font-bold text-xs uppercase tracking-wider">
+                            PDF
+                        </span>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <button type="button" onclick="window.print()"
+                            class="h-10 px-6 bg-primary hover:bg-additional text-white text-xs sm:text-sm font-bold rounded-xl shadow-xs hover:shadow transition cursor-pointer flex items-center gap-2">
+                            <svg class="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24"
+                                stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round"
+                                    d="M6.72 13.829c-.24-1.03-.42-2.11-.52-3.23C5.74 5.92 9.4 2.5 14 2.5s8.26 3.42 7.8 8.099c-.1 1.12-.28 2.2-.52 3.23M17 17v4H7v-4m10 0H7m10 0h3.5a1.5 1.5 0 001.5-1.5v-4a1.5 1.5 0 00-1.5-1.5H4a1.5 1.5 0 00-1.5 1.5v4A1.5 1.5 0 004 17h3" />
+                            </svg>
+                            <span>Cetak / Simpan PDF</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Form Pilihan Isi Laporan -->
+                <div class="bg-white rounded-2xl border border-[#EAEAEA] p-6 space-y-6 shadow-xs">
 
                 <!-- Bagian 1: Pilih Isi Laporan -->
                 <div class="space-y-3">
@@ -269,13 +272,14 @@
                 </div>
 
             </div>
+            </div>
 
             <!-- Panel Kanan: Pratinjau Dokumen (7 / 12) -->
             <div
                 class="lg:col-span-7 bg-white rounded-2xl border border-[#EAEAEA] overflow-hidden shadow-xs flex flex-col">
 
                 <!-- Toolbar Pratinjau -->
-                <div class="px-6 py-4 bg-gray-50/80 border-b border-[#EAEAEA] flex items-center justify-between">
+                <div class="px-6 py-4 bg-gray-50/80 border-b border-[#EAEAEA] flex items-center justify-between shrink-0">
                     <div class="flex items-center gap-2">
                         <svg class="w-4 h-4 text-additional" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -304,12 +308,12 @@
                     </div>
                 </div>
 
-                <!-- Container Kertas Dokumen (Scrollable) -->
-                <div class="p-4 sm:p-6 overflow-x-auto max-h-[820px] overflow-y-auto flex justify-center bg-[#F8FAFC]">
+                <!-- Container Kertas Dokumen (Scrollable — tinggi dinamis mengikuti viewport) -->
+                <div id="previewScrollContainer" class="p-4 sm:p-6 overflow-x-auto overflow-y-auto bg-[#F8FAFC]" style="max-height: calc(100vh - 220px);">
 
                     <!-- Lembar Kertas Laporan (Document Sheet) -->
                     <div id="previewDocumentPaper"
-                        class="w-[640px] min-h-[860px] bg-white p-8 sm:p-10 shadow-lg rounded-xl border border-gray-200/90 space-y-6 transition-transform duration-150 origin-top select-none"
+                        class="max-w-[640px] mx-auto bg-white p-8 sm:p-10 shadow-lg rounded-xl border border-gray-200/90 space-y-6 transition-transform duration-150 origin-top select-none"
                         style="transform: scale(0.85); transform-origin: top center;">
 
                         <!-- Header Kertas Laporan (Kop Dokumen) -->

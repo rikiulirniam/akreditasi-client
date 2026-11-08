@@ -718,6 +718,58 @@ class AkreditasiService
 
     /*
     |--------------------------------------------------------------------------
+    | Evidence SPMI Endpoints
+    |--------------------------------------------------------------------------
+    */
+
+    /**
+     * Mengambil daftar evidence SPMI.
+     *
+     * @param  array<string, mixed>  $query
+     */
+    public function getEvidenceSpmi(array $query = []): Response
+    {
+        return $this->get('/spmi-evidence', $query);
+    }
+
+    /**
+     * Mengambil detail evidence SPMI berdasarkan ID.
+     */
+    public function getEvidenceSpmiDetail(int|string $id): Response
+    {
+        return $this->get("/spmi-evidence/{$id}");
+    }
+
+    /**
+     * Menyimpan evidence SPMI baru.
+     *
+     * @param  array<string, mixed>  $data
+     */
+    public function createEvidenceSpmi(array $data): Response
+    {
+        return $this->post('/spmi-evidence', $data);
+    }
+
+    /**
+     * Memperbarui evidence SPMI.
+     *
+     * @param  array<string, mixed>  $data
+     */
+    public function updateEvidenceSpmi(int|string $id, array $data): Response
+    {
+        return $this->put("/spmi-evidence/{$id}", $data);
+    }
+
+    /**
+     * Menghapus evidence SPMI.
+     */
+    public function deleteEvidenceSpmi(int|string $id): Response
+    {
+        return $this->delete("/spmi-evidence/{$id}");
+    }
+
+    /*
+    |--------------------------------------------------------------------------
     | Sarana & Prasarana Prodi Endpoints
     |--------------------------------------------------------------------------
     */

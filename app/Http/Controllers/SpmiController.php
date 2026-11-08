@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Services\AkreditasiService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\View\View;
 
 class SpmiController extends Controller
@@ -14,187 +15,193 @@ class SpmiController extends Controller
     ) {}
 
     /**
-     * Display the Tindak Lanjut SPMI page.
+     * Display the Evidence SPMI page.
      */
-    public function tindakLanjut(Request $request): View
+    public function evidenceSpmi(Request $request): View
     {
-        $selectedYear = (int) $request->query('tahun', 2026);
-        $activeTab = $request->query('tab', 'ami'); // 'ami' or 'rtm'
+        $selectedYear = (int) $request->query('tahun', date('Y'));
 
-        // Daftar Temuan AMI dimuat dari API Akreditasi atau fallback ke data default
-        $temuanAmi = $this->loadTemuanAmiFromApi($selectedYear);
+        // Daftar standar mutu yang akan ditampilkan evidence-nya
+        $standarList = $this->loadStandarMutuFromApi();
 
-        // Summary statistics cards dihitung dinamis dari temuan AMI
-        $summary = [
-            'temuan_terbuka' => 0,
-            'menunggu_tanggapan' => 0,
-            'dalam_perbaikan' => 0,
-            'selesai' => 0,
-        ];
+        $defaultStandarId = $standarList[0]['id'] ?? 1;
+        $selectedStandarId = (int) $request->query('standar', $defaultStandarId);
 
-        foreach ($temuanAmi as $item) {
-            $status = $item['status'] ?? 'menunggu_tanggapan';
-            if ($status === 'menunggu_tanggapan') {
-                $summary['menunggu_tanggapan']++;
-                $summary['temuan_terbuka']++;
-            } elseif ($status === 'dalam_perbaikan') {
-                $summary['dalam_perbaikan']++;
-                $summary['temuan_terbuka']++;
-            } elseif ($status === 'selesai' || $status === 'efektif') {
-                $summary['selesai']++;
-            }
-        }
+        // Load evidence yang sudah disubmit per standar mutu (dengan penyimpanan persisten)
+        $evidenceData = $this->loadEvidence($selectedYear);
 
-        // Daftar Keputusan RTM
-        $keputusanRtm = [
-            [
-                'id' => 1,
-                'tanggal_rapat' => '12 Jun 2026',
-                'keputusan' => 'Percepatan rekrutmen 2 dosen tetap bidang rekayasa jaringan',
-                'tindak_lanjut' => 'Pengajuan formasi ke bagian SDM',
-                'status' => 'dalam_perbaikan',
-                'status_label' => 'Dalam perbaikan',
-            ],
-            [
-                'id' => 2,
-                'tanggal_rapat' => '12 Jun 2026',
-                'keputusan' => 'Pembaruan kurikulum berbasis masukan industri',
-                'tindak_lanjut' => 'Lokakarya kurikulum bersama mitra',
-                'status' => 'menunggu_tanggapan',
-                'status_label' => 'Menunggu tanggapan',
-            ],
-            [
-                'id' => 3,
-                'tanggal_rapat' => '12 Jun 2026',
-                'keputusan' => 'Pengesahan roadmap penelitian 2025-2029',
-                'tindak_lanjut' => 'Ditetapkan pada rapat prodi',
-                'status' => 'selesai',
-                'status_label' => 'Selesai',
-            ],
-            [
-                'id' => 4,
-                'tanggal_rapat' => '15 Mei 2026',
-                'keputusan' => 'Peningkatan rasio komputasi laboratorium praktikum IoT',
-                'tindak_lanjut' => 'Pengadaan 15 unit mikrokomputer dan modul sensor',
-                'status' => 'selesai',
-                'status_label' => 'Selesai',
-            ],
-            [
-                'id' => 5,
-                'tanggal_rapat' => '20 Apr 2026',
-                'keputusan' => 'Optimalisasi tracer study online dengan sistem reminder WhatsApp',
-                'tindak_lanjut' => 'Integrasi API blast WhatsApp gateway ke sistem alumni',
-                'status' => 'dalam_perbaikan',
-                'status_label' => 'Dalam perbaikan',
-            ],
-        ];
+        // Hitung summary statistics
+        $summary = $this->calculateEvidenceSummary($standarList, $evidenceData);
 
-        // Daftar anggota tim untuk dropdown penanggung jawab
-        $anggotaTim = [
-            'Dr. Rina Kusuma',
-            'Budi Santoso M.Kom.',
-            'Sari Wulandari',
-            'Andi Pratama',
-            'Kuat (Kaprodi)',
-            'Tim Penjaminan Mutu Prodi',
-        ];
+        // Daftar kategori evidence
+        $kategoriEvidence = $this->getKategoriEvidence();
 
-        $viewName = view()->exists('spmi.tindak-lanjut')
-            ? 'spmi.tindak-lanjut'
-            : (view()->exists('pages.kaprodi.tindak-lanjut-spmi') ? 'pages.kaprodi.tindak-lanjut-spmi' : 'spmi.tindak-lanjut');
-
-        return view($viewName, [
+        return view('pages.kaprodi.evidence-spmi', [
             'selectedYear' => $selectedYear,
-            'activeTab' => $activeTab,
+            'selectedStandarId' => $selectedStandarId,
+            'standarList' => $standarList,
+            'evidenceData' => $evidenceData,
             'summary' => $summary,
-            'temuanAmi' => $temuanAmi,
-            'keputusanRtm' => $keputusanRtm,
-            'anggotaTim' => $anggotaTim,
+            'kategoriEvidence' => $kategoriEvidence,
         ]);
     }
 
     /**
-     * Store feedback / improvement plan draft or submission to Akreditasi API.
+     * Store evidence SPMI submission to Akreditasi API & local persistent cache.
      */
-    public function storeTindakLanjut(Request $request): RedirectResponse
+    public function storeEvidence(Request $request): RedirectResponse
     {
-        $findingId = (int) $request->input('finding_id', 1);
-        $action = $request->input('action', 'draft');
-        $rencanaPerbaikan = (string) $request->input('rencana_perbaikan');
-        $tanggapan = (string) $request->input('tanggapan');
-        $targetSelesai = $request->input('target_selesai');
+        $standarId = (int) $request->input('standar_id', 1);
+        $tahun = (int) $request->input('tahun', date('Y'));
+        $status = 'terverifikasi';
 
-        $statusTindakLanjut = $action === 'submit' ? 'Selesai' : 'Sedang Berjalan';
+        $evidences = $request->input('evidences');
 
-        try {
-            // Memperbarui tindak lanjut temuan audit SPMI via Akreditasi REST API
-            $this->akreditasiService->updateTindakLanjutSpmi($findingId, [
-                'rencana_tindak_lanjut' => $rencanaPerbaikan,
-                'status_tindak_lanjut' => $statusTindakLanjut,
-                'tanggal_efektif' => ! empty($targetSelesai) ? $targetSelesai : date('Y-m-d'),
-                'evaluasi_efektivitas' => $tanggapan,
-            ]);
-        } catch (\Throwable $e) {
-            // Abaikan jika id temuan berupa dummy lokal yang belum ada di backend
+        // Muat data penyimpanan saat ini
+        $stored = $this->loadEvidence($tahun);
+
+        if (is_array($evidences)) {
+            foreach ($evidences as $kategori => $item) {
+                $deskripsi = trim((string) ($item['deskripsi'] ?? ''));
+                $linkDokumen = trim((string) ($item['link_dokumen'] ?? ''));
+                $id = ! empty($item['id']) ? (int) $item['id'] : null;
+
+                // Proses jika terdapat isian pada deskripsi atau tautan dokumen
+                if ($deskripsi !== '' || $linkDokumen !== '') {
+                    $evidenceId = $id ?: (int) ($standarId * 100 + (abs(crc32($kategori)) % 90) + 10);
+
+                    // Simpan langsung ke persistent storage lokal
+                    $stored[$standarId][$kategori] = [
+                        'id' => $evidenceId,
+                        'deskripsi' => $deskripsi,
+                        'link_dokumen' => $linkDokumen,
+                        'status' => $status,
+                        'updated_at' => date('Y-m-d H:i:s'),
+                    ];
+
+                    // Upayakan sinkronisasi ke backend API
+                    try {
+                        if ($id) {
+                            $this->akreditasiService->updateEvidenceSpmi($id, [
+                                'deskripsi' => $deskripsi,
+                                'link_dokumen' => $linkDokumen,
+                                'status' => $status,
+                            ]);
+                        } else {
+                            $res = $this->akreditasiService->createEvidenceSpmi([
+                                'id_standar_mutu' => $standarId,
+                                'kategori' => $kategori,
+                                'deskripsi' => $deskripsi,
+                                'link_dokumen' => $linkDokumen,
+                                'tahun' => $tahun,
+                                'status' => $status,
+                            ]);
+
+                            if ($res->successful() && ! empty($res->json('data.id'))) {
+                                $stored[$standarId][$kategori]['id'] = $res->json('data.id');
+                            }
+                        }
+                    } catch (\Throwable $e) {
+                        // Abaikan kegagalan koneksi ke remote API (data tersimpan di lokal)
+                    }
+                }
+            }
+
+            Cache::forever("spmi_evidence_{$tahun}", $stored);
+        } else {
+            // Fallback untuk single evidence submission
+            $kategori = (string) $request->input('kategori');
+            $deskripsi = trim((string) $request->input('deskripsi'));
+            $linkDokumen = trim((string) $request->input('link_dokumen'));
+            $id = $request->input('id') ? (int) $request->input('id') : (int) ($standarId * 100 + (abs(crc32($kategori)) % 90) + 10);
+
+            if ($deskripsi !== '' || $linkDokumen !== '') {
+                $stored[$standarId][$kategori] = [
+                    'id' => $id,
+                    'deskripsi' => $deskripsi,
+                    'link_dokumen' => $linkDokumen,
+                    'status' => $status,
+                    'updated_at' => date('Y-m-d H:i:s'),
+                ];
+                Cache::forever("spmi_evidence_{$tahun}", $stored);
+
+                try {
+                    $this->akreditasiService->createEvidenceSpmi([
+                        'id_standar_mutu' => $standarId,
+                        'kategori' => $kategori,
+                        'deskripsi' => $deskripsi,
+                        'link_dokumen' => $linkDokumen,
+                        'tahun' => $tahun,
+                        'status' => $status,
+                    ]);
+                } catch (\Throwable $e) {
+                    // Fallback
+                }
+            }
         }
 
-        $message = $action === 'submit'
-            ? 'Tanggapan dan rencana perbaikan berhasil dikirim ke Auditor!'
-            : 'Draf tanggapan berhasil disimpan sementara.';
-
-        return redirect()
-            ->route('spmi.tindak-lanjut', ['tab' => 'ami'])
-            ->with('success', $message);
+        return redirect()->route('spmi.evidence', [
+            'tahun' => $tahun,
+            'standar' => $standarId,
+        ]);
     }
 
     /**
-     * Memuat daftar temuan audit dari Akreditasi API atau fallback.
+     * Update existing evidence SPMI.
+     */
+    public function updateEvidence(Request $request, int|string $id): RedirectResponse
+    {
+        $deskripsi = trim((string) $request->input('deskripsi'));
+        $linkDokumen = trim((string) $request->input('link_dokumen'));
+        $tahun = (int) $request->input('tahun', date('Y'));
+        $standarId = (int) $request->input('standar_id', 1);
+        $kategori = (string) $request->input('kategori', 'bukti_evaluasi');
+        $status = 'terverifikasi';
+
+        $stored = $this->loadEvidence($tahun);
+        $stored[$standarId][$kategori] = [
+            'id' => (int) $id,
+            'deskripsi' => $deskripsi,
+            'link_dokumen' => $linkDokumen,
+            'status' => $status,
+            'updated_at' => date('Y-m-d H:i:s'),
+        ];
+        Cache::forever("spmi_evidence_{$tahun}", $stored);
+
+        try {
+            $this->akreditasiService->updateEvidenceSpmi($id, [
+                'deskripsi' => $deskripsi,
+                'link_dokumen' => $linkDokumen,
+                'status' => $status,
+            ]);
+        } catch (\Throwable $e) {
+            // Fallback jika API belum tersedia
+        }
+
+        return redirect()->route('spmi.evidence', [
+            'tahun' => $tahun,
+            'standar' => $standarId,
+        ]);
+    }
+
+    /**
+     * Memuat daftar standar mutu dari API atau fallback.
      *
      * @return array<int, array<string, mixed>>
      */
-    protected function loadTemuanAmiFromApi(int $year): array
+    protected function loadStandarMutuFromApi(): array
     {
         try {
-            $response = $this->akreditasiService->getSpmiAudits(['tahun' => $year]);
+            $response = $this->akreditasiService->getStandarMutu();
             if ($response->successful()) {
                 $apiData = $response->json('data') ?? [];
-                if (is_array($apiData)) {
+                if (is_array($apiData) && ! empty($apiData)) {
                     $mapped = [];
                     foreach ($apiData as $item) {
-                        $statusTindak = $item['status_tindak_lanjut'] ?? null;
-                        $status = match (strtolower((string) $statusTindak)) {
-                            'selesai', 'efektif' => 'selesai',
-                            'sedang berjalan' => 'dalam_perbaikan',
-                            default => 'menunggu_tanggapan',
-                        };
-
-                        $statusLabel = match ($status) {
-                            'selesai' => 'Selesai',
-                            'dalam_perbaikan' => 'Dalam perbaikan',
-                            default => 'Menunggu tanggapan',
-                        };
-
-                        $standarNama = $item['standar_mutu']['nama_standar'] ?? 'Standar Penjaminan Mutu';
-                        $kodeStandar = $item['standar_mutu']['kode_standar'] ?? ('STD-'.($item['id_standar_mutu'] ?? '01'));
-
                         $mapped[] = [
                             'id' => $item['id'],
-                            'kode' => $kodeStandar,
-                            'standar' => $standarNama,
-                            'judul' => "{$kodeStandar} {$standarNama}",
-                            'status' => $status,
-                            'status_label' => $statusLabel,
-                            'ringkasan' => $item['kondisi_temuan'] ?? 'Temuan audit SPMI',
-                            'deskripsi' => $item['kondisi_temuan'] ?? '',
-                            'rekomendasi' => $item['rekomendasi'] ?? '',
-                            'siklus' => 'AMI',
-                            'tanggal_audit' => ! empty($item['tanggal_audit']) ? date('d M Y', strtotime($item['tanggal_audit'])) : '22 Sep 2026',
-                            'tenggat' => ! empty($item['tanggal_efektif']) ? date('d M', strtotime($item['tanggal_efektif'])) : '30 Okt',
-                            'tanggapan' => $item['evaluasi_efektivitas'] ?? '',
-                            'rencana_perbaikan' => $item['rencana_tindak_lanjut'] ?? '',
-                            'target_selesai' => $item['tanggal_efektif'] ?? date('Y-m-d', strtotime('+14 days')),
-                            'penanggung_jawab' => 'Kuat (Kaprodi)',
-                            'bukti_url' => '',
+                            'kode' => $item['kode_standar'] ?? ('STD-'.str_pad((string) $item['id'], 2, '0', STR_PAD_LEFT)),
+                            'nama' => $item['nama_standar'] ?? 'Standar Mutu',
                         ];
                     }
 
@@ -202,133 +209,191 @@ class SpmiController extends Controller
                 }
             }
         } catch (\Throwable $e) {
-            // Abaikan kesalahan koneksi
+            // Fallback ke data default
         }
 
-        return [];
+        return $this->getDefaultStandarMutu();
     }
 
     /**
-     * Default temuan audit AMI.
+     * Memuat evidence yang sudah ada dari Cache lokal & disinkronkan dengan API.
      *
-     * @return array<int, array<string, mixed>>
+     * @return array<int|string, array<string, array<string, mixed>>>
      */
-    protected function getDefaultTemuanAmi(): array
+    protected function loadEvidence(int $year): array
+    {
+        $cached = Cache::get("spmi_evidence_{$year}");
+
+        if ($cached === null) {
+            $cached = $this->getDefaultEvidenceData();
+            Cache::forever("spmi_evidence_{$year}", $cached);
+        }
+
+        try {
+            $response = $this->akreditasiService->getEvidenceSpmi(['tahun' => $year]);
+            if ($response->successful()) {
+                $apiData = $response->json('data') ?? [];
+                if (is_array($apiData) && ! empty($apiData)) {
+                    foreach ($apiData as $item) {
+                        $standarId = $item['id_standar_mutu'] ?? 0;
+                        $kategori = $item['kategori'] ?? 'bukti_evaluasi';
+
+                        $cached[$standarId][$kategori] = [
+                            'id' => $item['id'],
+                            'deskripsi' => $item['deskripsi'] ?? '',
+                            'link_dokumen' => $item['link_dokumen'] ?? '',
+                            'status' => 'terverifikasi',
+                            'updated_at' => $item['updated_at'] ?? null,
+                        ];
+                    }
+                    Cache::forever("spmi_evidence_{$year}", $cached);
+                }
+            }
+        } catch (\Throwable $e) {
+            // Abaikan kesalahan koneksi
+        }
+
+        return $cached;
+    }
+
+    /**
+     * Menghitung ringkasan statistik evidence.
+     *
+     * @param  array<int, array<string, mixed>>  $standarList
+     * @param  array<int|string, array<string, array<string, mixed>>>  $evidenceData
+     * @return array<string, int>
+     */
+    protected function calculateEvidenceSummary(array $standarList, array $evidenceData): array
+    {
+        $totalSlots = count($standarList) * 4; // 4 kategori per standar
+        $terisi = 0;
+
+        foreach ($standarList as $standar) {
+            $standarId = $standar['id'];
+            $categories = $evidenceData[$standarId] ?? [];
+            foreach ($categories as $kategori => $evidence) {
+                $hasContent = ! empty($evidence['deskripsi']) || ! empty($evidence['link_dokumen']);
+                if ($hasContent) {
+                    $terisi++;
+                }
+            }
+        }
+
+        $belumTerisi = max(0, $totalSlots - $terisi);
+
+        return [
+            'total_evidence' => $totalSlots,
+            'terisi' => $terisi,
+            'terverifikasi' => $terisi,
+            'draft' => 0,
+            'belum_terisi' => $belumTerisi,
+        ];
+    }
+
+    /**
+     * Definisi 4 kategori evidence SPMI.
+     *
+     * @return array<int, array<string, string>>
+     */
+    protected function getKategoriEvidence(): array
     {
         return [
             [
-                'id' => 1,
-                'kode' => 'STD-04',
-                'standar' => 'Standar Isi Pembelajaran',
-                'judul' => 'STD-04 Standar Isi Pembelajaran',
-                'status' => 'menunggu_tanggapan',
-                'status_label' => 'Menunggu tanggapan',
-                'ringkasan' => 'Dokumen evaluasi kurikulum belum diperbarui sejak peninjauan terakhir.',
-                'deskripsi' => 'Dokumen evaluasi kurikulum belum diperbarui sejak peninjauan terakhir tahun 2022. Masukan dari mitra industri dan tracer study 2025 belum tercermin dalam profil lulusan dan CPL.',
-                'rekomendasi' => 'Lakukan peninjauan kurikulum dengan melibatkan mitra industri dan alumni, lalu sahkan dokumen evaluasi kurikulum terbaru melalui SK Direktur.',
-                'siklus' => 'AMI',
-                'tanggal_audit' => '22 Sep 2026',
-                'tenggat' => '20 Okt',
-                'tanggapan' => '',
-                'rencana_perbaikan' => '',
-                'target_selesai' => '2026-10-20',
-                'penanggung_jawab' => '',
-                'bukti_url' => '',
+                'key' => 'bukti_evaluasi',
+                'label' => 'Bukti Evaluasi',
+                'deskripsi' => 'Dokumen evaluasi capaian standar mutu (hasil audit, analisis gap, evaluasi diri).',
+                'icon' => 'clipboard-check',
             ],
             [
-                'id' => 2,
-                'kode' => 'STD-07',
-                'standar' => 'Standar Dosen dan Tenaga Kependidikan',
-                'judul' => 'STD-07 Standar Dosen dan Tenaga Kependidikan',
-                'status' => 'menunggu_tanggapan',
-                'status_label' => 'Menunggu tanggapan',
-                'ringkasan' => 'Rasio dosen-mahasiswa melebihi batas yang ditetapkan standar.',
-                'deskripsi' => 'Rasio dosen tetap terhadap mahasiswa pada program studi mencapai 1:38, melebihi batas standar BAN-PT maksimal 1:30 untuk rumpun teknik.',
-                'rekomendasi' => 'Ajukan formasi penambahan dosen tetap baru melalui bagian kepegawaian dan optimalkan plotting dosen lintas prodi yang serumpun.',
-                'siklus' => 'AMI',
-                'tanggal_audit' => '22 Sep 2026',
-                'tenggat' => '27 Okt',
-                'tanggapan' => '',
-                'rencana_perbaikan' => '',
-                'target_selesai' => '2026-10-27',
-                'penanggung_jawab' => '',
-                'bukti_url' => '',
+                'key' => 'bukti_pengendalian',
+                'label' => 'Bukti Pengendalian & Peningkatan',
+                'deskripsi' => 'Dokumen tindakan korektif, preventif, dan peningkatan berkelanjutan.',
+                'icon' => 'adjustments',
             ],
             [
-                'id' => 3,
-                'kode' => 'STD-02',
-                'standar' => 'Standar Kerja Sama',
-                'judul' => 'STD-02 Standar Kerja Sama',
-                'status' => 'dalam_perbaikan',
-                'status_label' => 'Dalam perbaikan',
-                'ringkasan' => 'Bukti kerja sama dengan mitra industri sudah kedaluwarsa.',
-                'deskripsi' => 'Sebanyak 4 dokumen MoU dan MoA kerja sama magang industri telah habis masa berlakunya pada awal tahun 2026 dan belum dilakukan perpanjangan resmi.',
-                'rekomendasi' => 'Lakukan komunikasi dengan mitra industri terkait untuk pembaruan MoU/MoA serta lengkapi Implementation Agreement (IA) terbaru.',
-                'siklus' => 'AMI',
-                'tanggal_audit' => '23 Sep 2026',
-                'tenggat' => '10 Nov',
-                'tanggapan' => 'Proses perpanjangan naskah MoU sedang dikoordinasikan dengan 3 mitra industri prioritas.',
-                'rencana_perbaikan' => 'Menyusun draft perpanjangan kerjasama dan menjadwalkan penandatanganan pada bulan November 2026.',
-                'target_selesai' => '2026-11-10',
-                'penanggung_jawab' => 'Sari Wulandari',
-                'bukti_url' => 'https://drive.google.com/drive/folders/mou-mitra-2026',
+                'key' => 'bukti_dampak_tridharma',
+                'label' => 'Bukti Dampak Tridharma',
+                'deskripsi' => 'Bukti dampak pendidikan, penelitian, dan pengabdian masyarakat.',
+                'icon' => 'academic-cap',
             ],
             [
-                'id' => 4,
-                'kode' => 'STD-01',
-                'standar' => 'Standar Kompetensi Lulusan',
-                'judul' => 'STD-01 Standar Kompetensi Lulusan',
-                'status' => 'selesai',
-                'status_label' => 'Selesai',
-                'ringkasan' => 'Rumusan CPL belum dipetakan ke mata kuliah secara lengkap.',
-                'deskripsi' => 'Matriks keselarasan Capaian Pembelajaran Lulusan (CPL) dengan Capaian Pembelajaran Mata Kuliah (CPMK) belum terpetakan untuk semester 5 dan 6.',
-                'rekomendasi' => 'Lengkapi matriks pemetaan CPL-CPMK pada kurikulum operasional prodi dan verifikasi bersama tim penjaminan mutu fakultas.',
-                'siklus' => 'AMI',
-                'tanggal_audit' => '10 Mar 2026',
-                'tenggat' => '30 Apr',
-                'tanggapan' => 'Pemetaan CPL ke seluruh mata kuliah telah dirampungkan bersama tim kurikulum.',
-                'rencana_perbaikan' => 'Melakukan revisi buku kurikulum dan pengesahan matriks CPL.',
-                'target_selesai' => '2026-04-30',
-                'penanggung_jawab' => 'Dr. Rina Kusuma',
-                'bukti_url' => 'https://drive.google.com/file/d/matriks-cpl-final',
+                'key' => 'dokumen_implementasi',
+                'label' => 'Dokumen Implementasi Harian',
+                'deskripsi' => 'Dokumen operasional harian prodi (SOP, form, logbook, notulen).',
+                'icon' => 'document-text',
             ],
-            [
-                'id' => 5,
-                'kode' => 'STD-05',
-                'standar' => 'Standar Proses Pembelajaran',
-                'judul' => 'STD-05 Standar Proses Pembelajaran',
-                'status' => 'selesai',
-                'status_label' => 'Selesai',
-                'ringkasan' => 'Monitoring kehadiran dosen belum terdokumentasi.',
-                'deskripsi' => 'Laporan rekapitulasi kehadiran dosen mengajar secara periodik belum terintegrasi ke sistem pemantauan mutu prodi.',
-                'rekomendasi' => 'Gunakan log presensi digital LMS/SIAKAD dan buat laporan berkala setiap tengah dan akhir semester.',
-                'siklus' => 'AMI',
-                'tanggal_audit' => '10 Mar 2026',
-                'tenggat' => '15 Mei',
-                'tanggapan' => 'Dokumentasi presensi dosen telah diintegrasikan langsung dari sistem akademik portal.',
-                'rencana_perbaikan' => 'Membuat template laporan monitoring bulanan kehadiran dosen.',
-                'target_selesai' => '2026-05-15',
-                'penanggung_jawab' => 'Budi Santoso M.Kom.',
-                'bukti_url' => 'https://drive.google.com/file/d/rekap-kehadiran-dosen',
+        ];
+    }
+
+    /**
+     * Default standar mutu untuk fallback.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    protected function getDefaultStandarMutu(): array
+    {
+        return [
+            ['id' => 1, 'kode' => 'STD-INFOKOM-01', 'nama' => 'Standar Kompetensi Lulusan'],
+            ['id' => 2, 'kode' => 'STD-INFOKOM-02', 'nama' => 'Standar Kerja Sama'],
+            ['id' => 3, 'kode' => 'STD-INFOKOM-03', 'nama' => 'Standar Pendidikan'],
+            ['id' => 4, 'kode' => 'STD-INFOKOM-04', 'nama' => 'Standar Isi Pembelajaran'],
+            ['id' => 5, 'kode' => 'STD-INFOKOM-05', 'nama' => 'Standar Proses Pembelajaran'],
+            ['id' => 6, 'kode' => 'STD-INFOKOM-06', 'nama' => 'Standar Sarana Laboratorium Komputasi dan Jaringan'],
+            ['id' => 7, 'kode' => 'STD-INFOKOM-07', 'nama' => 'Standar Dosen dan Tenaga Kependidikan'],
+            ['id' => 8, 'kode' => 'STD-INFOKOM-08', 'nama' => 'Standar Pembiayaan'],
+            ['id' => 9, 'kode' => 'STD-INFOKOM-09', 'nama' => 'Standar Penelitian'],
+            ['id' => 10, 'kode' => 'STD-INFOKOM-10', 'nama' => 'Standar Pengabdian kepada Masyarakat'],
+        ];
+    }
+
+    /**
+     * Default evidence data untuk fallback/demo.
+     *
+     * @return array<string, array<string, array<string, mixed>>>
+     */
+    protected function getDefaultEvidenceData(): array
+    {
+        return [
+            1 => [
+                'bukti_evaluasi' => [
+                    'id' => 101,
+                    'deskripsi' => 'Hasil evaluasi ketercapaian CPL melalui asesmen komprehensif semester genap 2025/2026.',
+                    'link_dokumen' => 'https://drive.google.com/file/d/evaluasi-cpl-2026',
+                    'status' => 'terverifikasi',
+                    'updated_at' => '2026-09-15',
+                ],
+                'bukti_pengendalian' => [
+                    'id' => 102,
+                    'deskripsi' => 'Rencana tindak lanjut revisi matriks CPL-CPMK berdasarkan hasil evaluasi.',
+                    'link_dokumen' => 'https://drive.google.com/file/d/rtl-cpl-2026',
+                    'status' => 'terverifikasi',
+                    'updated_at' => '2026-09-20',
+                ],
             ],
-            [
-                'id' => 6,
-                'kode' => 'STD-09',
-                'standar' => 'Standar Penelitian',
-                'judul' => 'STD-09 Standar Penelitian',
-                'status' => 'selesai',
-                'status_label' => 'Selesai',
-                'ringkasan' => 'Roadmap penelitian prodi belum disahkan.',
-                'deskripsi' => 'Roadmap payung penelitian dosen prodi telah disusun namun belum memperoleh pengesahan formal dari Dekan/Direktur.',
-                'rekomendasi' => 'Ajukan surat permohonan SK pengesahan roadmap penelitian prodi periode 2025-2029 ke pimpinan unit.',
-                'siklus' => 'RTM',
-                'tanggal_audit' => '12 Jun 2026',
-                'tenggat' => '31 Jul',
-                'tanggapan' => 'SK pengesahan roadmap penelitian telah diterbitkan oleh Direktur.',
-                'rencana_perbaikan' => 'Sosialisasi roadmap kepada seluruh kelompok keahlian dosen prodi.',
-                'target_selesai' => '2026-07-31',
-                'penanggung_jawab' => 'Andi Pratama',
-                'bukti_url' => 'https://drive.google.com/file/d/sk-roadmap-penelitian',
+            4 => [
+                'bukti_evaluasi' => [
+                    'id' => 103,
+                    'deskripsi' => 'Laporan evaluasi kesesuaian RPS dengan profil lulusan dan kebutuhan industri.',
+                    'link_dokumen' => 'https://drive.google.com/file/d/eval-rps-2026',
+                    'status' => 'terverifikasi',
+                    'updated_at' => '2026-10-01',
+                ],
+            ],
+            6 => [
+                'bukti_dampak_tridharma' => [
+                    'id' => 104,
+                    'deskripsi' => 'Dokumentasi pemanfaatan laboratorium untuk riset mahasiswa dan dosen.',
+                    'link_dokumen' => 'https://drive.google.com/file/d/dampak-lab-2026',
+                    'status' => 'terverifikasi',
+                    'updated_at' => '2026-10-10',
+                ],
+                'dokumen_implementasi' => [
+                    'id' => 105,
+                    'deskripsi' => 'Logbook penggunaan laboratorium dan jadwal maintenance peralatan.',
+                    'link_dokumen' => 'https://drive.google.com/file/d/logbook-lab-2026',
+                    'status' => 'terverifikasi',
+                    'updated_at' => '2026-10-12',
+                ],
             ],
         ];
     }
