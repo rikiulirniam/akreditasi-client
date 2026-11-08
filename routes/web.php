@@ -21,6 +21,7 @@ use App\Http\Controllers\KegiatanMahasiswaController;
 use App\Http\Controllers\KelasController;
 use App\Http\Controllers\KurikulumController;
 use App\Http\Controllers\LaporanAkhirController;
+use App\Http\Controllers\LulusanController;
 use App\Http\Controllers\MahasiswaController;
 use App\Http\Controllers\MataKuliahController;
 use App\Http\Controllers\NilaiMahasiswaController;
@@ -115,6 +116,7 @@ Route::middleware('auth.akademik')->group(function () {
     Route::put('/mahasiswa/{mahasiswa}/status/{statusId}', [MahasiswaController::class, 'updateStatus'])->name('mahasiswa.status.update');
     Route::delete('/mahasiswa/{mahasiswa}/status/{statusId}', [MahasiswaController::class, 'destroyStatus'])->name('mahasiswa.status.destroy');
     Route::resource('kegiatan-mahasiswa', KegiatanMahasiswaController::class);
+    Route::get('/lulusan', [LulusanController::class, 'index'])->name('lulusan.index');
 
     Route::get('/kemahasiswaan/jenis-prestasi', [MahasiswaController::class, 'jenisPrestasi'])->name('kemahasiswaan.jenis-prestasi.index');
     Route::post('/kemahasiswaan/jenis-prestasi', [MahasiswaController::class, 'storeJenisPrestasi'])->name('kemahasiswaan.jenis-prestasi.store');
