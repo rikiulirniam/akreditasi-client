@@ -5,7 +5,17 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
-    <title>@yield('browser-title', $title ?? 'Dashboard') - Portal Akreditasi</title>
+    @php
+        $rawMeta = trim((string) $__env->yieldContent('meta_title'));
+        if ($rawMeta === '') {
+            $rawMeta = trim((string) $__env->yieldContent('browser-title'));
+        }
+        if ($rawMeta === '') {
+            $rawMeta = trim(preg_replace('/\s+/', ' ', html_entity_decode(strip_tags((string) $__env->yieldContent('title', $title ?? 'Dashboard')))));
+        }
+        $pageTitle = $rawMeta !== '' ? $rawMeta : 'Portal Akreditasi';
+    @endphp
+    <title>{{ $pageTitle }} - Portal Akreditasi</title>
 
     <!-- Scripts and Styles -->
     @vite(['resources/css/app.css', 'resources/js/app.js'])
@@ -29,13 +39,23 @@
         }
     </style>
 </head>
-<body class="h-full font-sans antialiased text-black overflow-hidden">
+<body class="h-full font-sans antialiased text-black overflow-hidden {{ request()->routeIs('tenaga-kependidikan.*', 'tenaga-pendidikan.*') ? 'flow2-tendik' : '' }}">
     @php
         $currentUser = $user ?? session('user') ?? [
-            'nama' => 'Kuwat',
+            'nama' => 'Kuwat Santoso',
             'email' => 'kuwat@example.com',
             'role' => 'Kaprodi',
         ];
+        $tokenExpiresAt = session('token_expires_at');
+        if (! $tokenExpiresAt && session()->has('access_token')) {
+            $parts = explode('.', (string) session('access_token'));
+            if (isset($parts[1])) {
+                $payload = json_decode(base64_decode(strtr($parts[1], '-_', '+/')), true);
+                if (isset($payload['exp'])) {
+                    $tokenExpiresAt = (int) $payload['exp'];
+                }
+            }
+        }
     @endphp
 
     <div class="flex h-screen w-full overflow-hidden bg-white">
@@ -47,10 +67,10 @@
         <div class="flex-1 flex flex-col min-w-0 h-full overflow-hidden">
             
             <!-- Topbar -->
-            <header class="shrink-0 min-h-24 bg-white px-4 sm:px-6 lg:px-[54px] py-3.5 flex items-center justify-between z-30">
+            <header class="shrink-0 min-h-20 bg-white px-4 sm:px-6 lg:px-[54px] pt-5 sm:pt-7 pb-4 sm:pb-5 flex items-center justify-between z-30">
                 
                 <!-- Left: Sidebar Toggle & Page Title -->
-                <div class="flex items-center gap-3 sm:gap-4">
+                <div class="flex items-center gap-3 sm:gap-5">
                     <!-- Mobile Hamburger Button -->
                     <button 
                         type="button" 
@@ -67,7 +87,7 @@
                     <button 
                         type="button" 
                         id="topbarSidebarToggleBtn" 
-                        class="hidden lg:flex p-1.5 -ml-1 text-primary hover:text-additional transition cursor-pointer" 
+                        class="hidden lg:flex p-1.5 -ml-1 text-primary hover:text-additional transition cursor-pointer self-start mt-1.5" 
                         aria-label="Toggle Sidebar"
                     >
                         <svg class="w-8 h-8 stroke-[2.5]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -77,30 +97,29 @@
 
                     <!-- Page Title & Subtitle -->
                     <div>
-                        <h1 class="text-2xl sm:text-3xl lg:text-[44px] font-extrabold text-black tracking-tight leading-none">
+                        <h1 class="text-3xl sm:text-4xl lg:text-[44px] font-black text-black tracking-tight leading-tight flex items-center gap-1.5 flex-wrap">
                             @yield('title', $title ?? 'Dashboard')
                         </h1>
                         @hasSection('subtitle')
-                            <p class="text-sm sm:text-base lg:text-[20px] font-semibold text-black mt-1">
+                            <p class="text-sm sm:text-base lg:text-[16px] font-medium text-[#4B5563] mt-2 sm:mt-2.5">
                                 @yield('subtitle')
                             </p>
                         @endif
                     </div>
                 </div>
 
-                <!-- Right: Profile Pill -->
-                <div class="relative" id="profileDropdownContainer">
+                <!-- Right: Profile Pill (Matches User Reference Image) -->
+                <div class="relative w-[215px]" id="profileDropdownContainer">
                     <button 
                         type="button" 
                         id="profileDropdownBtn"
-                        class="relative z-[51] flex items-center gap-2 rounded-md border border-primary bg-[#e5e5e5] px-2.5 py-1.5 text-primary shadow-sm transition duration-150 hover:bg-[#dcdcdc] active:scale-[0.99] sm:gap-2.5 sm:px-3"
-                        style="background-color: #e5e5e5;"
+                        class="w-full bg-[#E5E5E5] border-2 border-[#3A5675] rounded-[16px] px-3.5 py-2 flex items-center justify-between cursor-pointer select-none transition-all duration-200"
                         aria-expanded="false"
                         aria-haspopup="true"
                     >
                         <svg 
                             id="profileChevron" 
-                            class="h-4 w-4 shrink-0 text-primary stroke-[3] transition-transform duration-200 sm:h-[18px] sm:w-[18px]"
+                            class="w-4 h-4 text-[#012650] stroke-[3] transition-transform duration-300 shrink-0" 
                             fill="none" 
                             viewBox="0 0 24 24" 
                             stroke="currentColor"
@@ -108,63 +127,70 @@
                             <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
                         </svg>
 
-                        <div class="text-left leading-tight">
-                            <span class="block whitespace-nowrap text-xs font-bold tracking-tight text-[#102b46] sm:text-[13px]">
-                                Halo, {{ explode(' ', $currentUser['nama'] ?? 'Kuwat')[0] }}
+                        <!-- Middle: Greeting & Role -->
+                        <div class="text-left leading-tight min-w-0 flex-1 px-2.5">
+                            <span class="block font-bold text-[13.5px] text-black tracking-tight truncate">
+                                Halo, {{ $currentUser['nama'] ?? 'Kuwat' }}
                             </span>
-                            <span class="block text-[10px] font-medium leading-tight text-gray-600">
+                            <span class="block text-[11px] text-[#656565] font-semibold truncate">
                                 {{ ucfirst(strtolower($currentUser['role'] ?? 'Kaprodi')) }}
                             </span>
                         </div>
 
-                        <div class="shrink-0 text-additional">
-                            <svg class="h-8 w-8 sm:h-[34px] sm:w-[34px]" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                <circle cx="18" cy="18" r="15.5" stroke="currentColor" stroke-width="2.6"/>
+                        <!-- Right: Circle User Avatar Icon (Blue on white circular background matching photo 1) -->
+                        <div class="shrink-0 w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-white flex items-center justify-center text-[#01568D]">
+                            <svg class="w-full h-full" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <circle cx="18" cy="18" r="16.5" stroke="currentColor" stroke-width="2.6"/>
                                 <circle cx="18" cy="14" r="4.5" stroke="currentColor" stroke-width="2.6"/>
                                 <path d="M9.5 28C10.8 23.5 14.1 21.5 18 21.5C21.9 21.5 25.2 23.5 26.5 28" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/>
                             </svg>
                         </div>
                     </button>
 
-                    <!-- Dropdown Menu -->
+                    <!-- Dropdown Menu (Drops down below the button, not overlaying/nimpa) -->
                     <div 
                         id="profileDropdownMenu" 
-                        class="pointer-events-none absolute right-0 top-full z-50 w-full origin-top-right scale-95 transform rounded-b-md border border-t-0 border-primary bg-[#e5e5e5] py-1.5 opacity-0 shadow-lg transition-all duration-150"
-                        style="background-color: #e5e5e5;"
                         role="menu"
+                        aria-label="Menu Profil"
                     >
-                        <div class="border-b border-primary/20 px-3 py-1.5">
-                            <p class="truncate text-xs font-bold leading-tight text-[#102b46]">{{ $currentUser['nama'] ?? 'Kuwat' }}</p>
-                            <p class="truncate text-[10px] font-medium leading-tight text-gray-600">{{ ucfirst(strtolower($currentUser['role'] ?? 'Kaprodi')) }}</p>
-                        </div>
+                        <div class="px-4 pt-3.5 pb-4 space-y-3.5 select-none">
+                            <!-- User Full Name & Role -->
+                            <div class="text-left leading-tight">
+                                <p class="text-[15px] font-bold text-black tracking-tight">{{ $currentUser['nama'] ?? 'Kuwat Santoso' }}</p>
+                                <p class="text-[12px] font-normal text-gray-700 mt-0.5">{{ ucfirst(strtolower($currentUser['role'] ?? 'Kaprodi')) }}</p>
+                            </div>
 
-                        <div class="space-y-0.5 p-1">
-                            <div class="flex items-center gap-2 rounded px-2 py-1.5 text-xs font-medium text-gray-800">
-                                <svg class="h-3.5 w-3.5 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 6h3m-1.5-1.5v3M6.75 9.75l-1.06-1.06m12.62 0-1.06 1.06M4.5 13.5h1.5m12 0h1.5M7.5 19.5l1.06-1.06m6.88 0 1.06 1.06M12 21v-1.5m0-12a6 6 0 1 0 0 12 6 6 0 0 0 0-12Z" />
-                                </svg>
-                                Pengaturan
-                            </div>
-                            <div class="flex items-center gap-2 rounded px-2 py-1.5 text-xs font-medium text-gray-800">
-                                <svg class="h-3.5 w-3.5 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M3 12h3l2-6 4 12 2-6h3l2 3h2" />
-                                </svg>
-                                Aktivitas
-                            </div>
-                            <form method="POST" action="{{ route('logout') }}">
-                                @csrf
-                                <button 
-                                    type="submit" 
-                                    class="flex w-full cursor-pointer items-center gap-2 rounded px-2 py-1.5 text-left text-xs font-medium transition hover:bg-white/60"
-                                    style="color: #dc2626;"
-                                    role="menuitem"
-                                >
-                                    <svg class="h-3.5 w-3.5" style="color: #dc2626;" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="M10 4H5.5A1.5 1.5 0 0 0 4 5.5v13A1.5 1.5 0 0 0 5.5 20H10M14 8l4 4-4 4m4-4H9" />
+                            <!-- Menu Items -->
+                            <div class="space-y-3 pt-1">
+                                <!-- Pengaturan -->
+                                <a href="#" class="flex items-center gap-3 text-[14px] font-medium text-black hover:text-[#01568D] transition group" role="menuitem">
+                                    <svg class="w-4 h-4 text-gray-800 group-hover:text-[#01568D] shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <circle cx="12" cy="12" r="3"></circle>
+                                        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
                                     </svg>
-                                    Keluar
-                                </button>
-                            </form>
+                                    <span>Pengaturan</span>
+                                </a>
+
+                                <!-- Aktivitas -->
+                                <a href="#" class="flex items-center gap-3 text-[14px] font-medium text-black hover:text-[#01568D] transition group" role="menuitem">
+                                    <svg class="w-4 h-4 text-gray-800 group-hover:text-[#01568D] shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                        <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+                                    </svg>
+                                    <span>Aktivitas</span>
+                                </a>
+
+                                <!-- Keluar -->
+                                <form method="POST" action="{{ route('logout') }}" class="m-0 p-0">
+                                    @csrf
+                                    <button type="submit" class="w-full flex items-center gap-3 text-[14px] font-medium text-[#8B1E1E] hover:text-red-800 transition cursor-pointer text-left" role="menuitem">
+                                        <svg class="w-4 h-4 text-[#8B1E1E] fill-current shrink-0" viewBox="0 0 24 24">
+                                            <path d="M5 3h10a2 2 0 0 1 2 2v3a1 1 0 0 1-2 0V5H5v14h10v-3a1 1 0 0 1 2 0v3a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/>
+                                            <path d="M14.293 8.293a1 1 0 0 1 1.414 0l3 3a1 1 0 0 1 0 1.414l-3 3a1 1 0 0 1-1.414-1.414L15.586 13H9a1 1 0 0 1 0-2h6.586l-1.293-1.293a1 1 0 0 1 0-1.414z"/>
+                                        </svg>
+                                        <span>Keluar</span>
+                                    </button>
+                                </form>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -196,8 +222,17 @@
             const sidebarTexts = document.querySelectorAll('.sidebar-text');
             const sidebarChevrons = document.querySelectorAll('.sidebar-chevron');
             const submenuContainers = document.querySelectorAll('.submenu-container');
+            const sidebarExpandedWidth = 'w-[350px]';
 
             let isCollapsed = localStorage.getItem('sidebar_collapsed') === 'true';
+
+            // Track open submenus so they remain open when expanded
+            const openSubmenus = new Set();
+            submenuContainers.forEach(container => {
+                if (container.getAttribute('data-is-active') === 'true' || !container.classList.contains('hidden')) {
+                    openSubmenus.add(container.id);
+                }
+            });
 
             function applySidebarState() {
                 if (isCollapsed) {
@@ -208,9 +243,26 @@
                     submenuContainers.forEach(el => el.classList.add('hidden'));
                 } else {
                     sidebar.classList.remove('w-20', 'is-collapsed');
-                    sidebar.classList.add('w-[350px]');
+                    sidebar.classList.add(sidebarExpandedWidth);
                     sidebarTexts.forEach(el => el.classList.remove('hidden'));
                     sidebarChevrons.forEach(el => el.classList.remove('hidden'));
+
+                    // Restore open submenu state when expanded
+                    submenuContainers.forEach(container => {
+                        const targetId = container.id;
+                        const btn = document.querySelector(`.submenu-toggle-btn[data-target="${targetId}"]`);
+                        const chevron = btn ? btn.querySelector('.submenu-chevron') : null;
+                        const shouldBeOpen = openSubmenus.has(targetId) || container.getAttribute('data-is-active') === 'true';
+
+                        if (shouldBeOpen) {
+                            container.classList.remove('hidden');
+                            if (chevron) chevron.classList.add('rotate-180');
+                            openSubmenus.add(targetId);
+                        } else {
+                            container.classList.add('hidden');
+                            if (chevron) chevron.classList.remove('rotate-180');
+                        }
+                    });
                 }
             }
 
@@ -245,77 +297,158 @@
             if (mobileToggleBtn) mobileToggleBtn.addEventListener('click', openMobileSidebar);
             if (backdrop) backdrop.addEventListener('click', closeMobileSidebar);
 
+            window.addEventListener('resize', function () {
+                if (window.innerWidth >= 1024) {
+                    applySidebarState();
+                } else {
+                    if (sidebar) {
+                        sidebar.classList.remove('w-20', 'is-collapsed');
+                        sidebar.classList.add('w-[350px]');
+                    }
+                    sidebarTexts.forEach(el => el.classList.remove('hidden'));
+                    sidebarChevrons.forEach(el => el.classList.remove('hidden'));
+                }
+            });
+
             // Submenu Accordion Logic
             const submenuButtons = document.querySelectorAll('.submenu-toggle-btn');
             submenuButtons.forEach(btn => {
                 btn.addEventListener('click', function () {
-                    // If collapsed, expand first so submenu is visible
-                    if (isCollapsed) {
-                        toggleDesktopSidebar();
-                    }
-
                     const targetId = this.getAttribute('data-target');
                     const targetSubmenu = document.getElementById(targetId);
                     const chevron = this.querySelector('.submenu-chevron');
+
+                    // If collapsed, expand first and ensure this submenu is opened
+                    if (isCollapsed) {
+                        openSubmenus.add(targetId);
+                        toggleDesktopSidebar();
+                        return;
+                    }
 
                     if (targetSubmenu) {
                         const isHidden = targetSubmenu.classList.contains('hidden');
                         if (isHidden) {
                             targetSubmenu.classList.remove('hidden');
                             if (chevron) chevron.classList.add('rotate-180');
+                            openSubmenus.add(targetId);
                         } else {
                             targetSubmenu.classList.add('hidden');
                             if (chevron) chevron.classList.remove('rotate-180');
+                            openSubmenus.delete(targetId);
                         }
                     }
                 });
             });
 
             // Profile Dropdown Elements
+            const profileContainer = document.getElementById('profileDropdownContainer');
             const profileBtn = document.getElementById('profileDropdownBtn');
-            const profileMenu = document.getElementById('profileDropdownMenu');
             const profileChevron = document.getElementById('profileChevron');
             let isDropdownOpen = false;
 
-            function toggleProfileDropdown() {
-                isDropdownOpen = !isDropdownOpen;
-                if (isDropdownOpen) {
-                    profileMenu.classList.remove('opacity-0', 'scale-95', 'pointer-events-none');
-                    profileMenu.classList.add('opacity-100', 'scale-100');
-                    profileBtn.classList.add('rounded-b-none');
-                    if (profileChevron) profileChevron.classList.add('rotate-180');
+            function openProfileDropdown() {
+                isDropdownOpen = true;
+                if (profileContainer) {
+                    profileContainer.classList.add('is-open');
+                }
+                if (profileBtn) {
                     profileBtn.setAttribute('aria-expanded', 'true');
-                } else {
-                    profileMenu.classList.remove('opacity-100', 'scale-100');
-                    profileMenu.classList.add('opacity-0', 'scale-95', 'pointer-events-none');
-                    profileBtn.classList.remove('rounded-b-none');
-                    if (profileChevron) profileChevron.classList.remove('rotate-180');
+                }
+                if (profileChevron) {
+                    profileChevron.classList.add('rotate-180');
+                }
+            }
+
+            function closeProfileDropdown() {
+                isDropdownOpen = false;
+                if (profileContainer) {
+                    profileContainer.classList.remove('is-open');
+                }
+                if (profileBtn) {
                     profileBtn.setAttribute('aria-expanded', 'false');
+                }
+                if (profileChevron) {
+                    profileChevron.classList.remove('rotate-180');
                 }
             }
 
             if (profileBtn) {
                 profileBtn.addEventListener('click', function (e) {
                     e.stopPropagation();
-                    toggleProfileDropdown();
+                    if (isDropdownOpen) {
+                        closeProfileDropdown();
+                    } else {
+                        openProfileDropdown();
+                    }
                 });
             }
 
             // Close on click outside
             document.addEventListener('click', function (e) {
-                if (isDropdownOpen && profileMenu && !profileMenu.contains(e.target) && !profileBtn.contains(e.target)) {
-                    toggleProfileDropdown();
+                if (isDropdownOpen && profileContainer && !profileContainer.contains(e.target)) {
+                    closeProfileDropdown();
                 }
             });
 
             // Close on Escape key
             document.addEventListener('keydown', function (e) {
                 if (e.key === 'Escape') {
-                    if (isDropdownOpen) toggleProfileDropdown();
+                    if (isDropdownOpen) closeProfileDropdown();
                     closeMobileSidebar();
                 }
             });
+
+            // Auto-refresh JWT token proactively before expiration
+            let tokenExpiresAt = {{ (int) ($tokenExpiresAt ?? 0) }};
+            const refreshTokenUrl = "{{ route('auth.refresh-token') }}";
+            const csrfMetaToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+
+            if (tokenExpiresAt > 0 && csrfMetaToken) {
+                let tokenRefreshTimer = null;
+
+                function scheduleTokenRefresh() {
+                    if (tokenRefreshTimer) {
+                        clearTimeout(tokenRefreshTimer);
+                    }
+
+                    const nowSeconds = Math.floor(Date.now() / 1000);
+                    const leadSeconds = 300;
+                    const secondsLeft = tokenExpiresAt - nowSeconds - leadSeconds;
+
+                    const delayMs = Math.max(3000, secondsLeft * 1000);
+
+                    tokenRefreshTimer = setTimeout(async function () {
+                        try {
+                            const res = await fetch(refreshTokenUrl, {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'X-CSRF-TOKEN': csrfMetaToken,
+                                    'Accept': 'application/json',
+                                    'X-Requested-With': 'XMLHttpRequest'
+                                }
+                            });
+
+                            if (res.ok) {
+                                const data = await res.json();
+                                if (data.success && data.expires_at) {
+                                    tokenExpiresAt = data.expires_at;
+                                    scheduleTokenRefresh();
+                                }
+                            } else if (res.status === 401) {
+                                window.location.href = "{{ route('login') }}";
+                            }
+                        } catch (e) {
+                            // Coba kembali dalam 30 detik jika ada gangguan jaringan
+                            tokenRefreshTimer = setTimeout(scheduleTokenRefresh, 30000);
+                        }
+                    }, delayMs);
+                }
+
+                scheduleTokenRefresh();
+            }
         });
     </script>
+    @stack('scripts')
 </body>
 </html>

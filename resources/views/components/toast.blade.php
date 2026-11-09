@@ -80,10 +80,42 @@
 <!-- Toast Notification Container -->
 <div 
     id="toast-container" 
-    class="fixed top-5 right-5 z-[99999] flex flex-col gap-3 pointer-events-none w-full max-w-[380px] px-4 sm:px-0 transition-all duration-200"
+    class="fixed top-5 right-5 z-[99999] flex flex-col gap-3 pointer-events-none w-full max-w-[420px] sm:max-w-[460px] px-4 sm:px-0 transition-all duration-200"
     aria-live="polite"
     aria-atomic="true"
 >
+    <!-- Template for Delete Notification (Exact Match with Foto 3) -->
+    <template id="toast-delete-template">
+        <div class="toast-item pointer-events-auto relative w-full overflow-hidden rounded-2xl bg-[#FEE2E2] border-b-[5px] border-[#C53030] shadow-xl transition-all duration-300 transform translate-x-8 opacity-0 hover:shadow-2xl">
+            <div class="flex items-center justify-between gap-4 px-5 py-3.5 sm:py-4">
+                <div class="flex items-center gap-3.5 min-w-0 flex-1">
+                    <!-- Red Trash Can Outline Icon (Matching Foto 3) -->
+                    <div class="shrink-0 text-[#C53030]">
+                        <svg class="w-7 h-7" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M3 6h18" />
+                            <path d="M19 6v14c0 1.1-.9 2-2 2H7c-1.1 0-2-.9-2-2V6" />
+                            <path d="M8 6V4c0-1.1.9-2 2-2h4c1.1 0 2 .9 2 2v2" />
+                            <line x1="10" y1="11" x2="10" y2="17" />
+                            <line x1="14" y1="11" x2="14" y2="17" />
+                        </svg>
+                    </div>
+
+                    <!-- Notification Message (Matching Foto 3) -->
+                    <p class="toast-message text-base sm:text-[17px] font-bold text-[#C53030] tracking-tight truncate leading-tight">
+                        Data berhasil dihapus
+                    </p>
+                </div>
+
+                <!-- Red Close Button (Matching Foto 3) -->
+                <button type="button" class="toast-close-btn p-1 -mr-1 text-[#C53030] hover:text-[#991B1B] hover:bg-red-200/50 rounded-lg transition cursor-pointer shrink-0" aria-label="Tutup">
+                    <svg class="w-5 h-5 stroke-[2.8]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+        </div>
+    </template>
+
     <!-- Template for Client-side Toasts -->
     <template id="toast-template">
         <div class="toast-item pointer-events-auto relative w-full overflow-hidden rounded-2xl bg-white/95 backdrop-blur-md border shadow-xl transition-all duration-300 transform translate-x-8 opacity-0 hover:shadow-2xl">
@@ -119,6 +151,7 @@
     (function () {
         const container = document.getElementById('toast-container');
         const template = document.getElementById('toast-template');
+        const deleteTemplate = document.getElementById('toast-delete-template');
 
         // Styles & Icons definition per toast type
         const typeConfigs = {
@@ -128,6 +161,13 @@
                 badgeBg: 'bg-emerald-50 text-emerald-600',
                 progressBg: 'bg-emerald-500',
                 svg: '<svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>'
+            },
+            delete: {
+                title: 'Dihapus',
+                borderColor: 'border-[#C53030]',
+                badgeBg: 'bg-[#FEE2E2] text-[#C53030]',
+                progressBg: 'bg-[#C53030]',
+                svg: '<svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M3 6h18m-2 0v14c0 1.1-.9 2-2 2H7c-1.1 0-2-.9-2-2V6m3 0V4c0-1.1.9-2 2-2h4c1.1 0 2 .9 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>'
             },
             error: {
                 title: 'Gagal',
@@ -153,8 +193,49 @@
         };
 
         function createToast({ message, type = 'info', title = null, duration = 4500 }) {
-            if (!container || !template) return;
+            if (!container) return;
 
+            const isDelete = type === 'delete' || (typeof message === 'string' && message.toLowerCase().includes('dihapus'));
+            if (isDelete && deleteTemplate) {
+                const clone = deleteTemplate.content.cloneNode(true);
+                const toastEl = clone.querySelector('.toast-item');
+                const messageEl = clone.querySelector('.toast-message');
+                const closeBtn = clone.querySelector('.toast-close-btn');
+
+                if (messageEl && message) {
+                    messageEl.textContent = message;
+                }
+
+                container.appendChild(toastEl);
+
+                requestAnimationFrame(() => {
+                    toastEl.classList.remove('translate-x-8', 'opacity-0');
+                    toastEl.classList.add('translate-x-0', 'opacity-100');
+                });
+
+                let timer = null;
+                const dismiss = function () {
+                    clearTimeout(timer);
+                    toastEl.classList.remove('translate-x-0', 'opacity-100');
+                    toastEl.classList.add('translate-x-8', 'opacity-0');
+                    setTimeout(() => {
+                        toastEl.remove();
+                    }, 300);
+                };
+
+                if (closeBtn) {
+                    closeBtn.addEventListener('click', dismiss);
+                }
+
+                if (duration > 0) {
+                    timer = setTimeout(dismiss, duration);
+                    toastEl.addEventListener('mouseenter', () => clearTimeout(timer));
+                    toastEl.addEventListener('mouseleave', () => { timer = setTimeout(dismiss, 2000); });
+                }
+                return;
+            }
+
+            if (!template) return;
             const config = typeConfigs[type] || typeConfigs.info;
             const clone = template.content.cloneNode(true);
             const toastEl = clone.querySelector('.toast-item');

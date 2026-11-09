@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Services\AkademikService;
+use Closure;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -68,7 +70,17 @@ class UserController extends Controller
     {
         $validated = $request->validate([
             'nama' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'email', 'max:255'],
+            'email' => [
+                'required',
+                'email',
+                'max:255',
+                function (string $attribute, mixed $value, Closure $fail): void {
+                    $domain = strtolower((string) substr(strrchr((string) $value, '@'), 1));
+                    if ($domain !== 'polines.ac.id' && ! str_ends_with($domain, '.polines.ac.id')) {
+                        $fail('Hanya email dengan domain *.polines.ac.id yang diizinkan.');
+                    }
+                },
+            ],
             'password' => ['required', 'string', 'min:6', 'confirmed'],
             'role' => ['required', 'string', 'max:100'],
         ], [
@@ -124,7 +136,17 @@ class UserController extends Controller
     {
         $validated = $request->validate([
             'nama' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'email', 'max:255'],
+            'email' => [
+                'required',
+                'email',
+                'max:255',
+                function (string $attribute, mixed $value, Closure $fail): void {
+                    $domain = strtolower((string) substr(strrchr((string) $value, '@'), 1));
+                    if ($domain !== 'polines.ac.id' && ! str_ends_with($domain, '.polines.ac.id')) {
+                        $fail('Hanya email dengan domain *.polines.ac.id yang diizinkan.');
+                    }
+                },
+            ],
             'password' => ['nullable', 'string', 'min:6', 'confirmed'],
             'role' => ['required', 'string', 'max:100'],
         ], [
@@ -173,12 +195,19 @@ class UserController extends Controller
         ]);
     }
 
-    public function destroy(int|string $id): RedirectResponse
+    public function destroy(Request $request, int|string $id): JsonResponse|RedirectResponse
     {
         $response = $this->akademikService->deleteUser($id);
         $body = $response->json();
 
         if ($response->successful() && ($body['success'] ?? false)) {
+            if ($request->expectsJson() || $request->ajax()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => $body['message'] ?? 'Pengguna berhasil dihapus.',
+                ]);
+            }
+
             return redirect()->route('users.index')->with('toast', [
                 'type' => 'success',
                 'title' => 'Berhasil Dihapus',
@@ -186,10 +215,19 @@ class UserController extends Controller
             ]);
         }
 
+        $errorMessage = $body['message'] ?? 'Pengguna gagal dihapus.';
+
+        if ($request->expectsJson() || $request->ajax()) {
+            return response()->json([
+                'success' => false,
+                'message' => $errorMessage,
+            ], $response->status() >= 400 ? $response->status() : 400);
+        }
+
         return redirect()->route('users.index')->with('toast', [
             'type' => 'error',
             'title' => 'Gagal Menghapus',
-            'message' => $body['message'] ?? 'Pengguna gagal dihapus.',
+            'message' => $errorMessage,
         ]);
     }
 }

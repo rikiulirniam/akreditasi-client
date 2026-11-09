@@ -5,14 +5,17 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Kualifikasi extends Model
 {
     use HasFactory;
+    use SoftDeletes;
 
     protected $table = 'kualifikasis';
 
     protected $fillable = [
+        'tendik_api_id',
         'tenaga_kependidikan_id',
         'gelar',
         'jenjang',

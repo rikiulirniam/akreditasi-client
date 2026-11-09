@@ -1,418 +1,456 @@
 @extends('layouts.app')
 
+@section('meta_title', 'Detail Tenaga Kependidikan')
+
 @section('title')
     <span class="inline-flex items-center gap-2.5 sm:gap-3.5 flex-wrap">
-        <a href="{{ route('tenaga-pendidikan.index') }}" class="hover:text-additional transition text-black">
-            Tenaga Pendidikan
-        </a>
-        <svg class="w-5 h-5 sm:w-7 sm:h-7 stroke-[3] text-black shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <a href="{{ route('tenaga-kependidikan.index') }}" class="hover:text-additional transition text-black">Tenaga Pendidikan</a>
+        <svg class="w-5 h-5 sm:w-7 sm:h-7 stroke-[3] text-black shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
             <path stroke-linecap="round" stroke-linejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" />
         </svg>
         <span>Detail</span>
     </span>
 @endsection
 
-@section('subtitle', $tenagaKependidikan->nama)
+@section('subtitle', $tenagaKependidikan['nama'])
 
 @section('content')
-<div class="space-y-7 pb-10">
-    
-    <!-- Top Row: Left Panel (Identitas) & Right Panel (Kualifikasi) -->
-    <div class="grid grid-cols-1 lg:grid-cols-12 gap-7 items-start">
-        
-        <!-- ========================================== -->
-        <!-- PANEL KIRI: IDENTITAS TENAGA PENDIDIKAN   -->
-        <!-- ========================================== -->
-        <div class="lg:col-span-7 bg-[#EDF3F7] rounded-[14px] overflow-hidden shadow-xs border border-[#E0EBF2] flex flex-col justify-between min-h-[408px]">
-            
-            <!-- Identitas Utama: Nama & Jabatan -->
-            <div class="px-8 pt-8 pb-4">
-                <h2 class="text-2xl sm:text-3xl lg:text-[34px] font-extrabold text-black leading-tight tracking-tight">
-                    {{ $tenagaKependidikan->nama }}
+<div class="space-y-4 pb-2">
+    @if($detailApiError)
+        <div class="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-xs font-medium text-amber-900" role="alert">
+            {{ $detailApiError }}
+        </div>
+    @endif
+
+    {{-- Top Grid: Identitas + Riwayat Pendidikan --}}
+    <div class="grid grid-cols-1 items-stretch gap-5 lg:grid-cols-12" style="min-height: 420px;">
+
+        {{-- Identitas --}}
+        <section class="overflow-hidden rounded-[8px] bg-[#EEF3F7] lg:col-span-8 flex flex-col" aria-label="Identitas tenaga kependidikan">
+            <div class="px-6 pt-6 pb-0">
+                <h2 class="text-2xl font-bold leading-tight text-black sm:text-[26px]">
+                    {{ $tenagaKependidikan['nama'] ?: 'Nama belum tersedia' }}
                 </h2>
-                <p class="text-lg sm:text-xl lg:text-[21px] font-semibold text-gray-700 mt-1">
-                    {{ $tenagaKependidikan->jabatan ?? 'Tenaga Pendidikan' }}
+                <p class="mt-1 text-sm font-medium text-gray-500">
+                    {{ $tenagaKependidikan['jabatan'] ?: 'Belum diisi' }}
                 </p>
             </div>
 
-            <!-- Baris Informasi dengan Ikon -->
-            <div class="divide-y divide-[#DCE5EB] mt-auto">
-                <!-- Baris 1: Bidang Keahlian (Ikon Petir) -->
-                <div class="h-[46px] px-8 flex items-center gap-4 text-black text-sm sm:text-[15.5px] font-medium">
-                    <span class="w-6 flex items-center justify-center shrink-0 text-black">
-                        <svg class="w-4 h-4 fill-current" viewBox="0 0 24 24">
-                            <path d="M14.615 1.595a.75.75 0 0 1 .359.852L12.982 9.75h7.268a.75.75 0 0 1 .548 1.262l-10.5 11.25a.75.75 0 0 1-1.272-.71l1.992-7.302H3.75a.75.75 0 0 1-.548-1.262l10.5-11.25a.75.75 0 0 1 .913-.143Z" />
-                        </svg>
-                    </span>
-                    <span class="truncate">
-                        {{ $tenagaKependidikan->bidang_keahlian ?: 'Belum diisi' }}
-                    </span>
+            <div class="mt-6 border-t border-[#BAC7D5] divide-y divide-[#BAC7D5]">
+                <div class="flex h-[46px] items-center gap-3 px-6 text-xs font-medium text-black">
+                    <svg class="h-4 w-4 shrink-0 fill-current" viewBox="0 0 24 24" aria-hidden="true"><path d="M14.615 1.595a.75.75 0 0 1 .359.852L12.982 9.75h7.268a.75.75 0 0 1 .548 1.262l-10.5 11.25a.75.75 0 0 1-1.272-.71l1.992-7.302H3.75a.75.75 0 0 1-.548-1.262l10.5-11.25a.75.75 0 0 1 .913-.143Z" /></svg>
+                    <span class="truncate">{{ $tenagaKependidikan['bidang_keahlian'] ?: 'Belum diisi' }}</span>
                 </div>
-
-                <!-- Baris 2: Pendidikan / Program Studi (Ikon Monitor) -->
-                <div class="h-[46px] px-8 flex items-center gap-4 text-black text-sm sm:text-[15.5px] font-medium">
-                    <span class="w-6 flex items-center justify-center shrink-0 text-black">
-                        <svg class="w-4 h-4 stroke-[2.2]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 17.25v1.007a3 3 0 0 1-.879 2.122L7.5 21h9l-.621-.621A3 3 0 0 1 15 18.257V17.25m6-12V15a2.25 2.25 0 0 1-2.25 2.25H5.25A2.25 2.25 0 0 1 3 15V5.25m18 0A2.25 2.25 0 0 0 18.75 3H5.25A2.25 2.25 0 0 0 3 5.25m18 0H3" />
-                        </svg>
-                    </span>
-                    <span class="truncate">
-                        {{ $tenagaKependidikan->program_studi ?: ($tenagaKependidikan->kualifikasi ?: 'Belum diisi') }}
-                    </span>
+                <div class="flex h-[46px] items-center gap-3 px-6 text-xs font-medium text-black">
+                    <svg class="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M3 5.25A2.25 2.25 0 0 1 5.25 3h13.5A2.25 2.25 0 0 1 21 5.25v9A2.25 2.25 0 0 1 18.75 16.5H5.25A2.25 2.25 0 0 1 3 14.25v-9ZM8.25 21h7.5M12 16.5V21m-5.25 0h10.5" /></svg>
+                    <span class="truncate">{{ $tenagaKependidikan['kualifikasi'] !== '-' ? $tenagaKependidikan['kualifikasi'] : 'Belum diisi' }}</span>
                 </div>
-
-                <!-- Baris 3: Email (Ikon Amplop) -->
-                <div class="h-[46px] px-8 flex items-center gap-4 text-black text-sm sm:text-[15.5px] font-medium">
-                    <span class="w-6 flex items-center justify-center shrink-0 text-black">
-                        <svg class="w-4 h-4 stroke-[2.2]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 0 1-2.25 2.25h-15a2.25 2.25 0 0 1-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25m19.5 0v.243a2.25 2.25 0 0 1-1.07 1.916l-7.5 4.615a2.25 2.25 0 0 1-2.36 0L3.32 8.91a2.25 2.25 0 0 1-1.07-1.916V6.75" />
-                        </svg>
-                    </span>
-                    <span class="truncate">
-                        {{ $tenagaKependidikan->email ?: 'Belum diisi' }}
-                    </span>
+                <div class="flex h-[46px] items-center gap-3 px-6 text-xs font-medium text-black">
+                    <svg class="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M3 6.75 12 13.5l9-6.75M4.5 4.5h15A1.5 1.5 0 0 1 21 6v12a1.5 1.5 0 0 1-1.5 1.5h-15A1.5 1.5 0 0 1 3 18V6a1.5 1.5 0 0 1 1.5-1.5Z" /></svg>
+                    <span class="truncate">{{ $tenagaKependidikan['email'] ?: 'Belum diisi' }}</span>
                 </div>
-
-                <!-- Baris 4: Status (Ikon Dokumen) -->
-                <div class="h-[46px] px-8 flex items-center gap-4 text-black text-sm sm:text-[15.5px] font-medium">
-                    <span class="w-6 flex items-center justify-center shrink-0 text-black">
-                        <svg class="w-4 h-4 stroke-[2.2]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H18a2.25 2.25 0 0 0 2.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 0 0-1.123-.08m-5.801 0c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 0 0 .75-.75 2.25 2.25 0 0 0-.1-.664m-5.8 0A2.251 2.251 0 0 1 13.5 2.25H15c1.012 0 1.867.668 2.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25m0 0H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V9.375c0-.621-.504-1.125-1.125-1.125H8.25ZM6.75 12h.008v.008H6.75V12Zm0 3h.008v.008H6.75V15Zm0 3h.008v.008H6.75V18Z" />
-                        </svg>
-                    </span>
-                    <span class="truncate">
-                        {{ $tenagaKependidikan->status ?: 'Aktif' }}
-                    </span>
+                <div class="flex h-[46px] items-center gap-3 px-6 text-xs font-medium text-black border-b border-[#BAC7D5]">
+                    <svg class="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M8.25 6.75h7.5M8.25 10.5h7.5m-7.5 3.75h4.5M6 3.75h9.75L19.5 7.5v12.75A1.5 1.5 0 0 1 18 21.75H6A1.5 1.5 0 0 1 4.5 20.25V5.25A1.5 1.5 0 0 1 6 3.75Z" /></svg>
+                    <span class="truncate">{{ $tenagaKependidikan['status'] ?: 'Belum diisi' }}</span>
                 </div>
             </div>
 
-        </div>
+            {{-- Spacer: mengisi sisa tinggi agar card sepanjang Riwayat Pendidikan --}}
+            <div class="flex-1"></div>
+        </section>
 
-        <!-- ========================================== -->
-        <!-- PANEL KANAN: KUALIFIKASI                   -->
-        <!-- ========================================== -->
-        <div class="lg:col-span-5 bg-[#EDF3F7] rounded-[14px] overflow-hidden shadow-xs border border-[#E0EBF2]">
-            
-            <!-- Header Panel: Navy Gelap #062B53 -->
-            <div class="bg-[#062B53] h-16 flex items-center justify-center px-6">
-                <h3 class="text-white font-bold text-xl sm:text-[21px] tracking-wide text-center">
-                    Kualifikasi
-                </h3>
+        {{-- Riwayat Pendidikan --}}
+        <section class="overflow-hidden rounded-[8px] bg-[#EEF3F7] lg:col-span-4 flex flex-col shadow-xs" aria-labelledby="qualificationHeading">
+            <div class="flex h-[47px] items-center justify-start bg-[#002B49] px-5 shrink-0">
+                <h3 id="qualificationHeading" class="text-base font-semibold text-white tracking-wide">Riwayat Pendidikan</h3>
             </div>
 
-            <!-- Body Daftar Kualifikasi -->
-            <div class="divide-y divide-[#DCE5EB] min-h-[344px] flex flex-col justify-start">
-                @forelse($tenagaKependidikan->kualifikasis as $kualifikasi)
-                    <div class="p-4 sm:px-6 sm:py-4 flex items-start gap-4">
-                        <!-- Yellow Circle Icon with Graduation Cap -->
-                        <div class="w-9 h-9 rounded-full bg-secondary flex items-center justify-center shrink-0 text-[#062B53] shadow-2xs mt-0.5">
-                            <svg class="w-5 h-5 fill-current" viewBox="0 0 24 24">
-                                <path d="M12 3L1 9l4 2.18v6L12 21l7-3.82v-6l2-1.09V17h2V9L12 3zm6.82 6L12 12.72 5.18 9 12 5.28 18.82 9zM17 15.99l-5 2.73-5-2.73v-3.72l5 2.73 5-2.73v3.72z"/>
+            {{-- Daftar riwayat pendidikan --}}
+            <div class="flex-1 overflow-y-auto divide-y divide-[#BAC7D5] px-4 sm:px-5">
+                @forelse($kualifikasis as $qualification)
+                    @php
+                        $rawJenjang = !empty($qualification['jenjang']) ? $qualification['jenjang'] : '';
+                        $rawGelar   = !empty($qualification['gelar']) ? $qualification['gelar'] : '';
+                        $isJenjangCode = in_array(strtoupper($rawGelar), ['SMA', 'SMK', 'SMA/SMK', 'SLTA', 'D1', 'D2', 'D3', 'D4', 'S1', 'D4/S1', 'S2', 'S3', 'PROFESI']);
+                        $jenjang   = $rawJenjang !== '' ? $rawJenjang : ($isJenjangCode ? $rawGelar : 'SMA/SMK');
+                        $gelar     = ($rawGelar !== '' && ! $isJenjangCode) ? $rawGelar : ($jenjang === 'S3' ? 'Dr' : ($jenjang === 'S2' ? 'M.Kom' : ($jenjang === 'D4/S1' || $jenjang === 'S1' ? 'S.Kom' : '')));
+                        $institusi = !empty($qualification['institusi']) ? $qualification['institusi'] : (!empty($qualification['universitas']) ? $qualification['universitas'] : '');
+                        $prodi     = (!empty($qualification['program_studi']) && trim((string) $qualification['program_studi']) !== '-') ? $qualification['program_studi'] : '';
+                        $tahun     = !empty($qualification['tahun_lulus']) ? $qualification['tahun_lulus'] : '';
+                    @endphp
+                    <article class="flex items-center gap-3.5 py-3.5">
+                        <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#FFC400] text-black">
+                            <svg class="h-5 w-5 fill-current text-black" viewBox="0 0 24 24" aria-hidden="true">
+                                <path d="M12 3 1 9l11 6 9-4.91V17h2V9L12 3Zm-7 10.18v4L12 21l7-3.82v-4L12 17l-7-3.82Z"/>
                             </svg>
-                        </div>
-
-                        <!-- Kualifikasi Detail -->
-                        <div class="min-w-0 flex-1">
-                            <div class="flex items-center gap-2 flex-wrap">
-                                <span class="font-bold text-black text-lg sm:text-[21px] leading-tight">
-                                    {{ $kualifikasi->gelar ?: 'Gelar' }}
-                                </span>
-                                @if($kualifikasi->jenjang)
-                                    <span class="px-2 py-0.5 rounded-[4px] bg-[#062B53] text-secondary text-[11px] font-extrabold uppercase tracking-wider">
-                                        {{ $kualifikasi->jenjang }}
-                                    </span>
+                        </span>
+                        <div class="min-w-0 flex-1 leading-snug">
+                            <div class="flex items-center gap-1.5">
+                                <span class="inline-flex items-center rounded bg-[#002B49] px-2 py-0.5 text-[10px] sm:text-xs font-bold text-white">{{ $jenjang }}</span>
+                                @if($gelar !== '')
+                                    <span class="sr-only">{{ $gelar }}</span>
                                 @endif
                             </div>
-                            <p class="text-xs sm:text-[13.5px] font-semibold text-black mt-0.5 truncate">
-                                {{ $kualifikasi->institusi ?: '-' }}
-                            </p>
-                            <p class="text-xs sm:text-[12.5px] font-medium text-gray-700 truncate">
-                                {{ $kualifikasi->program_studi ?: '-' }} {{ $kualifikasi->tahun_lulus ? '- Lulus ' . $kualifikasi->tahun_lulus : '' }}
-                            </p>
+                            @if($institusi !== '')
+                                <p class="truncate text-xs font-normal text-gray-700 mt-1">{{ $institusi }}</p>
+                            @endif
+                            @if($prodi !== '' || $tahun !== '')
+                                <p class="truncate text-xs font-bold text-black mt-0.5">
+                                    {{ $prodi }}{{ ($prodi !== '' && $tahun !== '') ? ' - Lulus '.$tahun : ($tahun !== '' ? 'Lulus '.$tahun : '') }}
+                                </p>
+                            @endif
                         </div>
-                    </div>
+                    </article>
                 @empty
-                    <!-- Empty State Kualifikasi -->
-                    <div class="p-10 flex-1 flex flex-col items-center justify-center text-center text-gray-500">
-                        <svg class="w-12 h-12 text-gray-300 stroke-1 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M4.26 10.147a60.438 60.438 0 0 0-.491 6.347A48.62 48.62 0 0 1 12 20.904a48.62 48.62 0 0 1 8.232-4.41 60.46 60.46 0 0 0-.491-6.347m-15.482 0a50.636 50.636 0 0 0-2.658-.813A59.906 59.906 0 0 1 12 3.493a59.903 59.903 0 0 1 10.399 5.84c-.896.248-1.783.52-2.658.814m-15.482 0A50.717 50.717 0 0 1 12 13.489a50.702 50.702 0 0 1 7.74-3.342M6.75 15a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5Zm0 0v-3.675A55.378 55.378 0 0 1 12 8.443m-7.007 11.55A5.981 5.981 0 0 0 6.75 15.75v-1.5" />
+                    <div class="flex flex-col items-center justify-center py-8 text-center text-gray-500">
+                        <svg class="w-8 h-8 text-gray-400 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" />
                         </svg>
-                        <p class="font-bold text-sm text-gray-700">Belum ada data kualifikasi</p>
-                        <p class="text-xs text-gray-400 mt-0.5">Riwayat kualifikasi akademik belum ditambahkan.</p>
+                        <p class="text-xs font-medium text-gray-600">Belum ada data riwayat pendidikan</p>
+                        <p class="text-[11px] text-gray-400 mt-0.5">Klik 'Tambah Pendidikan' di bawah untuk menambahkan</p>
                     </div>
                 @endforelse
             </div>
 
-        </div>
-
+            {{-- Tombol Tambah Pendidikan — mengarah ke halaman Pendidikan --}}
+            <a
+                href="{{ route('pendidikan.index', ['id_tendik' => $tenagaKependidikan['id']]) }}"
+                class="w-full bg-[#002B49] hover:bg-[#003B66] h-[40px] px-4 text-white text-center flex items-center justify-center gap-2 transition duration-150 shrink-0"
+                title="Tambah Pendidikan"
+            >
+                <svg class="w-4 h-4 text-white shrink-0" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm.75-11.25a.75.75 0 00-1.5 0v2.5h-2.5a.75.75 0 000 1.5h2.5v2.5a.75.75 0 001.5 0v-2.5h2.5a.75.75 0 000-1.5h-2.5v-2.5z" clip-rule="evenodd" />
+                </svg>
+                <span class="text-xs font-medium tracking-wide">Tambah Pendidikan</span>
+            </a>
+        </section>
     </div>
 
-    <!-- ========================================== -->
-    <!-- PANEL BAWAH: SERTIFIKASI                   -->
-    <!-- ========================================== -->
-    <div class="bg-[#EDF3F7] rounded-[14px] overflow-hidden shadow-xs border border-[#E0EBF2]">
-        
-        <!-- Header Panel: Navy Gelap #062B53 dengan Tombol Tambah Sertifikasi -->
-        <div class="bg-[#062B53] h-16 flex items-center justify-between px-6 sm:px-8">
-            <h3 class="text-white font-bold text-xl sm:text-[21px] tracking-wide">
-                Sertifikasi
-            </h3>
-
+    {{-- Sertifikasi --}}
+    <section class="overflow-hidden rounded-[8px] bg-[#EEF3F7]" aria-labelledby="certificationHeading">
+        <div class="flex h-[47px] items-center justify-between bg-[#002B49] px-4 sm:px-6">
+            <h3 id="certificationHeading" class="text-base font-semibold text-white tracking-wide">Sertifikasi</h3>
+            {{-- Tombol Tambah Sertifikasi (Mengarahkan ke halaman Tenaga Kependidikan > Sertifikasi sesuai Foto 1) --}}
             <a
-                href="{{ route('sertifikasi.index', ['tipe_pemilik' => 'tendik', 'search' => $tenagaKependidikan->nip]) }}"
-                class="inline-flex items-center gap-2 h-[35px] px-3.5 bg-[#00649B] hover:bg-[#00517d] text-white text-[13px] font-bold rounded-[9px] shadow-xs transition active:scale-[0.98]"
+                href="{{ route('tenaga-kependidikan.sertifikasi.index', $tenagaKependidikan['id']) }}"
+                id="addSertifikasiLink"
+                class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-[6px] bg-[#00629B] hover:bg-[#005180] text-white text-xs font-semibold transition shadow-sm cursor-pointer"
             >
-                Lihat Sertifikasi API
-            </a>
-
-            <!-- Tombol Tambah Sertifikasi -->
-            <button 
-                type="button" 
-                id="openSertifikasiModalBtn"
-                class="inline-flex items-center gap-2 h-[35px] px-3.5 bg-[#00649B] hover:bg-[#00517d] text-white text-[13px] font-bold rounded-[9px] shadow-xs transition active:scale-[0.98] cursor-pointer"
-            >
-                <span class="w-4 h-4 rounded-full border-[1.5px] border-white flex items-center justify-center text-white shrink-0">
-                    <svg class="w-3 h-3 stroke-[3]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-                    </svg>
-                </span>
+                <svg class="w-3.5 h-3.5" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm.75-11.25a.75.75 0 00-1.5 0v2.5h-2.5a.75.75 0 000 1.5h2.5v2.5a.75.75 0 001.5 0v-2.5h2.5a.75.75 0 000-1.5h-2.5v-2.5z" clip-rule="evenodd" />
+                </svg>
                 <span>Tambah Sertifikasi</span>
-            </button>
+            </a>
         </div>
 
-        <!-- Body Sertifikasi (Min-height ~330px sesuai referensi desktop) -->
-        <div class="p-6 sm:p-8 min-h-[330px] flex flex-col justify-start">
-            @if($tenagaKependidikan->sertifikasis && $tenagaKependidikan->sertifikasis->count() > 0)
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-                    @foreach($tenagaKependidikan->sertifikasis as $sertifikasi)
-                        <div class="bg-white rounded-2xl p-5 border border-gray-200 shadow-2xs flex flex-col justify-between hover:shadow-md transition">
-                            <div>
-                                <div class="flex items-start justify-between gap-3 mb-2">
-                                    <span class="w-8 h-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0">
-                                        <svg class="w-4 h-4 stroke-[2]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path stroke-linecap="round" stroke-linejoin="round" d="M16.5 18.75h-9m9 0a3 3 0 0 1 3 3h-15a3 3 0 0 1 3-3m9 0v-3.375c0-.621-.504-1.125-1.125-1.125h-.871M7.5 18.75v-3.375c0-.621.504-1.125 1.125-1.125h.872m5.004 0H9.496m5.004 0a3 3 0 0 0 3-3V6.75a3 3 0 0 0-3-3H9.496a3 3 0 0 0-3 3v5.625a3 3 0 0 0 3 3Z" />
-                                        </svg>
+        @if($detailApiError)
+            <p class="mx-4 mt-3 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900" role="alert">{{ $detailApiError }}</p>
+        @endif
+
+        @if(count($sertifikasis) > 0)
+            {{-- List sertifikasi — setiap baris full-width, dipisah border --}}
+            <div class="divide-y divide-[#BAC7D5]">
+                @foreach($sertifikasis as $sertifikasi)
+                    @php
+                        $sertifikasiId = $sertifikasi['id'] ?? $sertifikasi['id_sertifikasi'] ?? null;
+                        $tahunSertifikasi = $sertifikasi['tahun_sertifikasi'] ?? null;
+                        $tahunKadaluwarsa = isset($sertifikasi['tanggal_kedaluwarsa'])
+                            ? \Illuminate\Support\Str::before($sertifikasi['tanggal_kedaluwarsa'], '-')
+                            : null;
+                        $status    = $sertifikasi['status_sertifikasi'] ?? $sertifikasi['status'] ?? 'Aktif';
+                        $isExpired = \Illuminate\Support\Str::lower($status) === 'kadaluarsa'
+                                  || \Illuminate\Support\Str::lower($status) === 'expired'
+                                  || \Illuminate\Support\Str::lower($status) === 'kedaluwarsa';
+                    @endphp
+                    <div class="flex items-center justify-between px-4 sm:px-6 py-3 hover:bg-black/[0.03] transition">
+                        <div class="min-w-0 flex-1">
+                            <p class="text-sm font-bold text-black uppercase tracking-wide leading-tight">
+                                {{ $sertifikasi['jenis_sertifikasi'] ?? 'Sertifikasi' }}
+                            </p>
+                            @if(!empty($sertifikasi['lembaga_penerbit']))
+                                <p class="text-xs text-gray-500 mt-0.5">{{ $sertifikasi['lembaga_penerbit'] }}</p>
+                            @endif
+                            <div class="mt-1.5 flex flex-wrap gap-2">
+                                @if($tahunSertifikasi)
+                                    <span class="inline-flex items-center rounded-full bg-[#002B49] px-2.5 py-1 text-[11px] font-semibold text-[#FFC400]">
+                                        Tahun Sertifikasi: {{ $tahunSertifikasi }}
                                     </span>
-                                    <form method="POST" action="{{ route('tenaga-kependidikan.sertifikasi.destroy', [$tenagaKependidikan, $sertifikasi]) }}" onsubmit="return confirm('Apakah Anda yakin ingin menghapus sertifikasi ini?');">
-                                        @csrf
-                                        @method('DELETE')
-                                        <button type="submit" class="text-gray-400 hover:text-rose-600 transition p-1 cursor-pointer" title="Hapus Sertifikasi">
-                                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                                <path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
-                                            </svg>
-                                        </button>
-                                    </form>
-                                </div>
-                                <h4 class="font-bold text-black text-base line-clamp-2 leading-snug">
-                                    {{ $sertifikasi->nama_sertifikasi }}
-                                </h4>
-                                <p class="text-xs font-semibold text-primary mt-1">
-                                    {{ $sertifikasi->penerbit }}
-                                </p>
-                            </div>
-                            <div class="mt-4 pt-3 border-t border-gray-100 flex items-center justify-between text-[11px] text-gray-500 font-medium">
-                                <span>No: {{ $sertifikasi->nomor_sertifikasi ?: '-' }}</span>
-                                <span>Tahun: {{ $sertifikasi->tahun ?: '-' }}</span>
+                                @endif
+                                @if($tahunKadaluwarsa)
+                                    <span class="inline-flex items-center rounded-full {{ $isExpired ? 'bg-red-100 text-red-700' : 'bg-[#002B49] text-[#FFC400]' }} px-2.5 py-1 text-[11px] font-semibold">
+                                        Tahun Kadaluwarsa: {{ $tahunKadaluwarsa }}
+                                    </span>
+                                @endif
                             </div>
                         </div>
-                    @endforeach
-                </div>
-            @else
-                <!-- Empty State Sertifikasi (Sesuai referensi visual screenshot) -->
-                <div class="flex-1 flex flex-col items-center justify-center text-center text-gray-400 py-16">
-                    <svg class="w-16 h-16 text-gray-300 stroke-1 mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" />
-                    </svg>
-                    <p class="font-bold text-base text-gray-600">Belum ada data sertifikasi</p>
-                    <p class="text-xs text-gray-400 mt-1 max-w-sm">
-                        Klik tombol "Tambah Sertifikasi" di atas untuk menambahkan riwayat sertifikasi keahlian.
-                    </p>
-                </div>
-            @endif
-        </div>
-
-    </div>
-
+                        @if($sertifikasiId)
+                            <div class="flex items-center gap-2.5 shrink-0 ml-4">
+                                <a href="{{ route('sertifikasi.show', $sertifikasiId) }}" class="text-[#00629B] hover:text-[#002B49] p-1 transition" title="Lihat detail sertifikasi">
+                                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12s3.5-7.5 9.75-7.5 9.75 7.5 9.75 7.5-3.5 7.5-9.75 7.5S2.25 12 2.25 12Z" />
+                                        <circle cx="12" cy="12" r="3" />
+                                    </svg>
+                                </a>
+                                <a href="{{ route('sertifikasi.edit', $sertifikasiId) }}" class="text-amber-500 hover:text-amber-700 p-1 transition" title="Edit sertifikasi">
+                                    <x-icon.edit class="h-4 w-4" />
+                                </a>
+                                <form method="POST" action="{{ route('tenaga-pendidikan.sertifikasi.destroy', [$tenagaKependidikan['id'], $sertifikasiId]) }}" onsubmit="return confirm('Apakah Anda yakin ingin menghapus sertifikasi ini?');">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="submit" class="text-red-600 hover:text-red-800 p-1 transition cursor-pointer" title="Hapus sertifikasi">
+                                        <x-icon.delete class="h-4 w-4" />
+                                    </button>
+                                </form>
+                            </div>
+                        @endif
+                    </div>
+                @endforeach
+            </div>
+        @else
+            <div class="flex py-28 sm:py-36 items-center justify-center text-center">
+                <p class="text-3xl sm:text-4xl lg:text-[40px] font-bold text-black tracking-tight">Belum ada sertifikasi</p>
+            </div>
+        @endif
+    </section>
 </div>
 
-<!-- ========================================== -->
-<!-- MODAL: TAMBAH SERTIFIKASI                  -->
-<!-- ========================================== -->
-<div 
-    id="sertifikasiModal" 
-    class="fixed inset-0 z-50 flex items-center justify-center p-4 opacity-0 pointer-events-none transition-all duration-200"
-    style="background-color: rgba(0, 0, 0, 0.45); backdrop-filter: blur(1px);"
+{{-- Modal Tambah Pendidikan --}}
+<div
+    id="addPendidikanModal"
+    class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm hidden"
     role="dialog"
     aria-modal="true"
-    aria-labelledby="modalSertifikasiTitle"
+    aria-labelledby="addPendidikanModalTitle"
 >
-    <div 
-        id="sertifikasiModalCard" 
-        class="w-full max-w-lg bg-white rounded-2xl shadow-2xl p-6 sm:p-8 transform scale-95 transition-all duration-200 relative select-none"
-    >
-        <!-- Modal Header -->
-        <div class="flex items-center justify-between pb-4 border-b border-gray-100">
-            <h3 id="modalSertifikasiTitle" class="text-xl font-bold text-primary">
-                Tambah Sertifikasi
-            </h3>
-            <button 
-                type="button" 
-                class="close-sertifikasi-modal p-1.5 rounded-xl text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition cursor-pointer"
-                aria-label="Tutup"
-            >
-                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+    <div class="relative w-full max-w-md mx-4 bg-white rounded-[10px] shadow-xl overflow-hidden">
+        <div class="flex items-center justify-between h-[52px] bg-[#002B49] px-5">
+            <h4 id="addPendidikanModalTitle" class="text-sm font-semibold text-white tracking-wide">Tambah Pendidikan</h4>
+            <button type="button" id="closeAddPendidikanModalBtn" class="text-white/70 hover:text-white transition cursor-pointer" aria-label="Tutup">
+                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
                 </svg>
             </button>
         </div>
 
-        <!-- Form Tambah Sertifikasi -->
-        <form method="POST" action="{{ route('tenaga-kependidikan.sertifikasi.store', $tenagaKependidikan) }}" class="mt-5 space-y-4">
+        <form
+            method="POST"
+            action="{{ route('tenaga-kependidikan.pendidikan.store', $tenagaKependidikan['id']) }}"
+            class="p-5 space-y-4"
+            id="addPendidikanForm"
+        >
             @csrf
 
-            <!-- Field: Nama Sertifikasi -->
             <div>
-                <label for="nama_sertifikasi" class="block text-xs font-bold text-gray-700 mb-1">
-                    Nama Sertifikasi <span class="text-rose-500">*</span>
-                </label>
-                <input 
-                    type="text" 
-                    id="nama_sertifikasi" 
-                    name="nama_sertifikasi" 
-                    value="{{ old('nama_sertifikasi') }}"
-                    placeholder="Contoh: Certified Associate in Project Management"
-                    required
-                    class="w-full bg-[#D9D9D9] border border-[#CACACA] rounded-xl px-4 py-2.5 text-sm font-medium text-black focus:outline-none focus:ring-2 focus:ring-primary/20 @error('nama_sertifikasi') border-rose-500 @enderror"
-                >
-                @error('nama_sertifikasi')
-                    <p class="text-rose-500 text-xs mt-1 font-semibold">{{ $message }}</p>
-                @enderror
+                <label for="pendidikan_jenjang" class="block text-xs font-semibold text-gray-700 mb-1">Jenjang <span class="text-red-500">*</span></label>
+                <select name="jenjang" id="pendidikan_jenjang" required
+                    class="w-full h-[38px] rounded-[6px] border border-gray-300 bg-white px-3 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#002B49]/30 transition">
+                    <option value="" disabled selected>Isi Pendidikan Terakhir</option>
+                    <option value="SMA/SMK">SMA/SMK</option>
+                    <option value="D3">D3</option>
+                    <option value="D4/S1">D4/S1</option>
+                    <option value="S2">S2</option>
+                    <option value="S3">S3</option>
+                    <option value="D3">D3</option>
+                    <option value="Profesi">Profesi</option>
+                </select>
             </div>
 
-            <!-- Field: Lembaga Penerbit -->
             <div>
-                <label for="penerbit" class="block text-xs font-bold text-gray-700 mb-1">
-                    Lembaga Penerbit <span class="text-rose-500">*</span>
-                </label>
-                <input 
-                    type="text" 
-                    id="penerbit" 
-                    name="penerbit" 
-                    value="{{ old('penerbit') }}"
-                    placeholder="Contoh: BNSP / PMI / Cisco"
-                    required
-                    class="w-full bg-[#D9D9D9] border border-[#CACACA] rounded-xl px-4 py-2.5 text-sm font-medium text-black focus:outline-none focus:ring-2 focus:ring-primary/20 @error('penerbit') border-rose-500 @enderror"
-                >
-                @error('penerbit')
-                    <p class="text-rose-500 text-xs mt-1 font-semibold">{{ $message }}</p>
-                @enderror
+                <label for="pendidikan_gelar" class="block text-xs font-semibold text-gray-700 mb-1">Gelar</label>
+                <input type="text" name="gelar" id="pendidikan_gelar" placeholder="Contoh: Dr, S.Kom, M.T"
+                    class="w-full h-[38px] rounded-[6px] border border-gray-300 bg-white px-3 text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#002B49]/30 transition">
             </div>
 
-            <!-- Field Row: Nomor & Tahun -->
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                    <label for="nomor_sertifikasi" class="block text-xs font-bold text-gray-700 mb-1">
-                        Nomor Sertifikasi
-                    </label>
-                    <input 
-                        type="text" 
-                        id="nomor_sertifikasi" 
-                        name="nomor_sertifikasi" 
-                        value="{{ old('nomor_sertifikasi') }}"
-                        placeholder="Contoh: SERT-2024-001"
-                        class="w-full bg-[#D9D9D9] border border-[#CACACA] rounded-xl px-4 py-2.5 text-sm font-medium text-black focus:outline-none focus:ring-2 focus:ring-primary/20 font-mono"
-                    >
-                </div>
-                <div>
-                    <label for="tahun" class="block text-xs font-bold text-gray-700 mb-1">
-                        Tahun Terbit / Perolehan
-                    </label>
-                    <input 
-                        type="text" 
-                        id="tahun" 
-                        name="tahun" 
-                        value="{{ old('tahun') }}"
-                        placeholder="Contoh: 2024"
-                        class="w-full bg-[#D9D9D9] border border-[#CACACA] rounded-xl px-4 py-2.5 text-sm font-medium text-black focus:outline-none focus:ring-2 focus:ring-primary/20"
-                    >
-                </div>
+            <div>
+                <label for="pendidikan_institusi" class="block text-xs font-semibold text-gray-700 mb-1">Institusi</label>
+                <input type="text" name="institusi" id="pendidikan_institusi" placeholder="Contoh: Politeknik Negeri Semarang"
+                    class="w-full h-[38px] rounded-[6px] border border-gray-300 bg-white px-3 text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#002B49]/30 transition">
             </div>
 
-            <!-- Actions -->
-            <div class="flex items-center justify-end gap-3 pt-4 border-t border-gray-100">
-                <button 
-                    type="button" 
-                    class="close-sertifikasi-modal px-5 py-2.5 rounded-xl border border-gray-300 text-sm font-semibold text-gray-700 hover:bg-gray-50 transition cursor-pointer"
-                >
+            <div>
+                <label for="pendidikan_program_studi" class="block text-xs font-semibold text-gray-700 mb-1">Program Studi</label>
+                <input type="text" name="program_studi" id="pendidikan_program_studi" placeholder="Contoh: Teknik Informatika"
+                    class="w-full h-[38px] rounded-[6px] border border-gray-300 bg-white px-3 text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#002B49]/30 transition">
+            </div>
+
+            <div>
+                <label for="pendidikan_tahun_lulus" class="block text-xs font-semibold text-gray-700 mb-1">Tahun Lulus</label>
+                <input type="text" name="tahun_lulus" id="pendidikan_tahun_lulus" placeholder="Contoh: 2020"
+                    maxlength="4" inputmode="numeric" pattern="\d{4}"
+                    class="w-full h-[38px] rounded-[6px] border border-gray-300 bg-white px-3 text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#002B49]/30 transition">
+            </div>
+
+            <div class="flex items-center justify-end gap-3 pt-1">
+                <button type="button" id="cancelAddPendidikanBtn"
+                    class="h-[38px] px-5 rounded-[6px] border border-gray-300 bg-white text-xs font-semibold text-gray-700 hover:bg-gray-50 transition cursor-pointer">
                     Batal
                 </button>
-                <button 
-                    type="submit" 
-                    class="px-6 py-2.5 bg-primary hover:bg-additional text-white text-sm font-bold rounded-xl shadow-xs transition active:scale-[0.98] cursor-pointer"
-                >
-                    Simpan Sertifikasi
+                <button type="submit"
+                    class="h-[38px] px-6 rounded-[6px] bg-[#002B49] hover:bg-[#003B66] text-xs font-semibold text-white transition cursor-pointer">
+                    Simpan
                 </button>
             </div>
         </form>
     </div>
 </div>
 
-<!-- ========================================== -->
-<!-- SCRIPT: MODAL SERTIFIKASI INTERACTION      -->
-<!-- ========================================== -->
+{{-- Modal Tambah Sertifikasi --}}
+<div
+    id="addSertifikasiModal"
+    class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm hidden"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="addSertifikasiModalTitle"
+>
+    <div class="relative w-full max-w-lg mx-4 bg-white rounded-[10px] shadow-xl overflow-hidden">
+        <div class="flex items-center justify-between h-[52px] bg-[#002B49] px-5">
+            <h4 id="addSertifikasiModalTitle" class="text-sm font-semibold text-white tracking-wide">Tambah Sertifikasi</h4>
+            <button type="button" id="closeAddSertifikasiModalBtn" class="text-white/70 hover:text-white transition cursor-pointer" aria-label="Tutup">
+                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </button>
+        </div>
+        <form
+            method="POST"
+            action="{{ route('tenaga-pendidikan.sertifikasi.store', $tenagaKependidikan['id']) }}"
+            enctype="multipart/form-data"
+            class="p-5 space-y-3.5"
+            id="addSertifikasiForm"
+        >
+            @csrf
+
+            <div>
+                <label for="sertifikasi_jenis" class="block text-xs font-semibold text-gray-700 mb-1">Nama / Jenis Sertifikasi <span class="text-red-500">*</span></label>
+                <input type="text" name="jenis_sertifikasi" id="sertifikasi_jenis" required placeholder="Contoh: Sertifikasi Kompetensi Jaringan"
+                    class="w-full h-[38px] rounded-[6px] border border-gray-300 bg-white px-3 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#002B49]/30 transition">
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                    <label for="sertifikasi_tahun" class="block text-xs font-semibold text-gray-700 mb-1">Tahun Sertifikasi <span class="text-red-500">*</span></label>
+                    <input type="text" name="tahun_sertifikasi" id="sertifikasi_tahun" required placeholder="Contoh: 2025" maxlength="4" inputmode="numeric"
+                        class="w-full h-[38px] rounded-[6px] border border-gray-300 bg-white px-3 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#002B49]/30 transition">
+                </div>
+                <div>
+                    <label for="sertifikasi_status" class="block text-xs font-semibold text-gray-700 mb-1">Status Sertifikasi</label>
+                    <select name="status_sertifikasi" id="sertifikasi_status"
+                        class="w-full h-[38px] rounded-[6px] border border-gray-300 bg-white px-3 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#002B49]/30 transition">
+                        <option value="Aktif" selected>Aktif</option>
+                        <option value="Kedaluwarsa">Kedaluwarsa</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                    <label for="sertifikasi_nomor" class="block text-xs font-semibold text-gray-700 mb-1">Nomor Sertifikat</label>
+                    <input type="text" name="nomor_sertifikat" id="sertifikasi_nomor" placeholder="Contoh: CERT-2025-001"
+                        class="w-full h-[38px] rounded-[6px] border border-gray-300 bg-white px-3 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#002B49]/30 transition">
+                </div>
+                <div>
+                    <label for="sertifikasi_lembaga" class="block text-xs font-semibold text-gray-700 mb-1">Lembaga Penerbit</label>
+                    <input type="text" name="lembaga_penerbit" id="sertifikasi_lembaga" placeholder="Contoh: BNSP"
+                        class="w-full h-[38px] rounded-[6px] border border-gray-300 bg-white px-3 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#002B49]/30 transition">
+                </div>
+            </div>
+
+            <div>
+                <label for="sertifikasi_url" class="block text-xs font-semibold text-gray-700 mb-1">Tautan / Dokumen Drive</label>
+                <input type="url" name="url_drive" id="sertifikasi_url" placeholder="https://drive.google.com/..."
+                    class="w-full h-[38px] rounded-[6px] border border-gray-300 bg-white px-3 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#002B49]/30 transition">
+            </div>
+
+            <div class="flex items-center justify-between pt-2">
+                <a href="{{ route('sertifikasi.index', ['tipe_pemilik' => 'tendik', 'id_tendik' => $tenagaKependidikan['id']]) }}" class="text-xs text-[#00629B] hover:underline font-semibold">
+                    Buka Halaman Sertifikasi &rarr;
+                </a>
+                <div class="flex items-center gap-2">
+                    <button type="button" id="cancelAddSertifikasiBtn"
+                        class="h-[38px] px-4 rounded-[6px] border border-gray-300 bg-white text-xs font-semibold text-gray-700 hover:bg-gray-50 transition cursor-pointer">
+                        Batal
+                    </button>
+                    <button type="submit"
+                        class="h-[38px] px-5 rounded-[6px] bg-[#002B49] hover:bg-[#003B66] text-xs font-semibold text-white transition cursor-pointer">
+                        Simpan
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+@push('scripts')
 <script>
-document.addEventListener('DOMContentLoaded', function () {
-    const sertifikasiModal = document.getElementById('sertifikasiModal');
-    const sertifikasiCard = document.getElementById('sertifikasiModalCard');
-    const openBtn = document.getElementById('openSertifikasiModalBtn');
-    const closeBtns = document.querySelectorAll('.close-sertifikasi-modal');
+(function () {
+    function initModals() {
+        // ── Modal Tambah Pendidikan ──
+        const pendidikanModal   = document.getElementById('addPendidikanModal');
+        const openPendidikanBtn   = document.getElementById('openAddPendidikanModalBtn');
+        const closePendidikanBtn  = document.getElementById('closeAddPendidikanModalBtn');
+        const cancelPendidikanBtn = document.getElementById('cancelAddPendidikanBtn');
 
-    function toggleSertifikasiModal(show) {
-        if (!sertifikasiModal || !sertifikasiCard) return;
-        if (show) {
-            sertifikasiModal.classList.remove('opacity-0', 'pointer-events-none');
-            sertifikasiModal.classList.add('opacity-100');
-            sertifikasiCard.classList.remove('scale-95');
-            sertifikasiCard.classList.add('scale-100');
-            document.body.classList.add('overflow-hidden');
-            const firstInput = document.getElementById('nama_sertifikasi');
-            if (firstInput) setTimeout(() => firstInput.focus(), 80);
-        } else {
-            sertifikasiModal.classList.remove('opacity-100');
-            sertifikasiModal.classList.add('opacity-0', 'pointer-events-none');
-            sertifikasiCard.classList.remove('scale-100');
-            sertifikasiCard.classList.add('scale-95');
-            document.body.classList.remove('overflow-hidden');
+        function openModal(modal) {
+            if (!modal) return;
+            modal.classList.remove('hidden');
+            document.body.style.overflow = 'hidden';
         }
-    }
+        function closeModal(modal) {
+            if (!modal) return;
+            modal.classList.add('hidden');
+            document.body.style.overflow = '';
+        }
 
-    if (openBtn) {
-        openBtn.addEventListener('click', () => toggleSertifikasiModal(true));
-    }
+        if (openPendidikanBtn && pendidikanModal) {
+            openPendidikanBtn.addEventListener('click', () => openModal(pendidikanModal));
+        }
+        if (closePendidikanBtn && pendidikanModal) {
+            closePendidikanBtn.addEventListener('click', () => closeModal(pendidikanModal));
+        }
+        if (cancelPendidikanBtn && pendidikanModal) {
+            cancelPendidikanBtn.addEventListener('click', () => closeModal(pendidikanModal));
+        }
+        if (pendidikanModal) {
+            pendidikanModal.addEventListener('click', (e) => {
+                if (e.target === pendidikanModal) closeModal(pendidikanModal);
+            });
+        }
 
-    closeBtns.forEach(btn => {
-        btn.addEventListener('click', () => toggleSertifikasiModal(false));
-    });
+        // ── Modal Tambah Sertifikasi ──
+        const sertifikasiModal   = document.getElementById('addSertifikasiModal');
+        const openSertifikasiBtn   = document.getElementById('openAddSertifikasiModalBtn');
+        const closeSertifikasiBtn  = document.getElementById('closeAddSertifikasiModalBtn');
+        const cancelSertifikasiBtn = document.getElementById('cancelAddSertifikasiBtn');
 
-    if (sertifikasiModal) {
-        sertifikasiModal.addEventListener('click', function (e) {
-            if (e.target === sertifikasiModal) toggleSertifikasiModal(false);
+        if (openSertifikasiBtn && sertifikasiModal) {
+            openSertifikasiBtn.addEventListener('click', () => openModal(sertifikasiModal));
+        }
+        if (closeSertifikasiBtn && sertifikasiModal) {
+            closeSertifikasiBtn.addEventListener('click', () => closeModal(sertifikasiModal));
+        }
+        if (cancelSertifikasiBtn && sertifikasiModal) {
+            cancelSertifikasiBtn.addEventListener('click', () => closeModal(sertifikasiModal));
+        }
+        if (sertifikasiModal) {
+            sertifikasiModal.addEventListener('click', (e) => {
+                if (e.target === sertifikasiModal) closeModal(sertifikasiModal);
+            });
+        }
+
+        // Escape closes any open modal
+        document.addEventListener('keydown', (e) => {
+            if (e.key !== 'Escape') return;
+            if (pendidikanModal && !pendidikanModal.classList.contains('hidden'))  closeModal(pendidikanModal);
+            if (sertifikasiModal && !sertifikasiModal.classList.contains('hidden')) closeModal(sertifikasiModal);
         });
     }
 
-    if (sertifikasiCard) {
-        sertifikasiCard.addEventListener('click', function (e) {
-            e.stopPropagation();
-        });
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initModals);
+    } else {
+        initModals();
     }
-
-    document.addEventListener('keydown', function (e) {
-        if (e.key === 'Escape') toggleSertifikasiModal(false);
-    });
-
-    @if($errors->has('nama_sertifikasi') || $errors->has('penerbit'))
-        toggleSertifikasiModal(true);
-    @endif
-});
+})();
 </script>
+@endpush
 @endsection

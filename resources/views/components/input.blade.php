@@ -21,6 +21,8 @@
     <x-input.color {{ $attributes->merge(['class' => $class]) }} />
 @elseif($type === 'range')
     <x-input.range {{ $attributes->merge(['class' => $class]) }} />
+@elseif($type === 'year')
+    <x-input.year {{ $attributes->merge(['class' => $class]) }} />
 @else
     <x-input.index type="{{ $type }}" {{ $attributes->merge(['class' => $class]) }} />
 @endif
