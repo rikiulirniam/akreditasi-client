@@ -23,9 +23,9 @@ class ReviewerController extends Controller
         protected ReviewerService $reviewerService,
     ) {}
 
-    public function dashboard(): View
+    public function dashboard(Request $request): View
     {
-        [$projects, $error, $isDemo] = $this->projects();
+        [$projects, $error] = $this->projects();
 
         $completedProjects = array_filter($projects, fn (array $project): bool => $this->isCompleted($project));
         $inProgressProjects = array_filter($projects, fn (array $project): bool => $this->isInProgress($project));
@@ -41,13 +41,12 @@ class ReviewerController extends Controller
             'completedCount' => count($completedProjects),
             'averageProgress' => $averageProgress,
             'apiError' => $error,
-            'isDemo' => $isDemo,
         ]);
     }
 
     public function assessments(Request $request): View
     {
-        [$projects, $error, $isDemo] = $this->projects();
+        [$projects, $error] = $this->projects();
         $statusFilter = (string) $request->query('status', '');
         $yearFilter = (string) $request->query('tahun', '');
         $statuses = array_values(array_unique(array_column($projects, '_reviewer_status_key')));
@@ -67,13 +66,12 @@ class ReviewerController extends Controller
             'statusFilter' => $statusFilter,
             'yearFilter' => $yearFilter,
             'apiError' => $error,
-            'isDemo' => $isDemo,
         ]);
     }
 
     public function assessmentDetail(Request $request, string $projectId): View|RedirectResponse
     {
-        [$projects, $error, $isDemo] = $this->projects();
+        [$projects, $error] = $this->projects();
         $project = $this->findProject($projects, $projectId);
 
         if ($project === null) {
@@ -85,10 +83,26 @@ class ReviewerController extends Controller
         }
 
         $indicators = $project['indicators'] ?? [];
+        $detailError = $error;
+        $assignedIndicatorIds = array_fill_keys(array_map(
+            fn (array $indicator): string => (string) $indicator['id'],
+            array_filter($indicators, fn (mixed $indicator): bool => is_array($indicator) && isset($indicator['id'])),
+        ), true);
+        $needsApiDetails = collect($indicators)->contains(
+            fn (mixed $indicator): bool => is_array($indicator) && ($indicator['_needs_api_detail'] ?? false),
+        );
 
-        // Jika data project dari API tidak menyertakan indicators langsung, ambil dari master indikator
-        if (empty($indicators)) {
-            $indicators = $this->loadIndicatorsFromApi($projectId);
+        if ($needsApiDetails) {
+            $apiIndicators = $this->loadIndicatorsFromApi($projectId);
+            $indicators = array_values(array_filter(
+                $apiIndicators,
+                fn (array $indicator): bool => isset($assignedIndicatorIds[(string) ($indicator['id'] ?? '')]),
+            ));
+
+            if ($indicators === []) {
+                $detailError = 'Detail indikator yang ditugaskan tidak ditemukan pada master indikator.';
+            }
+
             $project['indicators'] = $indicators;
         }
 
@@ -104,8 +118,7 @@ class ReviewerController extends Controller
                 'indicatorIndex' => 0,
                 'savedAssessment' => [],
                 'savedAssessments' => [],
-                'isDemo' => $isDemo,
-                'apiError' => $error ?? 'Detail indikator penilaian belum tersedia dari server.',
+                'apiError' => $detailError ?? 'Detail indikator penilaian belum tersedia dari server.',
             ]);
         }
 
@@ -130,8 +143,7 @@ class ReviewerController extends Controller
             'indicatorIndex' => $indicatorIndex,
             'savedAssessment' => is_array($savedAssessment) ? $savedAssessment : [],
             'savedAssessments' => $savedAssessments,
-            'isDemo' => $isDemo,
-            'apiError' => $error,
+            'apiError' => $detailError,
         ]);
     }
 
@@ -140,13 +152,32 @@ class ReviewerController extends Controller
         [$projects, $error] = $this->projects();
         $project = $this->findProject($projects, $projectId);
 
+        if ($project === null) {
+            return redirect()->route('reviewer.assessments')->with('toast', [
+                'type' => 'error',
+                'title' => 'Project tidak ditemukan',
+                'message' => $error ?? 'Project penilaian tidak tersedia.',
+            ]);
+        }
+
         $indicators = $project['indicators'] ?? [];
-        if (empty($indicators)) {
-            $indicators = $this->loadIndicatorsFromApi($projectId);
+        $needsApiDetails = collect($indicators)->contains(
+            fn (mixed $indicator): bool => is_array($indicator) && ($indicator['_needs_api_detail'] ?? false),
+        );
+
+        if ($needsApiDetails) {
+            $assignedIndicatorIds = array_fill_keys(array_map(
+                fn (array $indicator): string => (string) $indicator['id'],
+                array_filter($indicators, fn (mixed $indicator): bool => is_array($indicator) && isset($indicator['id'])),
+            ), true);
+            $indicators = array_values(array_filter(
+                $this->loadIndicatorsFromApi($projectId),
+                fn (array $indicator): bool => isset($assignedIndicatorIds[(string) ($indicator['id'] ?? '')]),
+            ));
             $project['indicators'] = $indicators;
         }
 
-        $indicatorExists = $project !== null && collect($indicators)
+        $indicatorExists = collect($indicators)
             ->contains(fn (mixed $indicator): bool => is_array($indicator) && (string) ($indicator['id'] ?? '') === $indicatorId);
 
         if (! $indicatorExists) {
@@ -196,17 +227,29 @@ class ReviewerController extends Controller
             'evidence_status' => $evidenceStatuses,
         ]);
 
-        // Kirim penyimpanan penilaian ke API akreditasi
         try {
             $user = $request->session()->get('user', []);
-            $reviewerId = (int) ($user['id'] ?? 1);
-            $this->reviewerService->saveSelfAssessment([
+            $reviewerId = is_array($user) ? ($user['id'] ?? $user['id_user'] ?? $user['user_id'] ?? null) : null;
+            $assessment = [
                 'id_project' => (int) $projectId,
                 'id_indikator' => (int) $indicatorId,
-                'id_rubrik' => (int) ($rubrikId ?? 1),
-                'id_reviewer' => $reviewerId,
+                'id_rubrik' => $rubrikId !== null ? (int) $rubrikId : null,
                 'catatan_reviewer' => (string) ($validated['notes'] ?? ''),
-            ]);
+            ];
+
+            if ($reviewerId !== null) {
+                $assessment['reviewer_id'] = (int) $reviewerId;
+            }
+
+            $response = $this->reviewerService->saveSelfAssessment($assessment);
+
+            if (! $response->successful()) {
+                Log::warning('Reviewer save assessment API returned an unsuccessful response.', [
+                    'status' => $response->status(),
+                    'project_id' => $projectId,
+                    'indicator_id' => $indicatorId,
+                ]);
+            }
         } catch (\Throwable $e) {
             Log::warning('Reviewer save assessment to API: '.$e->getMessage());
         }
@@ -234,53 +277,86 @@ class ReviewerController extends Controller
 
         try {
             $resIndikator = $this->reviewerService->getIndikators();
-            $rawIndikators = $resIndikator->successful() ? ($resIndikator->json('data') ?? []) : [];
-
-            $resRubrik = $this->reviewerService->getRubriks();
-            $rawRubriks = $resRubrik->successful() ? ($resRubrik->json('data') ?? []) : [];
-
-            $rubriksByIndikator = [];
-            foreach ($rawRubriks as $rubrik) {
-                $indId = $rubrik['id_indikator'] ?? null;
-                if ($indId !== null) {
-                    $rubriksByIndikator[$indId][] = $rubrik;
-                }
-            }
-
-            $indicators = [];
-            foreach ($rawIndikators as $ind) {
-                $kriteriaNama = $ind['subkriteria']['kriteria']['nama_kriteria'] ?? null;
-                $kriteriaKode = $ind['subkriteria']['kriteria']['kode_kriteria'] ?? null;
-                $criterion = $kriteriaKode ? "Kriteria {$kriteriaKode}" : ($kriteriaNama ?? 'Kriteria');
-
-                $rubriks = $rubriksByIndikator[$ind['id']] ?? [];
-                usort($rubriks, fn ($a, $b) => ($b['skor'] ?? 0) <=> ($a['skor'] ?? 0));
-
-                $indicators[] = [
-                    'id' => (string) $ind['id'],
-                    'criterion' => $criterion,
-                    'criterion_title' => $kriteriaNama ?? $criterion,
-                    'code' => $ind['kode_indikator'] ?? ('IND-'.$ind['id']),
-                    'title' => $ind['deskripsi_indikator'] ?? 'Indikator Penilaian',
-                    'parameter' => $ind['parameter_penilaian'] ?? 'Parameter penilaian standar.',
-                    'narrative' => 'Program studi telah menyusun instrumen dan dokumentasi pelaksanaan kegiatan penjaminan mutu sesuai standar kriteria yang ditetapkan.',
-                    'evidence' => [
-                        ['type' => 'Dokumen kebijakan', 'name' => 'Dokumen SPMI & Regulasi Terkait', 'date' => date('d M Y'), 'status' => 'Disetujui'],
-                        ['type' => 'Laporan kinerja', 'name' => 'Laporan Hasil Evaluasi dan Tindak Lanjut', 'date' => date('d M Y'), 'status' => 'Pending'],
-                    ],
-                    'rubriks' => $rubriks,
-                    'weight' => 2.5,
-                ];
-            }
-
-            $this->cachedIndikators = $indicators;
-
-            return $indicators;
-        } catch (\Throwable $e) {
+        } catch (ConnectionException $e) {
             Log::warning('Gagal memuat indikator dari API: '.$e->getMessage());
 
             return [];
         }
+
+        if (! $resIndikator->successful()) {
+            Log::warning('API indikator reviewer mengembalikan respons gagal.', [
+                'status' => $resIndikator->status(),
+            ]);
+
+            return [];
+        }
+
+        $rawIndikators = $resIndikator->json('data') ?? [];
+        if (! is_array($rawIndikators)) {
+            Log::warning('Format daftar indikator dari API reviewer tidak sesuai.');
+
+            return [];
+        }
+
+        $rawRubriks = [];
+        try {
+            $resRubrik = $this->reviewerService->getRubriks();
+            if ($resRubrik->successful()) {
+                $rawRubriks = $resRubrik->json('data') ?? [];
+            } else {
+                Log::warning('API rubrik reviewer mengembalikan respons gagal.', [
+                    'status' => $resRubrik->status(),
+                ]);
+            }
+        } catch (ConnectionException $e) {
+            Log::warning('Gagal memuat rubrik reviewer dari API: '.$e->getMessage());
+        }
+
+        $rubriksByIndikator = [];
+        foreach (is_array($rawRubriks) ? $rawRubriks : [] as $rubrik) {
+            if (! is_array($rubrik)) {
+                continue;
+            }
+
+            $indId = $rubrik['id_indikator'] ?? null;
+            if ($indId !== null) {
+                $rubriksByIndikator[$indId][] = $rubrik;
+            }
+        }
+
+        $indicators = [];
+        foreach ($rawIndikators as $ind) {
+            if (! is_array($ind) || ! isset($ind['id'])) {
+                continue;
+            }
+
+            $kriteriaNama = $ind['subkriteria']['kriteria']['nama_kriteria'] ?? null;
+            $kriteriaKode = $ind['subkriteria']['kriteria']['kode_kriteria'] ?? null;
+            $criterion = $kriteriaKode ? "Kriteria {$kriteriaKode}" : ($kriteriaNama ?? 'Kriteria');
+
+            $rubriks = $rubriksByIndikator[$ind['id']] ?? [];
+            usort($rubriks, fn (array $a, array $b): int => ($b['skor'] ?? 0) <=> ($a['skor'] ?? 0));
+
+            $indicators[] = [
+                'id' => (string) $ind['id'],
+                'criterion' => $criterion,
+                'criterion_title' => $kriteriaNama ?? $criterion,
+                'code' => $ind['kode_indikator'] ?? ('IND-'.$ind['id']),
+                'title' => $ind['deskripsi_indikator'] ?? $ind['nama_indikator'] ?? 'Indikator Penilaian',
+                'parameter' => $ind['parameter_penilaian'] ?? 'Parameter penilaian standar.',
+                'narrative' => 'Program studi telah menyusun instrumen dan dokumentasi pelaksanaan kegiatan penjaminan mutu sesuai standar kriteria yang ditetapkan.',
+                'evidence' => [
+                    ['type' => 'Dokumen kebijakan', 'name' => 'Dokumen SPMI & Regulasi Terkait', 'date' => date('d M Y'), 'status' => 'Disetujui'],
+                    ['type' => 'Laporan kinerja', 'name' => 'Laporan Hasil Evaluasi dan Tindak Lanjut', 'date' => date('d M Y'), 'status' => 'Pending'],
+                ],
+                'rubriks' => $rubriks,
+                'weight' => 2.5,
+            ];
+        }
+
+        $this->cachedIndikators = $indicators;
+
+        return $indicators;
     }
 
     /**
@@ -326,50 +402,66 @@ class ReviewerController extends Controller
         return $savedAssessments;
     }
 
-    /**
-     * @return array{0: array<int, array<string, mixed>>, 1: ?string, 2: bool}
-     */
+    /** @return array{0: array<int, array<string, mixed>>, 1: ?string} */
     protected function projects(): array
     {
         try {
             $response = $this->reviewerService->getProjects();
         } catch (ConnectionException) {
-            return $this->projectsFromFallback('Tidak dapat terhubung ke server akreditasi. Silakan coba lagi nanti.');
+            return [[], 'Tidak dapat terhubung ke server akreditasi. Silakan coba lagi nanti.'];
         }
 
         if (! $response->successful()) {
-            return $this->projectsFromFallback($this->apiErrorMessage($response));
+            return [[], $this->apiErrorMessage($response)];
         }
 
-        $body = $response->json();
-        $data = $body['data'] ?? $body;
-        $projects = is_array($data) && isset($data['projects'])
-            ? $data['projects']
-            : $data;
+        $projects = $this->responseList($response->json());
 
-        if (! is_array($projects) || ! array_is_list($projects)) {
-            return [[], 'Format data project dari server akreditasi tidak sesuai.', false];
+        if ($projects === null) {
+            return [[], 'Format data project dari server akreditasi tidak sesuai.'];
         }
 
-        if (count(array_filter($projects, 'is_array')) !== count($projects)) {
-            return [[], 'Format data project dari server akreditasi tidak sesuai.', false];
+        try {
+            $mappingResponse = $this->reviewerService->getTeamAssignments();
+        } catch (ConnectionException) {
+            return [[], 'Tidak dapat memuat daftar indikator project dari server akreditasi.'];
         }
 
-        return [$this->prepareProjects($projects), null, false];
-    }
-
-    /**
-     * @return array{0: array<int, array<string, mixed>>, 1: ?string, 2: bool}
-     */
-    protected function projectsFromFallback(string $error): array
-    {
-        $projects = $this->reviewerService->getDummyProjects();
-
-        if ($projects !== null) {
-            return [$this->prepareProjects($projects), null, true];
+        if (! $mappingResponse->successful()) {
+            return [[], $this->apiErrorMessage($mappingResponse)];
         }
 
-        return [[], $error, false];
+        $assignments = $this->responseList($mappingResponse->json());
+
+        if ($assignments === null) {
+            return [[], 'Format data indikator project dari server akreditasi tidak sesuai.'];
+        }
+
+        $assignmentsByProject = [];
+        foreach ($assignments as $assignment) {
+            $projectId = $this->assignmentProjectId($assignment);
+
+            if ($projectId === null) {
+                continue;
+            }
+
+            $assignmentsByProject[(string) $projectId][] = $assignment;
+        }
+
+        $projectsNeedingReview = array_values(array_filter(
+            $projects,
+            fn (array $project): bool => $this->statusKey($project) === 'sedang_dinilai',
+        ));
+
+        foreach ($projectsNeedingReview as &$project) {
+            $projectId = (string) ($project['id'] ?? $project['id_project'] ?? $project['project_id']);
+            $project['indicators'] = $this->indicatorsFromAssignments($assignmentsByProject[$projectId] ?? []);
+            $project['total_indicators'] = $project['total_indicators'] ?? count($project['indicators']);
+            $project = $this->normalizeProject($project);
+        }
+        unset($project);
+
+        return [$this->prepareProjects($projectsNeedingReview), null];
     }
 
     /**
@@ -378,68 +470,66 @@ class ReviewerController extends Controller
      */
     protected function prepareProjects(array $projects): array
     {
-        $prodiMap = $this->reviewerService->getProdiMap();
+        $needsProdiMap = collect($projects)->contains(
+            fn (array $project): bool => empty($project['program_studi'])
+                && empty($project['prodi'])
+                && empty($project['nama_prodi'])
+                && isset($project['id_prodi']),
+        );
+        $prodiMap = $needsProdiMap ? $this->reviewerService->getProdiMap() : [];
 
-        // Ambil data self assessments untuk perhitungan progres akurat jika belum ada
         $assessmentsByProject = [];
-        try {
-            $selfRes = $this->reviewerService->getSelfAssessments();
-            if ($selfRes->successful()) {
-                $allSelf = $selfRes->json('data') ?? [];
-                if (is_array($allSelf)) {
-                    foreach ($allSelf as $s) {
-                        $pId = $s['id_project'] ?? null;
-                        if ($pId !== null) {
-                            $assessmentsByProject[$pId][] = $s;
+        $needsProgressFromAssessments = collect($projects)->contains(
+            fn (array $project): bool => ! isset($project['progress_percentage'])
+                && ! isset($project['completed_indicators']),
+        );
+        if ($needsProgressFromAssessments) {
+            try {
+                $selfRes = $this->reviewerService->getSelfAssessments();
+                if ($selfRes->successful()) {
+                    $allSelf = $selfRes->json('data') ?? [];
+                    if (is_array($allSelf)) {
+                        foreach ($allSelf as $assessment) {
+                            if (! is_array($assessment)) {
+                                continue;
+                            }
+
+                            $projectId = $assessment['id_project'] ?? null;
+                            if ($projectId !== null) {
+                                $assessmentsByProject[(string) $projectId][] = $assessment;
+                            }
                         }
                     }
                 }
+            } catch (\Throwable $e) {
+                Log::warning('Gagal memuat self assessment untuk progres reviewer: '.$e->getMessage());
             }
-        } catch (\Throwable) {
-            // fallback gracefully
         }
 
         return array_map(function (array $project) use ($prodiMap, $assessmentsByProject): array {
-            $id = $project['id'] ?? $project['project_id'] ?? null;
+            $id = $project['id'] ?? $project['id_project'] ?? $project['project_id'] ?? null;
 
-            // Normalisasi nama program studi
-            if (empty($project['program_studi'])) {
-                if (! empty($project['id_prodi']) && isset($prodiMap[$project['id_prodi']])) {
-                    $project['program_studi'] = $prodiMap[$project['id_prodi']];
-                } elseif (! empty($project['prodi']['nama'])) {
-                    $project['program_studi'] = $project['prodi']['nama'];
-                } elseif (! empty($project['nama_prodi'])) {
-                    $project['program_studi'] = $project['nama_prodi'];
-                } elseif (preg_match('/(?:D3|D4|S1|S2)\s+([A-Za-z\s]+?)(?:\s+\d{4}|$)/', (string) ($project['nama_project'] ?? ''), $match)) {
-                    $project['program_studi'] = trim($match[1]);
-                } else {
-                    $project['program_studi'] = 'Program Studi';
-                }
+            if (empty($project['program_studi']) && ! empty($project['id_prodi']) && isset($prodiMap[$project['id_prodi']])) {
+                $project['program_studi'] = $prodiMap[$project['id_prodi']];
             }
 
-            // Normalisasi jenjang
-            if (is_array($project['jenjang'] ?? null)) {
-                $project['jenjang'] = $project['jenjang']['nama_jenjang'] ?? 'Program Diploma';
-            }
-
-            // Normalisasi jenis instrumen
-            if (is_array($project['jenis_instrumen'] ?? null)) {
-                $project['jenis_instrumen'] = $project['jenis_instrumen']['nama_jenis']
-                    ?? ($project['versi_instrumen']['nomor_versi'] ?? 'LAM-INFOKOM 2.1');
-            }
-
-            // Normalisasi target submit
-            if (empty($project['target_submit']) && ! empty($project['tahun_target_submit'])) {
-                $project['target_submit'] = (string) $project['tahun_target_submit'];
-            }
-
-            // Hitung progres dinamis jika project tidak membawa completed_indicators / progress
             if (! isset($project['progress_percentage']) && ! isset($project['completed_indicators'])) {
-                $apiCount = count($assessmentsByProject[$id] ?? []);
+                $apiAssessmentIds = array_filter(array_map(
+                    fn (array $assessment): ?string => isset($assessment['id_indikator'])
+                        ? (string) $assessment['id_indikator']
+                        : null,
+                    $assessmentsByProject[(string) $id] ?? [],
+                ));
                 $sessionAssessments = session("reviewer_assessments.{$id}", []);
-                $sessionCount = is_array($sessionAssessments) ? count($sessionAssessments) : 0;
-                $completed = max($apiCount, $sessionCount);
-                $total = count($project['indicators'] ?? []) ?: 31;
+                $sessionAssessmentIds = is_array($sessionAssessments) ? array_keys($sessionAssessments) : [];
+                $completed = count(array_unique(array_merge($apiAssessmentIds, $sessionAssessmentIds)));
+                if ($completed === 0) {
+                    $completed = count($assessmentsByProject[(string) $id] ?? []);
+                }
+                $total = (int) ($project['total_indicators'] ?? 0);
+                if ($total < 1) {
+                    $total = count($project['indicators'] ?? []) ?: 31;
+                }
 
                 $project['completed_indicators'] = $completed;
                 $project['total_indicators'] = $total;
@@ -449,18 +539,193 @@ class ReviewerController extends Controller
                     $project['status'] = 'Selesai';
                 } elseif ($completed > 0) {
                     $project['status'] = 'Sedang dinilai';
-                } else {
-                    $project['status'] = $project['status_project'] ?? 'Menunggu';
                 }
-            } else {
-                $project['_reviewer_progress'] = $this->progress($project);
             }
 
+            $project = $this->normalizeProject($project);
+            $project['_reviewer_progress'] = $project['_reviewer_progress'] ?? $this->progress($project);
             $project['_reviewer_status_key'] = $this->statusKey($project);
             $project['_reviewer_year'] = $this->year($project);
 
             return $project;
         }, $projects);
+    }
+
+    /**
+     * @return array<int, array<string, mixed>>|null
+     */
+    protected function responseList(mixed $body): ?array
+    {
+        if (! is_array($body)) {
+            return null;
+        }
+
+        $data = $body['data'] ?? $body;
+        if (is_array($data) && ! array_is_list($data)) {
+            $data = $data['projects'] ?? $data['mapping_tim'] ?? null;
+        }
+
+        if (! is_array($data) || ! array_is_list($data) || count(array_filter($data, 'is_array')) !== count($data)) {
+            return null;
+        }
+
+        return $data;
+    }
+
+    /**
+     * @param  array<string, mixed>  $assignment
+     */
+    protected function assignmentProjectId(array $assignment): mixed
+    {
+        return $assignment['id_project']
+            ?? $assignment['project_id']
+            ?? $assignment['project']['id']
+            ?? null;
+    }
+
+    /**
+     * @param  array<int, array<string, mixed>>  $assignments
+     * @return array<int, array<string, mixed>>
+     */
+    protected function indicatorsFromAssignments(array $assignments): array
+    {
+        $indicators = [];
+
+        foreach ($assignments as $assignment) {
+            $indicator = $assignment['indikator'] ?? $assignment['indicator'] ?? null;
+            if (! is_array($indicator)) {
+                $indicator = ['_needs_api_detail' => true];
+            }
+
+            $indicator['id'] = $indicator['id'] ?? $assignment['id_indikator'] ?? null;
+            $indicator = $this->normalizeIndicator($indicator);
+
+            if ($indicator['id'] !== null) {
+                $indicators[(string) $indicator['id']] = $indicator;
+            }
+        }
+
+        return array_values($indicators);
+    }
+
+    /**
+     * @param  array<string, mixed>  $project
+     * @return array<string, mixed>
+     */
+    protected function normalizeProject(array $project): array
+    {
+        $program = $project['program_studi'] ?? $project['prodi'] ?? null;
+        $degree = $project['jenjang'] ?? null;
+        $instrument = $project['jenis_instrumen'] ?? $project['instrumen'] ?? null;
+        $instrumentVersion = $project['versi_instrumen'] ?? null;
+        $instrumentDetail = is_array($instrumentVersion) ? ($instrumentVersion['instrumen'] ?? null) : null;
+
+        $project['program_studi'] = $this->nestedName($program)
+            ?? $project['nama_prodi']
+            ?? $project['nama_program_studi']
+            ?? $this->programNameFromProject($project)
+            ?? 'Program studi';
+        $project['jenjang'] = $this->nestedName($degree)
+            ?? (is_array($program) ? $this->nestedName($program['jenjang'] ?? null) : null)
+            ?? '—';
+        $project['jenis_instrumen'] = $this->nestedName($instrument)
+            ?? (is_array($instrumentDetail) ? $this->nestedName($instrumentDetail) : null)
+            ?? (is_array($instrumentVersion) ? $this->nestedName($instrumentVersion) : null)
+            ?? 'Instrumen akreditasi';
+        $project['target_submit'] = $project['tahun_target_submit']
+            ?? $project['target_submit']
+            ?? $project['tahun']
+            ?? '—';
+        $project['status'] = $this->statusLabel((string) ($project['status_project'] ?? $project['status'] ?? ''));
+        $project['indicators'] = array_values(array_map(
+            fn (array $indicator): array => $this->normalizeIndicator($indicator),
+            array_filter($project['indicators'] ?? [], 'is_array'),
+        ));
+
+        return $project;
+    }
+
+    /**
+     * @param  array<string, mixed>  $project
+     */
+    protected function programNameFromProject(array $project): ?string
+    {
+        if (preg_match('/(?:D3|D4|S1|S2)\s+([A-Za-z\s]+?)(?:\s+\d{4}|$)/', (string) ($project['nama_project'] ?? ''), $matches) === 1) {
+            return trim($matches[1]);
+        }
+
+        return null;
+    }
+
+    /**
+     * @param  array<string, mixed>  $indicator
+     * @return array<string, mixed>
+     */
+    protected function normalizeIndicator(array $indicator): array
+    {
+        $subcriterion = $indicator['subkriteria'] ?? $indicator['sub_criteria'] ?? null;
+        $criterion = is_array($subcriterion) ? ($subcriterion['kriteria'] ?? $subcriterion['criterion'] ?? null) : null;
+        $evidence = $indicator['evidence'] ?? $indicator['bukti_pendukung'] ?? [];
+
+        $indicator['id'] = $indicator['id'] ?? $indicator['id_indikator'] ?? null;
+        $indicator['code'] = $indicator['kode_indikator'] ?? $indicator['code'] ?? $indicator['kode'] ?? 'Indikator';
+        $indicator['title'] = $indicator['nama_indikator'] ?? $indicator['title'] ?? $indicator['nama'] ?? 'Indikator penilaian';
+        $indicator['criterion'] = $indicator['criterion']
+            ?? (is_array($criterion) ? ($criterion['nama_kriteria'] ?? $criterion['nama'] ?? $criterion['name'] ?? null) : null)
+            ?? $indicator['nama_kriteria']
+            ?? 'Kriteria';
+        $indicator['criterion_title'] = $indicator['criterion_title']
+            ?? (is_array($criterion) ? ($criterion['nama_kriteria'] ?? $criterion['nama'] ?? $criterion['name'] ?? null) : null)
+            ?? $indicator['nama_kriteria']
+            ?? $indicator['criterion'];
+        $indicator['parameter'] = $indicator['parameter_penilaian']
+            ?? $indicator['parameter']
+            ?? $indicator['deskripsi']
+            ?? 'Parameter penilaian belum tersedia.';
+        $indicator['narrative'] = $indicator['narasi_prodi'] ?? $indicator['narrative'] ?? null;
+        $indicator['evidence'] = is_array($evidence)
+            ? array_values(array_map(function (array $item): array {
+                $item['type'] = $item['jenis_bukti'] ?? $item['type'] ?? $item['tipe'] ?? 'Bukti pendukung';
+                $item['name'] = $item['nama_bukti'] ?? $item['name'] ?? $item['nama'] ?? 'Dokumen bukti';
+                $item['date'] = $item['tanggal'] ?? $item['date'] ?? '—';
+                $item['status'] = $item['status_review'] ?? $item['status'] ?? 'Pending';
+
+                return $item;
+            }, array_filter($evidence, 'is_array')))
+            : [];
+
+        return $indicator;
+    }
+
+    protected function nestedName(mixed $value): ?string
+    {
+        if (is_string($value) || is_numeric($value)) {
+            return (string) $value;
+        }
+
+        if (! is_array($value)) {
+            return null;
+        }
+
+        foreach (['nama_prodi', 'nama_jenjang', 'nama_jenis_instrumen', 'nama_jenis', 'nama_instrumen', 'nama_versi', 'nomor_versi', 'nama', 'name'] as $key) {
+            if (isset($value[$key]) && (is_string($value[$key]) || is_numeric($value[$key]))) {
+                return (string) $value[$key];
+            }
+        }
+
+        return null;
+    }
+
+    protected function statusLabel(string $status): string
+    {
+        $normalized = strtolower(trim($status));
+
+        return match ($normalized) {
+            'review', 'sedang_dinilai', 'sedang dinilai', 'in_review', 'in progress', 'in_progress' => 'Sedang dinilai',
+            'submit', 'submitted', 'selesai', 'complete', 'completed' => 'Selesai',
+            'draft', 'menunggu', 'pending', 'waiting' => 'Menunggu',
+            default => $status !== '' ? $status : 'Menunggu',
+        };
     }
 
     /**
@@ -470,7 +735,7 @@ class ReviewerController extends Controller
     {
         $status = strtolower(trim((string) ($project['status'] ?? $project['status_project'] ?? '')));
 
-        if (str_contains($status, 'selesai') || str_contains($status, 'complete')) {
+        if (str_contains($status, 'selesai') || str_contains($status, 'complete') || $status === 'submit' || $status === 'submitted') {
             return 'selesai';
         }
 
@@ -478,7 +743,7 @@ class ReviewerController extends Controller
             return 'menunggu';
         }
 
-        if (str_contains($status, 'dinilai') || str_contains($status, 'progress') || str_contains($status, 'proses')) {
+        if (str_contains($status, 'dinilai') || str_contains($status, 'progress') || str_contains($status, 'proses') || $status === 'review' || $status === 'in_review') {
             return 'sedang_dinilai';
         }
 
@@ -528,7 +793,7 @@ class ReviewerController extends Controller
     {
         $status = strtolower((string) ($project['status'] ?? $project['status_project'] ?? ''));
 
-        return str_contains($status, 'selesai') || str_contains($status, 'complete');
+        return str_contains($status, 'selesai') || str_contains($status, 'complete') || $status === 'submit' || $status === 'submitted';
     }
 
     /**
@@ -538,7 +803,7 @@ class ReviewerController extends Controller
     {
         $status = strtolower((string) ($project['status'] ?? $project['status_project'] ?? ''));
 
-        return str_contains($status, 'dinilai') || str_contains($status, 'progress');
+        return str_contains($status, 'dinilai') || str_contains($status, 'progress') || $status === 'review' || $status === 'in_review';
     }
 
     /**
@@ -546,7 +811,7 @@ class ReviewerController extends Controller
      */
     protected function progress(array $project): float
     {
-        $value = $project['progress_percentage'] ?? $project['progress'] ?? $project['persentase'] ?? null;
+        $value = $project['_reviewer_progress'] ?? $project['progress_percentage'] ?? $project['progress'] ?? $project['persentase'] ?? null;
 
         if (! is_numeric($value)) {
             $completedIndicators = $project['completed_indicators'] ?? $project['indikator_selesai'] ?? null;

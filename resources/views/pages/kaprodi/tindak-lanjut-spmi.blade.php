@@ -1,1 +1,0 @@
-@include('spmi.tindak-lanjut')

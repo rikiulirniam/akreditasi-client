@@ -718,6 +718,93 @@ class AkreditasiService
 
     /*
     |--------------------------------------------------------------------------
+    | Evidence SPMI Endpoints
+    |--------------------------------------------------------------------------
+    */
+
+    /**
+     * Mengambil daftar evidence SPMI (mendukung query project_id).
+     *
+     * @param  array<string, mixed>  $query
+     */
+    public function getEvidenceSpmi(array $query = []): Response
+    {
+        $res = $this->get('/evidence-spmi', $query);
+        if ($res->status() === 404) {
+            return $this->get('/spmi-evidence', $query);
+        }
+
+        return $res;
+    }
+
+    /**
+     * Mengambil detail evidence SPMI berdasarkan ID.
+     */
+    public function getEvidenceSpmiDetail(int|string $id): Response
+    {
+        $res = $this->get("/evidence-spmi/{$id}");
+        if ($res->status() === 404) {
+            return $this->get("/spmi-evidence/{$id}");
+        }
+
+        return $res;
+    }
+
+    /**
+     * Menyimpan atau memperbarui data evidence SPMI project.
+     *
+     * @param  array<string, mixed>  $data
+     */
+    public function saveEvidenceSpmi(array $data): Response
+    {
+        $res = $this->post('/evidence-spmi', $data);
+        if ($res->status() === 404) {
+            return $this->post('/spmi-evidence', $data);
+        }
+
+        return $res;
+    }
+
+    /**
+     * Menyimpan evidence SPMI baru.
+     *
+     * @param  array<string, mixed>  $data
+     */
+    public function createEvidenceSpmi(array $data): Response
+    {
+        return $this->saveEvidenceSpmi($data);
+    }
+
+    /**
+     * Memperbarui evidence SPMI.
+     *
+     * @param  array<string, mixed>  $data
+     */
+    public function updateEvidenceSpmi(int|string $id, array $data): Response
+    {
+        $res = $this->put("/evidence-spmi/{$id}", $data);
+        if ($res->status() === 404) {
+            return $this->put("/spmi-evidence/{$id}", $data);
+        }
+
+        return $res;
+    }
+
+    /**
+     * Menghapus evidence SPMI.
+     */
+    public function deleteEvidenceSpmi(int|string $id): Response
+    {
+        $res = $this->delete("/evidence-spmi/{$id}");
+        if ($res->status() === 404) {
+            return $this->delete("/spmi-evidence/{$id}");
+        }
+
+        return $res;
+    }
+
+    /*
+    |--------------------------------------------------------------------------
     | Sarana & Prasarana Prodi Endpoints
     |--------------------------------------------------------------------------
     */

@@ -2,9 +2,7 @@
 
 namespace App\Services;
 
-use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Http\Client\Response;
-use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
 class ReviewerService
@@ -18,42 +16,10 @@ class ReviewerService
     }
 
     /**
-     * @return array<int, array<string, mixed>>|null
-     */
-    public function getDummyProjects(): ?array
-    {
-        $file = resource_path('reviewer-dummy-data.php');
-
-        if (! is_file($file)) {
-            return null;
-        }
-
-        $projects = require $file;
-
-        if (! is_array($projects) || ! array_is_list($projects) || count(array_filter($projects, 'is_array')) !== count($projects)) {
-            throw new \UnexpectedValueException('File data dummy reviewer harus berisi daftar project.');
-        }
-
-        return $projects;
-    }
-
-    /**
-     * Mengambil daftar project akreditasi.
-     * Mencoba endpoint /reviewer/projects (kompatibilitas test/mock),
-     * lalu fallback ke endpoint standar akreditasi /projects.
+     * Mengambil semua project akreditasi.
      */
     public function getProjects(array $query = []): Response
     {
-        try {
-            $reviewerUrl = $this->apiUrl().'/reviewer/projects';
-            $response = $this->http()->get($reviewerUrl, $query);
-            if ($response->successful()) {
-                return $response;
-            }
-        } catch (\Throwable $e) {
-            // Lanjut ke endpoint utama jika endpoint khusus tidak tersedia
-        }
-
         return $this->akreditasiService->getProjects($query);
     }
 
@@ -66,11 +32,27 @@ class ReviewerService
     }
 
     /**
+     * Mengambil data pembagian indikator pada semua project.
+     */
+    public function getTeamAssignments(array $query = []): Response
+    {
+        return $this->akreditasiService->getMappingTim($query);
+    }
+
+    /**
      * Mengambil master indikator akreditasi dari API.
      */
     public function getIndikators(array $query = []): Response
     {
         return $this->akreditasiService->getIndikators($query);
+    }
+
+    /**
+     * Alias berbahasa Inggris untuk menjaga kompatibilitas pemanggil lama.
+     */
+    public function getIndicators(array $query = []): Response
+    {
+        return $this->getIndikators($query);
     }
 
     /**
@@ -126,26 +108,5 @@ class ReviewerService
         }
 
         return [];
-    }
-
-    protected function http(): PendingRequest
-    {
-        $request = Http::acceptJson()
-            ->withoutVerifying()
-            ->timeout(20);
-        $token = (string) session('access_token');
-
-        if ($token !== '') {
-            $request = $request->withToken($token);
-        }
-
-        return $request;
-    }
-
-    protected function apiUrl(): string
-    {
-        $baseUrl = rtrim((string) config('services.akreditasi.base_url'), '/');
-
-        return str_ends_with($baseUrl, '/api') ? $baseUrl : $baseUrl.'/api';
     }
 }

@@ -29,24 +29,25 @@
         <!-- 2. Project Card Banner & Selector -->
         <div
             class="bg-white rounded-2xl border border-[#EAEAEA] p-5 sm:p-6 shadow-xs flex flex-wrap items-center justify-between gap-4">
-            <div class="w-96 max-w-full space-y-1.5">
+            <div class="w-full sm:w-auto flex-1 min-w-0 max-w-3xl space-y-1.5">
                 <label for="projectSelector" class="block text-gray-500 text-[11px] font-bold tracking-wider uppercase">
                     PILIH PROJECT AKREDITASI
                 </label>
-                <div class="relative">
+                <div class="relative w-full sm:w-fit max-w-full">
                     <select id="projectSelector"
-                        class="w-full h-11 bg-gray-50/80 hover:bg-gray-100/80 text-primary font-bold text-xs sm:text-sm rounded-xl px-4 pr-10 appearance-none border border-gray-200 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary shadow-xs cursor-pointer transition-colors">
+                        class="w-full sm:w-auto min-w-full sm:min-w-fit max-w-full h-11 bg-gray-50/80 hover:bg-gray-100/80 text-primary font-bold text-xs sm:text-sm rounded-xl px-4 pr-11 appearance-none border border-gray-200 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary shadow-xs cursor-pointer transition-colors">
                         @if (!empty($projects))
                             @foreach ($projects as $p)
                                 <option value="{{ $p['id'] ?? $loop->index }}"
+                                    title="{{ $p['nama_project'] ?? 'Project Akreditasi' }} ({{ $p['tahun_target_submit'] ?? 2026 }})"
                                     {{ ($p['nama_project'] ?? '') === $project ? 'selected' : '' }}>
                                     {{ $p['nama_project'] ?? 'Project Akreditasi' }}
                                     ({{ $p['tahun_target_submit'] ?? 2026 }})
                                 </option>
                             @endforeach
                         @else
-                            <option value="lam-infokom-2027" selected>{{ $project }}</option>
-                            <option value="lam-infokom-2026">Akreditasi LAM INFOKOM D4 TRK 2026</option>
+                            <option value="lam-infokom-2027" title="{{ $project }}" selected>{{ $project }}</option>
+                            <option value="lam-infokom-2026" title="Akreditasi LAM INFOKOM D4 TRK 2026">Akreditasi LAM INFOKOM D4 TRK 2026</option>
                         @endif
                     </select>
                     <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3.5 text-primary">
@@ -142,36 +143,39 @@
             </div>
         </div>
 
-        <!-- 4. Top Action Bar (Cetak / Simpan PDF) -->
-        <div
-            class="bg-white rounded-2xl border border-[#EAEAEA] p-4 sm:px-6 sm:py-4 shadow-xs flex flex-wrap items-center justify-between gap-4 sticky top-4 z-10 backdrop-blur-md bg-white/95">
-            <div class="flex items-center gap-2 text-xs sm:text-sm text-[#5A6E85] font-medium">
-                <span id="selectedCount" class="font-extrabold text-primary text-base">4</span>
-                <span>bagian dipilih</span>
-                <span class="text-gray-300">·</span>
-                <span>format</span>
-                <span class="inline-flex items-center px-2.5 py-0.5 rounded-lg bg-primary/10 text-primary font-bold text-xs uppercase tracking-wider">
-                    PDF
-                </span>
-            </div>
-            <div class="flex items-center gap-3">
-                <button type="button" onclick="window.print()"
-                    class="h-10 px-6 bg-primary hover:bg-additional text-white text-xs sm:text-sm font-bold rounded-xl shadow-xs hover:shadow transition cursor-pointer flex items-center gap-2">
-                    <svg class="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24"
-                        stroke="currentColor" stroke-width="2">
-                        <path stroke-linecap="round" stroke-linejoin="round"
-                            d="M6.72 13.829c-.24-1.03-.42-2.11-.52-3.23C5.74 5.92 9.4 2.5 14 2.5s8.26 3.42 7.8 8.099c-.1 1.12-.28 2.2-.52 3.23M17 17v4H7v-4m10 0H7m10 0h3.5a1.5 1.5 0 001.5-1.5v-4a1.5 1.5 0 00-1.5-1.5H4a1.5 1.5 0 00-1.5 1.5v4A1.5 1.5 0 004 17h3" />
-                    </svg>
-                    <span>Cetak / Simpan PDF</span>
-                </button>
-            </div>
-        </div>
-
-        <!-- 5. Split Panel: Form Pilihan (Kiri) & Pratinjau Dokumen (Kanan) -->
+        <!-- 4. Split Panel: Form Pilihan (Kiri) & Pratinjau Dokumen (Kanan) -->
         <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
 
-            <!-- Panel Kiri: Form Pilihan & Format (5 / 12) -->
-            <div class="lg:col-span-5 bg-white rounded-2xl border border-[#EAEAEA] p-6 space-y-6 shadow-xs">
+            <!-- Panel Kiri: Form Pilihan & Cetak (5 / 12) — sticky saat scroll -->
+            <div class="lg:col-span-5 lg:sticky lg:top-4 space-y-4 z-10">
+
+                <!-- Action Bar (Cetak / Simpan PDF) -->
+                <div
+                    class="bg-white rounded-2xl border border-[#EAEAEA] p-4 sm:px-6 sm:py-4 shadow-xs flex flex-wrap items-center justify-between gap-4">
+                    <div class="flex items-center gap-2 text-xs sm:text-sm text-[#5A6E85] font-medium">
+                        <span id="selectedCount" class="font-extrabold text-primary text-base">4</span>
+                        <span>bagian dipilih</span>
+                        <span class="text-gray-300">·</span>
+                        <span>format</span>
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-lg bg-primary/10 text-primary font-bold text-xs uppercase tracking-wider">
+                            PDF
+                        </span>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <button type="button" onclick="window.print()"
+                            class="h-10 px-6 bg-primary hover:bg-additional text-white text-xs sm:text-sm font-bold rounded-xl shadow-xs hover:shadow transition cursor-pointer flex items-center gap-2">
+                            <svg class="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24"
+                                stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round"
+                                    d="M6.72 13.829c-.24-1.03-.42-2.11-.52-3.23C5.74 5.92 9.4 2.5 14 2.5s8.26 3.42 7.8 8.099c-.1 1.12-.28 2.2-.52 3.23M17 17v4H7v-4m10 0H7m10 0h3.5a1.5 1.5 0 001.5-1.5v-4a1.5 1.5 0 00-1.5-1.5H4a1.5 1.5 0 00-1.5 1.5v4A1.5 1.5 0 004 17h3" />
+                            </svg>
+                            <span>Cetak / Simpan PDF</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Form Pilihan Isi Laporan -->
+                <div class="bg-white rounded-2xl border border-[#EAEAEA] p-6 space-y-6 shadow-xs">
 
                 <!-- Bagian 1: Pilih Isi Laporan -->
                 <div class="space-y-3">
@@ -269,13 +273,14 @@
                 </div>
 
             </div>
+            </div>
 
             <!-- Panel Kanan: Pratinjau Dokumen (7 / 12) -->
             <div
                 class="lg:col-span-7 bg-white rounded-2xl border border-[#EAEAEA] overflow-hidden shadow-xs flex flex-col">
 
                 <!-- Toolbar Pratinjau -->
-                <div class="px-6 py-4 bg-gray-50/80 border-b border-[#EAEAEA] flex items-center justify-between">
+                <div class="px-6 py-4 bg-gray-50/80 border-b border-[#EAEAEA] flex items-center justify-between shrink-0">
                     <div class="flex items-center gap-2">
                         <svg class="w-4 h-4 text-additional" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -304,12 +309,12 @@
                     </div>
                 </div>
 
-                <!-- Container Kertas Dokumen (Scrollable) -->
-                <div class="p-4 sm:p-6 overflow-x-auto max-h-[820px] overflow-y-auto flex justify-center bg-[#F8FAFC]">
+                <!-- Container Kertas Dokumen (Scrollable — tinggi dinamis mengikuti viewport) -->
+                <div id="previewScrollContainer" class="p-4 sm:p-6 overflow-x-auto overflow-y-auto bg-[#F8FAFC]" style="max-height: calc(100vh - 220px);">
 
                     <!-- Lembar Kertas Laporan (Document Sheet) -->
                     <div id="previewDocumentPaper"
-                        class="w-[640px] min-h-[860px] bg-white p-8 sm:p-10 shadow-lg rounded-xl border border-gray-200/90 space-y-6 transition-transform duration-150 origin-top select-none"
+                        class="max-w-[640px] mx-auto bg-white p-8 sm:p-10 shadow-lg rounded-xl border border-gray-200/90 space-y-6 transition-transform duration-150 origin-top select-none"
                         style="transform: scale(0.85); transform-origin: top center;">
 
                         <!-- Header Kertas Laporan (Kop Dokumen) -->
@@ -590,14 +595,52 @@
         }
 
         const projectSelector = document.getElementById('projectSelector');
+        function adjustProjectSelectorWidth() {
+            if (!projectSelector) return;
+            const selectedOption = projectSelector.options[projectSelector.selectedIndex];
+            const text = selectedOption ? (selectedOption.text || selectedOption.innerText) : projectSelector.value;
+            if (!text) return;
+
+            const tempSpan = document.createElement('span');
+            const computed = window.getComputedStyle(projectSelector);
+            tempSpan.style.position = 'absolute';
+            tempSpan.style.visibility = 'hidden';
+            tempSpan.style.whiteSpace = 'pre';
+            tempSpan.style.fontFamily = computed.fontFamily;
+            tempSpan.style.fontSize = computed.fontSize;
+            tempSpan.style.fontWeight = computed.fontWeight || '700';
+            tempSpan.style.letterSpacing = computed.letterSpacing;
+            tempSpan.textContent = text;
+
+            document.body.appendChild(tempSpan);
+            const textWidth = Math.ceil(tempSpan.getBoundingClientRect().width);
+            document.body.removeChild(tempSpan);
+
+            const totalPadding = 76;
+            const requiredWidth = textWidth + totalPadding;
+            const parentWidth = projectSelector.parentElement?.parentElement?.clientWidth || window.innerWidth;
+
+            if (window.innerWidth < 640) {
+                projectSelector.style.width = '100%';
+            } else {
+                projectSelector.style.width = `${Math.min(requiredWidth, Math.max(parentWidth - 10, 360))}px`;
+            }
+        }
+
         if (projectSelector) {
+            adjustProjectSelectorWidth();
             projectSelector.addEventListener('change', function() {
+                adjustProjectSelectorWidth();
                 const docProj = document.getElementById('docProjectDisplay');
                 const selectedText = this.options[this.selectedIndex]?.text || '';
                 if (docProj && selectedText) {
                     docProj.textContent = selectedText.split('(')[0].trim();
                 }
             });
+            window.addEventListener('resize', adjustProjectSelectorWidth);
+            if (document.fonts && document.fonts.ready) {
+                document.fonts.ready.then(adjustProjectSelectorWidth);
+            }
         }
     </script>
 @endsection

@@ -8,7 +8,6 @@ use App\Http\Controllers\Akreditasi\Superadmin\KriteriaController;
 use App\Http\Controllers\Akreditasi\Superadmin\LembagaAkreditasiController;
 use App\Http\Controllers\Akreditasi\Superadmin\LembarKerjaController;
 use App\Http\Controllers\Akreditasi\Superadmin\RubrikController;
-use App\Http\Controllers\Akreditasi\Superadmin\StandarSpmiController;
 use App\Http\Controllers\Akreditasi\Superadmin\SubkriteriaController;
 use App\Http\Controllers\Akreditasi\Superadmin\VersiInstrumenController;
 use App\Http\Controllers\AngkatanController;
@@ -43,6 +42,17 @@ use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
     if (session()->has('access_token')) {
+        $user = session('user', []);
+        $role = strtolower((string) ($user['role'] ?? $user['role_name'] ?? ($user['roles'][0]['name'] ?? '')));
+
+        if (str_contains($role, 'reviewer')) {
+            return redirect()->route('reviewer.dashboard');
+        }
+
+        if (str_contains($role, 'kaprodi')) {
+            return redirect()->route('kaprodi.dashboard');
+        }
+
         return redirect()->route('dashboard');
     }
 
@@ -68,10 +78,13 @@ Route::middleware('auth.akademik')->group(function () {
         Route::get('/dashboard', [KaprodiController::class, 'dashboard'])->name('dashboard');
         Route::get('/project', [KaprodiController::class, 'project'])->name('project');
         Route::post('/project', [KaprodiController::class, 'storeProject'])->name('project.store');
+        Route::put('/project/{id}', [KaprodiController::class, 'updateProject'])->name('project.update');
+        Route::patch('/project/{id}/status', [KaprodiController::class, 'updateStatusProject'])->name('project.update-status');
         Route::delete('/project/{id}', [KaprodiController::class, 'destroyProject'])->name('project.destroy');
         Route::get('/project/detail/{id?}', [KaprodiController::class, 'projectDetail'])->name('project.detail');
 
         Route::get('/plotting', [KaprodiController::class, 'plotting'])->name('plotting');
+        Route::post('/plotting', [KaprodiController::class, 'storePlotting'])->name('plotting.store');
     });
 
     // ==========================================
@@ -207,8 +220,9 @@ Route::middleware('auth.akademik')->group(function () {
     Route::get('/validasi-monitoring', [ValidasiMonitoringController::class, 'index'])->name('validasi-monitoring.index');
     Route::post('/validasi-monitoring/status', [ValidasiMonitoringController::class, 'updateStatus'])->name('validasi-monitoring.update-status');
 
-    Route::get('/spmi/tindak-lanjut', [SpmiController::class, 'tindakLanjut'])->name('spmi.tindak-lanjut');
-    Route::post('/spmi/tindak-lanjut', [SpmiController::class, 'storeTindakLanjut'])->name('spmi.tindak-lanjut.store');
+    Route::get('/spmi/evidence', [SpmiController::class, 'evidenceSpmi'])->name('spmi.evidence');
+    Route::post('/spmi/evidence', [SpmiController::class, 'storeEvidence'])->name('spmi.evidence.store');
+    Route::put('/spmi/evidence/{id}', [SpmiController::class, 'updateEvidence'])->name('spmi.evidence.update');
 
     Route::get('/laporan-akhir', [LaporanAkhirController::class, 'index'])->name('laporan-akhir.index');
     Route::get('/laporan-akhir/download', [LaporanAkhirController::class, 'download'])->name('laporan-akhir.download');
@@ -283,9 +297,6 @@ Route::prefix('pages')->name('akreditasi.superadmin.')->group(function () {
     Route::get('/superadmin/rubrik', function () {
         return redirect()->route('akreditasi.superadmin.lembaga_akreditasi');
     });
-
-    Route::get('/superadmin/standar-spmi', [StandarSpmiController::class, 'index'])->name('standar_spmi');
-    Route::post('/superadmin/standar-spmi', [StandarSpmiController::class, 'store'])->name('standar_spmi.store');
 
     Route::get('/superadmin/lembar-kerja', [LembarKerjaController::class, 'index'])->name('lembar_kerja');
     Route::get('/superadmin/bukti-dokumen', [BuktiDokumenController::class, 'index'])->name('bukti_dokumen');
