@@ -9,6 +9,7 @@ use App\Http\Controllers\Akreditasi\Superadmin\LembagaAkreditasiController;
 use App\Http\Controllers\Akreditasi\Superadmin\LembarKerjaController;
 use App\Http\Controllers\Akreditasi\Superadmin\RubrikController;
 use App\Http\Controllers\Akreditasi\Superadmin\SubkriteriaController;
+use App\Http\Controllers\Akreditasi\Superadmin\VersiInstrumenController;
 use App\Http\Controllers\AngkatanController;
 use App\Http\Controllers\AngkatanKelasController;
 use App\Http\Controllers\AuthController;
@@ -241,9 +242,20 @@ Route::prefix('pages')->name('akreditasi.superadmin.')->group(function () {
     Route::put('/superadmin/lembaga-akreditasi/{id}', [LembagaAkreditasiController::class, 'update'])->name('lembaga_akreditasi.update');
     Route::delete('/superadmin/lembaga-akreditasi/{id}', [LembagaAkreditasiController::class, 'destroy'])->name('lembaga_akreditasi.destroy');
 
-    // Master Data Akreditasi - Level 2: Detail Lembaga -> Daftar Instrumen
-    Route::get('/superadmin/lembaga-akreditasi/{lembagaId}', [InstrumenController::class, 'index'])->name('instrumen');
-    Route::post('/superadmin/lembaga-akreditasi/{lembagaId}/instrumen', [InstrumenController::class, 'store'])->name('instrumen.store');
+    // Master Data Akreditasi - Level 2: Detail Lembaga -> Daftar Versi Instrumen
+    Route::get('/superadmin/lembaga-akreditasi/{lembagaId}', [VersiInstrumenController::class, 'index'])->name('versi_instrumen');
+    Route::post('/superadmin/lembaga-akreditasi/{lembagaId}/versi-instrumen', [VersiInstrumenController::class, 'store'])->name('versi_instrumen.store');
+    Route::put('/superadmin/versi-instrumen/{id}', [VersiInstrumenController::class, 'update'])->name('versi_instrumen.update');
+    Route::delete('/superadmin/versi-instrumen/{id}', [VersiInstrumenController::class, 'destroy'])->name('versi_instrumen.destroy');
+
+    // Standalone & backward compatibility routes for versi_instrumen
+    Route::get('/superadmin/versi_instrumen', [VersiInstrumenController::class, 'indexLegacy'])->name('versi_instrumen.legacy');
+    Route::post('/superadmin/versi_instrumen', [VersiInstrumenController::class, 'store']);
+
+    // Master Data Akreditasi - Level 3: Detail Versi Instrumen -> Daftar Instrumen
+    Route::get('/superadmin/lembaga-akreditasi/{lembagaId}/versi-instrumen/{versiId?}', [InstrumenController::class, 'index'])->name('instrumen');
+    Route::post('/superadmin/lembaga-akreditasi/{lembagaId}/versi-instrumen/{versiId?}/instrumen', [InstrumenController::class, 'store'])->name('instrumen.store');
+    Route::post('/superadmin/lembaga-akreditasi/{lembagaId}/instrumen', [InstrumenController::class, 'store']);
     Route::put('/superadmin/lembaga-akreditasi/{lembagaId}/instrumen/{instrumenId}', [InstrumenController::class, 'update'])->name('instrumen.update');
     Route::delete('/superadmin/lembaga-akreditasi/{lembagaId}/instrumen/{instrumenId}', [InstrumenController::class, 'destroy'])->name('instrumen.destroy');
     Route::get('/superadmin/instrumen', function () {

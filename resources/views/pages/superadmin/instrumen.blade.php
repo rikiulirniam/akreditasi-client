@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Master Data Instrumen')
+@section('title', 'Master Data Instrumen - Versi ' . ($versi['nomor_versi'] ?? ''))
 
 @section('content')
 <div class="space-y-6">
@@ -24,37 +24,65 @@
             <li class="inline-flex items-center">
                 <a href="{{ route('akreditasi.superadmin.lembaga_akreditasi') }}" class="hover:text-primary transition font-medium">Master Data Akreditasi</a>
             </li>
+            <li class="inline-flex items-center">
+                <span class="mx-1 text-gray-400">/</span>
+                <a href="{{ route('akreditasi.superadmin.versi_instrumen', $lembagaId) }}" class="hover:text-primary transition font-medium">{{ $lembaga['nama_lembaga'] ?? 'Lembaga Akreditasi' }}</a>
+            </li>
             <li class="inline-flex items-center" aria-current="page">
                 <span class="mx-1 text-gray-400">/</span>
-                <span class="font-bold text-gray-800">{{ $lembaga['nama_lembaga'] ?? 'Lembaga Akreditasi' }}</span>
+                <span class="font-bold text-gray-800">Versi {{ $versi['nomor_versi'] ?? '-' }}</span>
             </li>
         </ol>
     </nav>
 
-    {{-- Banner Utama --}}
+    {{-- Banner Utama: DETAIL VERSI INSTRUMEN --}}
     <section class="flex flex-col justify-between gap-5 rounded-2xl bg-primary p-6 sm:p-7 shadow-xs sm:flex-row sm:items-center text-white">
         <div class="min-w-0">
             <p class="text-xs sm:text-sm font-bold uppercase tracking-wider text-secondary">
-                DETAIL LEMBAGA AKREDITASI
+                DETAIL VERSI INSTRUMEN
             </p>
-            <h2 class="mt-1 text-2xl sm:text-3xl font-extrabold tracking-tight">
-                {{ $lembaga['nama_lembaga'] ?? 'LAM INFOKOM' }}
-            </h2>
+            <div class="mt-1 flex items-center gap-3 flex-wrap">
+                <h2 class="text-2xl sm:text-3xl font-extrabold tracking-tight">
+                    Versi {{ $versi['nomor_versi'] ?? '-' }}
+                </h2>
+                <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider {{ !empty($versi['status_aktif']) ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-400/40' : 'bg-white/20 text-white/80' }}">
+                    {{ !empty($versi['status_aktif']) ? 'Aktif' : 'Non-Aktif' }}
+                </span>
+            </div>
             <p class="mt-2 text-sm text-white/80">
-                {{ $lembaga['keterangan'] ?? 'Daftar instrumen akreditasi pada lembaga ini.' }}
+                Lembaga: <span class="font-bold text-white">{{ $lembaga['nama_lembaga'] ?? '-' }}</span> &bull; 
+                Berlaku sejak: <span class="text-white">{{ !empty($versi['tanggal_berlaku']) ? date('d M Y', strtotime($versi['tanggal_berlaku'])) : 'Tidak ditentukan' }}</span>
             </p>
+        </div>
+
+        <div class="flex items-center gap-3 shrink-0">
+            <a 
+                href="{{ route('akreditasi.superadmin.versi_instrumen', $lembagaId) }}" 
+                class="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-white/15 hover:bg-white/25 text-white text-xs sm:text-sm font-bold transition cursor-pointer shadow-xs"
+            >
+                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" />
+                </svg>
+                Daftar Versi
+            </a>
         </div>
     </section>
 
     {{-- Metadata Info --}}
-    <section class="grid grid-cols-1 sm:grid-cols-3 gap-4 rounded-2xl border border-[#EAEAEA] bg-white p-5 sm:p-6 shadow-xs">
+    <section class="grid grid-cols-1 sm:grid-cols-4 gap-4 rounded-2xl border border-[#EAEAEA] bg-white p-5 sm:p-6 shadow-xs">
         <div>
             <p class="text-xs font-bold uppercase tracking-wider text-gray-500">LEMBAGA</p>
             <p class="mt-1.5 text-base font-semibold text-gray-900">{{ $lembaga['nama_lembaga'] ?? '-' }}</p>
         </div>
         <div>
-            <p class="text-xs font-bold uppercase tracking-wider text-gray-500">KETERANGAN</p>
-            <p class="mt-1.5 text-base font-semibold text-gray-900">{{ $lembaga['keterangan'] ?? '-' }}</p>
+            <p class="text-xs font-bold uppercase tracking-wider text-gray-500">NOMOR VERSI</p>
+            <p class="mt-1.5 text-base font-semibold text-gray-900">v{{ $versi['nomor_versi'] ?? '-' }}</p>
+        </div>
+        <div>
+            <p class="text-xs font-bold uppercase tracking-wider text-gray-500">TANGGAL BERLAKU</p>
+            <p class="mt-1.5 text-base font-semibold text-gray-900">
+                {{ !empty($versi['tanggal_berlaku']) ? date('d M Y', strtotime($versi['tanggal_berlaku'])) : '-' }}
+            </p>
         </div>
         <div>
             <p class="text-xs font-bold uppercase tracking-wider text-gray-500">TOTAL INSTRUMEN</p>
@@ -72,7 +100,7 @@
         <div class="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
             <div>
                 <h3 class="text-lg sm:text-xl font-bold text-gray-900 tracking-tight">Daftar Instrumen</h3>
-                <p class="text-xs sm:text-sm text-gray-500">{{ count($instrumens ?? []) }} data terkait</p>
+                <p class="text-xs sm:text-sm text-gray-500">{{ count($instrumens ?? []) }} data instrumen pada versi ini</p>
             </div>
             <button onclick="toggleModal('modal-tambah-instrumen')" class="inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-primary text-white text-sm font-bold shadow-sm hover:bg-additional transition cursor-pointer">                
                 <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
@@ -159,7 +187,7 @@
                 @empty
                     <x-table.row>
                         <x-table.cell colspan="5" class="py-8 text-center text-sm font-medium text-gray-500">
-                            Belum ada instrumen yang terdaftar pada lembaga ini. Tambahkan instrumen melalui tombol di atas.
+                            Belum ada instrumen yang terdaftar pada versi ini. Tambahkan instrumen melalui tombol di atas.
                         </x-table.cell>
                     </x-table.row>
                 @endforelse
@@ -181,18 +209,13 @@
                     </svg>
                 </button>
             </div>
-            <form action="{{ route('akreditasi.superadmin.instrumen.store', $lembagaId) }}" method="POST">
+            <form action="{{ route('akreditasi.superadmin.instrumen.store', ['lembagaId' => $lembagaId, 'versiId' => $versiId]) }}" method="POST">
                 @csrf
+                <input type="hidden" name="id_versi_instrumen" value="{{ $versiId }}">
                 <div class="p-5 sm:p-6 space-y-4">
                     <div>
-                        <label class="mb-2 block text-xs sm:text-sm font-bold text-gray-700">Versi Instrumen <span class="text-red-500">*</span></label>
-                        <select name="id_versi_instrumen" required class="block w-full rounded-xl border border-gray-200 bg-gray-50 p-3 text-sm text-gray-900 focus:border-primary focus:bg-white focus:outline-none focus:ring-1 focus:ring-primary">
-                            @forelse ($versis ?? [] as $versi)
-                                <option value="{{ $versi['id'] }}">v{{ $versi['nomor_versi'] }} {{ !empty($versi['status_aktif']) ? '(Aktif)' : '' }}</option>
-                            @empty
-                                <option value="1">Versi Default (v2.1)</option>
-                            @endforelse
-                        </select>
+                        <label class="mb-2 block text-xs sm:text-sm font-bold text-gray-700">Versi Instrumen</label>
+                        <input type="text" disabled value="v{{ $versi['nomor_versi'] ?? '-' }} ({{ !empty($versi['status_aktif']) ? 'Aktif' : 'Non-Aktif' }})" class="block w-full rounded-xl border border-gray-200 bg-gray-100 p-3 text-sm text-gray-700 cursor-not-allowed">
                     </div>
                     <div>
                         <label class="mb-2 block text-xs sm:text-sm font-bold text-gray-700">Jenis Instrumen <span class="text-red-500">*</span></label>
@@ -241,10 +264,12 @@
                     <div>
                         <label class="mb-2 block text-xs sm:text-sm font-bold text-gray-700">Versi Instrumen <span class="text-red-500">*</span></label>
                         <select id="edit-versi-instrumen" name="id_versi_instrumen" required class="block w-full rounded-xl border border-gray-200 bg-gray-50 p-3 text-sm text-gray-900 focus:border-primary focus:bg-white focus:outline-none focus:ring-1 focus:ring-primary">
-                            @forelse ($versis ?? [] as $versi)
-                                <option value="{{ $versi['id'] }}">v{{ $versi['nomor_versi'] }} {{ !empty($versi['status_aktif']) ? '(Aktif)' : '' }}</option>
+                            @forelse ($versis ?? [] as $vOption)
+                                <option value="{{ $vOption['id'] }}" {{ (string)$vOption['id'] === (string)$versiId ? 'selected' : '' }}>
+                                    v{{ $vOption['nomor_versi'] }} {{ !empty($vOption['status_aktif']) ? '(Aktif)' : '' }}
+                                </option>
                             @empty
-                                <option value="1">Versi Default (v2.1)</option>
+                                <option value="{{ $versiId }}">Versi Default (v{{ $versi['nomor_versi'] ?? '1.0' }})</option>
                             @endforelse
                         </select>
                     </div>
@@ -295,7 +320,7 @@
 
         if (form && item) {
             form.action = "{{ route('akreditasi.superadmin.instrumen.update', ['lembagaId' => $lembagaId, 'instrumenId' => ':id']) }}".replace(':id', item.id);
-            if (versiSelect) versiSelect.value = item.id_versi_instrumen || (item.versi_instrumen ? item.versi_instrumen.id : '1');
+            if (versiSelect) versiSelect.value = item.id_versi_instrumen || (item.versi_instrumen ? item.versi_instrumen.id : '{{ $versiId }}');
             if (jenisSelect) jenisSelect.value = item.id_jenis_instrumen || '1';
             if (jenjangSelect) jenjangSelect.value = item.id_jenjang || '1';
             toggleModal('modal-edit-instrumen');
