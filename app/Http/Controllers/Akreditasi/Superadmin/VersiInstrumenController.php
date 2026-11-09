@@ -15,10 +15,16 @@ class VersiInstrumenController extends Controller
     ) {}
 
     /**
-     * Tampilkan daftar versi instrumen untuk suatu lembaga akreditasi.
+     * Menampilkan halaman detail lembaga akreditasi beserta daftar versi instrumen.
      */
-    public function index(int|string $lembagaId): View
+    public function index(Request $request, int|string|null $lembagaId = null): View|RedirectResponse
     {
+        $lembagaId = $lembagaId ?? $request->query('id_lembaga');
+
+        if (! $lembagaId) {
+            return redirect()->route('akreditasi.superadmin.lembaga_akreditasi');
+        }
+
         $lembaga = null;
         $versis = [];
         $allInstrumens = [];
@@ -34,8 +40,8 @@ class VersiInstrumenController extends Controller
 
         if (! $lembaga) {
             try {
-                $allLembaga = $this->akreditasiService->getLembagaAkreditasi()->json('data') ?? [];
-                foreach ($allLembaga as $l) {
+                $lembagas = $this->akreditasiService->getLembagaAkreditasi()->json('data') ?? [];
+                foreach ($lembagas as $l) {
                     if ((string) ($l['id'] ?? '') === (string) $lembagaId) {
                         $lembaga = $l;
                         break;
@@ -54,17 +60,14 @@ class VersiInstrumenController extends Controller
             ];
         }
 
-        // Ambil daftar versi instrumen untuk lembaga ini
-        $versis = $lembaga['versi_instrumen'] ?? [];
-        if (empty($versis)) {
-            try {
-                $versiRes = $this->akreditasiService->getVersiInstrumen(['id_lembaga' => $lembagaId]);
-                if ($versiRes->successful()) {
-                    $versis = $versiRes->json('data') ?? [];
-                }
-            } catch (\Throwable) {
-                $versis = [];
-            }
+        try {
+            $versis = $this->akreditasiService->getVersiInstrumen(['id_lembaga' => $lembagaId])->json('data') ?? [];
+        } catch (\Throwable) {
+            $versis = [];
+        }
+
+        if (empty($versis) && ! empty($lembaga['versi_instrumen'])) {
+            $versis = $lembaga['versi_instrumen'];
         }
 
         if (empty($versis)) {
@@ -80,27 +83,27 @@ class VersiInstrumenController extends Controller
             }
         }
 
-        // Hitung jumlah instrumen per versi
+        // Ambil data instrumen untuk menghitung jumlah instrumen per versi
         try {
             $allInstrumens = $this->akreditasiService->getInstrumens()->json('data') ?? [];
         } catch (\Throwable) {
             $allInstrumens = [];
         }
 
-        foreach ($versis as &$versi) {
-            $vId = (string) ($versi['id'] ?? '');
+        foreach ($versis as &$v) {
+            $vId = (string) ($v['id'] ?? '');
             $matching = array_filter($allInstrumens, function ($item) use ($vId) {
                 $itemVersiId = (string) ($item['id_versi_instrumen'] ?? ($item['versi_instrumen']['id'] ?? ''));
 
-                return $itemVersiId !== '' && $itemVersiId === $vId;
+                return $itemVersiId === $vId;
             });
-            $versi['instrumen_count'] = count($matching);
+            $v['instrumen_count'] = count($matching);
         }
-        unset($versi);
+        unset($v);
 
         $versiAktif = collect($versis)->firstWhere('status_aktif', true) ?? ($versis[0] ?? null);
 
-        return view('pages.superadmin.versi-instrumen', [
+        return view('pages.superadmin.versi_instrumen', [
             'lembagaId' => $lembagaId,
             'lembaga' => $lembaga,
             'versis' => $versis,
@@ -109,28 +112,52 @@ class VersiInstrumenController extends Controller
     }
 
     /**
-     * Tambah versi instrumen baru.
+     * Backward compatibility untuk rute lama /superadmin/versi_instrumen
      */
-    public function store(Request $request, int|string $lembagaId): RedirectResponse
+    public function indexLegacy(Request $request): RedirectResponse
     {
-        $validated = $request->validate([
-            'nomor_versi' => 'required|string|max:50',
-            'keterangan' => 'nullable|string|max:1000',
-            'status_aktif' => 'nullable',
+        $idLembaga = $request->query('id_lembaga');
+        if ($idLembaga) {
+            return redirect()->route('akreditasi.superadmin.versi_instrumen', $idLembaga);
+        }
+
+        return redirect()->route('akreditasi.superadmin.lembaga_akreditasi');
+    }
+
+    /**
+     * Menyimpan data versi instrumen baru.
+     */
+    public function store(Request $request, int|string|null $lembagaId = null): RedirectResponse
+    {
+        $resolvedLembagaId = $lembagaId ?? $request->input('id_lembaga');
+
+        if ($request->has('status_aktif')) {
+            $request->merge([
+                'status_aktif' => filter_var($request->status_aktif, FILTER_VALIDATE_BOOLEAN),
+            ]);
+        } else {
+            $request->merge([
+                'status_aktif' => true,
+            ]);
+        }
+
+        $request->merge([
+            'id_lembaga' => $resolvedLembagaId,
         ]);
 
-        $payload = [
-            'id_lembaga' => (int) $lembagaId,
-            'nomor_versi' => trim($validated['nomor_versi']),
-            'keterangan' => $validated['keterangan'] ?? null,
-            'status_aktif' => $request->has('status_aktif') ? (bool) $request->input('status_aktif') : true,
-        ];
+        $validated = $request->validate([
+            'id_lembaga' => 'required|integer',
+            'nomor_versi' => 'required|string|max:50',
+            'keterangan' => 'nullable|string|max:1000',
+            'tanggal_berlaku' => 'nullable|date',
+            'status_aktif' => 'required|boolean',
+        ]);
 
         try {
-            $response = $this->akreditasiService->createVersiInstrumen($payload);
+            $response = $this->akreditasiService->createVersiInstrumen($validated);
             if ($response->successful()) {
-                return redirect()->route('akreditasi.superadmin.versi_instrumen', $lembagaId)
-                    ->with('success', 'Versi instrumen berhasil ditambahkan.');
+                return redirect()->route('akreditasi.superadmin.versi_instrumen', $validated['id_lembaga'])
+                    ->with('success', 'Versi instrumen berhasil ditambahkan!');
             }
 
             return back()->with('error', (string) ($response->json('message') ?? 'Gagal menambahkan versi instrumen.'));
@@ -140,28 +167,30 @@ class VersiInstrumenController extends Controller
     }
 
     /**
-     * Perbarui versi instrumen.
+     * Mengubah data versi instrumen.
      */
-    public function update(Request $request, int|string $lembagaId, int|string $versiId): RedirectResponse
+    public function update(Request $request, int|string $id, int|string|null $versiId = null): RedirectResponse
     {
+        $actualId = $versiId !== null ? $versiId : $id;
+
+        if ($request->has('status_aktif')) {
+            $request->merge([
+                'status_aktif' => filter_var($request->status_aktif, FILTER_VALIDATE_BOOLEAN),
+            ]);
+        }
+
         $validated = $request->validate([
+            'id_lembaga' => 'nullable|integer',
             'nomor_versi' => 'required|string|max:50',
             'keterangan' => 'nullable|string|max:1000',
-            'status_aktif' => 'nullable',
+            'tanggal_berlaku' => 'nullable|date',
+            'status_aktif' => 'nullable|boolean',
         ]);
 
-        $payload = [
-            'id_lembaga' => (int) $lembagaId,
-            'nomor_versi' => trim($validated['nomor_versi']),
-            'keterangan' => $validated['keterangan'] ?? null,
-            'status_aktif' => $request->has('status_aktif') ? (bool) $request->input('status_aktif') : false,
-        ];
-
         try {
-            $response = $this->akreditasiService->updateVersiInstrumen($versiId, $payload);
+            $response = $this->akreditasiService->updateVersiInstrumen($actualId, $validated);
             if ($response->successful()) {
-                return redirect()->route('akreditasi.superadmin.versi_instrumen', $lembagaId)
-                    ->with('success', 'Versi instrumen berhasil diperbarui.');
+                return back()->with('success', 'Versi instrumen berhasil diperbarui!');
             }
 
             return back()->with('error', (string) ($response->json('message') ?? 'Gagal memperbarui versi instrumen.'));
@@ -171,15 +200,16 @@ class VersiInstrumenController extends Controller
     }
 
     /**
-     * Hapus versi instrumen.
+     * Menghapus data versi instrumen.
      */
-    public function destroy(int|string $lembagaId, int|string $versiId): RedirectResponse
+    public function destroy(int|string $id, int|string|null $versiId = null): RedirectResponse
     {
+        $actualId = $versiId !== null ? $versiId : $id;
+
         try {
-            $response = $this->akreditasiService->deleteVersiInstrumen($versiId);
+            $response = $this->akreditasiService->deleteVersiInstrumen($actualId);
             if ($response->successful()) {
-                return redirect()->route('akreditasi.superadmin.versi_instrumen', $lembagaId)
-                    ->with('success', 'Versi instrumen berhasil dihapus.');
+                return back()->with('success', 'Versi instrumen berhasil dihapus!');
             }
 
             return back()->with('error', (string) ($response->json('message') ?? 'Gagal menghapus versi instrumen.'));

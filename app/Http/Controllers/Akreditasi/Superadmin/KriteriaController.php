@@ -66,9 +66,14 @@ class KriteriaController extends Controller
             }
         }
 
+        $versi = $instrumen['versi_instrumen'] ?? null;
+        $versiId = $instrumen['id_versi_instrumen'] ?? ($versi['id'] ?? null);
+
         return view('pages.superadmin.kriteria', [
             'lembagaId' => $lembagaId,
             'lembaga' => $lembaga,
+            'versiId' => $versiId,
+            'versi' => $versi,
             'instrumenId' => $instrumenId,
             'instrumen' => $instrumen,
             'instrumenTitle' => $instrumenTitle,

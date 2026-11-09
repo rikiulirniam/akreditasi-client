@@ -124,7 +124,7 @@
                 
                 <div class="mt-5 pt-3.5 border-t border-slate-100 flex items-center justify-between">
                     <span class="text-xs font-bold text-gray-400 group-hover:text-primary transition-colors flex items-center gap-1.5">
-                        Buka {{ $versiCount }} Versi Instrumen
+                        Lihat {{ $versiCount }} Versi Instrumen
                     </span>
                     <span 
                         class="flex h-9 w-9 items-center justify-center rounded-full bg-slate-100 text-slate-600 group-hover:bg-primary group-hover:text-white transition-all duration-200 group-hover:translate-x-1 shadow-xs"
