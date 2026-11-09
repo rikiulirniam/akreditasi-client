@@ -47,27 +47,17 @@
             </p>
         </div>
         
-        {{-- Tombol Aksi Edit & Hapus Lembaga --}}
-        <div class="flex items-center gap-2.5 shrink-0">
-            <button 
-                type="button"
-                onclick="toggleModal('modal-edit-lembaga')"
-                class="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-secondary text-primary text-xs sm:text-sm font-bold shadow-sm hover:bg-yellow-400 transition cursor-pointer"
+        {{-- Tombol Kembali ke Daftar Lembaga --}}
+        <div class="flex items-center gap-3 shrink-0">
+            <a 
+                href="{{ route('akreditasi.superadmin.lembaga_akreditasi') }}" 
+                class="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-white/15 hover:bg-white/25 text-white text-xs sm:text-sm font-bold transition cursor-pointer shadow-xs"
             >
-                <x-icon.edit class="w-4 h-4" />
-                Edit Lembaga
-            </button>
-            <button 
-                type="button"
-                data-confirm-delete
-                data-action="{{ route('akreditasi.superadmin.lembaga_akreditasi.destroy', $lembaga['id']) }}"
-                data-title="Hapus Lembaga Akreditasi?"
-                data-message="Apakah Anda yakin ingin menghapus lembaga '{{ $lembaga['nama_lembaga'] ?? '' }}'? Seluruh data versi dan instrumen terkait akan ikut terhapus."
-                class="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-rose-600 text-white text-xs sm:text-sm font-bold shadow-sm hover:bg-rose-700 transition cursor-pointer"
-            >
-                <x-icon.delete class="w-4 h-4" />
-                Hapus
-            </button>
+                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" />
+                </svg>
+                Kembali ke Daftar Lembaga
+            </a>
         </div>
     </section>
 
@@ -196,41 +186,7 @@
 {{-- KUMPULAN MODAL --}}
 {{-- ========================================== --}}
 
-{{-- 1. Modal Edit Lembaga --}}
-<div id="modal-edit-lembaga" tabindex="-1" class="hidden fixed inset-0 z-50 items-center justify-center bg-gray-900/50 p-4">
-    <div class="relative w-full max-w-lg">
-        <div class="relative rounded-2xl bg-white shadow-xl overflow-hidden">
-            <div class="flex items-center justify-between border-b border-gray-200 p-5 sm:p-6">
-                <h3 class="text-lg sm:text-xl font-bold text-gray-900 tracking-tight">Edit Lembaga Akreditasi</h3>
-                <button type="button" onclick="toggleModal('modal-edit-lembaga')" class="text-gray-400 hover:bg-gray-100 hover:text-gray-700 rounded-xl p-2 transition cursor-pointer">
-                    <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
-                    </svg>
-                </button>
-            </div>
-            <form action="{{ route('akreditasi.superadmin.lembaga_akreditasi.update', $lembaga['id']) }}" method="POST">
-                @csrf
-                @method('PUT')
-                <div class="p-5 sm:p-6 space-y-4">
-                    <div>
-                        <label class="mb-2 block text-xs sm:text-sm font-bold text-gray-700">Nama Lembaga <span class="text-red-500">*</span></label>
-                        <input type="text" name="nama_lembaga" required value="{{ $lembaga['nama_lembaga'] ?? '' }}" class="block w-full rounded-xl border border-gray-200 bg-gray-50 p-3 text-sm text-gray-900 focus:border-primary focus:bg-white focus:outline-none focus:ring-1 focus:ring-primary">
-                    </div>
-                    <div>
-                        <label class="mb-2 block text-xs sm:text-sm font-bold text-gray-700">Keterangan</label>
-                        <textarea name="keterangan" rows="3" class="block w-full rounded-xl border border-gray-200 bg-gray-50 p-3 text-sm text-gray-900 focus:border-primary focus:bg-white focus:outline-none focus:ring-1 focus:ring-primary">{{ $lembaga['keterangan'] ?? '' }}</textarea>
-                    </div>
-                </div>
-                <div class="flex items-center justify-end gap-3 border-t border-gray-200 p-5 sm:p-6 bg-gray-50">
-                    <button type="button" onclick="toggleModal('modal-edit-lembaga')" class="rounded-xl bg-white border border-gray-300 px-5 py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-100 transition cursor-pointer">Batal</button>
-                    <button type="submit" class="rounded-2xl bg-primary px-6 py-2.5 text-sm font-bold text-white hover:bg-additional transition cursor-pointer shadow-sm">Simpan Perubahan</button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
-
-{{-- 2. Modal Tambah Versi Instrumen --}}
+{{-- 1. Modal Tambah Versi Instrumen --}}
 <div id="modal-tambah-versi" tabindex="-1" class="hidden fixed inset-0 z-50 items-center justify-center bg-gray-900/50 p-4">
     <div class="relative w-full max-w-lg">
         <div class="relative rounded-2xl bg-white shadow-xl overflow-hidden">
@@ -255,6 +211,10 @@
                         <input type="date" name="tanggal_berlaku" class="block w-full rounded-xl border border-gray-200 bg-gray-50 p-3 text-sm text-gray-900 focus:border-primary focus:bg-white focus:outline-none focus:ring-1 focus:ring-primary">
                     </div>
                     <div>
+                        <label class="mb-2 block text-xs sm:text-sm font-bold text-gray-700">Keterangan</label>
+                        <textarea name="keterangan" rows="2" placeholder="Keterangan singkat..." class="block w-full rounded-xl border border-gray-200 bg-gray-50 p-3 text-sm text-gray-900 focus:border-primary focus:bg-white focus:outline-none focus:ring-1 focus:ring-primary"></textarea>
+                    </div>
+                    <div>
                         <label class="mb-2 block text-xs sm:text-sm font-bold text-gray-700">Status <span class="text-red-500">*</span></label>
                         <select name="status_aktif" class="block w-full rounded-xl border border-gray-200 bg-gray-50 p-3 text-sm text-gray-900 focus:border-primary focus:bg-white focus:outline-none focus:ring-1 focus:ring-primary">
                             <option value="1">Aktif</option>
@@ -271,7 +231,7 @@
     </div>
 </div>
 
-{{-- 3. Modal Edit Versi Instrumen --}}
+{{-- 2. Modal Edit Versi Instrumen --}}
 <div id="modal-edit-versi" tabindex="-1" class="hidden fixed inset-0 z-50 items-center justify-center bg-gray-900/50 p-4">
     <div class="relative w-full max-w-lg">
         <div class="relative rounded-2xl bg-white shadow-xl overflow-hidden">
@@ -295,6 +255,10 @@
                     <div>
                         <label class="mb-2 block text-xs sm:text-sm font-bold text-gray-700">Tanggal Berlaku</label>
                         <input type="date" id="edit-tanggal-berlaku" name="tanggal_berlaku" class="block w-full rounded-xl border border-gray-200 bg-gray-50 p-3 text-sm text-gray-900 focus:border-primary focus:bg-white focus:outline-none focus:ring-1 focus:ring-primary">
+                    </div>
+                    <div>
+                        <label class="mb-2 block text-xs sm:text-sm font-bold text-gray-700">Keterangan</label>
+                        <textarea id="edit-keterangan-versi" name="keterangan" rows="2" placeholder="Keterangan singkat..." class="block w-full rounded-xl border border-gray-200 bg-gray-50 p-3 text-sm text-gray-900 focus:border-primary focus:bg-white focus:outline-none focus:ring-1 focus:ring-primary"></textarea>
                     </div>
                     <div>
                         <label class="mb-2 block text-xs sm:text-sm font-bold text-gray-700">Status <span class="text-red-500">*</span></label>
@@ -328,6 +292,7 @@
         const form = document.getElementById('form-edit-versi');
         const nomorInput = document.getElementById('edit-nomor-versi');
         const tanggalInput = document.getElementById('edit-tanggal-berlaku');
+        const keteranganInput = document.getElementById('edit-keterangan-versi');
         const statusSelect = document.getElementById('edit-status-aktif');
 
         if (form && versi) {
@@ -339,6 +304,9 @@
                 } else {
                     tanggalInput.value = '';
                 }
+            }
+            if (keteranganInput) {
+                keteranganInput.value = versi.keterangan || '';
             }
             if (statusSelect) {
                 statusSelect.value = (versi.status_aktif == 1 || versi.status_aktif === true) ? '1' : '0';
