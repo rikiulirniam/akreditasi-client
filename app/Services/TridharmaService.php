@@ -701,11 +701,19 @@ class TridharmaService
 
             $rawJenjang = trim((string) ($item['jenjang'] ?? $item['nama_pendidikan'] ?? ''));
             $rawGelar = trim((string) ($item['gelar'] ?? ''));
-            $isJenjangCode = in_array(strtoupper($rawGelar), ['D3', 'D4', 'S1', 'D4/S1', 'S2', 'S3', 'PROFESI']);
+            $isJenjangCode = in_array(strtoupper($rawGelar), ['SMA', 'SMK', 'SMA/SMK', 'SLTA', 'D1', 'D2', 'D3', 'D4', 'S1', 'D4/S1', 'S2', 'S3', 'PROFESI']);
             $jenjang = $rawJenjang !== '' ? $rawJenjang : ($isJenjangCode ? $rawGelar : '');
+            if (in_array(strtoupper($jenjang), ['SMA', 'SMK', 'SLTA', 'MA', 'STM', 'SMEA', 'PAKET C'], true)) {
+                $jenjang = 'SMA/SMK';
+            } elseif (in_array(strtoupper($jenjang), ['S1', 'D4', 'D-IV', 'S-1'], true)) {
+                $jenjang = 'D4/S1';
+            }
             $gelar = ($rawGelar !== '' && ! $isJenjangCode) ? $rawGelar : self::defaultGelarForJenjang($jenjang);
             $univ = trim((string) ($item['universitas'] ?? $item['institusi'] ?? ''));
             $prodi = trim((string) ($item['program_studi'] ?? ''));
+            if ($prodi === '-') {
+                $prodi = '';
+            }
             $tahun = trim((string) ($item['tahun_lulus'] ?? ''));
             $id = (int) ($item['id'] ?? $item['id_pendidikan'] ?? 0);
 
@@ -751,7 +759,7 @@ class TridharmaService
 
         // 3. Sort by Jenjang Rank, then Tahun Lulus
         $jenjangRank = [
-            'SMA' => 1, 'SMK' => 1,
+            'SMA' => 1, 'SMK' => 1, 'SMA/SMK' => 1, 'SLTA' => 1,
             'D1' => 2, 'D2' => 3, 'D3' => 4,
             'D4' => 5, 'S1' => 5, 'D4/S1' => 5,
             'PROFESI' => 6,

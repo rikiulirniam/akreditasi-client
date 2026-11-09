@@ -272,22 +272,12 @@
                         </svg>
                     </button>
 
-                    <div id="submenu-tridharma" class="submenu-container hidden pl-10 pr-2 pt-1 pb-1 space-y-1.5">
-                        <a href="#" class="flex items-center gap-2.5 py-2.5 px-3.5 rounded-xl text-sm font-medium text-white/80 hover:text-white hover:bg-white/10 transition">
-                            <span class="w-1.5 h-1.5 rounded-full bg-white/40 shrink-0"></span>
-                            <span>Pendidikan &amp; Pengajaran</span>
+                    <div id="submenu-tridharma" class="submenu-container hidden pl-6 pr-2 pt-1.5 pb-1 space-y-1.5">
+                        <a href="#" class="flex items-center gap-2.5 py-2 px-3.5 rounded-xl text-sm font-medium text-white/80 hover:text-white hover:bg-white/10 transition">
+                            <span class="sidebar-text leading-tight">Penelitian &amp;<br>PKM</span>
                         </a>
-                        <a href="#" class="flex items-center gap-2.5 py-2.5 px-3.5 rounded-xl text-sm font-medium text-white/80 hover:text-white hover:bg-white/10 transition">
-                            <span class="w-1.5 h-1.5 rounded-full bg-white/40 shrink-0"></span>
-                            <span>Penelitian</span>
-                        </a>
-                        <a href="#" class="flex items-center gap-2.5 py-2.5 px-3.5 rounded-xl text-sm font-medium text-white/80 hover:text-white hover:bg-white/10 transition">
-                            <span class="w-1.5 h-1.5 rounded-full bg-white/40 shrink-0"></span>
-                            <span>Pengabdian</span>
-                        </a>
-                        <a href="#" class="flex items-center gap-2.5 py-2.5 px-3.5 rounded-xl text-sm font-medium text-white/80 hover:text-white hover:bg-white/10 transition">
-                            <span class="w-1.5 h-1.5 rounded-full bg-white/40 shrink-0"></span>
-                            <span>Kerja Sama</span>
+                        <a href="#" class="flex items-center gap-2.5 py-2 px-3.5 rounded-xl text-sm font-medium text-white/80 hover:text-white hover:bg-white/10 transition">
+                            <span class="sidebar-text">Luaran</span>
                         </a>
                     </div>
                 </div>

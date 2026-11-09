@@ -942,6 +942,10 @@ class PendidikanController extends Controller
             return 'D3';
         }
 
+        if (in_array($upper, ['SMA', 'SMK', 'SMA/SMK', 'SLTA', 'MA', 'STM', 'SMEA', 'PAKET C'], true)) {
+            return 'SMA/SMK';
+        }
+
         return $raw;
     }
 
@@ -964,6 +968,7 @@ class PendidikanController extends Controller
     private function defaultJenjangOptions(): array
     {
         return [
+            'SMA/SMK',
             'D3',
             'D4/S1',
             'S2',

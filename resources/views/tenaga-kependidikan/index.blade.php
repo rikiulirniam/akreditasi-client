@@ -85,7 +85,8 @@
                     </button>
                     <div
                         id="filterPopover"
-                        class="absolute left-0 top-full z-40 mt-1 hidden w-full overflow-hidden rounded-[8px] border border-[#8093A7] bg-[#EAEAEA] py-1 shadow-lg"
+                        class="absolute left-0 top-full z-40 mt-1 hidden max-h-60 w-56 overflow-y-auto rounded-[8px] border border-[#8093A7] bg-[#EAEAEA] py-1 shadow-lg"
+                        style="max-height: 240px; overflow-y: auto; min-width: 100%; width: 220px;"
                         role="menu"
                         aria-label="Filter berdasarkan jabatan"
                     >
