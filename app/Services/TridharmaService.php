@@ -1026,7 +1026,7 @@ class TridharmaService
         return $this->http($token)->get($this->url('v1/tren-tridharma'), $query);
     }
 
-        public function getKegiatanList(array $query = [], ?string $token = null): Response
+    public function getKegiatanList(array $query = [], ?string $token = null): Response
     {
         return $this->get('kegiatan', $query, $token);
     }
@@ -1054,5 +1054,141 @@ class TridharmaService
     public function getJenisKegiatanList(array $query = [], ?string $token = null): Response
     {
         return $this->get('jenis-kegiatan', $query, $token);
+    }
+
+    /*
+    |==========================================================================
+    | MODUL: PUBLIKASI (/api/publikasi/*)
+    |==========================================================================
+    */
+
+    /** @param array<string, int|string> $query */
+    public function getPublikasiList(array $query = [], ?string $token = null): Response
+    {
+        return $this->get('publikasi', $query, $token);
+    }
+
+    public function getPublikasiById(int|string $id, ?string $token = null): Response
+    {
+        return $this->get("publikasi/{$id}", [], $token);
+    }
+
+    /** @param array<string, mixed> $payload */
+    public function createPublikasi(array $payload, ?string $token = null): Response
+    {
+        return $this->post('publikasi', $payload, $token);
+    }
+
+    /** @param array<string, mixed> $payload */
+    public function updatePublikasi(int|string $id, array $payload, ?string $token = null): Response
+    {
+        return $this->put("publikasi/{$id}", $payload, $token);
+    }
+
+    public function deletePublikasi(int|string $id, ?string $token = null): Response
+    {
+        return $this->delete("publikasi/{$id}", [], $token);
+    }
+
+    /*
+    |==========================================================================
+    | MODUL: HKI (/api/hki/*)
+    |==========================================================================
+    */
+
+    /** @param array<string, int|string> $query */
+    public function getHkiList(array $query = [], ?string $token = null): Response
+    {
+        return $this->get('hki', $query, $token);
+    }
+
+    public function getHkiById(int|string $id, ?string $token = null): Response
+    {
+        return $this->get("hki/{$id}", [], $token);
+    }
+
+    /** @param array<string, mixed> $payload */
+    public function createHki(array $payload, ?string $token = null): Response
+    {
+        return $this->post('hki', $payload, $token);
+    }
+
+    /** @param array<string, mixed> $payload */
+    public function updateHki(int|string $id, array $payload, ?string $token = null): Response
+    {
+        return $this->put("hki/{$id}", $payload, $token);
+    }
+
+    public function deleteHki(int|string $id, ?string $token = null): Response
+    {
+        return $this->delete("hki/{$id}", [], $token);
+    }
+
+    /*
+    |==========================================================================
+    | MODUL: BUKU (/api/buku/*)
+    |==========================================================================
+    */
+
+    /** @param array<string, int|string> $query */
+    public function getBukuList(array $query = [], ?string $token = null): Response
+    {
+        return $this->get('buku', $query, $token);
+    }
+
+    public function getBukuById(int|string $id, ?string $token = null): Response
+    {
+        return $this->get("buku/{$id}", [], $token);
+    }
+
+    /** @param array<string, mixed> $payload */
+    public function createBuku(array $payload, ?string $token = null): Response
+    {
+        return $this->post('buku', $payload, $token);
+    }
+
+    /** @param array<string, mixed> $payload */
+    public function updateBuku(int|string $id, array $payload, ?string $token = null): Response
+    {
+        return $this->put("buku/{$id}", $payload, $token);
+    }
+
+    public function deleteBuku(int|string $id, ?string $token = null): Response
+    {
+        return $this->delete("buku/{$id}", [], $token);
+    }
+
+    /*
+    |==========================================================================
+    | MODUL UTAMA: LUARAN (/api/luaran/*)
+    |==========================================================================
+    */
+
+    /** @param array<string, int|string> $query */
+    public function getLuaranList(array $query = [], ?string $token = null): Response
+    {
+        return $this->get('luaran', $query, $token);
+    }
+
+    public function getLuaranById(int|string $id, ?string $token = null): Response
+    {
+        return $this->get("luaran/{$id}", [], $token);
+    }
+
+    /** @param array<string, mixed> $payload */
+    public function createLuaran(array $payload, ?string $token = null): Response
+    {
+        return $this->post('luaran', $payload, $token);
+    }
+
+    /** @param array<string, mixed> $payload */
+    public function updateLuaran(int|string $id, array $payload, ?string $token = null): Response
+    {
+        return $this->put("luaran/{$id}", $payload, $token);
+    }
+
+    public function deleteLuaran(int|string $id, ?string $token = null): Response
+    {
+        return $this->delete("luaran/{$id}", [], $token);
     }
 }

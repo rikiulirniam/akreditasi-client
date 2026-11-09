@@ -1,6 +1,5 @@
 <?php
 
-use App\Http\Controllers\PenelitianPkmController;
 use App\Http\Controllers\Akreditasi\Superadmin\BuktiDokumenController;
 use App\Http\Controllers\Akreditasi\Superadmin\DashboardController as SuperadminDashboard;
 use App\Http\Controllers\Akreditasi\Superadmin\IndikatorController;
@@ -22,10 +21,12 @@ use App\Http\Controllers\KegiatanMahasiswaController;
 use App\Http\Controllers\KelasController;
 use App\Http\Controllers\KurikulumController;
 use App\Http\Controllers\LaporanAkhirController;
+use App\Http\Controllers\LuaranController;
 use App\Http\Controllers\MahasiswaController;
 use App\Http\Controllers\MataKuliahController;
 use App\Http\Controllers\NilaiMahasiswaController;
 use App\Http\Controllers\PendidikanController;
+use App\Http\Controllers\PenelitianPkmController;
 use App\Http\Controllers\PerguruanTinggiController;
 use App\Http\Controllers\PermissionController;
 use App\Http\Controllers\PrestasiMahasiswaController;
@@ -60,7 +61,7 @@ Route::middleware('auth.akademik')->group(function () {
     Route::post('/auth/refresh-token', [AuthController::class, 'refreshToken'])->name('auth.refresh-token');
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
     Route::get('/reviewer/dashboard', [ReviewerController::class, 'dashboard'])->name('reviewer.dashboard');
-    
+
     Route::get('/penelitian-pkm', [PenelitianPkmController::class, 'index'])->name('penelitian-pkm.index');
     Route::get('/penelitian-pkm/{id}', [PenelitianPkmController::class, 'show'])->whereNumber('id')->name('penelitian-pkm.show');
 
@@ -71,6 +72,14 @@ Route::middleware('auth.akademik')->group(function () {
         Route::put('/penelitian-pkm/{id}', [PenelitianPkmController::class, 'update'])->whereNumber('id')->name('penelitian-pkm.update');
         Route::delete('/penelitian-pkm/{id}', [PenelitianPkmController::class, 'destroy'])->whereNumber('id')->name('penelitian-pkm.destroy');
     });
+
+    // ==========================================
+    // MODUL TRI DHARMA: LUARAN (Publikasi, HKI, Buku)
+    // ==========================================
+    Route::get('/luaran', [LuaranController::class, 'index'])->name('luaran.index');
+    Route::post('/luaran', [LuaranController::class, 'store'])->name('luaran.store');
+    Route::put('/luaran/{id}', [LuaranController::class, 'update'])->name('luaran.update');
+    Route::delete('/luaran/{id}', [LuaranController::class, 'destroy'])->name('luaran.destroy');
 
     Route::get('/reviewer/penilaian', [ReviewerController::class, 'assessments'])->name('reviewer.assessments');
     Route::get('/reviewer/penilaian/{projectId}', [ReviewerController::class, 'assessmentDetail'])->name('reviewer.assessment-detail');
