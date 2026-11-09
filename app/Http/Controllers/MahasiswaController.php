@@ -36,8 +36,9 @@ class MahasiswaController extends Controller
         $statusFilter = trim((string) $request->query('status', ''));
         $tahunFilter = trim((string) $request->query('tahun', ''));
         $jenisFilter = trim((string) $request->query('jenis', ''));
+        $kategoriFilter = trim((string) $request->query('kategori', ''));
 
-        $hasFilter = ($search !== '' || $statusFilter !== '' || $tahunFilter !== '' || $jenisFilter !== '');
+        $hasFilter = ($search !== '' || $statusFilter !== '' || $tahunFilter !== '' || $jenisFilter !== '' || $kategoriFilter !== '');
 
         $apiParams = [
             'page' => $hasFilter ? 1 : $page,
@@ -45,6 +46,9 @@ class MahasiswaController extends Controller
         ];
         if ($search !== '') {
             $apiParams['search'] = $search;
+        }
+        if ($kategoriFilter !== '') {
+            $apiParams['kategori'] = $kategoriFilter;
         }
 
         $response = $this->akademikService->getMahasiswaList($apiParams);
@@ -201,6 +205,13 @@ class MahasiswaController extends Controller
                 }));
             }
 
+            if ($kategoriFilter !== '') {
+                $katLower = mb_strtolower($kategoriFilter);
+                $mahasiswaList = array_values(array_filter($mahasiswaList, function ($item) use ($katLower) {
+                    return mb_strtolower((string) ($item['jenis_pendaftaran'] ?? '')) === $katLower;
+                }));
+            }
+
             // Paginate filtered results
             $total = count($mahasiswaList);
             $lastPage = max(1, (int) ceil($total / $perPage));
@@ -248,11 +259,13 @@ class MahasiswaController extends Controller
         }
 
         $jenisPendaftaranOptions = [
+            'baru',
+            'transfer',
+            'asing',
             'SNBP',
             'SNBT',
             'Mandiri',
             'Reguler',
-            'Transfer',
             'Kerjasama',
         ];
 
@@ -266,6 +279,7 @@ class MahasiswaController extends Controller
             'selectedStatus' => $statusFilter,
             'selectedTahun' => $tahunFilter,
             'selectedJenis' => $jenisFilter,
+            'selectedKategori' => $kategoriFilter,
         ]);
     }
 

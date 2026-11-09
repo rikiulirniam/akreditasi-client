@@ -213,7 +213,7 @@
 
                     {{-- Kemahasiswaan --}}
                     @php
-                        $isKemahasiswaanActive = request()->routeIs('angkatan.*') || request()->routeIs('kelas.*') || request()->routeIs('mahasiswa.*') || request()->routeIs('kegiatan-mahasiswa.*') || request()->routeIs('prestasi-mahasiswa.*') || request()->routeIs('kemahasiswaan.jenis-prestasi.*');
+                        $isKemahasiswaanActive = request()->routeIs('angkatan.*') || request()->routeIs('kelas.*') || request()->routeIs('mahasiswa.*') || request()->routeIs('lulusan.*') || request()->routeIs('kegiatan-mahasiswa.*') || request()->routeIs('prestasi-mahasiswa.*') || request()->routeIs('kemahasiswaan.jenis-prestasi.*');
                     @endphp
                     <div>
                         <button type="button"
@@ -249,6 +249,13 @@
                                 <span class="w-1.5 h-1.5 rounded-full {{ request()->routeIs('mahasiswa.*') ? 'bg-secondary' : 'bg-white/40' }} shrink-0"></span>
                                 <span class="truncate">Data Mahasiswa</span>
                             </a>
+                            @if (Route::has('lulusan.index'))
+                            <a href="{{ route('lulusan.index') }}"
+                                class="flex items-center gap-2.5 py-2.5 px-3.5 rounded-xl text-sm font-semibold transition-all duration-150 {{ request()->routeIs('lulusan.*') ? 'bg-white/20 text-white shadow-xs font-bold' : 'text-white/80 hover:text-white hover:bg-white/10' }}">
+                                <span class="w-1.5 h-1.5 rounded-full {{ request()->routeIs('lulusan.*') ? 'bg-secondary' : 'bg-white/40' }} shrink-0"></span>
+                                <span class="truncate">Data Lulusan</span>
+                            </a>
+                            @endif
                             @if (Route::has('kegiatan-mahasiswa.index'))
                             <a href="{{ route('kegiatan-mahasiswa.index') }}"
                                 class="flex items-center gap-2.5 py-2.5 px-3.5 rounded-xl text-sm font-semibold transition-all duration-150 {{ request()->routeIs('kegiatan-mahasiswa.*') ? 'bg-white/20 text-white shadow-xs font-bold' : 'text-white/80 hover:text-white hover:bg-white/10' }}">

@@ -639,6 +639,22 @@ class AkademikService
         return $this->delete("mahasiswa/{$id}", [], $token);
     }
 
+    /*
+    |==========================================================================
+    | MODUL: KEMAHASISWAAN - DATA LULUSAN (/api/lulusan/*)
+    |==========================================================================
+    */
+
+    public function getLulusanList(array $query = [], ?string $token = null): Response
+    {
+        return $this->get('lulusan', $query, $token);
+    }
+
+    public function getLulusanRingkasan(array $query = [], ?string $token = null): Response
+    {
+        return $this->get('lulusan/ringkasan', $query, $token);
+    }
+
     public function getPrestasiMahasiswaList(array $query = [], ?string $token = null): Response
     {
         return $this->get('prestasi-mahasiswa', $query, $token);
