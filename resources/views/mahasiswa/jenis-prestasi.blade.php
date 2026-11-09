@@ -16,7 +16,7 @@
                 <x-input 
                     type="text" 
                     id="searchJenisPrestasiInput"
-                    placeholder="Cari..." 
+                    placeholder="Cari jenis prestasi..." 
                     class="pl-10 text-xs"
                 />
             </div>
@@ -34,18 +34,24 @@
             </div>
         </div>
 
-        <!-- Table: Data Jenis Prestasi -->
+        <!-- Table: Data Jenis Prestasi (Arsitektur Baru) -->
         <x-table>
             <x-slot:header>
                 <x-table.th class="w-16">No</x-table.th>
-                <x-table.th>Nama Jenis / Kategori Prestasi</x-table.th>
+                <x-table.th class="w-28">Kode</x-table.th>
+                <x-table.th>Nama Jenis Prestasi</x-table.th>
+                <x-table.th class="w-36">Kategori</x-table.th>
+                <x-table.th class="w-36">Tingkat</x-table.th>
                 <x-table.th class="w-28 text-right">Action</x-table.th>
             </x-slot:header>
 
             @forelse($jenisPrestasiList as $index => $item)
                 @php
                     $id = $item['id'] ?? 0;
-                    $namaJenis = $item['jenis'] ?? $item['nama_jenis'] ?? $item['kategori'] ?? '-';
+                    $kode = $item['kode'] ?? '-';
+                    $nama = $item['nama'] ?? $item['jenis'] ?? '-';
+                    $kategori = $item['kategori'] ?? '-';
+                    $tingkat = $item['tingkat'] ?? '-';
                 @endphp
                 <x-table.row class="jenis-prestasi-row">
                     <!-- No -->
@@ -53,10 +59,29 @@
                         {{ $index + 1 }}
                     </x-table.cell>
 
-                    <!-- Nama Jenis / Kategori Prestasi -->
+                    <!-- Kode -->
+                    <x-table.cell class="font-bold text-gray-700 w-28 jenis-kode">
+                        {{ $kode }}
+                    </x-table.cell>
+
+                    <!-- Nama -->
                     <x-table.cell>
                         <span class="font-extrabold text-sm text-gray-900 tracking-tight jenis-text">
-                            {{ $namaJenis }}
+                            {{ $nama }}
+                        </span>
+                    </x-table.cell>
+
+                    <!-- Kategori -->
+                    <x-table.cell class="w-36">
+                        <span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-blue-50 text-blue-700">
+                            {{ $kategori }}
+                        </span>
+                    </x-table.cell>
+
+                    <!-- Tingkat -->
+                    <x-table.cell class="w-36">
+                        <span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-purple-50 text-purple-700">
+                            {{ $tingkat }}
                         </span>
                     </x-table.cell>
 
@@ -69,7 +94,10 @@
                                 class="open-edit-jenis-prestasi-btn text-[#F59E0B] hover:text-[#D97706] transition p-1 cursor-pointer"
                                 title="Edit Jenis Prestasi"
                                 data-id="{{ $id }}"
-                                data-jenis="{{ $namaJenis }}"
+                                data-kode="{{ $kode }}"
+                                data-nama="{{ $nama }}"
+                                data-kategori="{{ $kategori }}"
+                                data-tingkat="{{ $tingkat }}"
                                 data-action="{{ route('kemahasiswaan.jenis-prestasi.update', $id) }}"
                             >
                                 <x-icon.edit class="w-5 h-5" />
@@ -83,7 +111,7 @@
                                 data-confirm-delete
                                 data-action="{{ route('kemahasiswaan.jenis-prestasi.destroy', $id) }}"
                                 data-title="Hapus Jenis Prestasi?"
-                                data-message="Apakah Anda yakin ingin menghapus data jenis prestasi '{{ $namaJenis }}'? Tindakan ini bersifat permanen."
+                                data-message="Apakah Anda yakin ingin menghapus data jenis prestasi '{{ $nama }}'? Tindakan ini bersifat permanen."
                             >
                                 <x-icon.delete class="w-5 h-5" />
                             </button>
@@ -91,7 +119,7 @@
                     </x-table.cell>
                 </x-table.row>
             @empty
-                <x-table.empty colspan="3" message="Belum ada data jenis prestasi" submessage="Silakan klik tombol Tambah Jenis Prestasi untuk membuat data baru." />
+                <x-table.empty colspan="6" message="Belum ada data jenis prestasi" submessage="Silakan klik tombol Tambah Jenis Prestasi untuk membuat data baru." />
             @endforelse
         </x-table>
     </div>
@@ -115,19 +143,70 @@
         <form action="{{ route('kemahasiswaan.jenis-prestasi.store') }}" method="POST" class="space-y-4">
             @csrf
 
-            <!-- Field: Nama Jenis / Kategori -->
+            <!-- Field: Kode -->
             <div>
-                <label for="createJenisInput" class="block text-xs font-bold text-gray-900 mb-1.5">
-                    Nama Jenis / Kategori
+                <label for="createKodeInput" class="block text-xs font-bold text-gray-900 mb-1.5">
+                    Kode Jenis Prestasi
                 </label>
                 <input 
                     type="text" 
-                    name="jenis" 
-                    id="createJenisInput" 
-                    placeholder="Contoh: Akademik / Non-Akademik" 
+                    name="kode" 
+                    id="createKodeInput" 
+                    placeholder="Contoh: JP-001" 
                     required 
                     class="w-full px-4 py-2.5 rounded-[10px] bg-white-form border-none text-sm font-medium text-gray-900 focus:ring-2 focus:ring-additional/30 focus:outline-none placeholder:text-gray-500"
                 >
+            </div>
+
+            <!-- Field: Nama Jenis Prestasi -->
+            <div>
+                <label for="createNamaInput" class="block text-xs font-bold text-gray-900 mb-1.5">
+                    Nama Jenis Prestasi
+                </label>
+                <input 
+                    type="text" 
+                    name="nama" 
+                    id="createNamaInput" 
+                    placeholder="Contoh: Olimpiade Pemrograman" 
+                    required 
+                    class="w-full px-4 py-2.5 rounded-[10px] bg-white-form border-none text-sm font-medium text-gray-900 focus:ring-2 focus:ring-additional/30 focus:outline-none placeholder:text-gray-500"
+                >
+            </div>
+
+            <!-- Field: Kategori (Akademik / Non-Akademik) -->
+            <div>
+                <label for="createKategoriInput" class="block text-xs font-bold text-gray-900 mb-1.5">
+                    Kategori
+                </label>
+                <select 
+                    name="kategori" 
+                    id="createKategoriInput" 
+                    required 
+                    class="w-full px-4 py-2.5 rounded-[10px] bg-white-form border-none text-sm font-medium text-gray-900 focus:ring-2 focus:ring-additional/30 focus:outline-none"
+                >
+                    <option value="" disabled selected>Pilih Kategori</option>
+                    <option value="Akademik">Akademik</option>
+                    <option value="Non-Akademik">Non-Akademik</option>
+                </select>
+            </div>
+
+            <!-- Field: Tingkat (Internasional / Nasional / Regional / Lokal) -->
+            <div>
+                <label for="createTingkatInput" class="block text-xs font-bold text-gray-900 mb-1.5">
+                    Tingkat
+                </label>
+                <select 
+                    name="tingkat" 
+                    id="createTingkatInput" 
+                    required 
+                    class="w-full px-4 py-2.5 rounded-[10px] bg-white-form border-none text-sm font-medium text-gray-900 focus:ring-2 focus:ring-additional/30 focus:outline-none"
+                >
+                    <option value="" disabled selected>Pilih Tingkat</option>
+                    <option value="Internasional">Internasional</option>
+                    <option value="Nasional">Nasional</option>
+                    <option value="Regional">Regional</option>
+                    <option value="Lokal">Lokal</option>
+                </select>
             </div>
 
             <!-- Modal Action Buttons (Batal & Simpan) -->
@@ -150,7 +229,7 @@
 </div>
 
 <!-- ========================================== -->
-<!-- MODAL: Perbarui Jenis Prestasi            -->
+<!-- MODAL: Perbarui Jenis Prestasi             -->
 <!-- ========================================== -->
 <div 
     id="editJenisPrestasiModal" 
@@ -168,19 +247,70 @@
             @csrf
             @method('PUT')
 
-            <!-- Field: Kategori -->
+            <!-- Field: Kode -->
             <div>
-                <label for="editJenisInput" class="block text-xs font-bold text-gray-900 mb-1.5">
-                    Kategori Prestasi
+                <label for="editKodeInput" class="block text-xs font-bold text-gray-900 mb-1.5">
+                    Kode Jenis Prestasi
                 </label>
                 <input 
                     type="text" 
-                    name="jenis" 
-                    id="editJenisInput" 
-                    placeholder="Contoh: Akademik / Non-Akademik" 
+                    name="kode" 
+                    id="editKodeInput" 
+                    placeholder="Contoh: JP-001" 
                     required 
                     class="w-full px-4 py-2.5 rounded-[10px] bg-white-form border-none text-sm font-medium text-gray-900 focus:ring-2 focus:ring-additional/30 focus:outline-none placeholder:text-gray-500"
                 >
+            </div>
+
+            <!-- Field: Nama Jenis Prestasi -->
+            <div>
+                <label for="editNamaInput" class="block text-xs font-bold text-gray-900 mb-1.5">
+                    Nama Jenis Prestasi
+                </label>
+                <input 
+                    type="text" 
+                    name="nama" 
+                    id="editNamaInput" 
+                    placeholder="Contoh: Olimpiade Pemrograman" 
+                    required 
+                    class="w-full px-4 py-2.5 rounded-[10px] bg-white-form border-none text-sm font-medium text-gray-900 focus:ring-2 focus:ring-additional/30 focus:outline-none placeholder:text-gray-500"
+                >
+            </div>
+
+            <!-- Field: Kategori -->
+            <div>
+                <label for="editKategoriInput" class="block text-xs font-bold text-gray-900 mb-1.5">
+                    Kategori
+                </label>
+                <select 
+                    name="kategori" 
+                    id="editKategoriInput" 
+                    required 
+                    class="w-full px-4 py-2.5 rounded-[10px] bg-white-form border-none text-sm font-medium text-gray-900 focus:ring-2 focus:ring-additional/30 focus:outline-none"
+                >
+                    <option value="" disabled>Pilih Kategori</option>
+                    <option value="Akademik">Akademik</option>
+                    <option value="Non-Akademik">Non-Akademik</option>
+                </select>
+            </div>
+
+            <!-- Field: Tingkat -->
+            <div>
+                <label for="editTingkatInput" class="block text-xs font-bold text-gray-900 mb-1.5">
+                    Tingkat
+                </label>
+                <select 
+                    name="tingkat" 
+                    id="editTingkatInput" 
+                    required 
+                    class="w-full px-4 py-2.5 rounded-[10px] bg-white-form border-none text-sm font-medium text-gray-900 focus:ring-2 focus:ring-additional/30 focus:outline-none"
+                >
+                    <option value="" disabled>Pilih Tingkat</option>
+                    <option value="Internasional">Internasional</option>
+                    <option value="Nasional">Nasional</option>
+                    <option value="Regional">Regional</option>
+                    <option value="Lokal">Lokal</option>
+                </select>
             </div>
 
             <!-- Modal Action Buttons (Batal & Perbarui) -->
@@ -213,7 +343,8 @@
                 const keyword = this.value.toLowerCase().trim();
                 rows.forEach(row => {
                     const jenis = row.querySelector('.jenis-text')?.textContent.toLowerCase() || '';
-                    const match = !keyword || jenis.includes(keyword);
+                    const kode = row.querySelector('.jenis-kode')?.textContent.toLowerCase() || '';
+                    const match = !keyword || jenis.includes(keyword) || kode.includes(keyword);
                     row.style.display = match ? '' : 'none';
                 });
             });
@@ -245,31 +376,42 @@
         // Create Modal
         const createModal = document.getElementById('createJenisPrestasiModal');
         const openCreateBtn = document.getElementById('openCreateJenisPrestasiModalBtn');
-        const createJenisInput = document.getElementById('createJenisInput');
+        const createKodeInput = document.getElementById('createKodeInput');
 
         if (openCreateBtn) {
             openCreateBtn.addEventListener('click', function () {
-                if (createJenisInput) createJenisInput.value = '';
+                if (createKodeInput) createKodeInput.value = '';
+                const createNamaInput = document.getElementById('createNamaInput');
+                if (createNamaInput) createNamaInput.value = '';
                 showModal(createModal);
-                setTimeout(() => createJenisInput?.focus(), 100);
+                setTimeout(() => createKodeInput?.focus(), 100);
             });
         }
 
         // Edit Modal
         const editModal = document.getElementById('editJenisPrestasiModal');
         const editForm = document.getElementById('editJenisPrestasiForm');
-        const editJenisInput = document.getElementById('editJenisInput');
+        const editKodeInput = document.getElementById('editKodeInput');
+        const editNamaInput = document.getElementById('editNamaInput');
+        const editKategoriInput = document.getElementById('editKategoriInput');
+        const editTingkatInput = document.getElementById('editTingkatInput');
 
         document.querySelectorAll('.open-edit-jenis-prestasi-btn').forEach(btn => {
             btn.addEventListener('click', function () {
                 const action = this.getAttribute('data-action');
-                const jenis = this.getAttribute('data-jenis');
+                const kode = this.getAttribute('data-kode');
+                const nama = this.getAttribute('data-nama');
+                const kategori = this.getAttribute('data-kategori');
+                const tingkat = this.getAttribute('data-tingkat');
 
                 if (editForm) editForm.action = action;
-                if (editJenisInput) editJenisInput.value = jenis || '';
+                if (editKodeInput) editKodeInput.value = kode || '';
+                if (editNamaInput) editNamaInput.value = nama || '';
+                if (editKategoriInput) editKategoriInput.value = kategori || '';
+                if (editTingkatInput) editTingkatInput.value = tingkat || '';
 
                 showModal(editModal);
-                setTimeout(() => editJenisInput?.focus(), 100);
+                setTimeout(() => editKodeInput?.focus(), 100);
             });
         });
 

@@ -2,8 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use App\Services\AkademikService;
 use App\Services\AkreditasiService;
+use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Illuminate\View\View;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
@@ -11,6 +14,7 @@ class LaporanAkhirController extends Controller
 {
     public function __construct(
         protected AkreditasiService $akreditasiService,
+        protected AkademikService $akademikService,
     ) {}
 
     /**
@@ -52,14 +56,8 @@ class LaporanAkhirController extends Controller
             'temuan_terbuka' => 5,
         ];
 
-        $gapAnalysis = [
-            ['kode' => 'K3.1', 'indikator' => 'Seleksi mahasiswa baru', 'skor' => '2,50'],
-            ['kode' => 'K4.2', 'indikator' => 'Rasio dosen-mahasiswa', 'skor' => '2,40'],
-            ['kode' => 'K7.1', 'indikator' => 'Roadmap penelitian', 'skor' => '2,60'],
-            ['kode' => 'K7.3', 'indikator' => 'Publikasi dosen', 'skor' => '2,50'],
-            ['kode' => 'K4.4', 'indikator' => 'Kualifikasi akademik dosen', 'skor' => '2,80'],
-            ['kode' => 'K8.2', 'indikator' => 'Keterlibatan mahasiswa PkM', 'skor' => '2,90'],
-        ];
+        // Muat data gap analysis pendidikan dinamis dari API / Engine
+        $gapAnalysis = $this->loadGapAnalysisFromApi($selectedYear);
 
         return view('pages.kaprodi.laporan-akhir', [
             'project' => $project,
@@ -70,6 +68,78 @@ class LaporanAkhirController extends Controller
             'rekapKriteria' => $rekapKriteria,
             'gapAnalysis' => $gapAnalysis,
         ]);
+    }
+
+    /**
+     * Memuat daftar gap analysis pendidikan secara dinamis dari API atau engine.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    protected function loadGapAnalysisFromApi(int $selectedYear): array
+    {
+        try {
+            $apiRes = $this->akademikService->getAssessmentPendidikanGap(['tahun' => $selectedYear]);
+            if (! $apiRes->successful()) {
+                Log::warning('API gap analysis tidak berhasil saat memuat laporan akhir.', [
+                    'status' => $apiRes->status(),
+                    'tahun' => $selectedYear,
+                ]);
+
+                return [];
+            }
+
+            $data = $apiRes->json('data') ?? [];
+            $indicators = $data['indicators'] ?? $data['items'] ?? $data['data'] ?? $data;
+            if (! is_array($indicators)) {
+                return [];
+            }
+
+            $mapped = [];
+            foreach ($indicators as $indicator) {
+                if (! is_array($indicator)) {
+                    continue;
+                }
+
+                $actual = $this->assessmentNumber($indicator['aktual_value'] ?? $indicator['skor_aktual'] ?? $indicator['aktual'] ?? null);
+                $target = $this->assessmentNumber($indicator['target_value'] ?? $indicator['skor_target'] ?? $indicator['target'] ?? null);
+                $gap = $this->assessmentNumber($indicator['gap_numeric'] ?? $indicator['gap'] ?? null);
+                if ($gap === null && $actual !== null && $target !== null) {
+                    $gap = $actual - $target;
+                }
+
+                $status = mb_strtolower((string) ($indicator['status'] ?? ''));
+                if (($gap === null || $gap >= 0) && ! in_array($status, ['di bawah target', 'belum tercapai'], true)) {
+                    continue;
+                }
+
+                $mapped[] = [
+                    'kode' => $indicator['kode'] ?? $indicator['kode_indikator'] ?? $indicator['kode_kriteria'] ?? '-',
+                    'indikator' => $indicator['nama'] ?? $indicator['indikator'] ?? $indicator['nama_indikator'] ?? '-',
+                    'skor' => $actual === null ? '—' : number_format($actual, 2, ',', '.'),
+                    'target' => $target === null ? '—' : number_format($target, 2, ',', '.'),
+                    'gap' => $gap === null ? '—' : number_format($gap, 2, ',', '.'),
+                    'rekomendasi' => $indicator['rekomendasi'] ?? '',
+                ];
+            }
+
+            return $mapped;
+        } catch (ConnectionException $exception) {
+            Log::warning('Tidak dapat terhubung ke API gap analysis saat memuat laporan akhir.', [
+                'tahun' => $selectedYear,
+                'message' => $exception->getMessage(),
+            ]);
+
+            return [];
+        }
+    }
+
+    private function assessmentNumber(mixed $value): ?float
+    {
+        if (is_string($value)) {
+            $value = str_replace(',', '.', trim(str_replace('%', '', $value)));
+        }
+
+        return is_numeric($value) ? (float) $value : null;
     }
 
     /**

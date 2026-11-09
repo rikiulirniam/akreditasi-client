@@ -417,4 +417,44 @@ class MahasiswaTest extends TestCase
         $response->assertSee('Budi Santoso');
         $response->assertDontSee('Budi Hartono');
     }
+
+    public function test_authenticated_user_can_filter_mahasiswa_by_kategori_and_see_badge(): void
+    {
+        Http::fake([
+            '*/api/mahasiswa*' => Http::response([
+                'success' => true,
+                'data' => [
+                    [
+                        'id' => 1,
+                        'nama_mahasiswa' => 'Mahasiswa Baru Satu',
+                        'nim' => 33423001,
+                        'tahun_masuk' => 2023,
+                        'jenis_pendaftaran' => 'baru',
+                        'tanggal_kelulusan' => null,
+                        'masa_studi_bulan' => 48,
+                    ],
+                    [
+                        'id' => 2,
+                        'nama_mahasiswa' => 'Mahasiswa Transfer Satu',
+                        'nim' => 33423002,
+                        'tahun_masuk' => 2023,
+                        'jenis_pendaftaran' => 'transfer',
+                        'tanggal_kelulusan' => null,
+                        'masa_studi_bulan' => 48,
+                    ],
+                ],
+            ], 200),
+            '*/api/status-mahasiswa*' => Http::response(['success' => true, 'data' => []], 200),
+            '*/api/enrollment-kelas*' => Http::response(['success' => true, 'data' => []], 200),
+            '*/api/angkatan*' => Http::response(['success' => true, 'data' => []], 200),
+        ]);
+
+        $response = $this->withSession($this->authSession())
+            ->get(route('mahasiswa.index', ['kategori' => 'baru']));
+
+        $response->assertStatus(200);
+        $response->assertSee('Mahasiswa Baru Satu');
+        $response->assertDontSee('Mahasiswa Transfer Satu');
+        $response->assertSee('Baru');
+    }
 }

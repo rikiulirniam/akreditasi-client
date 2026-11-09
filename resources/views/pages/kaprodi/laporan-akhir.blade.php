@@ -397,22 +397,27 @@
 
                         <!-- Bagian 3 Dokumen: Gap Analysis -->
                         <div id="previewGap" class="space-y-2">
-                            <div class="pl-2.5 border-l-4 border-secondary">
+                            <div class="flex items-center justify-between gap-2 pl-2.5 border-l-4 border-secondary">
                                 <h5 class="text-primary text-xs font-extrabold uppercase tracking-wide">
                                     Gap Analysis (Indikator di Bawah Target)
                                 </h5>
+                                <a href="{{ route('gap-analysis.index', ['tahun' => $selectedYear]) }}" class="shrink-0 text-[10px] font-bold text-primary underline">
+                                    Buka analisis interaktif
+                                </a>
                             </div>
                             <div class="pl-3 divide-y divide-gray-100 text-[10px]">
-                                @foreach ($gapAnalysis as $gap)
-                                    <div class="py-1.5 flex items-center justify-between">
+                                @forelse ($gapAnalysis as $gap)
+                                    <div class="flex items-center justify-between py-1.5">
                                         <div class="flex items-center gap-1.5">
                                             <span class="font-bold text-additional">{{ $gap['kode'] }}</span>
-                                            <span class="text-gray-700 font-medium">{{ $gap['indikator'] }}</span>
+                                            <span class="font-medium text-gray-700">{{ $gap['indikator'] }}</span>
                                         </div>
                                         <span
                                             class="px-2 py-0.5 rounded-md bg-rose-50 text-rose-700 font-bold text-[10px] border border-rose-200/60">{{ $gap['skor'] }}</span>
                                     </div>
-                                @endforeach
+                                @empty
+                                    <p class="py-2 text-gray-500">Belum ada data gap yang dikembalikan API untuk tahun ini.</p>
+                                @endforelse
                             </div>
                         </div>
 

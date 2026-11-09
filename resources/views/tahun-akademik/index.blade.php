@@ -16,7 +16,7 @@
                 <x-input 
                     type="text" 
                     id="searchTahunAkademikInput"
-                    placeholder="Cari..." 
+                    placeholder="Cari tahun akademik..." 
                     class="pl-10 text-xs"
                 />
             </div>
@@ -41,6 +41,7 @@
             <x-slot:header>
                 <x-table.th class="w-16">No</x-table.th>
                 <x-table.th>Tahun Akademik</x-table.th>
+                <x-table.th class="w-32">Label TS</x-table.th>
                 <x-table.th class="w-32">Jumlah Kelas</x-table.th>
                 <x-table.th class="w-32">Status</x-table.th>
                 <x-table.th>Prodi</x-table.th>
@@ -55,6 +56,9 @@
                     $isActive = ! empty($item['is_active']);
                     $jumlahKelas = $item['jumlah_kelas'] ?? 12;
                     $prodi = $item['prodi']['nama'] ?? 'Teknologi Rekayasa Komputer';
+                    
+                    // Deteksi label TS dari backend atau hitung otomatis
+                    $tsLabel = $item['ts_label'] ?? ($isActive ? 'TS' : '');
                 @endphp
                 <x-table.row class="tahun-akademik-row">
                     <!-- No -->
@@ -68,10 +72,21 @@
                             <span class="font-extrabold text-sm text-gray-900 tracking-tight font-mono tahun-text">
                                 {{ $tahun }}
                             </span>
-                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold bg-primary/10 text-primary">
+                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold bg-primary/10 text-primary semester-text">
                                 {{ $semester }}
                             </span>
                         </div>
+                    </x-table.cell>
+
+                    <!-- Label TS -->
+                    <x-table.cell class="w-32">
+                        @if($tsLabel)
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-50 text-amber-700 border border-amber-200">
+                                {{ $tsLabel }}
+                            </span>
+                        @else
+                            <span class="text-gray-400 text-xs">-</span>
+                        @endif
                     </x-table.cell>
 
                     <!-- Jumlah Kelas -->
@@ -97,11 +112,10 @@
                         {{ $prodi }}
                     </x-table.cell>
 
-                    <!-- Action (Yellow Edit, Red Delete) -->
+                    <!-- Action -->
                     <x-table.cell class="w-28">
                         <div class="flex items-center justify-end gap-2.5">
                             @haspermission('tahun_akademik.update')
-                            <!-- Edit Icon (Yellow) -->
                             <button 
                                 type="button" 
                                 class="open-edit-tahun-akademik-btn text-[#F59E0B] hover:text-[#D97706] transition p-1 cursor-pointer"
@@ -117,7 +131,6 @@
                             @endhaspermission
 
                             @haspermission('tahun_akademik.delete')
-                            <!-- Delete Icon (Red) -->
                             <button 
                                 type="button" 
                                 class="text-[#DC2626] hover:text-[#B91C1C] transition p-1 cursor-pointer"
@@ -125,13 +138,12 @@
                                 data-confirm-delete
                                 data-action="{{ route('tahun-akademik.destroy', $item['id']) }}"
                                 data-title="Hapus Tahun Akademik?"
-                                data-message="Apakah Anda yakin ingin menghapus data tahun akademik '{{ $tahun }}'? Tindakan ini bersifat permanen dan data tidak dapat dikembalikan."
+                                data-message="Apakah Anda yakin ingin menghapus data tahun akademik '{{ $tahun }}'? Tindakan ini bersifat permanen."
                             >
                                 <x-icon.delete class="w-5 h-5" />
                             </button>
                             @endhaspermission
 
-                            <!-- Eye / View Icon (Navy) -> ke Halaman 2 (Daftar Kelas) -->
                             <a 
                                 href="{{ route('tahun-akademik.kelas', $item['id']) }}" 
                                 class="text-primary hover:text-additional transition p-1 cursor-pointer"
@@ -143,7 +155,7 @@
                     </x-table.cell>
                 </x-table.row>
             @empty
-                <x-table.empty colspan="5" message="Belum ada data tahun akademik" submessage="Silakan klik tombol Tambah Tahun Akademik untuk membuat data baru." />
+                <x-table.empty colspan="7" message="Belum ada data tahun akademik" submessage="Silakan klik tombol Tambah Tahun Akademik untuk membuat data baru." />
             @endforelse
         </x-table>
 
@@ -201,11 +213,6 @@
                         <option value="Ganjil" selected>Ganjil</option>
                         <option value="Genap">Genap</option>
                     </select>
-                    <span class="absolute inset-y-0 right-0 flex items-center pr-3.5 pointer-events-none text-primary">
-                        <svg class="w-5 h-5 stroke-[3]" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="m6 9 6 6 6-6" />
-                        </svg>
-                    </span>
                 </div>
             </div>
 
@@ -295,11 +302,6 @@
                         <option value="Ganjil">Ganjil</option>
                         <option value="Genap">Genap</option>
                     </select>
-                    <span class="absolute inset-y-0 right-0 flex items-center pr-3.5 pointer-events-none text-primary">
-                        <svg class="w-5 h-5 stroke-[3]" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="m6 9 6 6 6-6" />
-                        </svg>
-                    </span>
                 </div>
             </div>
 

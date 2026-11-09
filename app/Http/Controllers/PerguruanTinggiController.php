@@ -39,6 +39,8 @@ class PerguruanTinggiController extends Controller
             'misi' => 'Menyelenggarakan pendidikan vokasi di bidang teknologi dan bisnis yang unggul, berkarakter, dan beretika.
 Mengembangkan penelitian terapan dan pengabdian masyarakat pada bidang teknologi dan bisnis.
 Mengoptimalkan mutu manajemen institusi secara berkelanjutan dengan menerapkan prinsip tata kelola yang baik (good governance).',
+            'sk_pendirian' => 'SK/001/DIKTI/1992',
+            'tanggal_sk_pendirian' => '1992-04-05',
             'logo_url' => asset('images/logo-polines.png'),
         ];
 
@@ -123,18 +125,23 @@ Mengoptimalkan mutu manajemen institusi secara berkelanjutan dengan menerapkan p
             'visi' => ['nullable', 'string', 'max:1000'],
             'misi' => ['nullable', 'string', 'max:2000'],
             'kode_pt' => ['nullable', 'string', 'max:50'],
+            'sk_pendirian' => ['nullable', 'string', 'max:100'],
+            'tanggal_sk_pendirian' => ['nullable', 'date'],
             'logo' => ['nullable', 'image', 'max:2048'],
         ], [
             'nama_pt.required' => 'Nama perguruan tinggi wajib diisi.',
+            'tanggal_sk_pendirian.date' => 'Format tanggal SK pendirian tidak valid.',
         ]);
 
         $payload = [
-            'kode_pt' => $validated['kode_pt'] ?: 'PT001',
+            'kode_pt' => ! empty($validated['kode_pt']) ? $validated['kode_pt'] : 'PT001',
             'nama_pt' => trim($validated['nama_pt']),
             'pimpinan' => trim($validated['pimpinan'] ?? ''),
             'alamat' => trim($validated['alamat'] ?? ''),
             'visi' => trim($validated['visi'] ?? ''),
             'misi' => trim($validated['misi'] ?? ''),
+            'sk_pendirian' => trim($validated['sk_pendirian'] ?? ''),
+            'tanggal_sk_pendirian' => ! empty($validated['tanggal_sk_pendirian']) ? $validated['tanggal_sk_pendirian'] : null,
         ];
 
         // Handle logo upload if user selected an image
