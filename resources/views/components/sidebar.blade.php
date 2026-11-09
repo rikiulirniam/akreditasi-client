@@ -215,7 +215,8 @@
                 @php
                     $isTendikPage = request()->routeIs('tenaga-kependidikan.*') || request()->routeIs('tenaga-pendidikan.*') || (request()->routeIs('pendidikan.*') && (request()->filled('id_tendik') || !empty($selectedTendik)));
                     $isDosenPage = request()->routeIs('dosen.*') || (request()->routeIs('pendidikan.*') && !empty($isDosen)) || (request()->routeIs('pendidikan.*') && (request()->filled('id_dosen') || !empty($selectedDosen)));
-                    $isSdmActive = $isDosenPage || $isTendikPage || request()->routeIs('sertifikasi.*');
+                    $isKerjaSamaPage = request()->routeIs('kerja-sama.*');
+                    $isSdmActive = $isDosenPage || $isTendikPage || request()->routeIs('sertifikasi.*') || $isKerjaSamaPage;
                 @endphp
                 <div>
                     <button
@@ -250,17 +251,18 @@
                             <span class="w-1.5 h-1.5 rounded-full {{ request()->routeIs('sertifikasi.*') ? 'bg-secondary' : 'bg-white/40' }} shrink-0"></span>
                             <span>Sertifikasi</span>
                         </a>
+                        <a href="{{ route('kerja-sama.index') }}" class="flex items-center gap-2.5 py-2.5 px-3.5 rounded-xl text-sm font-semibold transition-all duration-150 {{ $isKerjaSamaPage ? 'bg-white/20 text-white shadow-xs font-bold' : 'text-white/80 hover:text-white hover:bg-white/10' }}">
+                            <span class="w-1.5 h-1.5 rounded-full {{ $isKerjaSamaPage ? 'bg-secondary' : 'bg-white/40' }} shrink-0"></span>
+                            <span>Kerja Sama</span>
+                        </a>
                     </div>
                 </div>
 
                 <!-- Tri Dharma -->
-                @php
-                    $isTriDharmaActive = request()->routeIs('kerja-sama.*');
-                @endphp
                 <div>
                     <button 
                         type="button" 
-                        class="sidebar-link submenu-toggle-btn w-full flex items-center justify-between gap-3.5 px-3.5 py-3 rounded-2xl text-sm font-medium {{ $isTriDharmaActive ? 'bg-white/15 text-white' : 'text-white/80 hover:bg-white/10 hover:text-white' }} transition-all duration-150 group cursor-pointer"
+                        class="sidebar-link submenu-toggle-btn w-full flex items-center justify-between gap-3.5 px-3.5 py-3 rounded-2xl text-sm font-medium text-white/80 hover:bg-white/10 hover:text-white transition-all duration-150 group cursor-pointer"
                         data-target="submenu-tridharma"
                         title="Tri Dharma"
                     >
@@ -270,21 +272,17 @@
                             </svg>
                             <span class="sidebar-text truncate">Tri Dharma</span>
                         </div>
-                        <svg class="submenu-chevron sidebar-chevron w-4 h-4 text-white/60 group-hover:text-white transition-transform duration-200 {{ $isTriDharmaActive ? 'rotate-180' : '' }}" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                        <svg class="submenu-chevron sidebar-chevron w-4 h-4 text-white/60 group-hover:text-white transition-transform duration-200" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
                         </svg>
                     </button>
 
-                    <div id="submenu-tridharma" data-is-active="{{ $isTriDharmaActive ? 'true' : 'false' }}" class="submenu-container {{ $isTriDharmaActive ? '' : 'hidden' }} pl-6 pr-2 pt-1.5 pb-1 space-y-1.5">
+                    <div id="submenu-tridharma" class="submenu-container hidden pl-6 pr-2 pt-1.5 pb-1 space-y-1.5">
                         <a href="#" class="flex items-center gap-2.5 py-2 px-3.5 rounded-xl text-sm font-medium text-white/80 hover:text-white hover:bg-white/10 transition">
                             <span class="sidebar-text leading-tight">Penelitian &amp;<br>PKM</span>
                         </a>
                         <a href="#" class="flex items-center gap-2.5 py-2 px-3.5 rounded-xl text-sm font-medium text-white/80 hover:text-white hover:bg-white/10 transition">
                             <span class="sidebar-text">Luaran</span>
-                        </a>
-                        <a href="{{ route('kerja-sama.index') }}" class="flex items-center gap-2.5 py-2 px-3.5 rounded-xl text-sm font-semibold transition-all duration-150 {{ $isTriDharmaActive ? 'bg-white/20 text-white shadow-xs font-bold' : 'text-white/80 hover:text-white hover:bg-white/10' }}">
-                            <span class="w-1.5 h-1.5 rounded-full {{ $isTriDharmaActive ? 'bg-secondary' : 'bg-white/40' }} shrink-0"></span>
-                            <span>Kerja Sama</span>
                         </a>
                     </div>
                 </div>
