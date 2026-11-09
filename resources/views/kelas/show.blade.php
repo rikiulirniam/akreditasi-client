@@ -227,18 +227,32 @@
             <h3 class="text-lg font-bold text-gray-900 tracking-tight">
                 Daftar Mata Kuliah Kelas {{ $namaKelas }} @if($tahunAkademik !== '-') (Tahun Akademik {{ $tahunAkademik }}) @endif
             </h3>
-            <div class="relative w-full max-w-xs">
-                <input 
-                    type="text" 
-                    id="searchMataKuliahInput" 
-                    placeholder="Cari mata kuliah..." 
-                    class="w-full px-4 py-2 pr-10 rounded-lg bg-[#E5E7EB] border-none text-xs font-medium text-gray-800 placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-primary/20"
+            <div class="flex flex-wrap items-center gap-2.5">
+                <div class="relative w-full sm:w-64">
+                    <input 
+                        type="text" 
+                        id="searchMataKuliahInput" 
+                        placeholder="Cari mata kuliah..." 
+                        class="w-full px-4 py-2 pr-10 rounded-lg bg-[#E5E7EB] border-none text-xs font-medium text-gray-800 placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-primary/20"
+                    >
+                    <span class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-gray-700">
+                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
+                        </svg>
+                    </span>
+                </div>
+
+                @haspermission('kelas.update')
+                <button 
+                    type="button" 
+                    class="open-create-mk-kelas-btn inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-primary text-white text-xs sm:text-sm font-bold shadow-sm hover:bg-additional transition cursor-pointer"
                 >
-                <span class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-gray-700">
-                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
+                    <svg class="w-4 h-4 stroke-[2.5]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
                     </svg>
-                </span>
+                    Tambah Mata Kuliah
+                </button>
+                @endhaspermission
             </div>
         </div>
 
@@ -249,7 +263,7 @@
                 <x-table.th>Nama Mata Kuliah</x-table.th>
                 <x-table.th class="w-24 text-center">SKS</x-table.th>
                 <x-table.th class="w-64">Dosen Pengampu</x-table.th>
-                <x-table.th class="w-20 text-center">Action</x-table.th>
+                <x-table.th class="w-28 text-center">Action</x-table.th>
             </x-slot:header>
 
             @forelse($mataKuliahList as $index => $mk)
@@ -258,34 +272,356 @@
                     $namaMk = $mk['nama_mata_kuliah'] ?? ($mk['nama_mk'] ?? ($mk['nama'] ?? '-'));
                     $sks = $mk['sks'] ?? '-';
                     $dosen = $mk['dosen_pengampu'] ?? ($mk['dosen'] ?? '-');
+                    $enrollmentId = $mk['enrollment_mata_kuliah_id'] ?? ($mk['enrollment_id'] ?? null);
+                    $mkAkId = $mk['mata_kuliah_angkatan_kelas_id'] ?? null;
+                    $mkTaId = $mk['tahun_akademik_id'] ?? ($activeTahunAkademikId ?? 1);
+                    $dosenId = $mk['dosen_id'] ?? null;
                 @endphp
                 <x-table.row class="matakuliah-row">
                     <x-table.cell class="text-gray-500 font-medium text-center w-16">{{ $index + 1 }}.</x-table.cell>
                     <x-table.cell class="font-mono text-gray-700 text-sm whitespace-nowrap mk-kode w-44">{{ $kodeMk }}</x-table.cell>
                     <x-table.cell class="font-medium text-gray-900 whitespace-nowrap mk-nama">{{ $namaMk }}</x-table.cell>
                     <x-table.cell class="text-gray-700 font-semibold text-sm text-center w-24">{{ $sks }} SKS</x-table.cell>
-                    <x-table.cell class="text-gray-700 text-sm whitespace-nowrap w-64">{{ $dosen }}</x-table.cell>
-                    <x-table.cell class="text-center w-20">
-                        <div class="flex items-center justify-center">
+                    <x-table.cell class="text-gray-700 text-sm whitespace-nowrap w-64">
+                        @if($dosen && $dosen !== '-')
+                            <span class="inline-flex items-center gap-1.5 font-medium text-gray-900">
+                                <span class="w-2 h-2 rounded-full bg-emerald-500 shrink-0"></span>
+                                {{ $dosen }}
+                            </span>
+                        @else
+                            <span class="text-gray-400 italic">Belum ditentukan</span>
+                        @endif
+                    </x-table.cell>
+                    <x-table.cell class="text-center w-28">
+                        <div class="flex items-center justify-center gap-2">
                             @if(Route::has('mata-kuliah.show') && !empty($mk['id']))
-                                <a href="{{ route('mata-kuliah.show', $mk['id']) }}" class="text-primary hover:text-additional p-1 cursor-pointer" title="Lihat Detail">
+                                <a href="{{ route('mata-kuliah.show', $mk['id']) }}" class="text-primary hover:text-additional p-1 cursor-pointer transition" title="Lihat Detail Mata Kuliah">
                                     <x-icon.eye class="w-5 h-5" />
                                 </a>
-                            @else
-                                <span class="text-gray-300">-</span>
-                           @endif
+                            @endif
+
+                            @haspermission('kelas.update')
+                            @if(!empty($enrollmentId))
+                                <!-- Edit Dosen Button (Yellow) -->
+                                <button 
+                                    type="button" 
+                                    class="open-edit-dosen-btn text-[#F59E0B] hover:text-[#D97706] p-1 cursor-pointer transition"
+                                    title="Ubah Dosen Pengampu"
+                                    data-action="{{ route('kelas.mata-kuliah.update', [$kelas['id'], $enrollmentId]) }}"
+                                    data-mk-id="{{ $mk['id'] }}"
+                                    data-mk-nama="{{ $namaMk }}"
+                                    data-kode="{{ $kodeMk }}"
+                                    data-ta-id="{{ $mkTaId }}"
+                                    data-dosen-id="{{ $dosenId }}"
+                                >
+                                    <x-icon.edit class="w-5 h-5" />
+                                </button>
+                            @endif
+
+                            @if(!empty($mkAkId))
+                                <!-- Delete Mata Kuliah dari Kelas (Red) -->
+                                <button 
+                                    type="button" 
+                                    class="text-[#DC2626] hover:text-[#B91C1C] p-1 cursor-pointer transition"
+                                    title="Hapus Mata Kuliah dari Kelas"
+                                    data-confirm-delete
+                                    data-action="{{ route('kelas.mata-kuliah.destroy', [$kelas['id'], $mkAkId]) }}"
+                                    data-title="Hapus Mata Kuliah dari Kelas?"
+                                    data-message="Apakah Anda yakin ingin menghapus mata kuliah {{ $namaMk }} ({{ $kodeMk }}) dari kelas {{ $namaKelas }}? Tindakan ini bersifat permanen."
+                                >
+                                    <x-icon.delete class="w-5 h-5" />
+                                </button>
+                            @endif
+                            @endhaspermission
                         </div>
                     </x-table.cell>
                 </x-table.row>
             @empty
-                <x-table.empty colspan="6" message="Belum ada data mata kuliah" />
+                <x-table.empty colspan="6" message="Belum ada data mata kuliah yang ditugaskan ke kelas ini" submessage="Klik tombol Tambah Mata Kuliah untuk menugaskan mata kuliah dan dosen pengampu." />
             @endforelse
         </x-table>
     </div>
 </div>
 
+<!-- ======================================================== -->
+<!-- MODAL: Tambah Mata Kuliah & Dosen ke Kelas               -->
+<!-- ======================================================== -->
+<div 
+    id="createMataKuliahKelasModal" 
+    class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/45 opacity-0 pointer-events-none transition-all duration-200 select-none"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="createMataKuliahKelasModalTitle"
+>
+    <div class="mk-kelas-modal-card relative bg-white rounded-[28px] p-8 max-w-[500px] w-full shadow-2xl text-left transform scale-95 transition-all duration-200 max-h-[92vh] overflow-y-auto">
+        <h3 id="createMataKuliahKelasModalTitle" class="text-xl font-bold text-gray-900 tracking-tight text-center mb-6">
+            Tambah Mata Kuliah & Dosen Pengampu
+        </h3>
+
+        <form action="{{ route('kelas.mata-kuliah.store', $kelas['id']) }}" method="POST" class="space-y-4">
+            @csrf
+
+            <!-- Field 1: Pilih Mata Kuliah -->
+            <div>
+                <label for="createMataKuliahSelect" class="block text-xs font-bold text-gray-900 mb-1.5">
+                    Mata Kuliah
+                </label>
+                <div class="relative">
+                    <select 
+                        name="mata_kuliah_id" 
+                        id="createMataKuliahSelect" 
+                        required 
+                        class="w-full px-4 py-2.5 pr-10 rounded-[10px] bg-white-form border-none text-sm font-medium text-gray-900 focus:ring-2 focus:ring-additional/30 focus:outline-none appearance-none cursor-pointer"
+                    >
+                        <option value="" disabled selected>Pilih Mata Kuliah</option>
+                        @foreach($masterMkList as $m)
+                            @php
+                                $mId = $m['id'] ?? '';
+                                $mKode = $m['kode_mata_kuliah'] ?? ($m['kode'] ?? '');
+                                $mNama = $m['nama_mata_kuliah'] ?? ($m['nama'] ?? 'Mata Kuliah #'.$mId);
+                                $mSks = $m['sks'] ?? null;
+                            @endphp
+                            <option value="{{ $mId }}">
+                                [{{ $mKode }}] {{ $mNama }} @if($mSks) ({{ $mSks }} SKS) @endif
+                            </option>
+                        @endforeach
+                    </select>
+                    <div class="absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none text-gray-500">
+                        <svg class="w-4 h-4 stroke-[2.5]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
+                        </svg>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Field 2: Pilih Dosen Pengampu -->
+            <div>
+                <label for="createDosenSelect" class="block text-xs font-bold text-gray-900 mb-1.5">
+                    Dosen Pengampu
+                </label>
+                <div class="relative">
+                    <select 
+                        name="dosen_id" 
+                        id="createDosenSelect" 
+                        class="w-full px-4 py-2.5 pr-10 rounded-[10px] bg-white-form border-none text-sm font-medium text-gray-900 focus:ring-2 focus:ring-additional/30 focus:outline-none appearance-none cursor-pointer"
+                    >
+                        <option value="">Pilih Dosen Pengampu (Opsional)</option>
+                        @foreach($dosenList as $d)
+                            <option value="{{ $d['id'] }}">
+                                {{ $d['nama'] }} @if(!empty($d['email'])) ({{ $d['email'] }}) @endif
+                            </option>
+                        @endforeach
+                    </select>
+                    <div class="absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none text-gray-500">
+                        <svg class="w-4 h-4 stroke-[2.5]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
+                        </svg>
+                    </div>
+                </div>
+                <p class="text-[11px] text-gray-500 mt-1">Dosen yang dipilih akan menjadi penanggung jawab perkuliahan kelas ini.</p>
+            </div>
+
+            <!-- Modal Action Buttons (Batal & Simpan) -->
+            <div class="grid grid-cols-2 gap-4 pt-4">
+                <button 
+                    type="button" 
+                    class="close-mk-kelas-modal w-full py-3 px-6 rounded-xl bg-white-form hover:bg-gray-300 text-black font-bold text-sm transition cursor-pointer text-center"
+                >
+                    Batal
+                </button>
+                <button 
+                    type="submit" 
+                    class="w-full py-3 px-6 rounded-xl bg-additional hover:bg-[#01426c] text-white font-bold text-sm shadow-sm transition cursor-pointer text-center"
+                >
+                    Simpan
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- ======================================================== -->
+<!-- MODAL: Edit Dosen Pengampu                               -->
+<!-- ======================================================== -->
+<div 
+    id="editDosenKelasModal" 
+    class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/45 opacity-0 pointer-events-none transition-all duration-200 select-none"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="editDosenKelasModalTitle"
+>
+    <div class="mk-kelas-modal-card relative bg-white rounded-[28px] p-8 max-w-[500px] w-full shadow-2xl text-left transform scale-95 transition-all duration-200 max-h-[92vh] overflow-y-auto">
+        <h3 id="editDosenKelasModalTitle" class="text-xl font-bold text-gray-900 tracking-tight text-center mb-6">
+            Ubah Dosen Pengampu
+        </h3>
+
+        <form id="editDosenForm" action="#" method="POST" class="space-y-4">
+            @csrf
+            @method('PUT')
+
+            <input type="hidden" name="mata_kuliah_id" id="editMataKuliahIdInput">
+            <input type="hidden" name="tahun_akademik_id" id="editTahunAkademikIdInput">
+
+            <!-- Read-only Info Mata Kuliah -->
+            <div>
+                <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">
+                    Mata Kuliah
+                </label>
+                <div class="p-3.5 rounded-xl bg-gray-50 border border-gray-200">
+                    <p class="font-bold text-sm text-gray-900" id="editMataKuliahNamaText">-</p>
+                    <p class="font-mono text-xs text-gray-600 mt-0.5" id="editMataKuliahKodeText">-</p>
+                </div>
+            </div>
+
+            <!-- Field: Pilih Dosen Pengampu -->
+            <div>
+                <label for="editDosenSelect" class="block text-xs font-bold text-gray-900 mb-1.5">
+                    Dosen Pengampu
+                </label>
+                <div class="relative">
+                    <select 
+                        name="dosen_id" 
+                        id="editDosenSelect" 
+                        class="w-full px-4 py-2.5 pr-10 rounded-[10px] bg-white-form border-none text-sm font-medium text-gray-900 focus:ring-2 focus:ring-additional/30 focus:outline-none appearance-none cursor-pointer"
+                    >
+                        <option value="">Belum Ditentukan (Kosongkan)</option>
+                        @foreach($dosenList as $d)
+                            <option value="{{ $d['id'] }}">
+                                {{ $d['nama'] }} @if(!empty($d['email'])) ({{ $d['email'] }}) @endif
+                            </option>
+                        @endforeach
+                    </select>
+                    <div class="absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none text-gray-500">
+                        <svg class="w-4 h-4 stroke-[2.5]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
+                        </svg>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Modal Action Buttons (Batal & Perbarui) -->
+            <div class="grid grid-cols-2 gap-4 pt-4">
+                <button 
+                    type="button" 
+                    class="close-mk-kelas-modal w-full py-3 px-6 rounded-xl bg-white-form hover:bg-gray-300 text-black font-bold text-sm transition cursor-pointer text-center"
+                >
+                    Batal
+                </button>
+                <button 
+                    type="submit" 
+                    class="w-full py-3 px-6 rounded-xl bg-additional hover:bg-[#01426c] text-white font-bold text-sm shadow-sm transition cursor-pointer text-center"
+                >
+                    Perbarui
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
 <script>
     document.addEventListener('DOMContentLoaded', function () {
+        // Modal Helper Functions
+        function showModal(modalEl) {
+            if (!modalEl) return;
+            const card = modalEl.querySelector('.mk-kelas-modal-card');
+            modalEl.classList.remove('opacity-0', 'pointer-events-none');
+            modalEl.classList.add('opacity-100');
+            if (card) {
+                card.classList.remove('scale-95');
+                card.classList.add('scale-100');
+            }
+            document.body.style.overflow = 'hidden';
+        }
+
+        function hideModal(modalEl) {
+            if (!modalEl) return;
+            const card = modalEl.querySelector('.mk-kelas-modal-card');
+            modalEl.classList.remove('opacity-100');
+            modalEl.classList.add('opacity-0', 'pointer-events-none');
+            if (card) {
+                card.classList.remove('scale-100');
+                card.classList.add('scale-95');
+            }
+            document.body.style.overflow = '';
+        }
+
+        const createModal = document.getElementById('createMataKuliahKelasModal');
+        const editModal = document.getElementById('editDosenKelasModal');
+
+        // Open Create Modal
+        document.querySelectorAll('.open-create-mk-kelas-btn').forEach(btn => {
+            btn.addEventListener('click', function () {
+                showModal(createModal);
+            });
+        });
+
+        // Open Edit Dosen Modal
+        const editDosenForm = document.getElementById('editDosenForm');
+        const editMataKuliahIdInput = document.getElementById('editMataKuliahIdInput');
+        const editTahunAkademikIdInput = document.getElementById('editTahunAkademikIdInput');
+        const editDosenSelect = document.getElementById('editDosenSelect');
+        const editMataKuliahNamaText = document.getElementById('editMataKuliahNamaText');
+        const editMataKuliahKodeText = document.getElementById('editMataKuliahKodeText');
+
+        document.querySelectorAll('.open-edit-dosen-btn').forEach(btn => {
+            btn.addEventListener('click', function () {
+                const action = this.dataset.action;
+                const mkId = this.dataset.mkId;
+                const mkNama = this.dataset.mkNama;
+                const kode = this.dataset.kode;
+                const taId = this.dataset.taId;
+                const dosenId = this.dataset.dosenId;
+
+                if (editDosenForm && action) {
+                    editDosenForm.action = action;
+                }
+                if (editMataKuliahIdInput && mkId) {
+                    editMataKuliahIdInput.value = mkId;
+                }
+                if (editTahunAkademikIdInput && taId) {
+                    editTahunAkademikIdInput.value = taId;
+                }
+                if (editDosenSelect) {
+                    editDosenSelect.value = dosenId || '';
+                }
+                if (editMataKuliahNamaText && mkNama) {
+                    editMataKuliahNamaText.textContent = mkNama;
+                }
+                if (editMataKuliahKodeText && kode) {
+                    editMataKuliahKodeText.textContent = kode;
+                }
+
+                showModal(editModal);
+            });
+        });
+
+        // Close Modals
+        document.querySelectorAll('.close-mk-kelas-modal').forEach(btn => {
+            btn.addEventListener('click', function () {
+                hideModal(createModal);
+                hideModal(editModal);
+            });
+        });
+
+        // Click Backdrop to Close
+        [createModal, editModal].forEach(modal => {
+            if (modal) {
+                modal.addEventListener('click', function (e) {
+                    if (e.target === modal) {
+                        hideModal(modal);
+                    }
+                });
+            }
+        });
+
+        // Escape Key to Close
+        document.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape') {
+                hideModal(createModal);
+                hideModal(editModal);
+            }
+        });
+
         // Search Mahasiswa Realtime Filtering
         const searchMahasiswa = document.getElementById('searchMahasiswaInput');
         const mhsRows = document.querySelectorAll('.mahasiswa-row');
