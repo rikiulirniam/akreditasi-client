@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\PenelitianPkmController;
 use App\Http\Controllers\Akreditasi\Superadmin\BuktiDokumenController;
 use App\Http\Controllers\Akreditasi\Superadmin\DashboardController as SuperadminDashboard;
 use App\Http\Controllers\Akreditasi\Superadmin\IndikatorController;
@@ -59,6 +60,18 @@ Route::middleware('auth.akademik')->group(function () {
     Route::post('/auth/refresh-token', [AuthController::class, 'refreshToken'])->name('auth.refresh-token');
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
     Route::get('/reviewer/dashboard', [ReviewerController::class, 'dashboard'])->name('reviewer.dashboard');
+    
+    Route::get('/penelitian-pkm', [PenelitianPkmController::class, 'index'])->name('penelitian-pkm.index');
+    Route::get('/penelitian-pkm/{id}', [PenelitianPkmController::class, 'show'])->whereNumber('id')->name('penelitian-pkm.show');
+
+    Route::middleware('role:administrator')->group(function () {
+        Route::get('/penelitian-pkm/create', [PenelitianPkmController::class, 'create'])->name('penelitian-pkm.create');
+        Route::post('/penelitian-pkm', [PenelitianPkmController::class, 'store'])->name('penelitian-pkm.store');
+        Route::get('/penelitian-pkm/{id}/edit', [PenelitianPkmController::class, 'edit'])->whereNumber('id')->name('penelitian-pkm.edit');
+        Route::put('/penelitian-pkm/{id}', [PenelitianPkmController::class, 'update'])->whereNumber('id')->name('penelitian-pkm.update');
+        Route::delete('/penelitian-pkm/{id}', [PenelitianPkmController::class, 'destroy'])->whereNumber('id')->name('penelitian-pkm.destroy');
+    });
+
     Route::get('/reviewer/penilaian', [ReviewerController::class, 'assessments'])->name('reviewer.assessments');
     Route::get('/reviewer/penilaian/{projectId}', [ReviewerController::class, 'assessmentDetail'])->name('reviewer.assessment-detail');
     Route::post('/reviewer/penilaian/{projectId}/indikator/{indicatorId}', [ReviewerController::class, 'saveAssessment'])->name('reviewer.assessment-save');
