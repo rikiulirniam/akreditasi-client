@@ -305,6 +305,13 @@
                                 <span class="w-1.5 h-1.5 rounded-full {{ request()->routeIs('cpl.*') ? 'bg-secondary' : 'bg-white/40' }} shrink-0"></span>
                                 <span class="truncate">Capaian Pembelajaran (CPL)</span>
                             </a>
+                            @if (Route::has('cpl.evaluasi'))
+                            <a href="{{ route('cpl.evaluasi') }}"
+                                class="flex items-center gap-2.5 py-2.5 px-3.5 rounded-xl text-sm font-semibold transition-all duration-150 {{ request()->routeIs('cpl.evaluasi') ? 'bg-white/20 text-white shadow-xs font-bold' : 'text-white/80 hover:text-white hover:bg-white/10' }}">
+                                <span class="w-1.5 h-1.5 rounded-full {{ request()->routeIs('cpl.evaluasi') ? 'bg-secondary' : 'bg-white/40' }} shrink-0"></span>
+                                <span class="truncate">Evaluasi Ketercapaian CPL</span>
+                            </a>
+                            @endif
                             @endif
                         </div>
                     </div>
@@ -437,6 +444,16 @@
                             <span class="sidebar-text truncate">Laporan Akhir</span>
                         </a>
                     </div>
+                    @if (Route::has('gap-analysis.index'))
+                    <div>
+                        <a href="{{ route('gap-analysis.index') }}"
+                            class="sidebar-link w-full flex items-center gap-3.5 px-3.5 py-3 rounded-2xl text-sm font-semibold transition-all duration-150 group {{ request()->routeIs('gap-analysis.*') ? 'bg-white/20 text-white shadow-xs font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}"
+                            title="Gap Analysis Pendidikan">
+                            <span class="ml-1.5 size-2 rounded-full {{ request()->routeIs('gap-analysis.*') ? 'bg-secondary' : 'bg-white/40' }} shrink-0"></span>
+                            <span class="sidebar-text truncate">Gap Analysis Pendidikan</span>
+                        </a>
+                    </div>
+                    @endif
 
                     {{-- Data Master Akreditasi --}}
                     @php
