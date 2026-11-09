@@ -110,7 +110,7 @@
     <!-- STATE 1: KOSONG (JIKA BELUM ADA DATA DARI API) -->
     <div id="empty-state" class="w-full bg-white rounded-2xl border border-[#EAEAEA] shadow-xs p-10 mt-6 {{ $hasProjects ? 'hidden' : '' }}">
         <x-table.empty 
-            colspan="8"
+            colspan="6"
             message="Belum ada project akreditasi di server"
             submessage="Klik tombol '+ Project Baru' untuk membuat project akreditasi pertama Anda."
         />
@@ -118,23 +118,23 @@
 
     <!-- STATE 2: ADA DATA (TABEL DARI API MENGGUNAKAN X-TABLE) -->
     <div id="data-state" class="{{ $hasProjects ? '' : 'hidden' }} bg-white rounded-2xl border border-[#EAEAEA] shadow-xs overflow-hidden mt-6">
-        <x-table class="min-w-[1020px]">
+        <x-table class="min-w-[1100px] table-auto">
             <x-slot:header>
-                <x-table.th class="min-w-[220px]">Program Studi / Project</x-table.th>
-                <x-table.th class="text-center w-28">Jenjang</x-table.th>
-                <x-table.th class="text-center w-20">Jenis</x-table.th>
-                <x-table.th class="text-center w-24">Instrumen</x-table.th>
-                <x-table.th class="text-center w-20">Tahun</x-table.th>
-                <x-table.th class="w-32">Kelengkapan</x-table.th>
-                <x-table.th class="text-center min-w-[160px]">Status Project</x-table.th>
-                <x-table.th class="min-w-[260px] text-right">Action</x-table.th>
+                <x-table.th class="min-w-[240px]">Program Studi / Project</x-table.th>
+                <x-table.th class="min-w-[170px] whitespace-nowrap">Jenjang & Jenis</x-table.th>
+                <x-table.th class="min-w-[140px] whitespace-nowrap">Instrumen & Tahun</x-table.th>
+                <x-table.th class="min-w-[120px] whitespace-nowrap">Kelengkapan</x-table.th>
+                <x-table.th class="text-center min-w-[170px] whitespace-nowrap">Status Project</x-table.th>
+                <x-table.th class="text-right min-w-[200px] whitespace-nowrap">Action</x-table.th>
             </x-slot:header>
 
             @foreach($projects as $item)
                 @php
                     $id = $item['id'] ?? null;
                     $namaProject = $item['nama_project'] ?? 'Project Akreditasi';
-                    $versiNomor = $item['versi_instrumen']['nomor_versi'] ?? '2.1';
+                    $rawVersi = (string) ($item['versi_instrumen']['nomor_versi'] ?? ($item['nomor_versi'] ?? '2.1'));
+                    $versiNomor = 'v' . ltrim($rawVersi, 'vV');
+                    $lembagaNama = $item['versi_instrumen']['lembaga']['nama_lembaga'] ?? ($item['lembaga']['nama_lembaga'] ?? 'LAM INFOKOM');
                     $jenjangNama = $item['jenjang']['nama_jenjang'] ?? 'Sarjana Terapan';
                     $jenisNama = $item['jenis_instrumen']['nama_jenis'] ?? 'APS';
                     $tahunSubmit = $item['tahun_target_submit'] ?? '2026';
@@ -147,32 +147,31 @@
                     <x-table.cell>
                         <div class="flex flex-col">
                             <span class="text-primary font-bold text-sm tracking-tight leading-snug">{{ $namaProject }}</span>
-                            <span class="text-gray-400 text-[10px] font-semibold uppercase mt-0.5">LAM INFOKOM · v{{ $versiNomor }}</span>
+                            <span class="text-gray-400 text-[10px] font-semibold uppercase mt-0.5">{{ $lembagaNama }} · {{ $versiNomor }}</span>
                         </div>
                     </x-table.cell>
 
-                    <!-- Jenjang -->
-                    <x-table.cell class="text-center">
-                        <div class="text-center font-medium text-gray-700 text-xs">{{ $jenjangNama }}</div>
-                    </x-table.cell>
-
-                    <!-- Jenis -->
-                    <x-table.cell class="text-center">
-                        <div class="flex items-center justify-center">
-                            <span class="inline-flex px-2 py-0.5 text-[11px] font-semibold text-slate-700 bg-slate-100 rounded-md">
+                    <!-- Jenjang & Jenis (2 Data) -->
+                    <x-table.cell>
+                        <div class="flex flex-col items-start gap-1">
+                            <span class="text-xs font-bold text-gray-900 tracking-tight leading-tight">{{ $jenjangNama }}</span>
+                            <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-medium bg-slate-100 text-slate-700 border border-slate-200/80 leading-snug">
                                 {{ $jenisNama }}
                             </span>
                         </div>
                     </x-table.cell>
 
-                    <!-- Instrumen -->
-                    <x-table.cell class="text-center">
-                        <div class="text-center font-medium text-gray-700 text-xs">v{{ $versiNomor }}</div>
-                    </x-table.cell>
-
-                    <!-- Tahun -->
-                    <x-table.cell class="text-center">
-                        <div class="text-center font-semibold text-gray-700 text-xs">{{ $tahunSubmit }}</div>
+                    <!-- Instrumen & Tahun (2 Data) -->
+                    <x-table.cell>
+                        <div class="flex flex-col items-start gap-1">
+                            <span class="text-xs font-bold text-primary tracking-tight leading-tight">{{ $versiNomor }}</span>
+                            <span class="inline-flex items-center gap-1.5 text-[11px] font-medium text-slate-500">
+                                <svg class="w-3.5 h-3.5 text-slate-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                                <span>Tahun {{ $tahunSubmit }}</span>
+                            </span>
+                        </div>
                     </x-table.cell>
 
                     <!-- Kelengkapan -->
@@ -185,23 +184,28 @@
                         </div>
                     </x-table.cell>
 
-                    <!-- Status Project (Dapat diubah oleh Kaprodi) -->
-                    <x-table.cell class="text-center">
+                    <!-- Status Project (Dapat diubah oleh Kaprodi via Select Dropdown) -->
+                    <x-table.cell class="text-center whitespace-nowrap min-w-[170px]">
                         <div class="flex items-center justify-center">
                             @if ($isKaprodi && $id)
-                                <form action="{{ route('kaprodi.project.update-status', $id) }}" method="POST" class="inline-flex items-center justify-center">
+                                <form action="{{ route('kaprodi.project.update-status', $id) }}" method="POST" class="inline-block m-0">
                                     @csrf
                                     @method('PATCH')
-                                    <input type="hidden" name="status_project" value="{{ $isInProgress ? 'draft' : 'in_progress' }}">
-                                    <button type="submit" 
-                                        title="Klik untuk ubah status ke {{ $isInProgress ? 'Draft' : 'In Progress' }}"
-                                        class="group inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold transition-all cursor-pointer shadow-2xs {{ $isInProgress ? 'bg-amber-100 text-amber-800 hover:bg-amber-200 border border-amber-300' : 'bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-300' }}">
-                                        <span class="w-2 h-2 rounded-full {{ $isInProgress ? 'bg-amber-500 animate-pulse' : 'bg-slate-400' }}"></span>
-                                        <span>{{ $statusLabel }}</span>
-                                        <svg class="w-3 h-3 opacity-50 group-hover:opacity-100 transition-opacity" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                                    <div class="relative inline-flex items-center">
+                                        <span class="absolute left-2.5 top-1/2 -translate-y-1/2 w-2 h-2 rounded-full pointer-events-none {{ $isInProgress ? 'bg-amber-500' : 'bg-slate-400' }}"></span>
+                                        <select 
+                                            name="status_project" 
+                                            onchange="this.form.submit()" 
+                                            class="appearance-none cursor-pointer pl-6 pr-7 py-1 rounded-full text-xs font-bold transition border shadow-2xs focus:outline-none focus:ring-2 focus:ring-primary/20 {{ $isInProgress ? 'bg-amber-50 text-amber-800 border-amber-200 hover:bg-amber-100' : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100' }}"
+                                            title="Pilih status project"
+                                        >
+                                            <option value="draft" {{ ! $isInProgress ? 'selected' : '' }}>Draft</option>
+                                            <option value="in_progress" {{ $isInProgress ? 'selected' : '' }}>In Progress</option>
+                                        </select>
+                                        <svg class="absolute right-2.5 top-1/2 -translate-y-1/2 w-3 h-3 pointer-events-none opacity-60" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
                                             <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
                                         </svg>
-                                    </button>
+                                    </div>
                                 </form>
                             @else
                                 <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold {{ $isInProgress ? 'bg-amber-50 text-amber-700 border border-amber-200' : 'bg-slate-100 text-slate-600 border border-slate-200' }}">
@@ -212,63 +216,66 @@
                         </div>
                     </x-table.cell>
 
-                    <!-- Action -->
-                    <x-table.cell class="text-right whitespace-nowrap">
-                        <div class="inline-flex items-center justify-end gap-1.5 whitespace-nowrap">
-                            @if(Route::has('kaprodi.plotting'))
-                            <a 
-                                href="{{ route('kaprodi.plotting', ['project_id' => $id]) }}" 
-                                class="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors"
-                                title="Plotting Tim"
-                            >
-                                <svg class="w-3.5 h-3.5 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M18 18.72a9.094 9.094 0 003.741-.479 3 3 0 00-4.682-2.72m.94 3.198l.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0112 21c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 016 18.719m12 0a5.971 5.971 0 00-.941-3.197m0 0A5.995 5.995 0 0012 12.75a5.995 5.995 0 00-5.058 2.772m0 0a3 3 0 00-4.681 2.72 8.986 8.986 0 003.74.477m.94-3.197a5.971 5.971 0 00-.94 3.197M15 6.75a3 3 0 11-6 0 3 3 0 016 0zm6 3a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0zm-13.5 0a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0z" />
-                                </svg>
-                                <span>Plotting</span>
-                            </a>
-                            @endif
-
-                            <a 
-                                href="{{ route('kaprodi.project.detail', $id) }}" 
-                                class="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-bold text-white bg-additional hover:bg-[#008f82] rounded-lg shadow-2xs transition-colors"
-                                title="Monitoring Detail"
-                            >
-                                <span>Monitoring</span>
-                                <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
-                                </svg>
-                            </a>
-
-                            <!-- Tombol Edit Project -->
-                            <button 
-                                type="button"
-                                onclick="openEditModal({{ json_encode($item) }})"
-                                class="p-1.5 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-lg transition-colors cursor-pointer"
-                                title="Edit Project"
-                            >
-                                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" />
-                                </svg>
-                            </button>
-
-                            @if($id)
-                                <form 
-                                    action="{{ route('kaprodi.project.destroy', $id) }}" 
-                                    method="POST" 
-                                    onsubmit="return confirm('Apakah Anda yakin ingin menghapus project ini dari server?');"
-                                    class="inline"
+                    <!-- Action (Plotting & Monitoring vertikal) -->
+                    <x-table.cell class="text-right whitespace-nowrap min-w-[200px]">
+                        <div class="flex items-center justify-end gap-2.5">
+                            <!-- Stack Vertikal Tombol Plotting & Monitoring -->
+                            <div class="flex flex-col gap-1.5 items-end shrink-0 min-w-[110px]">
+                                @if(Route::has('kaprodi.plotting'))
+                                <a 
+                                    href="{{ route('kaprodi.plotting', ['project_id' => $id]) }}" 
+                                    class="inline-flex items-center justify-center gap-1.5 w-full px-2.5 py-1 text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 border border-slate-200/80 rounded-lg transition shrink-0 whitespace-nowrap"
+                                    title="Plotting Tim Akreditasi"
                                 >
-                                    @csrf
-                                    @method('DELETE')
-                                    <button 
-                                        type="submit" 
-                                        class="p-1.5 text-rose-500 hover:text-rose-700 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer" 
-                                        title="Hapus Project"
+                                    <svg class="w-3.5 h-3.5 text-slate-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M18 18.72a9.094 9.094 0 003.741-.479 3 3 0 00-4.682-2.72m.94 3.198l.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0112 21c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 016 18.719m12 0a5.971 5.971 0 00-.941-3.197m0 0A5.995 5.995 0 0012 12.75a5.995 5.995 0 00-5.058 2.772m0 0a3 3 0 00-4.681 2.72 8.986 8.986 0 003.74.477m.94-3.197a5.971 5.971 0 00-.94 3.197M15 6.75a3 3 0 11-6 0 3 3 0 016 0zm6 3a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0zm-13.5 0a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0z" />
+                                    </svg>
+                                    <span>Plotting</span>
+                                </a>
+                                @endif
+
+                                <a 
+                                    href="{{ route('kaprodi.project.detail', $id) }}" 
+                                    class="inline-flex items-center justify-center gap-1.5 w-full px-2.5 py-1 text-xs font-bold text-white bg-primary hover:bg-additional rounded-lg shadow-xs transition shrink-0 whitespace-nowrap"
+                                    title="Monitoring Detail"
+                                >
+                                    <span>Monitoring</span>
+                                    <svg class="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+                                    </svg>
+                                </a>
+                            </div>
+
+                            <!-- Tombol Edit & Delete -->
+                            <div class="flex items-center gap-1 shrink-0">
+                                <button 
+                                    type="button"
+                                    onclick="openEditModal({{ json_encode($item) }})"
+                                    class="p-1.5 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-lg transition-colors cursor-pointer shrink-0"
+                                    title="Edit Project"
+                                >
+                                    <x-icon.edit class="w-4 h-4 shrink-0" />
+                                </button>
+
+                                @if($id)
+                                    <form 
+                                        action="{{ route('kaprodi.project.destroy', $id) }}" 
+                                        method="POST" 
+                                        onsubmit="return confirm('Apakah Anda yakin ingin menghapus project ini dari server?');"
+                                        class="inline shrink-0 m-0"
                                     >
-                                        <x-icon.delete class="w-4 h-4" />
-                                    </button>
-                                </form>
-                            @endif
+                                        @csrf
+                                        @method('DELETE')
+                                        <button 
+                                            type="submit" 
+                                            class="p-1.5 text-rose-500 hover:text-rose-700 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer shrink-0" 
+                                            title="Hapus Project"
+                                        >
+                                            <x-icon.delete class="w-4 h-4 shrink-0" />
+                                        </button>
+                                    </form>
+                                @endif
+                            </div>
                         </div>
                     </x-table.cell>
                 </x-table.row>

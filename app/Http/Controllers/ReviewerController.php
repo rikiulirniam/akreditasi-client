@@ -89,19 +89,33 @@ class ReviewerController extends Controller
             array_filter($indicators, fn (mixed $indicator): bool => is_array($indicator) && isset($indicator['id'])),
         ), true);
         $needsApiDetails = collect($indicators)->contains(
-            fn (mixed $indicator): bool => is_array($indicator) && ($indicator['_needs_api_detail'] ?? false),
+            fn (mixed $indicator): bool => is_array($indicator) && (
+                ($indicator['_needs_api_detail'] ?? false)
+                || empty($indicator['title'])
+                || ($indicator['title'] ?? '') === 'Indikator penilaian'
+                || empty($indicator['rubriks'])
+            ),
         );
 
         if ($needsApiDetails) {
-            $apiIndicators = $this->loadIndicatorsFromApi($projectId);
-            $indicators = array_values(array_filter(
-                $apiIndicators,
-                fn (array $indicator): bool => isset($assignedIndicatorIds[(string) ($indicator['id'] ?? '')]),
-            ));
+            $apiIndicators = collect($this->loadIndicatorsFromApi($projectId))
+                ->keyBy(fn ($item) => (string) ($item['id'] ?? ''))
+                ->all();
 
-            if ($indicators === []) {
-                $detailError = 'Detail indikator yang ditugaskan tidak ditemukan pada master indikator.';
+            foreach ($indicators as &$ind) {
+                $idKey = (string) ($ind['id'] ?? '');
+                if (isset($apiIndicators[$idKey])) {
+                    $apiInd = $apiIndicators[$idKey];
+                    $ind = array_merge($apiInd, array_filter($ind, function ($val) {
+                        return $val !== null
+                            && $val !== ''
+                            && $val !== 'Indikator'
+                            && $val !== 'Indikator penilaian'
+                            && $val !== 'Parameter penilaian belum tersedia.';
+                    }));
+                }
             }
+            unset($ind);
 
             $project['indicators'] = $indicators;
         }
@@ -337,13 +351,25 @@ class ReviewerController extends Controller
             $rubriks = $rubriksByIndikator[$ind['id']] ?? [];
             usort($rubriks, fn (array $a, array $b): int => ($b['skor'] ?? 0) <=> ($a['skor'] ?? 0));
 
+            $code = $ind['kode_indikator'] ?? ('IND-'.$ind['id']);
+            $title = $ind['deskripsi_indikator']
+                ?? $ind['nama_indikator']
+                ?? $ind['deskripsi']
+                ?? $this->indicatorTitleFromCode($code)
+                ?? 'Indikator Penilaian';
+
+            $parameter = $ind['parameter_penilaian']
+                ?? $ind['deskripsi_indikator']
+                ?? $this->indicatorParameterFromCode($code)
+                ?? 'Parameter penilaian standar.';
+
             $indicators[] = [
                 'id' => (string) $ind['id'],
                 'criterion' => $criterion,
                 'criterion_title' => $kriteriaNama ?? $criterion,
-                'code' => $ind['kode_indikator'] ?? ('IND-'.$ind['id']),
-                'title' => $ind['deskripsi_indikator'] ?? $ind['nama_indikator'] ?? 'Indikator Penilaian',
-                'parameter' => $ind['parameter_penilaian'] ?? 'Parameter penilaian standar.',
+                'code' => $code,
+                'title' => $title,
+                'parameter' => $parameter,
                 'narrative' => 'Program studi telah menyusun instrumen dan dokumentasi pelaksanaan kegiatan penjaminan mutu sesuai standar kriteria yang ditetapkan.',
                 'evidence' => [
                     ['type' => 'Dokumen kebijakan', 'name' => 'Dokumen SPMI & Regulasi Terkait', 'date' => date('d M Y'), 'status' => 'Disetujui'],
@@ -593,8 +619,9 @@ class ReviewerController extends Controller
 
         foreach ($assignments as $assignment) {
             $indicator = $assignment['indikator'] ?? $assignment['indicator'] ?? null;
-            if (! is_array($indicator)) {
-                $indicator = ['_needs_api_detail' => true];
+            $hasDetail = is_array($indicator) && (! empty($indicator['nama_indikator']) || ! empty($indicator['deskripsi_indikator']));
+            if (! $hasDetail) {
+                $indicator = is_array($indicator) ? array_merge($indicator, ['_needs_api_detail' => true]) : ['_needs_api_detail' => true];
             }
 
             $indicator['id'] = $indicator['id'] ?? $assignment['id_indikator'] ?? null;
@@ -667,9 +694,20 @@ class ReviewerController extends Controller
         $criterion = is_array($subcriterion) ? ($subcriterion['kriteria'] ?? $subcriterion['criterion'] ?? null) : null;
         $evidence = $indicator['evidence'] ?? $indicator['bukti_pendukung'] ?? [];
 
+        $code = (string) ($indicator['kode_indikator'] ?? $indicator['code'] ?? $indicator['kode'] ?? '');
+        $titleFromCode = $this->indicatorTitleFromCode($code);
+        $paramFromCode = $this->indicatorParameterFromCode($code);
+
         $indicator['id'] = $indicator['id'] ?? $indicator['id_indikator'] ?? null;
-        $indicator['code'] = $indicator['kode_indikator'] ?? $indicator['code'] ?? $indicator['kode'] ?? 'Indikator';
-        $indicator['title'] = $indicator['nama_indikator'] ?? $indicator['title'] ?? $indicator['nama'] ?? 'Indikator penilaian';
+        $indicator['code'] = $code !== '' ? $code : 'Indikator';
+        $indicator['title'] = $indicator['deskripsi_indikator']
+            ?? $indicator['nama_indikator']
+            ?? $indicator['title']
+            ?? $indicator['nama']
+            ?? $indicator['deskripsi']
+            ?? ($indicator['subkriteria']['nama_subkriteria'] ?? null)
+            ?? $titleFromCode
+            ?? 'Indikator penilaian';
         $indicator['criterion'] = $indicator['criterion']
             ?? (is_array($criterion) ? ($criterion['nama_kriteria'] ?? $criterion['nama'] ?? $criterion['name'] ?? null) : null)
             ?? $indicator['nama_kriteria']
@@ -680,7 +718,9 @@ class ReviewerController extends Controller
             ?? $indicator['criterion'];
         $indicator['parameter'] = $indicator['parameter_penilaian']
             ?? $indicator['parameter']
+            ?? $indicator['deskripsi_indikator']
             ?? $indicator['deskripsi']
+            ?? $paramFromCode
             ?? 'Parameter penilaian belum tersedia.';
         $indicator['narrative'] = $indicator['narasi_prodi'] ?? $indicator['narrative'] ?? null;
         $indicator['evidence'] = is_array($evidence)
@@ -695,6 +735,64 @@ class ReviewerController extends Controller
             : [];
 
         return $indicator;
+    }
+
+    /**
+     * Fallback judul/nama indikator akreditasi berdasarkan kode indikator LAM INFOKOM / BAN-PT.
+     */
+    protected function indicatorTitleFromCode(string $code): ?string
+    {
+        $clean = strtoupper(trim(str_replace([' ', '_'], '', $code)));
+
+        $titles = [
+            'IND-A.1.1' => 'Kesesuaian Visi, Misi, Tujuan, dan Strategi (VMTS)',
+            'A.1.1' => 'Kesesuaian Visi, Misi, Tujuan, dan Strategi (VMTS)',
+            'IND-B.1.1' => 'Tata Pamong, Tata Kelola, dan Kerjasama',
+            'B.1.1' => 'Tata Pamong, Tata Kelola, dan Kerjasama',
+            'IND-B.2.1' => 'Pelaksanaan Sistem Penjaminan Mutu Internal (SPMI)',
+            'B.2.1' => 'Pelaksanaan Sistem Penjaminan Mutu Internal (SPMI)',
+            'IND-C.1.1.1' => 'Kepemimpinan dan Tata Kelola Program Studi',
+            'C.1.1.1' => 'Kepemimpinan dan Tata Kelola Program Studi',
+            'IND-C.1.2.1' => 'Kerjasama dan Kemitraan Tridharma Perguruan Tinggi',
+            'C.1.2.1' => 'Kerjasama dan Kemitraan Tridharma Perguruan Tinggi',
+            'IND-C.2.1.1' => 'Sistem Rekrutmen dan Layanan Kemahasiswaan',
+            'C.2.1.1' => 'Sistem Rekrutmen dan Layanan Kemahasiswaan',
+            'IND-C.2.2.1' => 'Profil dan Daya Saing Mahasiswa Baru',
+            'C.2.2.1' => 'Profil dan Daya Saing Mahasiswa Baru',
+            'IND-C.2.3.1' => 'Keterlibatan, Prestasi, dan Kesejahteraan Mahasiswa',
+            'C.2.3.1' => 'Keterlibatan, Prestasi, dan Kesejahteraan Mahasiswa',
+        ];
+
+        return $titles[$clean] ?? null;
+    }
+
+    /**
+     * Fallback parameter penilaian berdasarkan kode indikator.
+     */
+    protected function indicatorParameterFromCode(string $code): ?string
+    {
+        $clean = strtoupper(trim(str_replace([' ', '_'], '', $code)));
+
+        $params = [
+            'IND-A.1.1' => 'Kelengkapan dokumen renstra, kejelasan mekanisme perumusan VMTS, keterlibatan pemangku kepentingan (stakeholder), dan tingkat pemahaman civitas akademika.',
+            'A.1.1' => 'Kelengkapan dokumen renstra, kejelasan mekanisme perumusan VMTS, keterlibatan pemangku kepentingan (stakeholder), dan tingkat pemahaman civitas akademika.',
+            'IND-B.1.1' => 'Struktur organisasi UPPS/PS, kelengkapan SOP tata pamong, bukti pelaksanaan prinsip akuntabilitas dan transparansi kepemimpinan.',
+            'B.1.1' => 'Struktur organisasi UPPS/PS, kelengkapan SOP tata pamong, bukti pelaksanaan prinsip akuntabilitas dan transparansi kepemimpinan.',
+            'IND-B.2.1' => 'Ketersediaan dokumen SPMI (kebijakan, manual, standar, formulir), laporan pelaksanaan AMI, serta bukti RTM dan siklus PPEPP.',
+            'B.2.1' => 'Ketersediaan dokumen SPMI (kebijakan, manual, standar, formulir), laporan pelaksanaan AMI, serta bukti RTM dan siklus PPEPP.',
+            'IND-C.1.1.1' => 'Efektivitas kepemimpinan operasional, organisasional, dan publik dalam mengarahkan pencapaian visi keilmuan program studi.',
+            'C.1.1.1' => 'Efektivitas kepemimpinan operasional, organisasional, dan publik dalam mengarahkan pencapaian visi keilmuan program studi.',
+            'IND-C.1.2.1' => 'Jumlah, relevansi, dan kebermanfaatan MoU/MoA dengan mitra industri atau perguruan tinggi lain dalam mendukung tridharma.',
+            'C.1.2.1' => 'Jumlah, relevansi, dan kebermanfaatan MoU/MoA dengan mitra industri atau perguruan tinggi lain dalam mendukung tridharma.',
+            'IND-C.2.1.1' => 'Kualitas sistem seleksi mahasiswa baru, ketercapaian rasio pendaftar, dan ketersediaan layanan bimbingan karir serta penalaran.',
+            'C.2.1.1' => 'Kualitas sistem seleksi mahasiswa baru, ketercapaian rasio pendaftar, dan ketersediaan layanan bimbingan karir serta penalaran.',
+            'IND-C.2.2.1' => 'Rata-rata IPK mahasiswa, persentase kelulusan tepat waktu, dan tingkat retensi keberhasilan studi mahasiswa.',
+            'C.2.2.1' => 'Rata-rata IPK mahasiswa, persentase kelulusan tepat waktu, dan tingkat retensi keberhasilan studi mahasiswa.',
+            'IND-C.2.3.1' => 'Capaian prestasi akademik dan non-akademik mahasiswa di tingkat wilayah, nasional, maupun internasional dalam 3 tahun terakhir.',
+            'C.2.3.1' => 'Capaian prestasi akademik dan non-akademik mahasiswa di tingkat wilayah, nasional, maupun internasional dalam 3 tahun terakhir.',
+        ];
+
+        return $params[$clean] ?? null;
     }
 
     protected function nestedName(mixed $value): ?string

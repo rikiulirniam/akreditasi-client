@@ -2,8 +2,13 @@
     'headers' => [],
 ])
 
+@php
+    $hasCustomLayout = str_contains($attributes->get('class', ''), 'table-auto') || str_contains($attributes->get('class', ''), 'table-fixed');
+    $defaultLayout = $hasCustomLayout ? '' : 'table-fixed ';
+@endphp
+
 <div class="w-full overflow-x-auto">
-    <table {{ $attributes->merge(['class' => 'w-full text-left border-collapse table-fixed min-w-[640px]']) }}>
+    <table {{ $attributes->merge(['class' => 'w-full text-left border-collapse min-w-[640px] ' . $defaultLayout]) }}>
         <thead>
             <tr class="border-b border-gray-200 text-gray-900 font-semibold text-sm">
                 @if(isset($header))

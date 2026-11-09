@@ -102,6 +102,68 @@ class AkreditasiIntegrationTest extends TestCase
             ->assertSee('v2.1');
     }
 
+    public function test_superadmin_versi_instrumen_and_instrumen_hierarchy_displays_live_data(): void
+    {
+        Http::fake([
+            'https://akreditasi.fayra.my.id/api/v1/master/lembaga-akreditasi*' => Http::response([
+                'success' => true,
+                'data' => [
+                    'id' => 1,
+                    'nama_lembaga' => 'LAM-INFOKOM',
+                    'keterangan' => 'Lembaga Akreditasi Mandiri Informatika',
+                    'versi_instrumen' => [
+                        ['id' => 1, 'nomor_versi' => '2.1', 'status_aktif' => true, 'keterangan' => 'Standar 2026'],
+                    ],
+                ],
+            ]),
+            'https://akreditasi.fayra.my.id/api/v1/master/versi-instrumen*' => Http::response([
+                'success' => true,
+                'data' => [
+                    ['id' => 1, 'id_lembaga' => 1, 'nomor_versi' => '2.1', 'status_aktif' => true],
+                ],
+            ]),
+            'https://akreditasi.fayra.my.id/api/v1/master/instrumen*' => Http::response([
+                'success' => true,
+                'data' => [
+                    [
+                        'id' => 'INS-001',
+                        'id_versi_instrumen' => 1,
+                        'jenis_instrumen' => ['nama_jenis' => 'Unggul'],
+                        'jenjang' => ['nama_jenjang' => 'Sarjana'],
+                        'versi_instrumen' => [
+                            'id' => 1,
+                            'nomor_versi' => '2.1',
+                            'lembaga' => ['id' => 1, 'nama_lembaga' => 'LAM-INFOKOM'],
+                        ],
+                    ],
+                ],
+            ]),
+        ]);
+
+        // Level 2: Versi Instrumen
+        $responseVersi = $this->withSession([
+            'access_token' => 'admin-token',
+            'user' => ['nama' => 'Superadmin', 'role' => 'SUPERADMIN'],
+        ])->get(route('akreditasi.superadmin.versi_instrumen', 1));
+
+        $responseVersi->assertOk()
+            ->assertSee('LAM-INFOKOM')
+            ->assertSee('v2.1')
+            ->assertSee('Daftar Versi Instrumen');
+
+        // Level 3: Instrumen untuk versi tertentu
+        $responseInstrumen = $this->withSession([
+            'access_token' => 'admin-token',
+            'user' => ['nama' => 'Superadmin', 'role' => 'SUPERADMIN'],
+        ])->get(route('akreditasi.superadmin.instrumen', ['lembagaId' => 1, 'versiId' => 1]));
+
+        $responseInstrumen->assertOk()
+            ->assertSee('LAM-INFOKOM')
+            ->assertSee('v2.1')
+            ->assertSee('Daftar Instrumen')
+            ->assertSee('Unggul');
+    }
+
     public function test_superadmin_kriteria_displays_live_data(): void
     {
         Http::fake([

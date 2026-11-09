@@ -7,13 +7,14 @@
     $isNo = in_array(strtolower($slotText), ['no', 'no.', '#']);
     $isAction = in_array(strtolower($slotText), ['action', 'aksi']);
 
-    // Remove restrictive fixed column widths like w-36, w-48, w-56, w-64, w-72 so columns distribute evenly
-    $cleanClass = preg_replace('/\b(?:w-(?:36|40|44|48|52|56|60|64|72|80|96)|max-w-\S+)\b/', '', $class);
+    // Remove restrictive fixed column widths like w-36, w-48, w-56, w-64, w-72 so general columns distribute evenly,
+    // but preserve widths for action columns if explicitly specified.
+    $cleanClass = $isAction ? $class : preg_replace('/\b(?:w-(?:36|40|44|48|52|56|60|64|72|80|96)|max-w-\S+)\b/', '', $class);
 
     $autoWidth = '';
-    if ($isNo && !str_contains($class, 'w-')) {
+    if ($isNo && !str_contains($class, 'w-') && !str_contains($class, 'min-w-')) {
         $autoWidth = 'w-16 text-left ';
-    } elseif ($isAction && !str_contains($class, 'w-')) {
+    } elseif ($isAction && !str_contains($class, 'w-') && !str_contains($class, 'min-w-')) {
         $autoWidth = 'w-28 text-right ';
     }
 @endphp

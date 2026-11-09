@@ -26,7 +26,11 @@
             </li>
             <li class="inline-flex items-center">
                 <span class="mx-1 text-gray-400">/</span>
-                <a href="{{ route('akreditasi.superadmin.instrumen', $lembagaId) }}" class="hover:text-primary transition font-medium">{{ $lembaga['nama_lembaga'] ?? 'Lembaga' }}</a>
+                <a href="{{ route('akreditasi.superadmin.versi_instrumen', $lembagaId) }}" class="hover:text-primary transition font-medium">{{ $lembaga['nama_lembaga'] ?? 'Lembaga' }}</a>
+            </li>
+            <li class="inline-flex items-center">
+                <span class="mx-1 text-gray-400">/</span>
+                <a href="{{ route('akreditasi.superadmin.instrumen', $lembagaId) }}" class="hover:text-primary transition font-medium">Instrumen</a>
             </li>
             <li class="inline-flex items-center" aria-current="page">
                 <span class="mx-1 text-gray-400">/</span>

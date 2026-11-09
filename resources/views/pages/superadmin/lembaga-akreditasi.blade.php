@@ -56,8 +56,11 @@
     {{-- Daftar Card Lembaga --}}
     <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         @forelse ($lembagas ?? [] as $lembaga)
+            @php
+                $versiCount = count($lembaga['versi_instrumen'] ?? []);
+            @endphp
             <div 
-                onclick="if (!event.target.closest('button, form, a')) { window.location.href = '{{ route('akreditasi.superadmin.instrumen', $lembaga['id']) }}'; }"
+                onclick="if (!event.target.closest('button, form, a')) { window.location.href = '{{ route('akreditasi.superadmin.versi_instrumen', $lembaga['id']) }}'; }"
                 class="group flex min-h-[175px] flex-col justify-between rounded-2xl border border-[#EAEAEA] bg-white p-6 shadow-xs transition-all duration-200 hover:border-primary/50 hover:shadow-md hover:-translate-y-0.5 cursor-pointer relative"
             >
                 <div>
@@ -71,6 +74,9 @@
                                     Lembaga
                                 </span>
                                 <span class="inline-flex items-center px-2 py-0.5 mt-1 rounded-md text-[10px] font-bold uppercase tracking-wider bg-emerald-50 text-emerald-700 border border-emerald-200/60">
+                                    {{ $versiCount }} Versi
+                                </span>
+                                <span class="inline-flex items-center px-2 py-0.5 mt-1 rounded-md text-[10px] font-bold uppercase tracking-wider bg-sky-50 text-sky-700 border border-sky-200/60">
                                     {{ $lembaga['instrumen_count'] ?? 0 }} Instrumen
                                 </span>
                             </div>
@@ -118,7 +124,7 @@
                 
                 <div class="mt-5 pt-3.5 border-t border-slate-100 flex items-center justify-between">
                     <span class="text-xs font-bold text-gray-400 group-hover:text-primary transition-colors flex items-center gap-1.5">
-                        Buka {{ $lembaga['instrumen_count'] ?? 0 }} Instrumen
+                        Buka {{ $versiCount }} Versi Instrumen
                     </span>
                     <span 
                         class="flex h-9 w-9 items-center justify-center rounded-full bg-slate-100 text-slate-600 group-hover:bg-primary group-hover:text-white transition-all duration-200 group-hover:translate-x-1 shadow-xs"
