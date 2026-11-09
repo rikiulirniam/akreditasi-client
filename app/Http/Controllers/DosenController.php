@@ -213,25 +213,13 @@ class DosenController extends Controller
         $rawSertifikasi = $dosenData['sertifikasi'] ?? null;
         $rawNama = $dosenData['nama_dosen'] ?? ($dosenData['nama'] ?? ($dosenData['name'] ?? null));
 
-        $valJurusan = ! empty($rawJurusan) ? $this->extractString($rawJurusan, 'Teknik Elektro') : 'Teknik Elektro';
-        if ($valJurusan === '-' || trim($valJurusan) === '') {
-            $valJurusan = 'Teknik Elektro';
-        }
-
-        $valProdi = ! empty($rawProdi) ? $this->extractString($rawProdi, 'Teknologi Rekayasa Komputer') : 'Teknologi Rekayasa Komputer';
-        if ($valProdi === '-' || trim($valProdi) === '') {
-            $valProdi = 'Teknologi Rekayasa Komputer';
-        }
-
-        $dosenId = is_scalar($dosenData['id_dosen'] ?? ($dosenData['id'] ?? null)) ? ($dosenData['id_dosen'] ?? $dosenData['id']) : $id;
-
         $dosen = [
-            'id' => $dosenId,
+            'id' => is_scalar($dosenData['id_dosen'] ?? ($dosenData['id'] ?? null)) ? ($dosenData['id_dosen'] ?? $dosenData['id']) : $id,
             'nama_dosen' => $this->extractString($rawNama, '-'),
             'nidn' => $this->extractString($dosenData['nidn'] ?? null, '-'),
             'jabatan' => $this->extractString($rawJabatan, '-'),
-            'jurusan' => $valJurusan,
-            'prodi' => $valProdi,
+            'jurusan' => ! empty($rawJurusan) ? $this->extractString($rawJurusan, '-') : '-',
+            'prodi' => $this->extractString($rawProdi, '-'),
             'email' => $this->extractString($dosenData['email'] ?? null, '-'),
             'status_dosen' => $this->extractString($dosenData['status_dosen'] ?? ($dosenData['status'] ?? null), '-'),
             'sertifikasi' => is_string($rawSertifikasi) && trim($rawSertifikasi) !== '' ? trim($rawSertifikasi) : (is_array($rawSertifikasi) ? $this->extractString($rawSertifikasi, '') : null),
@@ -274,23 +262,26 @@ class DosenController extends Controller
             ];
         }, $rawPkm);
 
-        // Riwayat Pendidikan (Histori S1 -> S2 -> S3)
-        $dosenEducationRecords = $this->tridharmaService->getDosenPendidikanList($dosenId, $dosenData);
+        // Riwayat Pendidikan — API returns a single object under key: pendidikan
+        $rawPendidikan = $dosenData['pendidikan'] ?? null;
+        $pendidikanItems = [];
+        if (is_array($rawPendidikan) && ! empty($rawPendidikan)) {
+            $pendidikanItems = array_is_list($rawPendidikan) ? $rawPendidikan : [$rawPendidikan];
+        }
 
         $riwayatPendidikan = array_map(function ($item) {
-            $jenjang = $this->extractString($item['jenjang'] ?? ($item['tingkat'] ?? null), '-');
-            $rawGelar = $this->extractString($item['gelar'] ?? null, '');
-            $gelar = ($rawGelar !== '' && $rawGelar !== '-') ? $rawGelar : '';
+            if (! is_array($item)) {
+                return ['gelar' => '-', 'jenjang' => '-', 'instansi' => (string) $item, 'jurusan' => '-', 'tahun_lulus' => '-'];
+            }
 
             return [
-                'id' => $item['id'] ?? ($item['id_pendidikan'] ?? null),
-                'gelar' => $gelar,
-                'jenjang' => $jenjang,
+                'gelar' => $this->extractString($item['gelar'] ?? null, '-'),
+                'jenjang' => $this->extractString($item['jenjang'] ?? ($item['tingkat'] ?? null), '-'),
                 'instansi' => $this->extractString($item['instansi'] ?? ($item['universitas'] ?? ($item['kampus'] ?? null)), '-'),
                 'jurusan' => $this->extractString($item['jurusan'] ?? ($item['program_studi'] ?? ($item['prodi'] ?? null)), '-'),
                 'tahun_lulus' => $this->extractString($item['tahun_lulus'] ?? ($item['tahun'] ?? null), '-'),
             ];
-        }, $dosenEducationRecords);
+        }, $pendidikanItems);
 
         // Luaran — combines hki, luaran, buku from API
         $hkiItems = is_array($dosenData['hki'] ?? null) ? $dosenData['hki'] : [];
@@ -515,35 +506,5 @@ class DosenController extends Controller
             'template_data_dosen.xlsx',
             ['Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'],
         );
-    }
-
-    public function storePendidikan(Request $request, int|string $dosenId): RedirectResponse
-    {
-        $validated = $request->validate([
-            'jenjang' => ['required', 'string', 'max:50'],
-            'universitas' => ['required', 'string', 'max:255'],
-            'program_studi' => ['required', 'string', 'max:255'],
-            'tahun_lulus' => ['nullable', 'string', 'max:10'],
-        ], [
-            'jenjang.required' => 'Jenjang pendidikan wajib dipilih.',
-            'universitas.required' => 'Nama institusi/universitas wajib diisi.',
-            'program_studi.required' => 'Program studi wajib diisi.',
-        ]);
-
-        $this->tridharmaService->storeDosenPendidikan((int) $dosenId, [
-            'jenjang' => $validated['jenjang'],
-            'universitas' => $validated['universitas'],
-            'institusi' => $validated['universitas'],
-            'program_studi' => $validated['program_studi'],
-            'jurusan' => $validated['program_studi'],
-            'tahun_lulus' => $validated['tahun_lulus'] ?? null,
-            'gelar' => '',
-        ]);
-
-        return redirect()->route('dosen.show', $dosenId)->with('toast', [
-            'type' => 'success',
-            'title' => 'Berhasil',
-            'message' => 'Riwayat pendidikan berhasil ditambahkan.',
-        ]);
     }
 }
