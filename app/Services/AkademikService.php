@@ -638,6 +638,22 @@ class AkademikService
         return $this->delete("mahasiswa/{$id}", [], $token);
     }
 
+    /*
+    |==========================================================================
+    | MODUL: KEMAHASISWAAN - DATA LULUSAN (/api/lulusan/*)
+    |==========================================================================
+    */
+
+    public function getLulusanList(array $query = [], ?string $token = null): Response
+    {
+        return $this->get('lulusan', $query, $token);
+    }
+
+    public function getLulusanRingkasan(array $query = [], ?string $token = null): Response
+    {
+        return $this->get('lulusan/ringkasan', $query, $token);
+    }
+
     public function getPrestasiMahasiswaList(array $query = [], ?string $token = null): Response
     {
         return $this->get('prestasi-mahasiswa', $query, $token);
@@ -1111,5 +1127,62 @@ class AkademikService
     public function deleteStatusMahasiswa(int|string $id, ?string $token = null): Response
     {
         return $this->delete("status-mahasiswa/{$id}", [], $token);
+    }
+
+    /*
+    |==========================================================================
+    | MODUL: RPS MATA KULIAH (/api/rps/* & /api/mata-kuliah/{id}/rps)
+    |==========================================================================
+    */
+
+    public function getRpsList(array $query = [], ?string $token = null): Response
+    {
+        return $this->get('rps', $query, $token);
+    }
+
+    public function getRpsById(int|string $id, ?string $token = null): Response
+    {
+        return $this->get("rps/{$id}", [], $token);
+    }
+
+    public function getRpsByMataKuliahId(int|string $mataKuliahId, array $query = [], ?string $token = null): Response
+    {
+        return $this->get("mata-kuliah/{$mataKuliahId}/rps", $query, $token);
+    }
+
+    public function createRps(array $data, ?string $token = null): Response
+    {
+        return $this->post('rps', $data, $token);
+    }
+
+    public function createMataKuliahRps(int|string $mataKuliahId, array $data, ?string $token = null): Response
+    {
+        return $this->post("mata-kuliah/{$mataKuliahId}/rps", $data, $token);
+    }
+
+    public function updateRps(int|string $id, array $data, ?string $token = null): Response
+    {
+        return $this->put("rps/{$id}", $data, $token);
+    }
+
+    public function deleteRps(int|string $id, ?string $token = null): Response
+    {
+        return $this->delete("rps/{$id}", [], $token);
+    }
+
+    /*
+    |==========================================================================
+    | MODUL: ASSESSMENT CAPAIAN CPL & GAP ANALYSIS (/api/assessment/*)
+    |==========================================================================
+    */
+
+    public function getAssessmentCpl(array $query = [], ?string $token = null): Response
+    {
+        return $this->get('assessment/cpl', $query, $token);
+    }
+
+    public function getAssessmentPendidikanGap(array $query = [], ?string $token = null): Response
+    {
+        return $this->get('assessment/pendidikan/gap', $query, $token);
     }
 }

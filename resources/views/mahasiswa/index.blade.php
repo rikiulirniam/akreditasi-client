@@ -3,120 +3,133 @@
 @section('title', 'Data Mahasiswa')
 
 @section('content')
-<div class="space-y-6">
-    <div class="space-y-4">
-        <!-- Top Action Bar: Search Input, Filters, & Tambah Mahasiswa Button -->
-        <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
-            <div class="flex flex-wrap items-center gap-3 flex-1">
-                <!-- Search Input -->
-                <div class="relative flex-1 min-w-[200px] max-w-xs">
-                    <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-gray-400">
-                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
-                        </svg>
-                    </span>
-                    <x-input 
-                        type="text" 
-                        id="searchMahasiswaInput"
-                        placeholder="Cari nama, NIM, tahun..." 
-                        value="{{ $search ?? '' }}"
-                        class="pl-10 text-xs"
-                    />
-                </div>
-
-                <!-- Filter: Status -->
-                <div class="relative w-36 sm:w-40">
-                    <select 
-                        id="filterStatusSelect"
-                        class="w-full appearance-none px-3.5 py-2.5 pr-9 rounded-[8px] bg-white-form border border-white-bone text-gray-900 font-medium text-xs focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary cursor-pointer transition"
-                    >
-                        <option value="">Semua Status</option>
-                        @foreach($statusOptions as $st)
-                            <option value="{{ $st }}" {{ ($selectedStatus ?? '') === $st ? 'selected' : '' }}>
-                                {{ $st }}
-                            </option>
-                        @endforeach
-                    </select>
-                    <span class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-primary">
-                        <svg class="w-4 h-4 stroke-[2.5]" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="m6 9 6 6 6-6" />
-                        </svg>
-                    </span>
-                </div>
-
-                <!-- Filter: Tahun Masuk -->
-                <div class="relative w-40 sm:w-44">
-                    <select 
-                        id="filterTahunSelect"
-                        class="w-full appearance-none px-3.5 py-2.5 pr-9 rounded-[8px] bg-white-form border border-white-bone text-gray-900 font-medium text-xs focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary cursor-pointer transition"
-                    >
-                        <option value="">Semua Tahun Masuk</option>
-                        @foreach($tahunOptions as $thn)
-                            <option value="{{ $thn }}" {{ (string)($selectedTahun ?? '') === (string)$thn ? 'selected' : '' }}>
-                                {{ $thn }}
-                            </option>
-                        @endforeach
-                    </select>
-                    <span class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-primary">
-                        <svg class="w-4 h-4 stroke-[2.5]" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="m6 9 6 6 6-6" />
-                        </svg>
-                    </span>
-                </div>
-
-                <!-- Filter: Jalur Masuk (Jenis Pendaftaran) -->
-                @if(!empty($jenisPendaftaranOptions))
-                <div class="relative w-36 sm:w-40">
-                    <select 
-                        id="filterJenisSelect"
-                        class="w-full appearance-none px-3.5 py-2.5 pr-9 rounded-[8px] bg-white-form border border-white-bone text-gray-900 font-medium text-xs focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary cursor-pointer transition"
-                    >
-                        <option value="">Semua Jalur</option>
-                        @foreach($jenisPendaftaranOptions as $jp)
-                            <option value="{{ $jp }}" {{ ($selectedJenis ?? '') === $jp ? 'selected' : '' }}>
-                                {{ $jp }}
-                            </option>
-                        @endforeach
-                    </select>
-                    <span class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-primary">
-                        <svg class="w-4 h-4 stroke-[2.5]" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="m6 9 6 6 6-6" />
-                        </svg>
-                    </span>
-                </div>
-                @endif
-
-                <!-- Reset Filter Button -->
-                @php
-                    $hasActiveFilter = !empty($search) || !empty($selectedStatus) || !empty($selectedTahun) || !empty($selectedJenis);
-                @endphp
-                <button 
-                    type="button" 
-                    id="resetFilterBtn"
-                    class="{{ $hasActiveFilter ? 'inline-flex' : 'hidden' }} items-center gap-1.5 px-3 py-2.5 rounded-[8px] bg-white-form hover:bg-gray-200 text-gray-600 hover:text-gray-900 text-xs font-semibold border border-white-bone transition cursor-pointer"
-                    title="Reset Semua Filter"
-                >
-                    <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                    Reset
-                </button>
-            </div>
-
-            <!-- Tambah Mahasiswa Button -->
-            <div class="shrink-0">
-                <button 
-                    type="button" 
-                    id="openCreateMahasiswaModalBtn"
-                    class="inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-primary text-white text-sm font-bold shadow-sm hover:bg-additional transition cursor-pointer whitespace-nowrap"
-                >
-                    <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-                    </svg>
-                    Tambah Mahasiswa
-                </button>
-            </div>
+<div class="space-y-4">
+    <!-- Top Action Bar: Search Input, Filters, & Tambah Mahasiswa Button -->
+    <div class="flex items-center gap-1.5 sm:gap-2 flex-nowrap overflow-x-auto pb-1 w-full">
+        <!-- Search Input -->
+        <div class="relative w-36 sm:w-40 md:w-44 shrink-0">
+            <span class="absolute inset-y-0 left-0 flex items-center pl-2.5 pointer-events-none text-gray-400">
+                <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
+                </svg>
+            </span>
+            <input 
+                type="text" 
+                id="searchMahasiswaInput"
+                placeholder="Cari nama, NIM, tahun..." 
+                value="{{ $search ?? '' }}"
+                class="w-full h-9 pl-7 pr-2.5 rounded-[8px] bg-white-form border border-white-bone text-gray-900 placeholder:text-gray-400 font-medium text-xs focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition"
+            />
         </div>
+
+        <!-- Filter: Kategori Mahasiswa -->
+        <div class="relative w-28 sm:w-32 shrink-0">
+            <select 
+                id="filterKategoriSelect"
+                class="w-full h-9 appearance-none pl-2.5 pr-6 rounded-[8px] bg-white-form border border-white-bone text-gray-900 font-medium text-xs focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary cursor-pointer transition truncate"
+            >
+                <option value="">Semua Kategori</option>
+                <option value="baru" {{ ($selectedKategori ?? '') === 'baru' ? 'selected' : '' }}>Mahasiswa Baru</option>
+                <option value="transfer" {{ ($selectedKategori ?? '') === 'transfer' ? 'selected' : '' }}>Mahasiswa Transfer</option>
+                <option value="asing" {{ ($selectedKategori ?? '') === 'asing' ? 'selected' : '' }}>Mahasiswa Asing</option>
+            </select>
+            <span class="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none text-primary">
+                <svg class="w-3.5 h-3.5 stroke-[2.5]" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="m6 9 6 6 6-6" />
+                </svg>
+            </span>
+        </div>
+
+        <!-- Filter: Status -->
+        <div class="relative w-24 sm:w-28 shrink-0">
+            <select 
+                id="filterStatusSelect"
+                class="w-full h-9 appearance-none pl-2.5 pr-6 rounded-[8px] bg-white-form border border-white-bone text-gray-900 font-medium text-xs focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary cursor-pointer transition truncate"
+            >
+                <option value="">Semua Status</option>
+                @foreach($statusOptions as $st)
+                    <option value="{{ $st }}" {{ ($selectedStatus ?? '') === $st ? 'selected' : '' }}>
+                        {{ $st }}
+                    </option>
+                @endforeach
+            </select>
+            <span class="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none text-primary">
+                <svg class="w-3.5 h-3.5 stroke-[2.5]" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="m6 9 6 6 6-6" />
+                </svg>
+            </span>
+        </div>
+
+        <!-- Filter: Tahun Masuk -->
+        <div class="relative w-28 sm:w-32 shrink-0">
+            <select 
+                id="filterTahunSelect"
+                class="w-full h-9 appearance-none pl-2.5 pr-6 rounded-[8px] bg-white-form border border-white-bone text-gray-900 font-medium text-xs focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary cursor-pointer transition truncate"
+            >
+                <option value="">Semua Tahun Masuk</option>
+                @foreach($tahunOptions as $thn)
+                    <option value="{{ $thn }}" {{ (string)($selectedTahun ?? '') === (string)$thn ? 'selected' : '' }}>
+                        {{ $thn }}
+                    </option>
+                @endforeach
+            </select>
+            <span class="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none text-primary">
+                <svg class="w-3.5 h-3.5 stroke-[2.5]" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="m6 9 6 6 6-6" />
+                </svg>
+            </span>
+        </div>
+
+        <!-- Filter: Jalur Masuk (Jenis Pendaftaran) -->
+        @if(!empty($jenisPendaftaranOptions))
+        <div class="relative w-24 sm:w-28 shrink-0">
+            <select 
+                id="filterJenisSelect"
+                class="w-full h-9 appearance-none pl-2.5 pr-6 rounded-[8px] bg-white-form border border-white-bone text-gray-900 font-medium text-xs focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary cursor-pointer transition truncate"
+            >
+                <option value="">Semua Jalur</option>
+                @foreach($jenisPendaftaranOptions as $jp)
+                    <option value="{{ $jp }}" {{ ($selectedJenis ?? '') === $jp ? 'selected' : '' }}>
+                        {{ ucfirst($jp) }}
+                    </option>
+                @endforeach
+            </select>
+            <span class="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none text-primary">
+                <svg class="w-3.5 h-3.5 stroke-[2.5]" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="m6 9 6 6 6-6" />
+                </svg>
+            </span>
+        </div>
+        @endif
+
+        <!-- Reset Filter Button -->
+        @php
+            $hasActiveFilter = !empty($search) || !empty($selectedStatus) || !empty($selectedTahun) || !empty($selectedJenis) || !empty($selectedKategori);
+        @endphp
+        <button 
+            type="button" 
+            id="resetFilterBtn"
+            class="{{ $hasActiveFilter ? 'inline-flex' : 'hidden' }} items-center gap-1 h-9 px-2.5 rounded-[8px] bg-white-form hover:bg-gray-200 text-gray-600 hover:text-gray-900 text-xs font-semibold border border-white-bone transition cursor-pointer shrink-0"
+            title="Reset Semua Filter"
+        >
+            <svg class="w-3 h-3 stroke-[2.5]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+            <span>Reset</span>
+        </button>
+
+        <!-- Tambah Mahasiswa Button -->
+        <button 
+            type="button" 
+            id="openCreateMahasiswaModalBtn"
+            class="inline-flex items-center gap-1.5 h-9 px-3 rounded-xl bg-primary text-white text-xs sm:text-sm font-bold shadow-xs hover:bg-additional transition cursor-pointer whitespace-nowrap shrink-0 ml-auto"
+        >
+            <svg class="w-4 h-4 stroke-[2.5]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+            </svg>
+            <span>Tambah Mahasiswa</span>
+        </button>
+    </div>
 
         <!-- Table: Data Mahasiswa -->
         <x-table>
@@ -125,8 +138,9 @@
                 <x-table.th>Nama Mahasiswa</x-table.th>
                 <x-table.th>NIM</x-table.th>
                 <x-table.th>Tahun Masuk</x-table.th>
+                <x-table.th class="w-32">Kategori</x-table.th>
                 <x-table.th>Tanggal Kelulusan</x-table.th>
-                <x-table.th class="w-32">Status</x-table.th>
+                <x-table.th class="w-28">Status</x-table.th>
                 <x-table.th class="w-28 text-right">Action</x-table.th>
             </x-slot:header>
 
@@ -150,6 +164,7 @@
                     data-tahun="{{ $tahunMasuk }}"
                     data-status="{{ strtolower($statusTerkini) }}"
                     data-jenis="{{ strtolower($jenisPendaftaran) }}"
+                    data-kategori="{{ strtolower($jenisPendaftaran) }}"
                 >
                     <!-- No -->
                     <x-table.cell class="text-gray-500 font-medium w-16">
@@ -177,6 +192,28 @@
                         </span>
                     </x-table.cell>
 
+                    <!-- Kategori / Status Pendaftaran -->
+                    <x-table.cell class="w-32">
+                        @php
+                            $jpLower = strtolower($jenisPendaftaran);
+                            $badgeClass = match($jpLower) {
+                                'baru' => 'bg-emerald-50 text-emerald-700 border-emerald-200',
+                                'transfer' => 'bg-amber-50 text-amber-700 border-amber-200',
+                                'asing' => 'bg-purple-50 text-purple-700 border-purple-200',
+                                default => 'bg-blue-50 text-blue-700 border-blue-200',
+                            };
+                            $badgeLabel = match($jpLower) {
+                                'baru' => 'Baru',
+                                'transfer' => 'Transfer',
+                                'asing' => 'Asing',
+                                default => ucfirst($jenisPendaftaran),
+                            };
+                        @endphp
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold border {{ $badgeClass }}">
+                            {{ $badgeLabel }}
+                        </span>
+                    </x-table.cell>
+
                     <!-- Tanggal Kelulusan -->
                     <x-table.cell>
                         <span class="text-sm font-medium text-gray-700 mahasiswa-kelulusan">
@@ -185,7 +222,7 @@
                     </x-table.cell>
 
                     <!-- Status Terkini -->
-                    <x-table.cell class="w-32">
+                    <x-table.cell class="w-28">
                         @php
                             $statusColor = match($statusTerkini) {
                                 'Aktif' => 'bg-emerald-50 text-emerald-700 border-emerald-200',
@@ -249,10 +286,10 @@
                     </x-table.cell>
                 </x-table.row>
             @empty
-                <x-table.empty colspan="7" message="Belum ada data mahasiswa" submessage="Silakan klik tombol Tambah Mahasiswa untuk menambahkan data baru." />
+                <x-table.empty colspan="8" message="Belum ada data mahasiswa" submessage="Silakan klik tombol Tambah Mahasiswa untuk menambahkan data baru." />
             @endforelse
             <tr id="noFilterMatchRow" class="hidden">
-                <td colspan="7" class="text-center py-10 text-gray-400 text-xs font-medium">
+                <td colspan="8" class="text-center py-10 text-gray-400 text-xs font-medium">
                     Tidak ada data mahasiswa yang sesuai dengan filter yang dipilih.
                 </td>
             </tr>
@@ -261,7 +298,6 @@
         <!-- Pagination -->
         <x-pagination :paginator="$pagination" />
     </div>
-</div>
 
 <!-- ========================================== -->
 <!-- MODAL: Tambahkan Mahasiswa -->
@@ -567,6 +603,7 @@
         const statusFilter = document.getElementById('filterStatusSelect');
         const tahunFilter = document.getElementById('filterTahunSelect');
         const jenisFilter = document.getElementById('filterJenisSelect');
+        const kategoriFilter = document.getElementById('filterKategoriSelect');
         const resetBtn = document.getElementById('resetFilterBtn');
         const noFilterMatchRow = document.getElementById('noFilterMatchRow');
         const rows = document.querySelectorAll('.mahasiswa-row');
@@ -578,6 +615,7 @@
             const selectedStatus = statusFilter ? statusFilter.value.toLowerCase().trim() : '';
             const selectedTahun = tahunFilter ? tahunFilter.value.toString().trim() : '';
             const selectedJenis = jenisFilter ? jenisFilter.value.toLowerCase().trim() : '';
+            const selectedKategori = kategoriFilter ? kategoriFilter.value.toLowerCase().trim() : '';
 
             let visibleCount = 0;
 
@@ -587,13 +625,15 @@
                 const rowTahun = (row.getAttribute('data-tahun') || '').toString().trim();
                 const rowStatus = row.getAttribute('data-status') || '';
                 const rowJenis = row.getAttribute('data-jenis') || '';
+                const rowKategori = row.getAttribute('data-kategori') || '';
 
                 const matchesKeyword = !keyword || (rowNama.includes(keyword) || rowNim.includes(keyword) || rowTahun.includes(keyword));
                 const matchesStatus = !selectedStatus || rowStatus === selectedStatus;
                 const matchesTahun = !selectedTahun || rowTahun === selectedTahun;
                 const matchesJenis = !selectedJenis || rowJenis === selectedJenis;
+                const matchesKategori = !selectedKategori || rowKategori === selectedKategori;
 
-                if (matchesKeyword && matchesStatus && matchesTahun && matchesJenis) {
+                if (matchesKeyword && matchesStatus && matchesTahun && matchesJenis && matchesKategori) {
                     row.style.display = '';
                     visibleCount++;
                 } else {
@@ -605,7 +645,7 @@
                 noFilterMatchRow.classList.toggle('hidden', visibleCount > 0 || rows.length === 0);
             }
 
-            const hasActiveFilter = !!(keyword || selectedStatus || selectedTahun || selectedJenis);
+            const hasActiveFilter = !!(keyword || selectedStatus || selectedTahun || selectedJenis || selectedKategori);
             if (resetBtn) {
                 if (hasActiveFilter) {
                     resetBtn.classList.remove('hidden');
@@ -623,6 +663,7 @@
             const statusVal = statusFilter ? statusFilter.value : '';
             const tahunVal = tahunFilter ? tahunFilter.value : '';
             const jenisVal = jenisFilter ? jenisFilter.value : '';
+            const kategoriVal = kategoriFilter ? kategoriFilter.value : '';
 
             if (searchVal) {
                 params.set('search', searchVal);
@@ -648,6 +689,12 @@
                 params.delete('jenis');
             }
 
+            if (kategoriVal) {
+                params.set('kategori', kategoriVal);
+            } else {
+                params.delete('kategori');
+            }
+
             params.set('page', '1');
 
             window.location.search = params.toString();
@@ -671,7 +718,7 @@
             });
         }
 
-        [statusFilter, tahunFilter, jenisFilter].forEach(selectEl => {
+        [statusFilter, tahunFilter, jenisFilter, kategoriFilter].forEach(selectEl => {
             if (selectEl) {
                 selectEl.addEventListener('change', function () {
                     applyClientFilter();
@@ -689,6 +736,7 @@
                     if (statusFilter) statusFilter.value = '';
                     if (tahunFilter) tahunFilter.value = '';
                     if (jenisFilter) jenisFilter.value = '';
+                    if (kategoriFilter) kategoriFilter.value = '';
                     applyClientFilter();
                 }
             });

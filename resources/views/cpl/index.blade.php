@@ -4,6 +4,16 @@
 
 @section('content')
 <div class="space-y-6">
+    <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+            <h1 class="text-xl font-extrabold tracking-tight text-gray-900">Capaian Pembelajaran Lulusan (CPL)</h1>
+            <p class="mt-1 text-sm text-gray-500">Kelola CPL dan lihat evaluasi ketercapaiannya.</p>
+        </div>
+        <a href="{{ route('cpl.evaluasi') }}" class="inline-flex items-center gap-2 self-start rounded-xl bg-primary px-4 py-2 text-sm font-bold text-white transition hover:bg-additional">
+            Evaluasi Ketercapaian CPL
+        </a>
+    </div>
+
     @if($stats['total'] === 0 && empty($search) && empty($selectedKategori) && empty($selectedKurikulum))
         <!-- ======================================================== -->
         <!-- EMPTY STATE: Belum Ada Data CPL                         -->

@@ -153,6 +153,7 @@
 
     <!-- 3. Section: Ringkasan Tri Dharma -->
     <div class="space-y-3">
+        <h3 class="text-base sm:text-lg font-black text-[#183A5F] tracking-tight uppercase">RINGKASAN TRI DHARMA</h3>
         <!-- 8 Cards Grid (4x2 on desktop) -->
         <div class="grid grid-cols-2 md:grid-cols-4 gap-2.5 sm:gap-3">
 

@@ -133,9 +133,39 @@
     </div>
 
     <!-- ======================================================== -->
-    <!-- BOTTOM SECTION: DAFTAR KELAS & BULK IMPORT              -->
+    <!-- TAB NAVIGATION: DAFTAR KELAS & RIWAYAT VERSI RPS         -->
     <!-- ======================================================== -->
-    <div class="space-y-3 pt-2">
+    <div class="flex items-center gap-3 border-b border-gray-200">
+        <button 
+            type="button" 
+            id="tabBtnKelas" 
+            class="mk-tab-btn flex items-center gap-2 pb-3 px-2 font-bold text-sm border-b-2 transition cursor-pointer text-primary border-primary"
+            onclick="switchMkTab('kelas')"
+        >
+            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M15 19.128a9.38 9.38 0 0 0 2.625.372 9.337 9.337 0 0 0 4.121-.952 4.125 4.125 0 0 0-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 0 1 8.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0 1 11.964-3.07M12 6.375a3.375 3.375 0 1 1-6.75 0 3.375 3.375 0 0 1 6.75 0Zm8.25 2.25a2.625 2.625 0 1 1-5.25 0 2.625 2.625 0 0 1 5.25 0Z" />
+            </svg>
+            <span>Daftar Kelas</span>
+            <span id="tabBadgeKelas" class="px-2 py-0.5 rounded-full text-xs font-bold bg-primary/10 text-primary">{{ $jumlahKelas }}</span>
+        </button>
+        <button 
+            type="button" 
+            id="tabBtnRps" 
+            class="mk-tab-btn flex items-center gap-2 pb-3 px-2 font-bold text-sm border-b-2 transition cursor-pointer text-gray-500 border-transparent hover:text-gray-700"
+            onclick="switchMkTab('rps')"
+        >
+            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.042A8.967 8.967 0 0 0 6 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 0 1 6 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 0 1 6-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0 0 18 18a8.967 8.967 0 0 0-6 2.292m0-14.25v14.25" />
+            </svg>
+            <span>Riwayat Versi RPS</span>
+            <span id="tabBadgeRps" class="px-2 py-0.5 rounded-full text-xs font-bold bg-gray-100 text-gray-700">{{ count($rpsList) }}</span>
+        </button>
+    </div>
+
+    <!-- ======================================================== -->
+    <!-- TAB CONTENT 1: DAFTAR KELAS & BULK IMPORT Nilai          -->
+    <!-- ======================================================== -->
+    <div id="tabContentKelas" class="space-y-3 pt-2">
         <!-- Flash Alert for Import Errors/Warnings -->
         @if(session('import_errors') && count(session('import_errors')) > 0)
         <div class="rounded-2xl bg-rose-50 border border-rose-200 p-4 text-xs text-rose-800">
@@ -249,6 +279,8 @@
                     $namaKelas = $item['nama_kelas'] ?? $item['kelas'] ?? '-';
                     $kurik = $item['kurikulum'] ?? $kurikulumNama;
                     $jmlMhs = isset($item['jumlah_mahasiswa']) ? $item['jumlah_mahasiswa'] : 0;
+                    $evCount = count($item['evidence_list'] ?? []);
+                    $enrollmentId = $item['enrollment_mata_kuliah_id'] ?? null;
                 @endphp
                 <x-table.row>
                     <!-- No -->
@@ -296,6 +328,10 @@
                                 data-mata-kuliah-angkatan-kelas-id="{{ $item['mata_kuliah_angkatan_kelas_id'] ?? '' }}"
                                 data-link-nilai="{{ $item['link_nilai'] }}"
                                 data-link-evidence="{{ $item['link_evidence'] }}"
+                                data-evidence-count="{{ $evCount }}"
+                                data-evidence-list='@json($item['evidence_list'] ?? [])'
+                                data-bukti-store-url="{{ !empty($item['enrollment_mata_kuliah_id']) ? route('mata-kuliah.bukti.store', [$id, $item['enrollment_mata_kuliah_id']]) : '' }}"
+                                data-bukti-destroy-base="{{ !empty($item['enrollment_mata_kuliah_id']) ? url('/mata-kuliah/'.$id.'/enrollment/'.$item['enrollment_mata_kuliah_id'].'/bukti') : '' }}"
                                 data-multiple-grade-links="{{ $item['has_multiple_grade_links'] ? '1' : '0' }}"
                                 data-multiple-evidence-links="{{ $item['has_multiple_evidence_links'] ? '1' : '0' }}"
                             >
@@ -306,6 +342,111 @@
                 </x-table.row>
             @empty
                 <x-table.empty colspan="5" message="Belum ada kelas terdaftar untuk mata kuliah ini" submessage="Silakan buat kelas baru pada modul Kelas & Angkatan." />
+            @endforelse
+        </x-table>
+    </div>
+
+    <!-- ======================================================== -->
+    <!-- TAB CONTENT 2: RIWAYAT VERSI RPS (CLI-M6)                -->
+    <!-- ======================================================== -->
+    <div id="tabContentRps" class="space-y-4 pt-2 hidden">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div>
+                <h3 class="text-base sm:text-lg font-bold text-gray-900 tracking-tight">
+                    Riwayat Versi RPS (Rencana Pembelajaran Semester)
+                </h3>
+                <p class="text-xs text-gray-500 mt-0.5">
+                    Daftar riwayat dokumen RPS berbasis OBE (Outcome-Based Education) dan pemenuhan kriteria LAM INFOKOM Versi 2.1.
+                </p>
+            </div>
+            <div>
+                <button 
+                    type="button" 
+                    id="openAddRpsModalBtn"
+                    class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-primary hover:bg-additional text-white text-xs sm:text-sm font-bold shadow-sm transition cursor-pointer"
+                >
+                    <svg class="w-4 h-4 stroke-[2.5]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                    </svg>
+                    <span>+ Tambah Tautan RPS Baru</span>
+                </button>
+            </div>
+        </div>
+
+        <x-table>
+            <x-slot:header>
+                <x-table.th class="w-14 text-center">No</x-table.th>
+                <x-table.th class="w-36">Versi RPS</x-table.th>
+                <x-table.th class="w-32 text-center">Tahun Berlaku</x-table.th>
+                <x-table.th class="w-28 text-center">Status</x-table.th>
+                <x-table.th>Tautan Dokumen</x-table.th>
+                <x-table.th>Catatan / Keterangan</x-table.th>
+                <x-table.th class="w-20 text-center">Action</x-table.th>
+            </x-slot:header>
+
+            @forelse($rpsList as $index => $rps)
+                @php
+                    $status = $rps['status'] ?? 'Aktif';
+                    $badgeClass = match(strtolower($status)) {
+                        'aktif' => 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-600/20',
+                        'draft' => 'bg-amber-50 text-amber-700 ring-1 ring-amber-600/20',
+                        default => 'bg-gray-100 text-gray-700 ring-1 ring-gray-600/20',
+                    };
+                    $docUrl = $rps['dokumen_url'] ?? '#';
+                @endphp
+                <x-table.row>
+                    <x-table.cell class="text-gray-500 font-medium text-center w-14">
+                        {{ $index + 1 }}.
+                    </x-table.cell>
+                    <x-table.cell class="w-36">
+                        <span class="font-bold text-sm text-gray-900 font-mono">
+                            {{ $rps['versi'] ?? 'Versi 1.0' }}
+                        </span>
+                    </x-table.cell>
+                    <x-table.cell class="text-center w-32 font-semibold text-xs text-gray-700">
+                        {{ $rps['tahun_berlaku'] ?? '-' }}
+                    </x-table.cell>
+                    <x-table.cell class="text-center w-28">
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-bold {{ $badgeClass }}">
+                            {{ $status }}
+                        </span>
+                    </x-table.cell>
+                    <x-table.cell>
+                        @if(!empty($docUrl) && $docUrl !== '#')
+                            <a 
+                                href="{{ $docUrl }}" 
+                                target="_blank" 
+                                rel="noopener noreferrer" 
+                                class="inline-flex items-center gap-1.5 text-xs font-bold text-primary hover:text-additional transition underline"
+                            >
+                                <svg class="w-4 h-4 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
+                                </svg>
+                                <span>Buka Dokumen RPS</span>
+                            </a>
+                        @else
+                            <span class="text-gray-400 text-xs italic">Tidak ada tautan</span>
+                        @endif
+                    </x-table.cell>
+                    <x-table.cell class="text-xs text-gray-600 max-w-xs">
+                        {{ $rps['keterangan'] ?? '-' }}
+                    </x-table.cell>
+                    <x-table.cell class="text-center w-20">
+                        <button
+                            type="button"
+                            class="text-rose-600 hover:text-rose-800 p-1 cursor-pointer transition"
+                            title="Hapus Versi RPS"
+                            data-confirm-delete
+                            data-action="{{ route('mata-kuliah.rps.destroy', [$id, $rps['id']]) }}"
+                            data-title="Hapus Versi RPS?"
+                            data-message="Apakah Anda yakin ingin menghapus arsip RPS {{ $rps['versi'] ?? '' }} ({{ $rps['tahun_berlaku'] ?? '' }})? Tindakan ini bersifat permanen."
+                        >
+                            <x-icon.delete class="w-4 h-4" />
+                        </button>
+                    </x-table.cell>
+                </x-table.row>
+            @empty
+                <x-table.empty colspan="7" message="Belum ada riwayat dokumen RPS untuk mata kuliah ini" submessage="Klik tombol Tambah Tautan RPS Baru untuk menambahkan dokumen RPS." />
             @endforelse
         </x-table>
     </div>
@@ -328,17 +469,12 @@
             <p><span class="font-bold">Tahun Akademik:</span> <span id="classDetailTahunAkademik"></span></p>
             <p><span class="font-bold">Rata-rata IPK Kelas:</span> <span id="classDetailRataRataIpk"></span></p>
             <p><span class="font-bold">Jumlah Mata Kuliah:</span> <span id="classDetailJumlahMataKuliah"></span> Mata Kuliah</p>
+            <p><span class="font-bold">Bukti Pembelajaran:</span> <span id="classDetailBuktiCount" class="font-bold text-emerald-700">0 Dokumen</span></p>
             <p>
                 <span class="font-bold">Link Input Nilai:</span>
                 <a id="classDetailLinkNilai" class="hidden break-all text-primary underline" target="_blank" rel="noopener noreferrer"></a>
                 <span id="classDetailLinkNilaiEmpty">-</span>
                 <span id="classDetailLinkNilaiMultiple" class="hidden">Terdapat beberapa link berbeda</span>
-            </p>
-            <p>
-                <span class="font-bold">Link Input Evidence:</span>
-                <a id="classDetailLinkEvidence" class="hidden break-all text-primary underline" target="_blank" rel="noopener noreferrer"></a>
-                <span id="classDetailLinkEvidenceEmpty">-</span>
-                <span id="classDetailLinkEvidenceMultiple" class="hidden">Terdapat beberapa link berbeda</span>
             </p>
         </div>
 
@@ -348,14 +484,14 @@
                 id="openGradeLinkModalBtn"
                 class="w-full rounded-lg bg-primary px-4 py-2.5 text-xs font-bold text-white transition hover:bg-additional cursor-pointer"
             >
-                Input Nilai Link
+                Input Nilai
             </button>
             <button
                 type="button"
                 id="openEvidenceModalBtn"
-                class="w-full rounded-lg bg-green-600 px-4 py-2.5 text-xs font-bold text-white transition hover:bg-green-700 disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer"
+                class="w-full rounded-lg bg-green-600 px-4 py-2.5 text-xs font-bold text-white transition hover:bg-green-700 cursor-pointer"
             >
-                Input Evidence Link
+                Input Evidence
             </button>
         </div>
         <div class="grid grid-cols-2 gap-3 pt-2">
@@ -441,6 +577,9 @@
     </div>
 </div>
 
+<!-- ======================================================== -->
+<!-- MODAL: Kelola Bukti Pembelajaran (CLI-D4)               -->
+<!-- ======================================================== -->
 <div
     id="evidenceModal"
     class="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/45 opacity-0 pointer-events-none transition-all duration-200"
@@ -448,43 +587,232 @@
     aria-modal="true"
     aria-labelledby="evidenceModalTitle"
 >
-    <div class="evidence-modal-card relative bg-white rounded-2xl p-7 max-w-[460px] w-full shadow-2xl transform scale-95 transition-all duration-200">
-        <h3 id="evidenceModalTitle" class="text-lg font-bold text-gray-900 text-center mb-6">
-            Input Evidence Mata Kuliah
-        </h3>
-
-        <form id="evidenceForm" action="" method="POST" class="space-y-4">
-            @csrf
-            @method('PATCH')
-
+    <div class="evidence-modal-card relative bg-white rounded-[24px] p-6 sm:p-7 max-w-[580px] w-full shadow-2xl transform scale-95 transition-all duration-200 max-h-[90vh] overflow-y-auto space-y-4">
+        <div class="flex items-start justify-between gap-3 border-b border-gray-100 pb-3">
             <div>
-                <label for="evidenceLinkInput" class="mb-2 block text-xs font-bold text-gray-900">
-                    Input Link Evidence
-                </label>
-                <input
-                    type="url"
-                    name="link_evidence"
-                    id="evidenceLinkInput"
-                    maxlength="2048"
-                    placeholder="Masukkan Link"
-                    required
-                    class="w-full rounded-lg bg-gray-200 px-4 py-2.5 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-primary/30"
-                >
-                <p id="evidenceLinkHint" class="mt-1 hidden text-xs text-amber-700" role="status"></p>
+                <h3 id="evidenceModalTitle" class="text-lg font-bold text-gray-900">
+                    Input Bukti Kegiatan Pembelajaran
+                </h3>
+                <p class="text-xs text-gray-500 mt-0.5">
+                    Kelas: <span id="buktiModalKelasNama" class="font-bold text-primary"></span>
+                    <span class="mx-1">•</span>
+                    Mata Kuliah: <span class="font-bold text-gray-800">{{ $nama }} ({{ $kode }})</span>
+                </p>
+            </div>
+            <button type="button" class="close-evidence-modal text-gray-400 hover:text-gray-700 transition p-1 cursor-pointer">
+                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+        </div>
+
+        <!-- Daftar Bukti yang Sudah Ditautkan -->
+        <div class="space-y-2">
+            <div class="flex items-center justify-between">
+                <span class="text-xs font-bold text-gray-700 uppercase tracking-wider">Dokumen Bukti Ditautkan</span>
+                <span id="evidenceListCountBadge" class="text-[11px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700">0 Dokumen</span>
+            </div>
+            
+            <div id="evidenceListContainer" class="space-y-2 max-h-48 overflow-y-auto pr-1">
+                <!-- Injected via JavaScript -->
+            </div>
+            <div id="evidenceEmptyState" class="p-3.5 rounded-xl border border-dashed border-gray-300 text-center text-xs text-gray-500 bg-gray-50/70 hidden">
+                Belum ada bukti kegiatan pembelajaran yang ditautkan untuk kelas ini.
+            </div>
+        </div>
+
+        <!-- Form Tambah Bukti Baru -->
+        <div class="border-t border-gray-100 pt-3 space-y-3">
+            <h4 class="text-xs font-bold text-gray-900 uppercase tracking-wider">
+                + Tambah Tautan Bukti Baru
+            </h4>
+
+            <form id="evidenceForm" action="" method="POST" class="space-y-3">
+                @csrf
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                        <label for="evidenceJenisDokumenSelect" class="block text-xs font-bold text-gray-900 mb-1">
+                            Jenis Dokumen <span class="text-red-500">*</span>
+                        </label>
+                        <select 
+                            name="jenis_dokumen" 
+                            id="evidenceJenisDokumenSelect" 
+                            required 
+                            class="w-full px-3 py-2 rounded-lg bg-gray-100 border border-gray-200 text-xs font-semibold text-gray-900 focus:ring-2 focus:ring-primary/20 focus:outline-none cursor-pointer"
+                        >
+                            <option value="RPS">RPS (Rencana Pembelajaran)</option>
+                            <option value="Kontrak Kuliah">Kontrak Kuliah</option>
+                            <option value="Presensi">Presensi / Kehadiran</option>
+                            <option value="Soal Ujian">Soal Ujian (UTS/UAS)</option>
+                            <option value="Portofolio Tugas">Portofolio Tugas & Rubrik</option>
+                            <option value="Lainnya">Lainnya / Dokumentasi</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label for="evidenceJudulInput" class="block text-xs font-bold text-gray-900 mb-1">
+                            Judul / Keterangan <span class="text-red-500">*</span>
+                        </label>
+                        <input 
+                            type="text" 
+                            name="judul" 
+                            id="evidenceJudulInput" 
+                            placeholder="Contoh: Presensi Pertemuan 1-16" 
+                            required 
+                            maxlength="255"
+                            class="w-full px-3 py-2 rounded-lg bg-gray-100 border border-gray-200 text-xs font-medium text-gray-900 focus:ring-2 focus:ring-primary/20 focus:outline-none"
+                        >
+                    </div>
+                </div>
+
+                <div>
+                    <label for="evidenceLinkInput" class="block text-xs font-bold text-gray-900 mb-1">
+                        Tautan / Link URL Dokumen <span class="text-red-500">*</span>
+                    </label>
+                    <input
+                        type="url"
+                        name="url"
+                        id="evidenceLinkInput"
+                        maxlength="2048"
+                        placeholder="https://drive.google.com/..."
+                        required
+                        class="w-full rounded-lg bg-gray-100 border border-gray-200 px-3 py-2 text-xs text-gray-900 focus:outline-none focus:ring-2 focus:ring-primary/20"
+                    >
+                </div>
+
+                <div class="grid grid-cols-2 gap-3 pt-2">
+                    <button
+                        type="button"
+                        class="close-evidence-modal w-full rounded-lg bg-gray-200 px-4 py-2.5 text-xs font-bold text-gray-900 transition hover:bg-gray-300 cursor-pointer"
+                    >
+                        Tutup
+                    </button>
+                    <button
+                        type="submit"
+                        class="w-full rounded-lg bg-green-600 hover:bg-green-700 px-4 py-2.5 text-xs font-bold text-white transition shadow-sm cursor-pointer"
+                    >
+                        Simpan Bukti
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- ======================================================== -->
+<!-- MODAL: Tambah Riwayat Versi RPS (CLI-M6)                -->
+<!-- ======================================================== -->
+<div 
+    id="addRpsModal" 
+    class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/45 opacity-0 pointer-events-none transition-all duration-200 select-none"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="addRpsModalTitle"
+>
+    <div class="add-rps-card relative bg-white rounded-[24px] p-6 sm:p-7 max-w-[500px] w-full shadow-2xl text-left transform scale-95 transition-all duration-200 max-h-[92vh] overflow-y-auto">
+        <div class="flex items-start justify-between gap-3 border-b border-gray-100 pb-3 mb-4">
+            <div>
+                <h3 id="addRpsModalTitle" class="text-base sm:text-lg font-bold text-gray-900 tracking-tight">
+                    Tambah Tautan Riwayat RPS Baru
+                </h3>
+                <p class="text-xs text-gray-500 mt-0.5">Mata Kuliah: {{ $nama }} ({{ $kode }})</p>
+            </div>
+            <button type="button" class="close-add-rps text-gray-400 hover:text-gray-700 transition p-1 cursor-pointer">
+                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+        </div>
+
+        <form action="{{ route('mata-kuliah.rps.store', $id) }}" method="POST" class="space-y-3.5">
+            @csrf
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                    <label for="rpsVersiInput" class="block text-xs font-bold text-gray-900 mb-1">
+                        Versi RPS <span class="text-rose-500">*</span>
+                    </label>
+                    <input 
+                        type="text" 
+                        name="versi" 
+                        id="rpsVersiInput" 
+                        placeholder="Contoh: Versi 2.1" 
+                        required 
+                        maxlength="50"
+                        class="w-full px-3.5 py-2 rounded-xl bg-white-form border border-gray-200 text-xs font-semibold text-gray-900 focus:ring-2 focus:ring-primary/20 focus:outline-none"
+                    >
+                </div>
+
+                <div>
+                    <label for="rpsTahunBerlakuInput" class="block text-xs font-bold text-gray-900 mb-1">
+                        Tahun Berlaku <span class="text-rose-500">*</span>
+                    </label>
+                    <input 
+                        type="text" 
+                        name="tahun_berlaku" 
+                        id="rpsTahunBerlakuInput" 
+                        placeholder="Contoh: 2026/2027" 
+                        required 
+                        maxlength="50"
+                        class="w-full px-3.5 py-2 rounded-xl bg-white-form border border-gray-200 text-xs font-semibold text-gray-900 focus:ring-2 focus:ring-primary/20 focus:outline-none"
+                    >
+                </div>
             </div>
 
-            <div class="grid grid-cols-2 gap-3 pt-1">
-                <button
-                    type="button"
-                    class="close-evidence-modal w-full rounded-lg bg-gray-200 px-4 py-2.5 text-sm font-bold text-gray-900 transition hover:bg-gray-300"
+            <div>
+                <label for="rpsStatusSelect" class="block text-xs font-bold text-gray-900 mb-1">
+                    Status Dokumen <span class="text-rose-500">*</span>
+                </label>
+                <select 
+                    name="status" 
+                    id="rpsStatusSelect" 
+                    required 
+                    class="w-full px-3.5 py-2 rounded-xl bg-white-form border border-gray-200 text-xs font-semibold text-gray-900 focus:ring-2 focus:ring-primary/20 focus:outline-none cursor-pointer"
+                >
+                    <option value="Aktif" selected>Aktif (Berlaku pada Semester Ini)</option>
+                    <option value="Draft">Draft (Dalam Penyusunan)</option>
+                    <option value="Arsip">Arsip (Versi Terdahulu)</option>
+                </select>
+            </div>
+
+            <div>
+                <label for="rpsDokumenUrlInput" class="block text-xs font-bold text-gray-900 mb-1">
+                    Tautan / URL Dokumen RPS <span class="text-rose-500">*</span>
+                </label>
+                <input 
+                    type="url" 
+                    name="dokumen_url" 
+                    id="rpsDokumenUrlInput" 
+                    placeholder="https://drive.google.com/..." 
+                    required 
+                    maxlength="2048"
+                    class="w-full px-3.5 py-2 rounded-xl bg-white-form border border-gray-200 text-xs font-medium text-gray-900 focus:ring-2 focus:ring-primary/20 focus:outline-none"
+                >
+            </div>
+
+            <div>
+                <label for="rpsKeteranganInput" class="block text-xs font-bold text-gray-900 mb-1">
+                    Catatan / Keterangan
+                </label>
+                <textarea 
+                    name="keterangan" 
+                    id="rpsKeteranganInput" 
+                    rows="2"
+                    placeholder="Keterangan perubahan atau relevansi CPL..." 
+                    maxlength="500"
+                    class="w-full px-3.5 py-2 rounded-xl bg-white-form border border-gray-200 text-xs font-medium text-gray-900 focus:ring-2 focus:ring-primary/20 focus:outline-none"
+                ></textarea>
+            </div>
+
+            <div class="grid grid-cols-2 gap-3 pt-2">
+                <button 
+                    type="button" 
+                    class="close-add-rps w-full py-2.5 px-4 rounded-xl bg-white-form hover:bg-gray-300 text-black font-bold text-xs transition cursor-pointer text-center"
                 >
                     Batal
                 </button>
-                <button
-                    type="submit"
-                    class="w-full rounded-lg bg-primary px-4 py-2.5 text-sm font-bold text-white transition hover:bg-additional"
+                <button 
+                    type="submit" 
+                    class="w-full py-2.5 px-4 rounded-xl bg-primary hover:bg-additional text-white font-bold text-xs shadow-sm transition cursor-pointer text-center"
                 >
-                    Simpan
+                    Simpan RPS
                 </button>
             </div>
         </form>
@@ -1000,7 +1328,6 @@
 <script>
     document.addEventListener('DOMContentLoaded', function () {
         const gradeLinkUrlTemplate = @json(route('mata-kuliah.update-grade-link', [$id, '__CLASS_ID__']));
-        const evidenceLinkUrlTemplate = @json(route('mata-kuliah.update-grade-evidence', [$id, '__CLASS_ID__']));
         
         const classDetailModal = document.getElementById('classDetailModal');
         const evidenceModal = document.getElementById('evidenceModal');
@@ -1009,20 +1336,68 @@
         const classImportModal = document.getElementById('classImportModal');
         const classGradesModal = document.getElementById('classGradesModal');
         const editMkShowModal = document.getElementById('editMkShowModal');
+        const addRpsModal = document.getElementById('addRpsModal');
 
         const evidenceForm = document.getElementById('evidenceForm');
         const evidenceLinkInput = document.getElementById('evidenceLinkInput');
+        const evidenceJenisDokumenSelect = document.getElementById('evidenceJenisDokumenSelect');
+        const evidenceJudulInput = document.getElementById('evidenceJudulInput');
+        const evidenceListContainer = document.getElementById('evidenceListContainer');
+        const evidenceEmptyState = document.getElementById('evidenceEmptyState');
+        const evidenceListCountBadge = document.getElementById('evidenceListCountBadge');
         const openEvidenceModalBtn = document.getElementById('openEvidenceModalBtn');
         const openGradeLinkModalBtn = document.getElementById('openGradeLinkModalBtn');
         const gradeLinkInput = document.getElementById('gradeLinkInput');
         const gradeLinkForm = document.getElementById('gradeLinkForm');
         const gradeLinkHint = document.getElementById('gradeLinkHint');
-        const evidenceLinkHint = document.getElementById('evidenceLinkHint');
+        const openAddRpsModalBtn = document.getElementById('openAddRpsModalBtn');
 
         let selectedClassButton = null;
 
+        function setExternalLink(anchor, value) {
+            anchor.textContent = value || '';
+            try {
+                const parsedUrl = new URL(value);
+                if (['http:', 'https:'].includes(parsedUrl.protocol)) {
+                    anchor.href = parsedUrl.href;
+                    anchor.target = '_blank';
+                    anchor.rel = 'noopener noreferrer';
+                    return;
+                }
+            } catch {
+                anchor.removeAttribute('href');
+            }
+            anchor.removeAttribute('target');
+            anchor.removeAttribute('rel');
+        }
+
+        window.switchMkTab = function(tabName) {
+            const tabBtnKelas = document.getElementById('tabBtnKelas');
+            const tabBtnRps = document.getElementById('tabBtnRps');
+            const tabContentKelas = document.getElementById('tabContentKelas');
+            const tabContentRps = document.getElementById('tabContentRps');
+
+            if (tabName === 'rps') {
+                tabBtnKelas?.classList.remove('text-primary', 'border-primary');
+                tabBtnKelas?.classList.add('text-gray-500', 'border-transparent');
+                tabBtnRps?.classList.remove('text-gray-500', 'border-transparent');
+                tabBtnRps?.classList.add('text-primary', 'border-primary');
+
+                tabContentKelas?.classList.add('hidden');
+                tabContentRps?.classList.remove('hidden');
+            } else {
+                tabBtnRps?.classList.remove('text-primary', 'border-primary');
+                tabBtnRps?.classList.add('text-gray-500', 'border-transparent');
+                tabBtnKelas?.classList.remove('text-gray-500', 'border-transparent');
+                tabBtnKelas?.classList.add('text-primary', 'border-primary');
+
+                tabContentRps?.classList.add('hidden');
+                tabContentKelas?.classList.remove('hidden');
+            }
+        };
+
         function showDialog(dialog) {
-            const card = dialog?.querySelector('.class-detail-card, .evidence-modal-card, .grade-link-modal-card, .bulk-import-card, .class-import-card, .class-grades-card, .mk-modal-card');
+            const card = dialog?.querySelector('.class-detail-card, .evidence-modal-card, .grade-link-modal-card, .bulk-import-card, .class-import-card, .class-grades-card, .mk-modal-card, .add-rps-card');
             if (!dialog) return;
             dialog.classList.remove('opacity-0', 'pointer-events-none');
             dialog.classList.add('opacity-100');
@@ -1031,13 +1406,74 @@
         }
 
         function hideDialog(dialog) {
-            const card = dialog?.querySelector('.class-detail-card, .evidence-modal-card, .grade-link-modal-card, .bulk-import-card, .class-import-card, .class-grades-card, .mk-modal-card');
+            const card = dialog?.querySelector('.class-detail-card, .evidence-modal-card, .grade-link-modal-card, .bulk-import-card, .class-import-card, .class-grades-card, .mk-modal-card, .add-rps-card');
             if (!dialog) return;
             dialog.classList.remove('opacity-100');
             dialog.classList.add('opacity-0', 'pointer-events-none');
             card?.classList.remove('scale-100');
             card?.classList.add('scale-95');
         }
+
+        function renderEvidenceList(button) {
+            const items = JSON.parse(button.dataset.evidenceList || '[]');
+            const destroyBaseUrl = button.dataset.buktiDestroyBase || '';
+            evidenceListContainer.replaceChildren();
+            evidenceListCountBadge.textContent = `${items.length} Dokumen`;
+            evidenceEmptyState.classList.toggle('hidden', items.length > 0);
+
+            items.forEach((item, index) => {
+                const row = document.createElement('div');
+                row.className = 'flex items-center justify-between gap-3 rounded-xl border border-gray-100 bg-gray-50 p-3';
+                const detail = document.createElement('div');
+                detail.className = 'min-w-0';
+                const label = document.createElement('span');
+                label.className = 'mb-1 inline-flex rounded-full bg-blue-50 px-2 py-0.5 text-[10px] font-bold text-blue-700';
+                label.textContent = item.jenis_dokumen || 'Dokumen';
+                const title = document.createElement('p');
+                title.className = 'truncate text-xs font-bold text-gray-900';
+                title.textContent = item.judul || 'Bukti Pembelajaran';
+                const link = document.createElement('a');
+                link.className = 'block truncate font-mono text-[11px] text-primary underline';
+                setExternalLink(link, item.url || 'Tautan tidak tersedia');
+                if (!link.hasAttribute('href')) {
+                    link.textContent = item.url || 'Tautan tidak tersedia';
+                }
+                detail.append(label, title, link);
+                row.append(detail);
+
+                if (destroyBaseUrl) {
+                    const form = document.createElement('form');
+                    form.action = `${destroyBaseUrl}/${encodeURIComponent(item.id ?? index)}`;
+                    form.method = 'POST';
+                    form.addEventListener('submit', event => {
+                        if (!confirm('Apakah Anda yakin ingin menghapus dokumen ini?')) {
+                            event.preventDefault();
+                        }
+                    });
+                    const token = document.createElement('input');
+                    token.type = 'hidden';
+                    token.name = '_token';
+                    token.value = document.querySelector('meta[name="csrf-token"]')?.content || '';
+                    const method = document.createElement('input');
+                    method.type = 'hidden';
+                    method.name = '_method';
+                    method.value = 'DELETE';
+                    const remove = document.createElement('button');
+                    remove.type = 'submit';
+                    remove.className = 'rounded-lg px-2 py-1 text-xs font-bold text-rose-700 hover:bg-rose-50';
+                    remove.textContent = 'Hapus';
+                    form.append(token, method, remove);
+                    row.append(form);
+                }
+
+                evidenceListContainer.append(row);
+            });
+        }
+
+        openAddRpsModalBtn?.addEventListener('click', () => showDialog(addRpsModal));
+        document.querySelectorAll('.close-add-rps').forEach(btn => {
+            btn.addEventListener('click', () => hideDialog(addRpsModal));
+        });
 
         // Bulk Template Dropdown Toggle
         const bulkTemplateDropdownBtn = document.getElementById('bulkTemplateDropdownBtn');
@@ -1119,26 +1555,18 @@
                 document.getElementById('classDetailRataRataIpk').textContent = this.dataset.rataRataIpk;
                 document.getElementById('classDetailJumlahMataKuliah').textContent = this.dataset.jumlahMataKuliah;
                 const gradeLink = this.dataset.linkNilai ?? '';
-                const evidenceLink = this.dataset.linkEvidence ?? '';
                 const gradeLinkElement = document.getElementById('classDetailLinkNilai');
-                const evidenceLinkElement = document.getElementById('classDetailLinkEvidence');
-                gradeLinkElement.href = gradeLink || '#';
-                gradeLinkElement.textContent = gradeLink;
+                setExternalLink(gradeLinkElement, gradeLink);
                 gradeLinkElement.classList.toggle('hidden', !gradeLink);
                 const multipleGradeLinks = this.dataset.multipleGradeLinks === '1';
                 document.getElementById('classDetailLinkNilaiEmpty').classList.toggle('hidden', Boolean(gradeLink) || multipleGradeLinks);
                 document.getElementById('classDetailLinkNilaiMultiple').classList.toggle('hidden', !multipleGradeLinks);
-                evidenceLinkElement.href = evidenceLink || '#';
-                evidenceLinkElement.textContent = evidenceLink;
-                evidenceLinkElement.classList.toggle('hidden', !evidenceLink);
-                const multipleEvidenceLinks = this.dataset.multipleEvidenceLinks === '1';
-                document.getElementById('classDetailLinkEvidenceEmpty').classList.toggle('hidden', Boolean(evidenceLink) || multipleEvidenceLinks);
-                document.getElementById('classDetailLinkEvidenceMultiple').classList.toggle('hidden', !multipleEvidenceLinks);
+                document.getElementById('classDetailBuktiCount').textContent = `${this.dataset.evidenceCount || 0} Dokumen`;
                 gradeLinkForm.action = gradeLinkUrlTemplate.replace('__CLASS_ID__', encodeURIComponent(this.dataset.classId));
-                evidenceForm.action = evidenceLinkUrlTemplate.replace('__CLASS_ID__', encodeURIComponent(this.dataset.classId));
+                evidenceForm.action = this.dataset.buktiStoreUrl || '';
 
                 openGradeLinkModalBtn.disabled = false;
-                openEvidenceModalBtn.disabled = false;
+                openEvidenceModalBtn.disabled = !this.dataset.buktiStoreUrl;
                 showDialog(classDetailModal);
             });
         });
@@ -1244,15 +1672,15 @@
 
         // Other Modals (Evidence, Grade Link, Edit Mata Kuliah)
         openEvidenceModalBtn?.addEventListener('click', function () {
-            if (this.disabled) return;
-            evidenceLinkInput.value = selectedClassButton?.dataset.linkEvidence ?? '';
-            evidenceLinkHint.textContent = selectedClassButton?.dataset.multipleEvidenceLinks === '1'
-                ? 'Terdapat beberapa link evidence berbeda di kelas ini. Isi link baru untuk menggantinya pada seluruh mahasiswa.'
-                : '';
-            evidenceLinkHint.classList.toggle('hidden', evidenceLinkHint.textContent === '');
+            if (this.disabled || !selectedClassButton) return;
+            evidenceForm.action = selectedClassButton.dataset.buktiStoreUrl || '';
+            evidenceLinkInput.value = '';
+            evidenceJudulInput.value = '';
+            evidenceJenisDokumenSelect.value = 'RPS';
+            renderEvidenceList(selectedClassButton);
             hideDialog(classDetailModal);
             showDialog(evidenceModal);
-            evidenceLinkInput.focus();
+            evidenceJudulInput.focus();
         });
 
         openGradeLinkModalBtn?.addEventListener('click', function () {
