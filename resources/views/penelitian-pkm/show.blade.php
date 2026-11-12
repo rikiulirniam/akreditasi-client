@@ -1,11 +1,11 @@
 @extends('layouts.app')
 
-@section('meta_title', 'Detail Kegiatan')
-@section('title', 'Penelitian & PKM')
+    @section('meta_title', 'Detail Kegiatan')
+    @section('title', $halaman)
 
-@section('subtitle')
-    <a href="{{ route('penelitian-pkm.index') }}" class="hover:underline">Penelitian & PKM</a> &rsaquo; Detail
-@endsection
+    @section('subtitle')
+        <a href="{{ route($rute . '.index') }}" class="hover:underline">{{ $halaman }}</a> &rsaquo; Detail
+    @endsection
 
 @section('content')
 @php
@@ -30,7 +30,7 @@
 @endphp
 
 <div class="space-y-5 pb-8">
-    <a href="{{ route('penelitian-pkm.index') }}" class="inline-flex items-center gap-1 rounded-md border border-primary px-3 py-1 text-xs font-medium text-black transition hover:bg-gray-100">
+    <a href="{{ route($rute . '.index') }}" class="inline-flex items-center gap-1 rounded-md border border-primary px-3 py-1 text-xs font-medium text-black transition hover:bg-gray-100">
         <svg class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="m15.75 19.5-7.5-7.5 7.5-7.5" /></svg>
         Kembali ke daftar
     </a>

@@ -61,16 +61,22 @@ Route::middleware('auth.akademik')->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
     Route::get('/reviewer/dashboard', [ReviewerController::class, 'dashboard'])->name('reviewer.dashboard');
     
-    Route::get('/penelitian-pkm', [PenelitianPkmController::class, 'index'])->name('penelitian-pkm.index');
-    Route::get('/penelitian-pkm/{id}', [PenelitianPkmController::class, 'show'])->whereNumber('id')->name('penelitian-pkm.show');
+        foreach (['penelitian', 'pkm'] as $slug) {
+        Route::get("/{$slug}", [PenelitianPkmController::class, 'index'])->name("{$slug}.index");
+        Route::get("/{$slug}/{id}", [PenelitianPkmController::class, 'show'])->whereNumber('id')->name("{$slug}.show");
 
-    Route::middleware('role:administrator')->group(function () {
-        Route::get('/penelitian-pkm/create', [PenelitianPkmController::class, 'create'])->name('penelitian-pkm.create');
-        Route::post('/penelitian-pkm', [PenelitianPkmController::class, 'store'])->name('penelitian-pkm.store');
-        Route::get('/penelitian-pkm/{id}/edit', [PenelitianPkmController::class, 'edit'])->whereNumber('id')->name('penelitian-pkm.edit');
-        Route::put('/penelitian-pkm/{id}', [PenelitianPkmController::class, 'update'])->whereNumber('id')->name('penelitian-pkm.update');
-        Route::delete('/penelitian-pkm/{id}', [PenelitianPkmController::class, 'destroy'])->whereNumber('id')->name('penelitian-pkm.destroy');
-    });
+        Route::middleware('role:administrator')->group(function () use ($slug) {
+            Route::get("/{$slug}/create", [PenelitianPkmController::class, 'create'])->name("{$slug}.create");
+            Route::post("/{$slug}", [PenelitianPkmController::class, 'store'])->name("{$slug}.store");
+            Route::get("/{$slug}/{id}/edit", [PenelitianPkmController::class, 'edit'])->whereNumber('id')->name("{$slug}.edit");
+            Route::put("/{$slug}/{id}", [PenelitianPkmController::class, 'update'])->whereNumber('id')->name("{$slug}.update");
+            Route::delete("/{$slug}/{id}", [PenelitianPkmController::class, 'destroy'])->whereNumber('id')->name("{$slug}.destroy");
+        });
+    }
+
+    Route::redirect('/penelitian-pkm', '/penelitian');
+
+     });
 
     Route::get('/reviewer/penilaian', [ReviewerController::class, 'assessments'])->name('reviewer.assessments');
     Route::get('/reviewer/penilaian/{projectId}', [ReviewerController::class, 'assessmentDetail'])->name('reviewer.assessment-detail');
@@ -216,7 +222,7 @@ Route::middleware('auth.akademik')->group(function () {
 
     Route::get('/laporan-akhir', [LaporanAkhirController::class, 'index'])->name('laporan-akhir.index');
     Route::get('/laporan-akhir/download', [LaporanAkhirController::class, 'download'])->name('laporan-akhir.download');
-});
+    
 
 // =====================================================================
 // ROUTE MODUL AKREDITASI (SUPERADMIN)

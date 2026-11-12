@@ -25,24 +25,16 @@
         @endif
 
         <div>
-            <label for="judul_kegiatan" class="{{ $label }}">Judul Penelitian</label>
-            <input id="judul_kegiatan" type="text" name="judul_kegiatan" value="{{ $nilai('judul_kegiatan') }}" placeholder="Masukkan judul penelitian" class="{{ $input }}" required>
+            <label for="judul_kegiatan" class="{{ $label }}">Judul {{ $halaman }}</label>
+            <input id="judul_kegiatan" type="text" name="judul_kegiatan" value="{{ $nilai('judul_kegiatan') }}" placeholder="Masukkan Judul kegiatan {{ $halaman }}" class="{{ $input }}" required>
         </div>
 
-        <div class="grid gap-5 md:grid-cols-3">
+        <div class="grid gap-5 md:grid-cols-2">
+            
             <div>
-                <label for="id_jenis_kegiatan" class="{{ $label }}">Jenis Kegiatan</label>
-                <select id="id_jenis_kegiatan" name="id_jenis_kegiatan" class="{{ $input }}" required>
-                    <option value="">Pilih jenis kegiatan</option>
-                    @foreach($jenisKegiatan as $jenis)
-                        <option value="{{ $jenis['id_jenis_kegiatan'] }}" @selected((string) $nilai('id_jenis_kegiatan') === (string) $jenis['id_jenis_kegiatan'])>{{ $jenis['nama_jenis_kegiatan'] }}</option>
-                    @endforeach
-                </select>
-            </div>
-            <div>
-                <label for="status_kegiatan" class="{{ $label }}">Status Kegiatan Penelitian</label>
+                <label for="status_kegiatan" class="{{ $label }}">Status Kegiatan</label>
                 <select id="status_kegiatan" name="status_kegiatan" class="{{ $input }}" required>
-                    <option value="">Pilih status penelitian</option>
+                    <option value="">Pilih status kegiatan</option>
                     @foreach($statusOptions as $status)
                         <option value="{{ $status }}" @selected($nilai('status_kegiatan') === $status)>{{ $status }}</option>
                     @endforeach
@@ -57,15 +49,15 @@
         <div class="grid gap-5 md:grid-cols-3">
             <div>
                 <label for="tahun_usulan" class="{{ $label }}">Tahun Usulan</label>
-                <input id="tahun_usulan" type="number" name="tahun_usulan" value="{{ $nilai('tahun_usulan') }}" placeholder="Isi tahun usulan penelitian" class="{{ $input }}" required>
+                <input id="tahun_usulan" type="number" name="tahun_usulan" value="{{ $nilai('tahun_usulan') }}" placeholder="Isi tahun usulan" class="{{ $input }}" required>
             </div>
             <div>
                 <label for="tahun_kegiatan" class="{{ $label }}">Tahun Kegiatan</label>
-                <input id="tahun_kegiatan" type="number" name="tahun_kegiatan" value="{{ $nilai('tahun_kegiatan') }}" placeholder="Isi tahun kegiatan penelitian" class="{{ $input }}" required>
+                <input id="tahun_kegiatan" type="number" name="tahun_kegiatan" value="{{ $nilai('tahun_kegiatan') }}" placeholder="Isi tahun kegiatan" class="{{ $input }}" required>
             </div>
             <div>
                 <label for="tahun_pelaksanaan" class="{{ $label }}">Tahun Pelaksanaan</label>
-                <input id="tahun_pelaksanaan" type="number" name="tahun_pelaksanaan" value="{{ $nilai('tahun_pelaksanaan') }}" placeholder="Isi tahun pelaksanaan penelitian" class="{{ $input }}" required>
+                <input id="tahun_pelaksanaan" type="number" name="tahun_pelaksanaan" value="{{ $nilai('tahun_pelaksanaan') }}" placeholder="Isi tahun pelaksanaan" class="{{ $input }}" required>
             </div>
         </div>
 
@@ -75,7 +67,7 @@
         </div>
 
         <div class="flex justify-end gap-3 pt-8">
-            <a href="{{ route('penelitian-pkm.index') }}" class="inline-flex h-11 w-[190px] items-center justify-center rounded-[6px] bg-[#D9D9D9] text-sm font-bold text-black transition hover:bg-gray-300">Kembali</a>
+            <a href="{{ route($rute . '.index') }}" class="inline-flex h-11 w-[190px] items-center justify-center rounded-[6px] bg-[#D9D9D9] text-sm font-bold text-black transition hover:bg-gray-300">Kembali</a>
             <button type="submit" class="inline-flex h-11 w-[190px] items-center justify-center rounded-[6px] bg-additional text-sm font-bold text-white transition hover:bg-primary">Simpan</button>
         </div>
     </form>
