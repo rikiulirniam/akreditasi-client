@@ -82,7 +82,7 @@
                     <x-table.th class="{{ $th }} !text-center">No</x-table.th>
                     <x-table.th class="{{ $th }}"> Judul {{ $halaman }}</x-table.th>
                     <x-table.th class="{{ $th }}">Dosen</x-table.th>
-                    <x-table.th class="{{ $th }}">Jenis {{ $halaman }}ian</x-table.th>
+                    <x-table.th class="{{ $th }}">Jenis {{ $halaman }}</x-table.th>
                     <x-table.th class="{{ $th }}">Status</x-table.th>
                     <x-table.th class="{{ $th }}">Tahun Kegiatan</x-table.th>
                     <x-table.th class="{{ $th }} !text-center">Action</x-table.th>
