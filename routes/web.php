@@ -61,19 +61,21 @@ Route::middleware('auth.akademik')->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
     Route::get('/reviewer/dashboard', [ReviewerController::class, 'dashboard'])->name('reviewer.dashboard');
     
-        foreach (['penelitian', 'pkm'] as $slug) {
-        Route::get("/{$slug}", [PenelitianPkmController::class, 'index'])->name("{$slug}.index");
-        Route::get("/{$slug}/{id}", [PenelitianPkmController::class, 'show'])->whereNumber('id')->name("{$slug}.show");
+    // ==========================================
+    // PENELITIAN & PKM
+    // ==========================================
+    foreach (['penelitian', 'pkm'] as $slug) {
+    Route::get("/{$slug}", [PenelitianPkmController::class, 'index'])->name("{$slug}.index");
+    Route::get("/{$slug}/export", [PenelitianPkmController::class, 'export'])->name("{$slug}.export");
+    Route::get("/{$slug}/{id}", [PenelitianPkmController::class, 'show'])->whereNumber('id')->name("{$slug}.show");
 
-        Route::middleware('role:administrator')->group(function () use ($slug) {
-            Route::get("/{$slug}/create", [PenelitianPkmController::class, 'create'])->name("{$slug}.create");
-            Route::post("/{$slug}", [PenelitianPkmController::class, 'store'])->name("{$slug}.store");
-            Route::get("/{$slug}/{id}/edit", [PenelitianPkmController::class, 'edit'])->whereNumber('id')->name("{$slug}.edit");
-            Route::put("/{$slug}/{id}", [PenelitianPkmController::class, 'update'])->whereNumber('id')->name("{$slug}.update");
-            Route::delete("/{$slug}/{id}", [PenelitianPkmController::class, 'destroy'])->whereNumber('id')->name("{$slug}.destroy");
-        });
-    }
-
+    Route::middleware('role:administrator')->group(function () use ($slug) {
+    Route::get("/{$slug}/create", [PenelitianPkmController::class, 'create'])->name("{$slug}.create");
+    Route::post("/{$slug}", [PenelitianPkmController::class, 'store'])->name("{$slug}.store");
+    Route::get("/{$slug}/{id}/edit", [PenelitianPkmController::class, 'edit'])->whereNumber('id')->name("{$slug}.edit");
+    Route::put("/{$slug}/{id}", [PenelitianPkmController::class, 'update'])->whereNumber('id')->name("{$slug}.update");
+    Route::delete("/{$slug}/{id}", [PenelitianPkmController::class, 'destroy'])->whereNumber('id')->name("{$slug}.destroy");
+    });}
     Route::redirect('/penelitian-pkm', '/penelitian');
 
      });

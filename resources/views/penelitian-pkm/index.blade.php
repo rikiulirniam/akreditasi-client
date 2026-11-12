@@ -53,16 +53,26 @@
                 </div>
             </div>
 
-            @if($canManage)
-                <a href="{{ route($rute . '.create') }}" class="inline-flex h-[34px] shrink-0 items-center justify-center gap-1.5 rounded-md bg-additional px-3 text-xs font-bold text-white transition hover:bg-primary">
-                    <span class="inline-flex h-3.5 w-3.5 items-center justify-center rounded-full bg-white text-additional">
-                        <svg class="h-2.5 w-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 5v14m7-7H5" />
-                        </svg>
-                    </span>
-                    Tambah {{ $halaman }}
+                        <div class="flex shrink-0 items-center gap-2">
+                <a href="{{ route($rute . '.export', array_filter($filters)) }}" class="inline-flex h-[34px] items-center justify-center gap-1.5 rounded-md bg-green-600 px-3 text-xs font-bold text-white transition hover:bg-green-700">
+                    <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3" />
+                    </svg>
+                    Download Excel
                 </a>
-            @endif
+
+                @if($canManage)
+                    <a href="{{ route($rute . '.create') }}" class="inline-flex h-[34px] items-center justify-center gap-1.5 rounded-md bg-additional px-3 text-xs font-bold text-white transition hover:bg-primary">
+                        <span class="inline-flex h-3.5 w-3.5 items-center justify-center rounded-full bg-white text-additional">
+                            <svg class="h-2.5 w-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 5v14m7-7H5" />
+                            </svg>
+                        </span>
+                        Tambah {{ $halaman }}
+                    </a>
+                @endif
+            </div>
+            
         </form>
 
         @if(count($kegiatan) > 0)

@@ -155,6 +155,71 @@ class PenelitianPkmController extends Controller
         return redirect()->route($this->rute() . '.index')->with('success', 'Kegiatan berhasil dihapus.');
     }
 
+        public function export(Request $request)
+    {
+        $filters = $request->validate([
+            'search' => ['nullable', 'string', 'max:255'],
+            'status_kegiatan' => ['nullable', 'string', 'max:50'],
+        ]);
+        $jenis = self::JENIS[$this->rute()];
+        $rows = [];
+        $page = 1;
+
+        try {
+            do {
+                $response = $this->tridharmaService->getKegiatanList(
+                    array_filter($filters) + ['id_jenis_kegiatan' => $jenis['id'], 'per_page' => 100, 'page' => $page]
+                );
+
+                if ($response->status() === 401) {
+                    return redirect()->route('login');
+                }
+
+                if (! $response->successful()) {
+                    return back()->with('error', $response->json('message') ?: 'Gagal mengunduh data.');
+                }
+
+                $data = $response->json('data', []);
+                $rows = array_merge($rows, $data['data'] ?? []);
+                $lastPage = min($data['last_page'] ?? 1, 50);
+            } while ($page++ < $lastPage);
+        } catch (ConnectionException) {
+            return back()->with('error', self::KONEKSI_GAGAL);
+        }
+
+        $filename = strtolower($jenis['nama']) . '_' . now()->format('Ymd_His') . '.csv';
+
+        return response()->streamDownload(function () use ($rows) {
+            $out = fopen('php://output', 'w');
+            fwrite($out, "\xEF\xBB\xBF");
+            fputcsv($out, ['No', 'Judul', 'Jenis', 'Ketua', 'Skim', 'Afiliasi', 'Lokasi', 'Status', 'Tahun Usulan', 'Tahun Kegiatan', 'Tahun Pelaksanaan', 'Lama Kegiatan'], ';', '"', '');
+
+            foreach ($rows as $index => $item) {
+                fputcsv($out, array_map([$this, 'amankanSel'], [
+                    $index + 1,
+                    $item['judul_kegiatan'] ?? '',
+                    $item['jenis_kegiatan']['nama_jenis_kegiatan'] ?? '',
+                    $this->namaKetua($item['anggota'] ?? []),
+                    $item['jenis_skim'] ?? '',
+                    $item['afiliasi'] ?? '',
+                    $item['lokasi_kegiatan'] ?? '',
+                    $item['status_kegiatan'] ?? '',
+                    $item['tahun_usulan'] ?? '',
+                    $item['tahun_kegiatan'] ?? '',
+                    $item['tahun_pelaksanaan'] ?? '',
+                    $item['lama_kegiatan'] ?? '',
+                ]), ';', '"', '');
+            }
+
+            fclose($out);
+        }, $filename, ['Content-Type' => 'text/csv; charset=UTF-8']);
+    }
+
+    private function amankanSel($nilai)
+    {
+        return is_string($nilai) && preg_match('/^[=+\-@\t\r]/', $nilai) ? "'" . $nilai : $nilai;
+    }
+
     private function rules()
     {
         return [
