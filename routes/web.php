@@ -71,6 +71,10 @@ foreach (['penelitian', 'pkm'] as $slug) {
     Route::get("/{$slug}", [PenelitianPkmController::class, 'index'])
         ->name("{$slug}.index");
 
+    Route::get("/{$slug}/export", [PenelitianPkmController::class, 'export'])
+        ->name("{$slug}.export");
+
+
     Route::get("/{$slug}/{id}", [PenelitianPkmController::class, 'show'])
         ->whereNumber('id')
         ->name("{$slug}.show");
