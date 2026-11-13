@@ -97,13 +97,9 @@ foreach (['penelitian', 'pkm'] as $slug) {
         Route::delete("/{$slug}/{id}", [PenelitianPkmController::class, 'destroy'])
             ->whereNumber('id')
             ->name("{$slug}.destroy");
-    });
-}
-
-Route::redirect('/penelitian-pkm', '/penelitian');
-
-
-     });
+    });}
+    Route::redirect('/penelitian-pkm', '/penelitian');
+    
 
     // ==========================================
     // MODUL TRI DHARMA: LUARAN (Publikasi, HKI, Buku)
@@ -264,6 +260,7 @@ Route::redirect('/penelitian-pkm', '/penelitian');
 
     Route::get('/laporan-akhir', [LaporanAkhirController::class, 'index'])->name('laporan-akhir.index');
     Route::get('/laporan-akhir/download', [LaporanAkhirController::class, 'download'])->name('laporan-akhir.download');
+    });
     
 
 // =====================================================================
