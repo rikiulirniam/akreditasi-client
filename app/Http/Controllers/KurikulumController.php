@@ -123,26 +123,37 @@ class KurikulumController extends Controller
         $validated = $request->validate([
             'nama_kurikulum' => ['required', 'string', 'max:255'],
             'sk_kurikulum' => ['required', 'string', 'max:100'],
+            'tahun_mulai' => ['required', 'integer', 'min:1900', 'max:2100'],
             'berlaku_sampai' => ['required', 'integer', 'min:1900', 'max:2100'],
+            'link_dokumen' => ['nullable', 'url', 'max:500'],
             'id_prodi' => ['required'],
             'deskripsi_cpl' => ['nullable', 'string'],
             'kategori_cpl' => ['nullable', 'string', 'max:100'],
         ], [
             'nama_kurikulum.required' => 'Nama Kurikulum wajib diisi.',
             'sk_kurikulum.required' => 'SK Kurikulum wajib diisi.',
+            'tahun_mulai.required' => 'Tahun mulai wajib diisi.',
+            'tahun_mulai.integer' => 'Tahun mulai harus berupa angka.',
+            'tahun_mulai.min' => 'Tahun mulai minimal tahun 1900.',
+            'tahun_mulai.max' => 'Tahun mulai maksimal tahun 2100.',
             'berlaku_sampai.required' => 'Tahun berlaku wajib diisi.',
             'berlaku_sampai.integer' => 'Tahun berlaku harus berupa angka.',
             'berlaku_sampai.min' => 'Tahun berlaku minimal tahun 1900.',
             'berlaku_sampai.max' => 'Tahun berlaku maksimal tahun 2100.',
+            'link_dokumen.url' => 'Link dokumen harus berupa URL yang valid (contoh: https://...).',
             'id_prodi.required' => 'Program Studi wajib dipilih.',
         ]);
 
+        $tahunMulai = (int) $validated['tahun_mulai'];
         $berlakuTahun = (int) $validated['berlaku_sampai'];
+        $linkDokumen = trim($validated['link_dokumen'] ?? '');
 
         $payload = [
             'nama_kurikulum' => trim($validated['nama_kurikulum']),
             'sk_kurikulum' => trim($validated['sk_kurikulum']),
+            'tahun_mulai' => $tahunMulai,
             'berlaku_sampai' => $berlakuTahun,
+            'link_dokumen' => $linkDokumen !== '' ? $linkDokumen : null,
             'id_prodi' => (int) $validated['id_prodi'],
         ];
 
@@ -410,26 +421,37 @@ class KurikulumController extends Controller
         $validated = $request->validate([
             'nama_kurikulum' => ['required', 'string', 'max:255'],
             'sk_kurikulum' => ['required', 'string', 'max:100'],
+            'tahun_mulai' => ['required', 'integer', 'min:1900', 'max:2100'],
             'berlaku_sampai' => ['required', 'integer', 'min:1900', 'max:2100'],
+            'link_dokumen' => ['nullable', 'url', 'max:500'],
             'id_prodi' => ['required'],
             'deskripsi_cpl' => ['nullable', 'string'],
             'kategori_cpl' => ['nullable', 'string', 'max:100'],
         ], [
             'nama_kurikulum.required' => 'Nama Kurikulum wajib diisi.',
             'sk_kurikulum.required' => 'SK Kurikulum wajib diisi.',
+            'tahun_mulai.required' => 'Tahun mulai wajib diisi.',
+            'tahun_mulai.integer' => 'Tahun mulai harus berupa angka.',
+            'tahun_mulai.min' => 'Tahun mulai minimal tahun 1900.',
+            'tahun_mulai.max' => 'Tahun mulai maksimal tahun 2100.',
             'berlaku_sampai.required' => 'Tahun berlaku wajib diisi.',
             'berlaku_sampai.integer' => 'Tahun berlaku harus berupa angka.',
             'berlaku_sampai.min' => 'Tahun berlaku minimal tahun 1900.',
             'berlaku_sampai.max' => 'Tahun berlaku maksimal tahun 2100.',
+            'link_dokumen.url' => 'Link dokumen harus berupa URL yang valid (contoh: https://...).',
             'id_prodi.required' => 'Program Studi wajib dipilih.',
         ]);
 
+        $tahunMulai = (int) $validated['tahun_mulai'];
         $berlakuTahun = (int) $validated['berlaku_sampai'];
+        $linkDokumen = trim($validated['link_dokumen'] ?? '');
 
         $payload = [
             'nama_kurikulum' => trim($validated['nama_kurikulum']),
             'sk_kurikulum' => trim($validated['sk_kurikulum']),
+            'tahun_mulai' => $tahunMulai,
             'berlaku_sampai' => $berlakuTahun,
+            'link_dokumen' => $linkDokumen !== '' ? $linkDokumen : null,
             'id_prodi' => (int) $validated['id_prodi'],
         ];
 
@@ -537,6 +559,13 @@ class KurikulumController extends Controller
     {
         $deskripsiFallback = 'Menjadi perguruan tinggi terapan berstandar nasional dan internasional yang mampu bersaing, akuntabel, berkarakter, dan beretika dalam bidang teknologi dan bisnis.';
 
+        $tahunMulai = $item['tahun_mulai'] ?? 2024;
+        if (preg_match('/\b(19\d{2}|20\d{2})\b/', (string) $tahunMulai, $matches)) {
+            $tahunMulai = (int) $matches[1];
+        } else {
+            $tahunMulai = is_numeric($tahunMulai) ? (int) $tahunMulai : 2024;
+        }
+
         $berlakuSampai = $item['berlaku_sampai'] ?? 2028;
         if (preg_match('/\b(19\d{2}|20\d{2})\b/', (string) $berlakuSampai, $matches)) {
             $berlakuSampai = (int) $matches[1];
@@ -548,7 +577,9 @@ class KurikulumController extends Controller
             'id' => $item['id'] ?? null,
             'nama_kurikulum' => $item['nama_kurikulum'] ?? 'Kurikulum Merdeka 2024',
             'sk_kurikulum' => $item['sk_kurikulum'] ?? 'SK-08202421/2024',
+            'tahun_mulai' => $tahunMulai,
             'berlaku_sampai' => $berlakuSampai,
+            'link_dokumen' => $item['link_dokumen'] ?? ($item['dokumen_kurikulum'] ?? null),
             'id_prodi' => $item['id_prodi'] ?? null,
             'nama_prodi' => $item['prodi']['nama_prodi'] ?? $item['nama_prodi'] ?? 'Teknologi Rekayasa Komputer',
             'cpl' => $item['cpl'] ?? [],
