@@ -1,6 +1,5 @@
 <?php
 
-use App\Http\Controllers\PenelitianPkmController;
 use App\Http\Controllers\Akreditasi\Superadmin\BuktiDokumenController;
 use App\Http\Controllers\Akreditasi\Superadmin\DashboardController as SuperadminDashboard;
 use App\Http\Controllers\Akreditasi\Superadmin\IndikatorController;
@@ -16,16 +15,19 @@ use App\Http\Controllers\AngkatanKelasController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CplController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\KerjaSamaController;
 use App\Http\Controllers\DosenController;
 use App\Http\Controllers\KaprodiController;
 use App\Http\Controllers\KegiatanMahasiswaController;
 use App\Http\Controllers\KelasController;
 use App\Http\Controllers\KurikulumController;
 use App\Http\Controllers\LaporanAkhirController;
+use App\Http\Controllers\LuaranController;
 use App\Http\Controllers\MahasiswaController;
 use App\Http\Controllers\MataKuliahController;
 use App\Http\Controllers\NilaiMahasiswaController;
 use App\Http\Controllers\PendidikanController;
+use App\Http\Controllers\PenelitianPkmController;
 use App\Http\Controllers\PerguruanTinggiController;
 use App\Http\Controllers\PermissionController;
 use App\Http\Controllers\PrestasiMahasiswaController;
@@ -60,25 +62,52 @@ Route::middleware('auth.akademik')->group(function () {
     Route::post('/auth/refresh-token', [AuthController::class, 'refreshToken'])->name('auth.refresh-token');
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
     Route::get('/reviewer/dashboard', [ReviewerController::class, 'dashboard'])->name('reviewer.dashboard');
-    
+
     // ==========================================
     // PENELITIAN & PKM
     // ==========================================
-    foreach (['penelitian', 'pkm'] as $slug) {
-    Route::get("/{$slug}", [PenelitianPkmController::class, 'index'])->name("{$slug}.index");
-    Route::get("/{$slug}/export", [PenelitianPkmController::class, 'export'])->name("{$slug}.export");
-    Route::get("/{$slug}/{id}", [PenelitianPkmController::class, 'show'])->whereNumber('id')->name("{$slug}.show");
+    
+foreach (['penelitian', 'pkm'] as $slug) {
+    Route::get("/{$slug}", [PenelitianPkmController::class, 'index'])
+        ->name("{$slug}.index");
+
+    Route::get("/{$slug}/{id}", [PenelitianPkmController::class, 'show'])
+        ->whereNumber('id')
+        ->name("{$slug}.show");
 
     Route::middleware('role:administrator')->group(function () use ($slug) {
-    Route::get("/{$slug}/create", [PenelitianPkmController::class, 'create'])->name("{$slug}.create");
-    Route::post("/{$slug}", [PenelitianPkmController::class, 'store'])->name("{$slug}.store");
-    Route::get("/{$slug}/{id}/edit", [PenelitianPkmController::class, 'edit'])->whereNumber('id')->name("{$slug}.edit");
-    Route::put("/{$slug}/{id}", [PenelitianPkmController::class, 'update'])->whereNumber('id')->name("{$slug}.update");
-    Route::delete("/{$slug}/{id}", [PenelitianPkmController::class, 'destroy'])->whereNumber('id')->name("{$slug}.destroy");
-    });}
-    Route::redirect('/penelitian-pkm', '/penelitian');
+        Route::get("/{$slug}/create", [PenelitianPkmController::class, 'create'])
+            ->name("{$slug}.create");
+
+        Route::post("/{$slug}", [PenelitianPkmController::class, 'store'])
+            ->name("{$slug}.store");
+
+        Route::get("/{$slug}/{id}/edit", [PenelitianPkmController::class, 'edit'])
+            ->whereNumber('id')
+            ->name("{$slug}.edit");
+
+        Route::put("/{$slug}/{id}", [PenelitianPkmController::class, 'update'])
+            ->whereNumber('id')
+            ->name("{$slug}.update");
+
+        Route::delete("/{$slug}/{id}", [PenelitianPkmController::class, 'destroy'])
+            ->whereNumber('id')
+            ->name("{$slug}.destroy");
+    });
+}
+
+Route::redirect('/penelitian-pkm', '/penelitian');
+
 
      });
+
+    // ==========================================
+    // MODUL TRI DHARMA: LUARAN (Publikasi, HKI, Buku)
+    // ==========================================
+    Route::get('/luaran', [LuaranController::class, 'index'])->name('luaran.index');
+    Route::post('/luaran', [LuaranController::class, 'store'])->name('luaran.store');
+    Route::put('/luaran/{id}', [LuaranController::class, 'update'])->name('luaran.update');
+    Route::delete('/luaran/{id}', [LuaranController::class, 'destroy'])->name('luaran.destroy');
 
     Route::get('/reviewer/penilaian', [ReviewerController::class, 'assessments'])->name('reviewer.assessments');
     Route::get('/reviewer/penilaian/{projectId}', [ReviewerController::class, 'assessmentDetail'])->name('reviewer.assessment-detail');
@@ -185,6 +214,13 @@ Route::middleware('auth.akademik')->group(function () {
     Route::put('/sertifikasi/{sertifikasi}', [SertifikasiController::class, 'update'])->whereNumber('sertifikasi')->name('sertifikasi.update');
     Route::delete('/sertifikasi/{sertifikasi}', [SertifikasiController::class, 'destroy'])->whereNumber('sertifikasi')->name('sertifikasi.destroy');
     Route::get('/sertifikasi/{sertifikasi}', [SertifikasiController::class, 'show'])->whereNumber('sertifikasi')->name('sertifikasi.show');
+
+    Route::get('/kerja-sama', [KerjaSamaController::class, 'index'])->name('kerja-sama.index');
+    Route::post('/kerja-sama', [KerjaSamaController::class, 'store'])->name('kerja-sama.store');
+    Route::get('/kerja-sama/{id}/edit', [KerjaSamaController::class, 'edit'])->whereNumber('id')->name('kerja-sama.edit');
+    Route::put('/kerja-sama/{id}', [KerjaSamaController::class, 'update'])->whereNumber('id')->name('kerja-sama.update');
+    Route::delete('/kerja-sama/{id}', [KerjaSamaController::class, 'destroy'])->whereNumber('id')->name('kerja-sama.destroy');
+    Route::get('/kerja-sama/{id}', [KerjaSamaController::class, 'show'])->whereNumber('id')->name('kerja-sama.show');
 
     // Modul Tenaga Kependidikan
     Route::resource('tenaga-kependidikan', TenagaKependidikanController::class);
