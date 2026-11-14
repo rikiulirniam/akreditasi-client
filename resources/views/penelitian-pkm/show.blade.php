@@ -79,8 +79,8 @@
                             <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.5 20.25a7.5 7.5 0 0 1 15 0" /></svg>
                         </span>
                         <div class="min-w-0 text-sm leading-snug text-black">
-                            <p class="font-medium">{{ $item['dosen']['nama_dosen'] ?? $item['mahasiswa']['nama_mahasiswa'] ?? $item['nama'] ?? '-' }}</p>
-                            <p class="text-xs text-gray-600">{{ $item['peran'] ?? '-' }}</p>
+                            <p class="font-medium">{{ $item['dosen']['nama_dosen'] ?? $item['mahasiswa']['nama_mahasiswa'] ?? $item['nama_mahasiswa'] ?? $item['nama'] ?? '-' }}</p>
+                            <p class="text-xs text-gray-600">{{ $item['peran'] ?? '-' }}@if(!empty($item['nim'])) · NIM {{ $item['nim'] }}@endif</p>
                         </div>
                     </li>
                 @empty

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Services\AkademikService;
 use App\Services\TridharmaService;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\RedirectResponse;
@@ -17,7 +18,10 @@ class PenelitianPkmController extends Controller
         'pkm' => ['id' => 2, 'nama' => 'PKM', 'peran' => 'Pelaksana'],
     ];
 
-    public function __construct(protected TridharmaService $tridharmaService) {}
+    public function __construct(
+        protected TridharmaService $tridharmaService,
+        protected AkademikService $akademikService,
+    ) {}
 
     public function index(Request $request)
     {
@@ -81,7 +85,7 @@ class PenelitianPkmController extends Controller
         if ($pindah = $this->halamanBenar($kegiatan, 'show', $id)) {
             return $pindah;
         }
-
+        $kegiatan['anggota'] = $this->lengkapiMahasiswa($kegiatan['anggota'] ?? []);
         return view('penelitian-pkm.show', ['kegiatan' => $kegiatan] + $this->konteks());
     }
 
@@ -89,7 +93,7 @@ class PenelitianPkmController extends Controller
     {
         return view('penelitian-pkm.create', $this->konteks() + [
             'dosenList' => $this->daftarDosen(),
-            'anggota' => ['ketua' => null, 'dosen' => [], 'lain' => []],
+            'anggota' => ['ketua' => null, 'dosen' => [], 'mahasiswa' => [], 'lain' => []],
         ]);
     }
 
@@ -121,7 +125,7 @@ class PenelitianPkmController extends Controller
         return view('penelitian-pkm.edit', $this->konteks() + [
             'kegiatan' => $kegiatan,
             'dosenList' => $this->daftarDosen(),
-            'anggota' => $this->pecahAnggota($kegiatan['anggota'] ?? []),
+            'anggota' => $this->pecahAnggota($this->lengkapiMahasiswa($kegiatan['anggota'] ?? [])),
         ]);
     }
 
@@ -242,6 +246,8 @@ class PenelitianPkmController extends Controller
             'ketua' => ['required', 'integer', 'min:1'],
             'anggota_dosen' => ['nullable', 'array'],
             'anggota_dosen.*' => ['nullable', 'integer', 'min:1'],
+            'anggota_mahasiswa' => ['nullable', 'array'],
+            'anggota_mahasiswa.*' => ['nullable', 'string', 'max:255'],
             'anggota_lain' => ['nullable', 'string'],
         ];
     }
@@ -253,28 +259,34 @@ class PenelitianPkmController extends Controller
 
     private function dataKegiatan($validated)
     {
-        $data = Arr::except($validated, ['ketua', 'anggota_dosen', 'anggota_lain']);
+        $data = Arr::except($validated, ['ketua', 'anggota_dosen', 'anggota_mahasiswa', 'anggota_lain']);
 
         return array_filter($data, fn ($value) => $value !== null && $value !== '');
     }
 
-    private function bangunAnggota($validated)
+        private function bangunAnggota($validated)
     {
         $peran = self::JENIS[$this->rute()]['peran'];
         $ketua = (int) $validated['ketua'];
         $anggota = [['jenis_anggota' => 'Dosen', 'id_dosen' => $ketua, 'peran' => "Ketua {$peran}"]];
 
-        $lainnya = array_diff(array_unique(array_map('intval', $validated['anggota_dosen'] ?? [])), [$ketua, 0]);
+        $dosenLain = array_diff(array_unique(array_map('intval', $validated['anggota_dosen'] ?? [])), [$ketua, 0]);
 
-        foreach ($lainnya as $idDosen) {
+        foreach ($dosenLain as $idDosen) {
             $anggota[] = ['jenis_anggota' => 'Dosen', 'id_dosen' => $idDosen, 'peran' => "Anggota {$peran}"];
+        }
+
+        $mahasiswa = array_unique(array_filter(array_map('intval', array_keys($validated['anggota_mahasiswa'] ?? []))));
+
+        foreach ($mahasiswa as $idMahasiswa) {
+            $anggota[] = ['jenis_anggota' => 'Mahasiswa', 'id_mahasiswa' => $idMahasiswa, 'peran' => "Anggota {$peran}"];
         }
 
         $lain = json_decode($validated['anggota_lain'] ?? '[]', true);
 
         foreach (is_array($lain) ? $lain : [] as $item) {
             if (is_array($item)) {
-                $anggota[] = Arr::only($item, ['jenis_anggota', 'id_mahasiswa', 'peran']);
+                $anggota[] = Arr::only($item, ['jenis_anggota', 'id_dosen', 'id_mahasiswa', 'peran']);
             }
         }
 
@@ -285,23 +297,97 @@ class PenelitianPkmController extends Controller
     {
         $ketua = null;
         $dosen = [];
+        $mahasiswa = [];
         $lain = [];
 
         foreach ($anggota as $item) {
-            $idDosen = $item['id_dosen'] ?? null;
+            $jenis = strtolower($item['jenis_anggota'] ?? '');
 
-            if ($idDosen && strtolower($item['jenis_anggota'] ?? 'dosen') === 'dosen') {
+            if (! empty($item['id_dosen']) && in_array($jenis, ['', 'dosen'], true)) {
                 if ($ketua === null && str_contains(strtolower($item['peran'] ?? ''), 'ketua')) {
-                    $ketua = (int) $idDosen;
+                    $ketua = (int) $item['id_dosen'];
                 } else {
-                    $dosen[] = (int) $idDosen;
+                    $dosen[] = (int) $item['id_dosen'];
                 }
+            } elseif (! empty($item['id_mahasiswa']) && in_array($jenis, ['', 'mahasiswa'], true)) {
+                $mahasiswa[(int) $item['id_mahasiswa']] = $this->labelMahasiswa($item);
             } else {
-                $lain[] = Arr::only($item, ['jenis_anggota', 'id_mahasiswa', 'peran']);
+                $lain[] = Arr::only($item, ['jenis_anggota', 'id_dosen', 'id_mahasiswa', 'peran']);
             }
         }
 
-        return compact('ketua', 'dosen', 'lain');
+        return compact('ketua', 'dosen', 'mahasiswa', 'lain');
+    }
+
+    private function labelMahasiswa($item)
+    {
+        $data = $item['mahasiswa'] ?? [];
+        $nama = $data['nama_mahasiswa'] ?? $data['nama'] ?? $item['nama_mahasiswa'] ?? null;
+        $nim = $data['nim'] ?? $item['nim'] ?? null;
+
+        if (! $nama) {
+            return 'Mahasiswa #' . $item['id_mahasiswa'];
+        }
+
+        return $nim ? "{$nama} ({$nim})" : $nama;
+    }
+        private function lengkapiMahasiswa($anggota)
+    {
+        foreach ($anggota as $index => $item) {
+            $id = $item['id_mahasiswa'] ?? null;
+
+            if (! $id || $this->labelMahasiswa($item) !== 'Mahasiswa #' . $id) {
+                continue;
+            }
+
+            try {
+                $response = $this->akademikService->getMahasiswaById($id);
+            } catch (ConnectionException) {
+                continue;
+            }
+
+            if ($response->successful()) {
+                $data = $response->json('data', []);
+                $anggota[$index]['nama_mahasiswa'] = $data['nama_mahasiswa'] ?? $data['nama'] ?? null;
+                $anggota[$index]['nim'] = $data['nim'] ?? null;
+            }
+        }
+
+        return $anggota;
+    }
+
+    public function cariMahasiswa(Request $request)
+    {
+        $kata = trim((string) $request->query('q', ''));
+
+        if (mb_strlen($kata) < 2) {
+            return response()->json([]);
+        }
+
+        try {
+            $response = $this->akademikService->getMahasiswaList(['search' => $kata, 'per_page' => 500]);
+        } catch (ConnectionException) {
+            return response()->json(['message' => self::KONEKSI_GAGAL], 503);
+        }
+
+        if (! $response->successful()) {
+            return response()->json(['message' => 'Gagal memuat data mahasiswa.'], $response->status() === 401 ? 401 : 502);
+        }
+
+        $raw = $response->json('data', []);
+        $kunci = mb_strtolower($kata);
+
+        $hasil = collect($raw['data'] ?? $raw)
+            ->map(fn ($item) => [
+                'id' => $item['id'] ?? null,
+                'nama' => $item['nama_mahasiswa'] ?? $item['nama'] ?? '-',
+                'nim' => $item['nim'] ?? '',
+            ])
+            ->filter(fn ($item) => $item['id'] && str_contains(mb_strtolower($item['nama'] . ' ' . $item['nim']), $kunci))
+            ->take(15)
+            ->values();
+
+        return response()->json($hasil);
     }
 
     private function daftarDosen()

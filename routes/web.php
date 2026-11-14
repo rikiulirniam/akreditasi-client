@@ -97,6 +97,7 @@ foreach (['penelitian', 'pkm'] as $slug) {
         Route::delete("/{$slug}/{id}", [PenelitianPkmController::class, 'destroy'])
             ->whereNumber('id')
             ->name("{$slug}.destroy");
+        Route::get("/{$slug}/mahasiswa", [PenelitianPkmController::class, 'cariMahasiswa'])->name("{$slug}.mahasiswa");
     });}
     Route::redirect('/penelitian-pkm', '/penelitian');
     
