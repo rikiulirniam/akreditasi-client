@@ -204,7 +204,7 @@
                     tombol.className = 'block w-full px-4 py-2.5 text-left text-sm hover:bg-gray-100';
                     tombol.textContent = mhs.nim ? `${mhs.nama} (${mhs.nim})` : mhs.nama;
                     tombol.addEventListener('click', () => {
-                        tambah(mhs.id, tombol.textContent);
+                        tambah(mhs.id, mhs.nama);
                         hasil.classList.add('hidden');
                         cari.value = '';
                     });

@@ -14,8 +14,8 @@ class PenelitianPkmController extends Controller
     private const KONEKSI_GAGAL = 'Tidak dapat terhubung ke server Tridharma. Silakan coba lagi nanti.';
 
     private const JENIS = [
-        'penelitian' => ['id' => 1, 'nama' => 'Penelitian', 'peran' => 'Peneliti'],
-        'pkm' => ['id' => 2, 'nama' => 'PKM', 'peran' => 'Pelaksana'],
+        'penelitian' => ['id' => 1, 'nama' => 'Penelitian'],
+        'pkm' => ['id' => 2, 'nama' => 'PKM'],
     ];
 
     public function __construct(
@@ -269,22 +269,21 @@ class PenelitianPkmController extends Controller
         return array_filter($data, fn ($value) => $value !== null && $value !== '');
     }
 
-        private function bangunAnggota($validated)
+    private function bangunAnggota($validated)
     {
-        $peran = self::JENIS[$this->rute()]['peran'];
         $ketua = (int) $validated['ketua'];
-        $anggota = [['jenis_anggota' => 'Dosen', 'id_dosen' => $ketua, 'peran' => "Ketua {$peran}"]];
+        $anggota = [['jenis_anggota' => 'Dosen', 'id_dosen' => $ketua, 'peran' => 'Ketua']];
 
         $dosenLain = array_diff(array_unique(array_map('intval', $validated['anggota_dosen'] ?? [])), [$ketua, 0]);
 
         foreach ($dosenLain as $idDosen) {
-            $anggota[] = ['jenis_anggota' => 'Dosen', 'id_dosen' => $idDosen, 'peran' => "Anggota {$peran}"];
+            $anggota[] = ['jenis_anggota' => 'Dosen', 'id_dosen' => $idDosen, 'peran' => 'Anggota'];
         }
 
         $mahasiswa = array_unique(array_filter(array_map('intval', array_keys($validated['anggota_mahasiswa'] ?? []))));
 
         foreach ($mahasiswa as $idMahasiswa) {
-            $anggota[] = ['jenis_anggota' => 'Mahasiswa', 'id_mahasiswa' => $idMahasiswa, 'peran' => "Anggota {$peran}"];
+            $anggota[] = ['jenis_anggota' => 'Mahasiswa', 'id_mahasiswa' => $idMahasiswa, 'peran' => 'Anggota'];
         }
 
         $lain = json_decode($validated['anggota_lain'] ?? '[]', true);
@@ -328,13 +327,8 @@ class PenelitianPkmController extends Controller
     {
         $data = $item['mahasiswa'] ?? [];
         $nama = $data['nama_mahasiswa'] ?? $data['nama'] ?? $item['nama_mahasiswa'] ?? null;
-        $nim = $data['nim'] ?? $item['nim'] ?? null;
 
-        if (! $nama) {
-            return 'Mahasiswa #' . $item['id_mahasiswa'];
-        }
-
-        return $nim ? "{$nama} ({$nim})" : $nama;
+        return $nama ?: 'Mahasiswa #' . $item['id_mahasiswa'];
     }
 
         private function petaMahasiswa($rows)
@@ -363,7 +357,7 @@ class PenelitianPkmController extends Controller
                 $nama = $data['nama_mahasiswa'] ?? $data['nama'] ?? null;
 
                 if ($nama) {
-                    $peta[$id] = ! empty($data['nim']) ? "{$nama} ({$data['nim']})" : $nama;
+                    $peta[$id] = $nama;
                 }
             }
         }
