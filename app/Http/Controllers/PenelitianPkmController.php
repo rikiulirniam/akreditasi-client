@@ -200,19 +200,24 @@ class PenelitianPkmController extends Controller
             return back()->with('error', self::KONEKSI_GAGAL);
         }
 
+        $peta = $this->petaMahasiswa($rows);
         $filename = strtolower($jenis['nama']) . '_' . now()->format('Ymd_His') . '.csv';
 
-        return response()->streamDownload(function () use ($rows) {
+        return response()->streamDownload(function () use ($rows, $peta) {
             $out = fopen('php://output', 'w');
             fwrite($out, "\xEF\xBB\xBF");
-            fputcsv($out, ['No', 'Judul', 'Jenis', 'Ketua', 'Skim', 'Afiliasi', 'Lokasi', 'Status', 'Tahun Usulan', 'Tahun Kegiatan', 'Tahun Pelaksanaan', 'Lama Kegiatan'], ';', '"', '');
+            fputcsv($out, ['No', 'Judul', 'Jenis', 'Ketua', 'Anggota Dosen', 'Anggota Mahasiswa', 'Skim', 'Afiliasi', 'Lokasi', 'Status', 'Tahun Usulan', 'Tahun Kegiatan', 'Tahun Pelaksanaan', 'Lama Kegiatan'], ';', '"', '');
 
             foreach ($rows as $index => $item) {
+                [$dosen, $mahasiswa] = $this->namaAnggota($item['anggota'] ?? [], $peta);
+
                 fputcsv($out, array_map([$this, 'amankanSel'], [
                     $index + 1,
                     $item['judul_kegiatan'] ?? '',
                     $item['jenis_kegiatan']['nama_jenis_kegiatan'] ?? '',
                     $this->namaKetua($item['anggota'] ?? []),
+                    $dosen,
+                    $mahasiswa,
                     $item['jenis_skim'] ?? '',
                     $item['afiliasi'] ?? '',
                     $item['lokasi_kegiatan'] ?? '',
@@ -230,7 +235,7 @@ class PenelitianPkmController extends Controller
 
     private function amankanSel($nilai)
     {
-        return is_string($nilai) && preg_match('/^[=+\-@\t\r]/', $nilai) ? "'" . $nilai : $nilai;
+        return is_string($nilai) && preg_match('/^[=+\-@\t\r]./s', $nilai) ? "'" . $nilai : $nilai;
     }
 
     private function rules()
@@ -331,6 +336,58 @@ class PenelitianPkmController extends Controller
 
         return $nim ? "{$nama} ({$nim})" : $nama;
     }
+
+        private function petaMahasiswa($rows)
+    {
+        $ids = [];
+
+        foreach ($rows as $row) {
+            foreach ($row['anggota'] ?? [] as $item) {
+                if (! empty($item['id_mahasiswa']) && $this->labelMahasiswa($item) === 'Mahasiswa #' . $item['id_mahasiswa']) {
+                    $ids[$item['id_mahasiswa']] = true;
+                }
+            }
+        }
+
+        $peta = [];
+
+        foreach (array_keys($ids) as $id) {
+            try {
+                $response = $this->akademikService->getMahasiswaById($id);
+            } catch (ConnectionException) {
+                continue;
+            }
+
+            if ($response->successful()) {
+                $data = $response->json('data', []);
+                $nama = $data['nama_mahasiswa'] ?? $data['nama'] ?? null;
+
+                if ($nama) {
+                    $peta[$id] = ! empty($data['nim']) ? "{$nama} ({$data['nim']})" : $nama;
+                }
+            }
+        }
+
+        return $peta;
+    }
+
+    private function namaAnggota($anggota, $peta)
+    {
+        $dosen = [];
+        $mahasiswa = [];
+
+        foreach ($anggota as $item) {
+            if (! empty($item['id_mahasiswa'])) {
+                $label = $this->labelMahasiswa($item);
+                $mahasiswa[] = $label === 'Mahasiswa #' . $item['id_mahasiswa'] ? ($peta[$item['id_mahasiswa']] ?? $label) : $label;
+            } elseif (! empty($item['id_dosen']) && ! str_contains(strtolower($item['peran'] ?? ''), 'ketua')) {
+                $dosen[] = $item['dosen']['nama_dosen'] ?? $item['nama_dosen'] ?? 'Dosen #' . $item['id_dosen'];
+            }
+        }
+
+        return [implode('; ', $dosen), implode('; ', $mahasiswa)];
+    }
+
         private function lengkapiMahasiswa($anggota)
     {
         foreach ($anggota as $index => $item) {
