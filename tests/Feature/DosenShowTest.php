@@ -190,7 +190,7 @@ class DosenShowTest extends TestCase
         $response->assertSee('0015088501');
     }
 
-    public function test_dosen_index_deduplicates_education_options_in_create_modal(): void
+    public function test_dosen_create_and_edit_forms_offer_unique_higher_education_options(): void
     {
         Http::fake([
             '*/dosen*' => Http::response([
@@ -228,10 +228,10 @@ class DosenShowTest extends TestCase
         $html = $response->getContent();
 
         $this->assertSame(1, substr_count($html, 'id="createPendidikanSelect"'));
-        $this->assertSame(1, substr_count($html, '>S2</option>'));
-        $this->assertSame(1, substr_count($html, '>S3</option>'));
-        $this->assertStringNotContainsString('>S1</option>', $html);
-        $this->assertStringNotContainsString('editPendidikanSelect', $html);
+        $this->assertSame(2, substr_count($html, '>S2</option>'));
+        $this->assertSame(2, substr_count($html, '>S3</option>'));
+        $this->assertSame(2, substr_count($html, '>S1</option>'));
+        $this->assertStringContainsString('id="editPendidikanSelect"', $html);
     }
 
     public function test_dosen_index_shows_empty_state_inside_the_table_and_keeps_page_actions_available(): void
@@ -263,8 +263,8 @@ class DosenShowTest extends TestCase
 
         $response->assertOk()
             ->assertSee('Belum ada data dosen')
-            ->assertSee('id="dosen-table" class="w-full table-fixed text-left border-collapse"', false)
-            ->assertSee('mt-7 min-w-0 overflow-x-hidden', false)
+            ->assertSee('id="dosen-table" class="w-full min-w-[1050px] table-fixed text-left border-collapse"', false)
+            ->assertSee('mt-7 min-w-0 overflow-x-auto', false)
             ->assertSee('openImportModalBtnTable')
             ->assertSee('openCreateModalBtnTable')
             ->assertSee('Download Template Excel');
@@ -310,7 +310,7 @@ class DosenShowTest extends TestCase
         });
     }
 
-    public function test_jabatan_controls_are_only_visible_to_admin_and_reviewer(): void
+    public function test_jabatan_and_education_controls_are_available_in_create_and_edit_forms(): void
     {
         Http::fake([
             '*/dosen*' => Http::response([
@@ -338,7 +338,7 @@ class DosenShowTest extends TestCase
             '*/bidang-keahlian*' => Http::response(['data' => []]),
         ]);
 
-        foreach (['Admin', 'Administrator', 'reviewer'] as $role) {
+        foreach (['Admin', 'Administrator', 'reviewer', 'Kaprodi'] as $role) {
             $response = $this->withSession([
                 'access_token' => 'dummy-token',
                 'user' => ['nama' => 'Pengguna', 'role' => $role],
@@ -351,15 +351,8 @@ class DosenShowTest extends TestCase
                 ->assertSee('Lektor');
         }
 
-        $response = $this->withSession([
-            'access_token' => 'dummy-token',
-            'user' => ['nama' => 'Kaprodi', 'role' => 'Kaprodi'],
-        ])->get(route('dosen.index'));
-
-        $response->assertOk()
-            ->assertDontSee('id="createJabatanSelect"', false)
-            ->assertDontSee('id="editJabatanSelect"', false)
-            ->assertSee('id="editJabatanPreserved"', false)
+        $response->assertSee('id="createPendidikanSelect"', false)
+            ->assertSee('id="editPendidikanSelect"', false)
             ->assertSee('data-id-jabatan="4"', false)
             ->assertSee('data-id-pendidikan="6"', false);
     }
@@ -632,6 +625,92 @@ class DosenShowTest extends TestCase
         );
         $this->assertStringContainsString('template_data_dosen.xlsx', (string) $response->headers->get('content-disposition'));
         $this->assertSame('PK', substr($response->streamedContent(), 0, 2));
+    }
+
+    public function test_dosen_export_proxies_authenticated_xlsx_response(): void
+    {
+        Http::fake([
+            '*/dosen/export' => Http::response('xlsx-bytes', 200, [
+                'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                'Content-Disposition' => 'attachment; filename=dosen.xlsx',
+            ]),
+        ]);
+
+        $response = $this->withSession([
+            'access_token' => 'test-export-token',
+            'user' => ['nama' => 'Kuwat', 'role' => 'Kaprodi'],
+        ])->get(route('dosen.export'));
+
+        $response->assertOk()
+            ->assertHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+            ->assertHeader('Content-Disposition', 'attachment; filename=dosen.xlsx')
+            ->assertContent('xlsx-bytes');
+
+        Http::assertSent(fn ($request): bool => str_ends_with($request->url(), '/dosen/export')
+            && $request->hasHeader('Authorization', 'Bearer test-export-token'));
+    }
+
+    public function test_dosen_ajax_store_returns_success_and_sends_relation_ids_and_manual_fields(): void
+    {
+        Http::fake([
+            '*/dosen' => Http::response([
+                'success' => true,
+                'message' => 'Data dosen berhasil ditambahkan.',
+                'data' => ['id_dosen' => 10],
+            ], 201),
+        ]);
+
+        $response = $this->withSession([
+            'access_token' => 'dummy-token',
+            'user' => ['nama' => 'Kuwat', 'role' => 'Kaprodi'],
+        ])->postJson(route('dosen.store'), [
+            'nama_dosen' => 'Dr. Hendra Gunawan',
+            'nidn' => '0029088401',
+            'nuptk' => '9912345678000001',
+            'status_dosen' => 'DTT',
+            'email' => 'hendra@example.com',
+            'sertifikasi_dosen' => 'Tersertifikasi',
+            'id_jabatan' => '4',
+            'id_pendidikan' => '3',
+        ]);
+
+        $response->assertCreated()
+            ->assertJsonPath('success', true);
+
+        Http::assertSent(fn ($request): bool => $request->method() === 'POST'
+            && str_ends_with(parse_url($request->url(), PHP_URL_PATH), '/dosen')
+            && $request->data()['nuptk'] === '9912345678000001'
+            && $request->data()['id_jabatan'] === 4
+            && $request->data()['id_pendidikan'] === 3
+            && $request->data()['sertifikasi_dosen'] === 'Tersertifikasi');
+    }
+
+    public function test_dosen_ajax_update_returns_backend_field_validation_errors(): void
+    {
+        Http::fake([
+            '*/dosen/10' => Http::response([
+                'success' => false,
+                'message' => 'Validasi gagal.',
+                'errors' => ['id_pendidikan' => ['Pendidikan terakhir tidak valid.']],
+            ], 422),
+        ]);
+
+        $response = $this->withSession([
+            'access_token' => 'dummy-token',
+            'user' => ['nama' => 'Kuwat', 'role' => 'Kaprodi'],
+        ])->putJson(route('dosen.update', 10), [
+            'nama_dosen' => 'Dr. Hendra Gunawan',
+            'nidn' => '0029088401',
+            'nuptk' => '',
+            'status_dosen' => 'DTPS',
+            'email' => 'hendra@example.com',
+            'sertifikasi_dosen' => 'Belum Tersertifikasi',
+            'id_jabatan' => '4',
+            'id_pendidikan' => '999',
+        ]);
+
+        $response->assertUnprocessable()
+            ->assertJsonPath('errors.id_pendidikan.0', 'Pendidikan terakhir tidak valid.');
     }
 
     public function test_dosen_detail_displays_default_jurusan_prodi_history_and_sertifikasi_links(): void

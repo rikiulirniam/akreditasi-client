@@ -55,10 +55,9 @@
         Tanggal Terbit
     </label>
     <input
-        type="text"
+        type="date"
         name="tanggal_terbit"
         id="{{ $p }}_tanggal_terbit_jurnal"
-        placeholder="Isi tanggal terbit jurnal"
         value="{{ $d['tanggal_terbit'] ?? '' }}"
         required
         class="w-full px-4 py-2.5 rounded-[10px] bg-white-form border-none text-sm font-medium text-gray-900 focus:ring-2 focus:ring-primary/20 focus:outline-none placeholder:text-gray-500"
@@ -103,10 +102,10 @@
     <input
         type="number"
         min="1"
-        name="total_halaman"
+        name="halaman_jurnal"
         id="{{ $p }}_total_halaman_jurnal"
         placeholder="Isi total halaman jurnal"
-        value="{{ $d['total_halaman'] ?? '' }}"
+        value="{{ $d['halaman_jurnal'] ?? ($d['total_halaman'] ?? '') }}"
         class="w-full px-4 py-2.5 rounded-[10px] bg-white-form border-none text-sm font-medium text-gray-900 focus:ring-2 focus:ring-primary/20 focus:outline-none placeholder:text-gray-500"
     >
 </div>
@@ -123,7 +122,7 @@
             class="w-full appearance-none px-4 py-2.5 pr-10 rounded-[10px] bg-white-form border-none text-sm font-medium text-gray-700 focus:ring-2 focus:ring-primary/20 focus:outline-none cursor-pointer"
         >
             <option value="" disabled {{ empty($d['indeksasi']) ? 'selected' : '' }}>Pilih Indeksasi Jurnal</option>
-            @foreach(['SCOPUS', 'Web of Science', 'IEEE Xplore', 'ERIC', 'SINTA', 'Google Scholar'] as $opt)
+            @foreach(['Scopus', 'Web of Science', 'IEEE Xplore', 'ERIC', 'SINTA', 'Google Scholar'] as $opt)
                 <option value="{{ $opt }}" {{ ($d['indeksasi'] ?? '') === $opt ? 'selected' : '' }}>{{ $opt }}</option>
             @endforeach
         </select>
@@ -141,11 +140,11 @@
         Tautan Jurnal (G. Drive)
     </label>
     <input
-        type="text"
-        name="url_publikasi"
+        type="url"
+        name="url_luaran"
         id="{{ $p }}_url_jurnal"
         placeholder="Unggah Jurnal dalam bentuk tautan G.Drive"
-        value="{{ $d['url_publikasi'] ?? ($d['url'] ?? '') }}"
+        value="{{ $d['tautan_jurnal'] ?? ($d['url_luaran'] ?? ($d['url_publikasi'] ?? ($d['url'] ?? ''))) }}"
         class="w-full px-4 py-2.5 rounded-[10px] bg-white-form border-none text-sm font-medium text-gray-900 focus:ring-2 focus:ring-primary/20 focus:outline-none placeholder:text-gray-500"
     >
 </div>

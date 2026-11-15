@@ -41,7 +41,7 @@
     </label>
     <input
         type="text"
-        name="nama_penerbit"
+        name="penerbit_buku"
         id="{{ $p }}_nama_penerbit_buku"
         placeholder="Isi Penerbit Buku"
         value="{{ $d['nama_penerbit'] ?? ($d['penerbit'] ?? ($d['penerbit_buku'] ?? '')) }}"
@@ -56,7 +56,9 @@
         Tahun Terbit
     </label>
     <input
-        type="text"
+        type="number"
+        min="1900"
+        max="2100"
         name="tahun_terbit"
         id="{{ $p }}_tahun_terbit_buku"
         placeholder="Masukkan tahun terbit buku"
@@ -114,10 +116,10 @@
     <input
         type="number"
         min="1"
-        name="total_halaman"
+        name="halaman_buku"
         id="{{ $p }}_total_halaman_buku"
         placeholder="Isi total halaman buku"
-        value="{{ $d['total_halaman'] ?? '' }}"
+        value="{{ $d['halaman_buku'] ?? ($d['total_halaman'] ?? '') }}"
         class="w-full px-4 py-2.5 rounded-[10px] bg-white-form border-none text-sm font-medium text-gray-900 focus:ring-2 focus:ring-primary/20 focus:outline-none placeholder:text-gray-500"
     >
 </div>
@@ -128,11 +130,11 @@
         Tautan Buku
     </label>
     <input
-        type="text"
-        name="url_buku"
+        type="url"
+        name="url_luaran"
         id="{{ $p }}_url_buku"
         placeholder="Unggah Buku dalam bentuk tautan G.Drive"
-        value="{{ $d['url_buku'] ?? ($d['url'] ?? '') }}"
+        value="{{ $d['tautan_buku'] ?? ($d['url_buku'] ?? ($d['url_luaran'] ?? ($d['url'] ?? ''))) }}"
         class="w-full px-4 py-2.5 rounded-[10px] bg-white-form border-none text-sm font-medium text-gray-900 focus:ring-2 focus:ring-primary/20 focus:outline-none placeholder:text-gray-500"
     >
 </div>

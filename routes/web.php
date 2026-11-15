@@ -154,6 +154,7 @@ Route::middleware('auth.akademik')->group(function () {
     // MODUL DOSEN & SDM
     // ==========================================
     Route::get('/dosen/template', [DosenController::class, 'template'])->name('dosen.template');
+    Route::get('/dosen/export', [DosenController::class, 'export'])->name('dosen.export');
     Route::post('/dosen/import', [DosenController::class, 'import'])->name('dosen.import');
     Route::resource('dosen', DosenController::class);
 
