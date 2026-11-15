@@ -1186,4 +1186,36 @@ class AkademikService
     {
         return $this->get('assessment/pendidikan/gap', $query, $token);
     }
+
+    /*
+    |==========================================================================
+    | MODUL: DASHBOARD KPI PENDIDIKAN (/api/dashboard/pendidikan)
+    |==========================================================================
+    */
+
+    public function getDashboardPendidikan(array $query = [], ?string $token = null): Response
+    {
+        return $this->get('dashboard/pendidikan', $query, $token);
+    }
+
+    /*
+    |==========================================================================
+    | MODUL: EVIDENCE KE INDIKATOR LAM INFOKOM (/api/evidence-indikator/*)
+    |==========================================================================
+    */
+
+    public function getEvidenceIndikatorByIndikator(int|string $idIndikator, array $query = [], ?string $token = null): Response
+    {
+        return $this->get("evidence-indikator/{$idIndikator}", $query, $token);
+    }
+
+    public function createEvidenceIndikator(array $data, ?string $token = null): Response
+    {
+        return $this->post('evidence-indikator', $data, $token);
+    }
+
+    public function deleteEvidenceIndikator(int|string $id, ?string $token = null): Response
+    {
+        return $this->delete("evidence-indikator/{$id}", [], $token);
+    }
 }

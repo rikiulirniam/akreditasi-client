@@ -50,7 +50,7 @@
             </div>
             <div class="mt-2.5 sm:mt-3 min-w-0">
                 <span class="text-[9.5px] sm:text-[10px] font-semibold text-gray-700 uppercase tracking-tight block whitespace-nowrap" title="Mahasiswa Aktif">Mahasiswa Aktif</span>
-                <p class="text-2xl sm:text-[28px] font-black text-[#183A5F] tracking-tight mt-0.5 leading-none">{{ $kpi['mahasiswa_aktif'] ?? 425 }}</p>
+                <p class="text-2xl sm:text-[28px] font-black text-[#183A5F] tracking-tight mt-0.5 leading-none">{{ $kpi['mahasiswa_aktif'] ?? 0 }}</p>
                 <p class="text-[8.5px] sm:text-[9px] font-semibold text-gray-500 uppercase tracking-tight mt-1 whitespace-nowrap">SEMESTER BERJALAN</p>
             </div>
         </div>
@@ -69,8 +69,8 @@
             </div>
             <div class="mt-2.5 sm:mt-3 min-w-0">
                 <span class="text-[9.5px] sm:text-[10px] font-semibold text-gray-700 uppercase tracking-tight block whitespace-nowrap" title="Mahasiswa Baru">Mahasiswa Baru</span>
-                <p class="text-2xl sm:text-[28px] font-black text-[#183A5F] tracking-tight mt-0.5 leading-none">{{ $kpi['mahasiswa_baru'] ?? 112 }}</p>
-                <p class="text-[8.5px] sm:text-[9px] font-semibold text-gray-500 uppercase tracking-tight mt-1 whitespace-nowrap">ANGKATAN {{ $kpi['tahun_angkatan_baru'] ?? '2026' }}</p>
+                <p class="text-2xl sm:text-[28px] font-black text-[#183A5F] tracking-tight mt-0.5 leading-none">{{ $kpi['mahasiswa_baru'] ?? 0 }}</p>
+                <p class="text-[8.5px] sm:text-[9px] font-semibold text-gray-500 uppercase tracking-tight mt-1 whitespace-nowrap">ANGKATAN {{ $kpi['tahun_angkatan_baru'] ?? date('Y') }}</p>
             </div>
         </div>
 
@@ -86,7 +86,7 @@
             </div>
             <div class="mt-2.5 sm:mt-3 min-w-0">
                 <span class="text-[9.5px] sm:text-[10px] font-semibold text-gray-700 uppercase tracking-tight block whitespace-nowrap" title="Lulus Tepat Waktu">Lulus Tepat Waktu</span>
-                <p class="text-2xl sm:text-[28px] font-black text-[#183A5F] tracking-tight mt-0.5 leading-none">{{ $kpi['lulus_tepat_waktu'] ?? 87 }} %</p>
+                <p class="text-2xl sm:text-[28px] font-black text-[#183A5F] tracking-tight mt-0.5 leading-none">{{ $kpi['lulus_tepat_waktu'] ?? 0 }} %</p>
                 <p class="text-[8.5px] sm:text-[9px] font-semibold text-gray-500 uppercase tracking-tight mt-1 whitespace-nowrap">TARGET MINIMUM : 85%</p>
             </div>
         </div>
@@ -105,7 +105,7 @@
             </div>
             <div class="mt-2.5 sm:mt-3 min-w-0">
                 <span class="text-[9.5px] sm:text-[10px] font-semibold text-gray-700 uppercase tracking-tight block whitespace-nowrap" title="Rata-Rata IPK">Rata-Rata IPK</span>
-                <p class="text-2xl sm:text-[28px] font-black text-[#183A5F] tracking-tight mt-0.5 leading-none">{{ number_format($kpi['rata_rata_ipk'] ?? 3.78, 2) }}</p>
+                <p class="text-2xl sm:text-[28px] font-black text-[#183A5F] tracking-tight mt-0.5 leading-none">{{ number_format((float) ($kpi['rata_rata_ipk'] ?? 0.0), 2) }}</p>
                 <p class="text-[8.5px] sm:text-[9px] font-semibold text-gray-500 uppercase tracking-tight mt-1 whitespace-nowrap">SKALA 4.00</p>
             </div>
         </div>
@@ -124,8 +124,8 @@
             </div>
             <div class="mt-2.5 sm:mt-3 min-w-0">
                 <span class="text-[9.5px] sm:text-[10px] font-semibold text-gray-700 uppercase tracking-tight block whitespace-nowrap" title="Prestasi Nasional">Prestasi Nasional</span>
-                <p class="text-2xl sm:text-[28px] font-black text-[#183A5F] tracking-tight mt-0.5 leading-none">{{ $kpi['prestasi_nasional'] ?? 97 }}</p>
-                <p class="text-[8.5px] sm:text-[9px] font-semibold text-gray-500 uppercase tracking-tight mt-1 whitespace-nowrap">TAHUN 2026</p>
+                <p class="text-2xl sm:text-[28px] font-black text-[#183A5F] tracking-tight mt-0.5 leading-none">{{ $kpi['prestasi_nasional'] ?? 0 }}</p>
+                <p class="text-[8.5px] sm:text-[9px] font-semibold text-gray-500 uppercase tracking-tight mt-1 whitespace-nowrap">TAHUN {{ $kpi['tahun_prestasi'] ?? date('Y') }}</p>
             </div>
         </div>
 
@@ -144,8 +144,8 @@
             </div>
             <div class="mt-2.5 sm:mt-3 min-w-0">
                 <span class="text-[9px] sm:text-[9.5px] font-semibold text-gray-700 uppercase tracking-tight block whitespace-nowrap" title="Prestasi Internasional">Prestasi Internasional</span>
-                <p class="text-2xl sm:text-[28px] font-black text-[#183A5F] tracking-tight mt-0.5 leading-none">{{ $kpi['prestasi_internasional'] ?? 34 }}</p>
-                <p class="text-[8.5px] sm:text-[9px] font-semibold text-gray-500 uppercase tracking-tight mt-1 whitespace-nowrap">TAHUN 2026</p>
+                <p class="text-2xl sm:text-[28px] font-black text-[#183A5F] tracking-tight mt-0.5 leading-none">{{ $kpi['prestasi_internasional'] ?? 0 }}</p>
+                <p class="text-[8.5px] sm:text-[9px] font-semibold text-gray-500 uppercase tracking-tight mt-1 whitespace-nowrap">TAHUN {{ $kpi['tahun_prestasi'] ?? date('Y') }}</p>
             </div>
         </div>
 
@@ -173,10 +173,11 @@
 
             <!-- Card 2: Dosen S3 -->
             <div class="p-3 sm:p-3.5 rounded-2xl bg-[#D6DEE5] border border-[#CAD5DE] border-b-[3px] border-b-[#B8C6D4] shadow-[0_8px_16px_-2px_rgba(15,23,42,0.12),0_3px_6px_-2px_rgba(15,23,42,0.08),inset_0_1px_0_0_rgba(255,255,255,0.7)] hover:-translate-y-1 hover:shadow-[0_12px_24px_-4px_rgba(15,23,42,0.16),0_6px_10px_-3px_rgba(15,23,42,0.1),inset_0_1px_0_0_rgba(255,255,255,0.8)] transition-all duration-200 flex items-center gap-3 sm:gap-3.5 group min-h-[88px]">
-                <div class="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-[#7B6EE2] text-gray-900 flex items-center justify-center shrink-0 shadow-xs border-b-2 border-black/10">
+                <div class="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-[#6BE877] text-gray-900 flex items-center justify-center shrink-0 shadow-xs border-b-2 border-black/10">
                     <svg class="w-5 h-5 sm:w-5.5 sm:h-5.5 text-gray-900" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M22 10v6M2 10l10-5 10 5-10 5z" />
-                        <path d="M6 12v5c3 3 9 3 12 0v-5" />
+                        <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1-2.5-2.5Z" />
+                        <path d="M6 6h10" />
+                        <path d="M6 10h10" />
                     </svg>
                 </div>
                 <div class="min-w-0 flex-1">
@@ -187,11 +188,9 @@
 
             <!-- Card 3: Lektor Kepala -->
             <div class="p-3 sm:p-3.5 rounded-2xl bg-[#D6DEE5] border border-[#CAD5DE] border-b-[3px] border-b-[#B8C6D4] shadow-[0_8px_16px_-2px_rgba(15,23,42,0.12),0_3px_6px_-2px_rgba(15,23,42,0.08),inset_0_1px_0_0_rgba(255,255,255,0.7)] hover:-translate-y-1 hover:shadow-[0_12px_24px_-4px_rgba(15,23,42,0.16),0_6px_10px_-3px_rgba(15,23,42,0.1),inset_0_1px_0_0_rgba(255,255,255,0.8)] transition-all duration-200 flex items-center gap-3 sm:gap-3.5 group min-h-[88px]">
-                <div class="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-[#E3906F] text-gray-900 flex items-center justify-center shrink-0 shadow-xs border-b-2 border-black/10">
+                <div class="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-[#8CE3B8] text-gray-900 flex items-center justify-center shrink-0 shadow-xs border-b-2 border-black/10">
                     <svg class="w-5 h-5 sm:w-5.5 sm:h-5.5 text-gray-900" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                        <circle cx="12" cy="7" r="4" />
-                        <path d="M5 21v-2a4 4 0 0 1 4-4h6a4 4 0 0 1 4 4v2" />
-                        <path d="M12 15v4" />
+                        <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
                     </svg>
                 </div>
                 <div class="min-w-0 flex-1">
@@ -202,13 +201,10 @@
 
             <!-- Card 4: Penelitian -->
             <div class="p-3 sm:p-3.5 rounded-2xl bg-[#D6DEE5] border border-[#CAD5DE] border-b-[3px] border-b-[#B8C6D4] shadow-[0_8px_16px_-2px_rgba(15,23,42,0.12),0_3px_6px_-2px_rgba(15,23,42,0.08),inset_0_1px_0_0_rgba(255,255,255,0.7)] hover:-translate-y-1 hover:shadow-[0_12px_24px_-4px_rgba(15,23,42,0.16),0_6px_10px_-3px_rgba(15,23,42,0.1),inset_0_1px_0_0_rgba(255,255,255,0.8)] transition-all duration-200 flex items-center gap-3 sm:gap-3.5 group min-h-[88px]">
-                <div class="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-[#2CD4D9] text-gray-900 flex items-center justify-center shrink-0 shadow-xs border-b-2 border-black/10">
+                <div class="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-[#6BE8DE] text-gray-900 flex items-center justify-center shrink-0 shadow-xs border-b-2 border-black/10">
                     <svg class="w-5 h-5 sm:w-5.5 sm:h-5.5 text-gray-900" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                        <rect x="3.5" y="3.5" width="4.5" height="17" rx="2" />
-                        <rect x="10" y="10" width="4.5" height="10.5" rx="2" />
-                        <rect x="16.5" y="14" width="4" height="6.5" rx="1.5" />
-                        <circle cx="15.5" cy="8.5" r="4" fill="#2CD4D9" />
-                        <line x1="18.5" y1="11.5" x2="21.5" y2="14.5" />
+                        <path d="M10 2v7.31M14 2v7.31M8.5 2h7M14 9.3a6.5 6.5 0 1 1-4 0" />
+                        <path d="M5.52 16h12.96" />
                     </svg>
                 </div>
                 <div class="min-w-0 flex-1">
@@ -219,12 +215,11 @@
 
             <!-- Card 5: Publikasi Scopus -->
             <div class="p-3 sm:p-3.5 rounded-2xl bg-[#D6DEE5] border border-[#CAD5DE] border-b-[3px] border-b-[#B8C6D4] shadow-[0_8px_16px_-2px_rgba(15,23,42,0.12),0_3px_6px_-2px_rgba(15,23,42,0.08),inset_0_1px_0_0_rgba(255,255,255,0.7)] hover:-translate-y-1 hover:shadow-[0_12px_24px_-4px_rgba(15,23,42,0.16),0_6px_10px_-3px_rgba(15,23,42,0.1),inset_0_1px_0_0_rgba(255,255,255,0.8)] transition-all duration-200 flex items-center gap-3 sm:gap-3.5 group min-h-[88px]">
-                <div class="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-[#9990E4] text-gray-900 flex items-center justify-center shrink-0 shadow-xs border-b-2 border-black/10">
+                <div class="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-[#6BA6EB] text-gray-900 flex items-center justify-center shrink-0 shadow-xs border-b-2 border-black/10">
                     <svg class="w-5 h-5 sm:w-5.5 sm:h-5.5 text-gray-900" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                        <rect x="4" y="3" width="16" height="18" rx="3" />
-                        <line x1="7.5" y1="7" x2="16.5" y2="7" />
-                        <rect x="7.5" y="10" width="9" height="5" rx="1" />
-                        <line x1="7.5" y1="18" x2="12.5" y2="18" />
+                        <circle cx="12" cy="12" r="10" />
+                        <line x1="2" y1="12" x2="22" y2="12" />
+                        <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
                     </svg>
                 </div>
                 <div class="min-w-0 flex-1">
@@ -235,10 +230,10 @@
 
             <!-- Card 6: HKI -->
             <div class="p-3 sm:p-3.5 rounded-2xl bg-[#D6DEE5] border border-[#CAD5DE] border-b-[3px] border-b-[#B8C6D4] shadow-[0_8px_16px_-2px_rgba(15,23,42,0.12),0_3px_6px_-2px_rgba(15,23,42,0.08),inset_0_1px_0_0_rgba(255,255,255,0.7)] hover:-translate-y-1 hover:shadow-[0_12px_24px_-4px_rgba(15,23,42,0.16),0_6px_10px_-3px_rgba(15,23,42,0.1),inset_0_1px_0_0_rgba(255,255,255,0.8)] transition-all duration-200 flex items-center gap-3 sm:gap-3.5 group min-h-[88px]">
-                <div class="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-[#DCF06B] text-gray-900 flex items-center justify-center shrink-0 shadow-xs border-b-2 border-black/10">
+                <div class="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-[#B09CE6] text-gray-900 flex items-center justify-center shrink-0 shadow-xs border-b-2 border-black/10">
                     <svg class="w-5 h-5 sm:w-5.5 sm:h-5.5 text-gray-900" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                        <circle cx="12" cy="12" r="9" />
-                        <path d="M14.5 9.5a3.5 3.5 0 0 0-2.5-1 3.5 3.5 0 0 0-3.5 3.5 3.5 3.5 0 0 0 3.5 3.5c1 0 1.9-.4 2.5-1" />
+                        <circle cx="12" cy="12" r="10" />
+                        <path d="M14.83 14.83a4 4 0 1 1 0-5.66" />
                     </svg>
                 </div>
                 <div class="min-w-0 flex-1">
@@ -249,11 +244,12 @@
 
             <!-- Card 7: PKM -->
             <div class="p-3 sm:p-3.5 rounded-2xl bg-[#D6DEE5] border border-[#CAD5DE] border-b-[3px] border-b-[#B8C6D4] shadow-[0_8px_16px_-2px_rgba(15,23,42,0.12),0_3px_6px_-2px_rgba(15,23,42,0.08),inset_0_1px_0_0_rgba(255,255,255,0.7)] hover:-translate-y-1 hover:shadow-[0_12px_24px_-4px_rgba(15,23,42,0.16),0_6px_10px_-3px_rgba(15,23,42,0.1),inset_0_1px_0_0_rgba(255,255,255,0.8)] transition-all duration-200 flex items-center gap-3 sm:gap-3.5 group min-h-[88px]">
-                <div class="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-[#5EECE3] text-gray-900 flex items-center justify-center shrink-0 shadow-xs border-b-2 border-black/10">
+                <div class="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-[#E36DA2] text-gray-900 flex items-center justify-center shrink-0 shadow-xs border-b-2 border-black/10">
                     <svg class="w-5 h-5 sm:w-5.5 sm:h-5.5 text-gray-900" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H19a1 1 0 0 1 1 1v18a1 1 0 0 1-1 1H6.5a2.5 2.5 0 0 1-2.5-2.5Z" />
-                        <path d="M8 2v8l2.5-2 2.5 2V2" />
-                        <line x1="8" y1="17" x2="16" y2="17" />
+                        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                        <circle cx="9" cy="7" r="4" />
+                        <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+                        <path d="M16 3.13a4 4 0 0 1 0 7.75" />
                     </svg>
                 </div>
                 <div class="min-w-0 flex-1">
@@ -278,10 +274,10 @@
         </div>
     </div>
 
-    <!-- 4. Bottom Grid: Tren Chart & Prestasi Mahasiswa Terbaru -->
+    <!-- 4. Section: Visualisasi Grafik Tren Mahasiswa ([CLI-A3]) -->
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
 
-        <!-- Left: Tren Rata-Rata IPK & Kelulusan -->
+        <!-- Chart 1: Tren Rata-Rata IPK & Kelulusan -->
         <div class="bg-[#D6DEE5] rounded-2xl border border-[#CAD5DE] border-b-[3px] border-b-[#B8C6D4] p-5 sm:p-6 shadow-[0_8px_16px_-2px_rgba(15,23,42,0.12),0_3px_6px_-2px_rgba(15,23,42,0.08),inset_0_1px_0_0_rgba(255,255,255,0.7)] flex flex-col justify-between">
             <div>
                 <h3 class="text-base sm:text-lg font-black text-[#183A5F] tracking-tight uppercase">
@@ -292,8 +288,8 @@
                 <div class="relative w-full mt-4">
                     @php
                         $years = $tren['years'] ?? ['2022', '2023', '2024', '2025', '2026'];
-                        $ipkData = $tren['ipk'] ?? [3.30, 3.40, 3.52, 3.52, 3.52];
-                        $kelulusanData = $tren['kelulusan'] ?? [73, 88, 77, 87, 85];
+                        $ipkData = $tren['ipk'] ?? [0, 0, 0, 0, 0];
+                        $kelulusanData = $tren['kelulusan'] ?? [0, 0, 0, 0, 0];
                         $totalYears = max(1, count($years));
 
                         $ipkPoints = [];
@@ -301,15 +297,15 @@
 
                         foreach ($years as $idx => $year) {
                             $x = 90 + ($idx * 90);
-                            $ipk = (float) ($ipkData[$idx] ?? 3.50);
-                            $pct = (float) ($kelulusanData[$idx] ?? 80);
+                            $ipk = (float) ($ipkData[$idx] ?? 0.0);
+                            $pct = (float) ($kelulusanData[$idx] ?? 0);
 
-                            // Skala IPK 2.10 (y=250) s/d 3.50 (y=45)
-                            $yIpk = 250 - (($ipk - 2.10) / 1.40) * 205;
+                            // Skala IPK 0.0 s/d 4.00 (y=250 s/d y=45)
+                            $yIpk = 250 - ($ipk > 0 ? ($ipk / 4.00) * 205 : 0);
                             $yIpk = max(35, min(250, round($yIpk, 1)));
 
-                            // Skala Kelulusan 50% (y=250) s/d 90% (y=45)
-                            $yPct = 250 - (($pct - 50) / 40) * 205;
+                            // Skala Kelulusan 0% s/d 100% (y=250 s/d y=45)
+                            $yPct = 250 - ($pct > 0 ? ($pct / 100.0) * 205 : 0);
                             $yPct = max(35, min(250, round($yPct, 1)));
 
                             $ipkPoints[] = ['x' => $x, 'y' => $yIpk, 'val' => $ipk];
@@ -336,38 +332,30 @@
 
                     <svg viewBox="0 0 520 280" class="w-full h-auto overflow-visible select-none" preserveAspectRatio="xMidYMid meet">
                         <!-- Horizontal Gridlines & Y-Axis values -->
-                        <!-- Row: 3.50 / 90% -->
+                        <!-- Row 1: 4.00 / 100% -->
                         <line x1="52" y1="45" x2="465" y2="45" stroke="#CAD5DE" stroke-width="1" />
-                        <text x="44" y="49" text-anchor="end" font-size="10.5" font-weight="700" fill="#334155">3.50</text>
-                        <text x="473" y="49" text-anchor="start" font-size="10.5" font-weight="700" fill="#334155">90%</text>
+                        <text x="44" y="49" text-anchor="end" font-size="10.5" font-weight="700" fill="#334155">4.00</text>
+                        <text x="473" y="49" text-anchor="start" font-size="10.5" font-weight="700" fill="#334155">100%</text>
 
-                        <!-- Row: 3.40 -->
-                        <line x1="48" y1="70" x2="55" y2="70" stroke="#CAD5DE" stroke-width="1" />
-                        <text x="44" y="74" text-anchor="end" font-size="10.5" font-weight="700" fill="#334155">3.40</text>
+                        <!-- Row 2: 3.00 / 75% -->
+                        <line x1="52" y1="96" x2="465" y2="96" stroke="#CAD5DE" stroke-width="1" />
+                        <text x="44" y="100" text-anchor="end" font-size="10.5" font-weight="700" fill="#334155">3.00</text>
+                        <text x="473" y="100" text-anchor="start" font-size="10.5" font-weight="700" fill="#334155">75%</text>
 
-                        <!-- Row: 3.30 / 80% -->
-                        <line x1="52" y1="95" x2="465" y2="95" stroke="#CAD5DE" stroke-width="1" />
-                        <text x="44" y="99" text-anchor="end" font-size="10.5" font-weight="700" fill="#334155">3.30</text>
-                        <text x="473" y="99" text-anchor="start" font-size="10.5" font-weight="700" fill="#334155">80%</text>
+                        <!-- Row 3: 2.00 / 50% -->
+                        <line x1="52" y1="147" x2="465" y2="147" stroke="#CAD5DE" stroke-width="1" />
+                        <text x="44" y="151" text-anchor="end" font-size="10.5" font-weight="700" fill="#334155">2.00</text>
+                        <text x="473" y="151" text-anchor="start" font-size="10.5" font-weight="700" fill="#334155">50%</text>
 
-                        <!-- Row: 3.00 / 70% -->
-                        <line x1="52" y1="145" x2="465" y2="145" stroke="#CAD5DE" stroke-width="1" />
-                        <text x="44" y="149" text-anchor="end" font-size="10.5" font-weight="700" fill="#334155">3.00</text>
-                        <text x="473" y="149" text-anchor="start" font-size="10.5" font-weight="700" fill="#334155">70%</text>
+                        <!-- Row 4: 1.00 / 25% -->
+                        <line x1="52" y1="198" x2="465" y2="198" stroke="#CAD5DE" stroke-width="1" />
+                        <text x="44" y="202" text-anchor="end" font-size="10.5" font-weight="700" fill="#334155">1.00</text>
+                        <text x="473" y="202" text-anchor="start" font-size="10.5" font-weight="700" fill="#334155">25%</text>
 
-                        <!-- Row: 2.50 -->
-                        <line x1="52" y1="190" x2="465" y2="190" stroke="#CAD5DE" stroke-width="1" />
-                        <text x="44" y="194" text-anchor="end" font-size="10.5" font-weight="700" fill="#334155">2.50</text>
-
-                        <!-- Row: 2.20 / 60% -->
-                        <line x1="52" y1="225" x2="465" y2="225" stroke="#CAD5DE" stroke-width="1" />
-                        <text x="44" y="229" text-anchor="end" font-size="10.5" font-weight="700" fill="#334155">2.20</text>
-                        <text x="473" y="200" text-anchor="start" font-size="10.5" font-weight="700" fill="#334155">60%</text>
-
-                        <!-- Baseline: 2.10 / 50% -->
+                        <!-- Baseline: 0.00 / 0% -->
                         <line x1="52" y1="250" x2="465" y2="250" stroke="#94A3B8" stroke-width="1.5" />
-                        <text x="44" y="254" text-anchor="end" font-size="10.5" font-weight="700" fill="#334155">2.10</text>
-                        <text x="473" y="254" text-anchor="start" font-size="10.5" font-weight="700" fill="#334155">50%</text>
+                        <text x="44" y="254" text-anchor="end" font-size="10.5" font-weight="700" fill="#334155">0.00</text>
+                        <text x="473" y="254" text-anchor="start" font-size="10.5" font-weight="700" fill="#334155">0%</text>
 
                         <!-- Ticks on Baseline for years -->
                         @foreach ($years as $idx => $year)
@@ -399,57 +387,183 @@
                             <text x="{{ $x }}" y="270" text-anchor="middle" font-size="11.5" font-weight="700" fill="#334155">{{ $year }}</text>
                         @endforeach
                     </svg>
+
+                    <!-- Chart Legend -->
+                    <div class="flex items-center justify-center gap-6 mt-3 text-xs font-bold">
+                        <div class="flex items-center gap-2 text-[#183A5F]">
+                            <span class="w-3 h-3 rounded-full bg-[#183A5F] inline-block"></span>
+                            <span>Rata-Rata IPK</span>
+                        </div>
+                        <div class="flex items-center gap-2 text-[#52A776]">
+                            <span class="w-3 h-3 rounded-full bg-[#52A776] inline-block"></span>
+                            <span>Kelulusan Tepat Waktu (%)</span>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
 
-        <!-- Right: Prestasi Mahasiswa Terbaru -->
-        <div class="bg-[#D6DEE5] rounded-2xl border border-[#CAD5DE] border-b-[3px] border-b-[#B8C6D4] p-5 sm:p-6 shadow-[0_8px_16px_-2px_rgba(15,23,42,0.12),0_3px_6px_-2px_rgba(15,23,42,0.08),inset_0_1px_0_0_rgba(255,255,255,0.7)] flex flex-col justify-between overflow-hidden">
+        <!-- Chart 2: Tren Penerimaan Mahasiswa Baru & Prestasi ([CLI-A3]) -->
+        <div class="bg-[#D6DEE5] rounded-2xl border border-[#CAD5DE] border-b-[3px] border-b-[#B8C6D4] p-5 sm:p-6 shadow-[0_8px_16px_-2px_rgba(15,23,42,0.12),0_3px_6px_-2px_rgba(15,23,42,0.08),inset_0_1px_0_0_rgba(255,255,255,0.7)] flex flex-col justify-between">
             <div>
                 <h3 class="text-base sm:text-lg font-black text-[#183A5F] tracking-tight uppercase">
-                    PRESTASI MAHASISWA TERBARU
+                    TREN PENERIMAAN MAHASISWA BARU & PRESTASI
                 </h3>
 
-                <!-- Table -->
-                <div class="mt-4 w-full overflow-x-auto">
-                    <table class="w-full text-left text-[11px] sm:text-xs">
-                        <thead>
-                            <tr class="border-y border-[#CAD5DE] text-[#2D3748] font-bold whitespace-nowrap">
-                                <th class="py-2.5 px-1.5 sm:px-2 font-bold w-7 text-left">No</th>
-                                <th class="py-2.5 px-1.5 sm:px-2 font-bold text-left">Nama Mahasiswa</th>
-                                <th class="py-2.5 px-1.5 sm:px-2 font-bold text-left">Nama Lomba</th>
-                                <th class="py-2.5 px-1.5 sm:px-2 font-bold text-left">Tingkat</th>
-                                <th class="py-2.5 px-1.5 sm:px-2 font-bold text-center w-12">Tahun</th>
-                            </tr>
-                        </thead>
-                        <tbody class="divide-y divide-[#CAD5DE]">
-                            @forelse($prestasiTerbaru as $item)
-                                <tr class="hover:bg-white/30 transition border-b border-[#CAD5DE] whitespace-nowrap">
-                                    <td class="py-2.5 px-1.5 sm:px-2 text-gray-700 font-medium">{{ $item['no'] }}.</td>
-                                    <td class="py-2.5 px-1.5 sm:px-2 text-[#1E293B] font-medium">{{ $item['nama'] }}</td>
-                                    <td class="py-2.5 px-1.5 sm:px-2 text-gray-700 font-medium">
-                                        <div class="truncate max-w-[180px] sm:max-w-[220px] xl:max-w-[280px]" title="{{ $item['lomba'] }}">
-                                            {{ $item['lomba'] }}
-                                        </div>
-                                    </td>
-                                    <td class="py-2.5 px-1.5 sm:px-2 text-gray-700 font-medium">
-                                        {{ $item['tingkat'] }}
-                                    </td>
-                                    <td class="py-2.5 px-1.5 sm:px-2 text-gray-700 font-medium text-center">{{ $item['tahun'] }}</td>
-                                </tr>
-                            @empty
-                                <tr>
-                                    <td colspan="5" class="py-6 text-center text-gray-500 font-medium">
-                                        Belum ada data prestasi mahasiswa.
-                                    </td>
-                                </tr>
-                            @endforelse
-                        </tbody>
-                    </table>
+                <!-- Custom Dual-Axis Visual SVG Chart -->
+                <div class="relative w-full mt-4">
+                    @php
+                        $yearsMhs = $tren['years'] ?? ['2022', '2023', '2024', '2025', '2026'];
+                        $mhsBaruData = $tren['mahasiswa_baru'] ?? [0, 0, 0, 0, 0];
+                        $prestasiDataChart = $tren['prestasi'] ?? [0, 0, 0, 0, 0];
+
+                        $maxMhs = max(10, ...$mhsBaruData);
+                        $maxPres = max(5, ...$prestasiDataChart);
+
+                        $mhsPoints = [];
+                        $presPoints = [];
+
+                        foreach ($yearsMhs as $idx => $year) {
+                            $x = 90 + ($idx * 90);
+                            $valMhs = (int) ($mhsBaruData[$idx] ?? 0);
+                            $valPres = (int) ($prestasiDataChart[$idx] ?? 0);
+
+                            // Skala Mahasiswa Baru: 0 (y=250) s/d $maxMhs (y=45)
+                            $yMhs = 250 - ($maxMhs > 0 ? ($valMhs / $maxMhs) * 205 : 0);
+                            $yMhs = max(35, min(250, round($yMhs, 1)));
+
+                            // Skala Prestasi: 0 (y=250) s/d $maxPres (y=45)
+                            $yPres = 250 - ($maxPres > 0 ? ($valPres / $maxPres) * 205 : 0);
+                            $yPres = max(35, min(250, round($yPres, 1)));
+
+                            $mhsPoints[] = ['x' => $x, 'y' => $yMhs, 'val' => $valMhs];
+                            $presPoints[] = ['x' => $x, 'y' => $yPres, 'val' => $valPres];
+                        }
+
+                        $mhsPath = $buildSvgPath($mhsPoints);
+                        $presPath = $buildSvgPath($presPoints);
+                    @endphp
+
+                    <svg viewBox="0 0 520 280" class="w-full h-auto overflow-visible select-none" preserveAspectRatio="xMidYMid meet">
+                        <!-- Horizontal Gridlines & Y-Axis values -->
+                        <!-- Row 1: 100% values -->
+                        <line x1="52" y1="45" x2="465" y2="45" stroke="#CAD5DE" stroke-width="1" />
+                        <text x="44" y="49" text-anchor="end" font-size="10.5" font-weight="700" fill="#183A5F">{{ $maxMhs }}</text>
+                        <text x="473" y="49" text-anchor="start" font-size="10.5" font-weight="700" fill="#D97706">{{ $maxPres }}</text>
+
+                        <!-- Row 2: 75% values -->
+                        <line x1="52" y1="96" x2="465" y2="96" stroke="#CAD5DE" stroke-width="1" />
+                        <text x="44" y="100" text-anchor="end" font-size="10.5" font-weight="700" fill="#183A5F">{{ (int) round($maxMhs * 0.75) }}</text>
+                        <text x="473" y="100" text-anchor="start" font-size="10.5" font-weight="700" fill="#D97706">{{ (int) round($maxPres * 0.75) }}</text>
+
+                        <!-- Row 3: 50% values -->
+                        <line x1="52" y1="147" x2="465" y2="147" stroke="#CAD5DE" stroke-width="1" />
+                        <text x="44" y="151" text-anchor="end" font-size="10.5" font-weight="700" fill="#183A5F">{{ (int) round($maxMhs * 0.5) }}</text>
+                        <text x="473" y="151" text-anchor="start" font-size="10.5" font-weight="700" fill="#D97706">{{ (int) round($maxPres * 0.5) }}</text>
+
+                        <!-- Row 4: 25% values -->
+                        <line x1="52" y1="198" x2="465" y2="198" stroke="#CAD5DE" stroke-width="1" />
+                        <text x="44" y="202" text-anchor="end" font-size="10.5" font-weight="700" fill="#183A5F">{{ (int) round($maxMhs * 0.25) }}</text>
+                        <text x="473" y="202" text-anchor="start" font-size="10.5" font-weight="700" fill="#D97706">{{ (int) round($maxPres * 0.25) }}</text>
+
+                        <!-- Baseline: 0 -->
+                        <line x1="52" y1="250" x2="465" y2="250" stroke="#94A3B8" stroke-width="1.5" />
+                        <text x="44" y="254" text-anchor="end" font-size="10.5" font-weight="700" fill="#183A5F">0</text>
+                        <text x="473" y="254" text-anchor="start" font-size="10.5" font-weight="700" fill="#D97706">0</text>
+
+                        <!-- Ticks on Baseline for years -->
+                        @foreach ($yearsMhs as $idx => $year)
+                            @php $x = 90 + ($idx * 90); @endphp
+                            <line x1="{{ $x }}" y1="243" x2="{{ $x }}" y2="257" stroke="#94A3B8" stroke-width="1.5" />
+                        @endforeach
+
+                        <!-- Mahasiswa Baru Dynamic Line (Navy #183A5F) -->
+                        <path d="{{ $mhsPath }}" fill="none" stroke="#183A5F" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" />
+
+                        <!-- Prestasi Dynamic Line (Amber #D97706) -->
+                        <path d="{{ $presPath }}" fill="none" stroke="#D97706" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" />
+
+                        <!-- Mahasiswa Baru Points & Values -->
+                        @foreach ($mhsPoints as $pt)
+                            <circle cx="{{ $pt['x'] }}" cy="{{ $pt['y'] }}" r="4.5" fill="#183A5F" />
+                            <text x="{{ $pt['x'] }}" y="{{ $pt['y'] - 13 }}" text-anchor="middle" font-size="11" font-weight="800" fill="#183A5F">{{ $pt['val'] }}</text>
+                        @endforeach
+
+                        <!-- Prestasi Points & Values -->
+                        @foreach ($presPoints as $pt)
+                            <circle cx="{{ $pt['x'] }}" cy="{{ $pt['y'] }}" r="4.5" fill="#D97706" />
+                            <text x="{{ $pt['x'] }}" y="{{ $pt['y'] + 18 }}" text-anchor="middle" font-size="11" font-weight="800" fill="#D97706">{{ $pt['val'] }}</text>
+                        @endforeach
+
+                        <!-- X-Axis Years Labels -->
+                        @foreach ($yearsMhs as $idx => $year)
+                            @php $x = 90 + ($idx * 90); @endphp
+                            <text x="{{ $x }}" y="270" text-anchor="middle" font-size="11.5" font-weight="700" fill="#334155">{{ $year }}</text>
+                        @endforeach
+                    </svg>
+
+                    <!-- Chart Legend -->
+                    <div class="flex items-center justify-center gap-6 mt-3 text-xs font-bold">
+                        <div class="flex items-center gap-2 text-[#183A5F]">
+                            <span class="w-3 h-3 rounded-full bg-[#183A5F] inline-block"></span>
+                            <span>Mahasiswa Baru (Orang)</span>
+                        </div>
+                        <div class="flex items-center gap-2 text-[#D97706]">
+                            <span class="w-3 h-3 rounded-full bg-[#D97706] inline-block"></span>
+                            <span>Prestasi Mahasiswa</span>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
 
+    </div>
+
+    <!-- 5. Bottom Section: Prestasi Mahasiswa Terbaru -->
+    <div class="bg-[#D6DEE5] rounded-2xl border border-[#CAD5DE] border-b-[3px] border-b-[#B8C6D4] p-5 sm:p-6 shadow-[0_8px_16px_-2px_rgba(15,23,42,0.12),0_3px_6px_-2px_rgba(15,23,42,0.08),inset_0_1px_0_0_rgba(255,255,255,0.7)] overflow-hidden">
+        <div>
+            <h3 class="text-base sm:text-lg font-black text-[#183A5F] tracking-tight uppercase">
+                PRESTASI MAHASISWA TERBARU
+            </h3>
+
+            <!-- Table -->
+            <div class="mt-4 w-full overflow-x-auto">
+                <table class="w-full text-left text-[11px] sm:text-xs">
+                    <thead>
+                        <tr class="border-y border-[#CAD5DE] text-[#2D3748] font-bold whitespace-nowrap">
+                            <th class="py-2.5 px-1.5 sm:px-2 font-bold w-7 text-left">No</th>
+                            <th class="py-2.5 px-1.5 sm:px-2 font-bold text-left">Nama Mahasiswa</th>
+                            <th class="py-2.5 px-1.5 sm:px-2 font-bold text-left">Nama Lomba</th>
+                            <th class="py-2.5 px-1.5 sm:px-2 font-bold text-left">Tingkat</th>
+                            <th class="py-2.5 px-1.5 sm:px-2 font-bold text-center w-12">Tahun</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-[#CAD5DE]">
+                        @forelse($prestasiTerbaru as $item)
+                            <tr class="hover:bg-white/30 transition border-b border-[#CAD5DE] whitespace-nowrap">
+                                <td class="py-2.5 px-1.5 sm:px-2 text-gray-700 font-medium">{{ $item['no'] }}.</td>
+                                <td class="py-2.5 px-1.5 sm:px-2 text-[#1E293B] font-medium">{{ $item['nama'] }}</td>
+                                <td class="py-2.5 px-1.5 sm:px-2 text-gray-700 font-medium">
+                                    <div class="truncate max-w-[250px] sm:max-w-[320px] xl:max-w-[450px]" title="{{ $item['lomba'] }}">
+                                        {{ $item['lomba'] }}
+                                    </div>
+                                </td>
+                                <td class="py-2.5 px-1.5 sm:px-2 text-gray-700 font-medium">
+                                    {{ $item['tingkat'] }}
+                                </td>
+                                <td class="py-2.5 px-1.5 sm:px-2 text-gray-700 font-medium text-center">{{ $item['tahun'] }}</td>
+                            </tr>
+                        @empty
+                            <tr>
+                                <td colspan="5" class="py-6 text-center text-gray-500 font-medium">
+                                    Belum ada data prestasi mahasiswa.
+                                </td>
+                            </tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
+        </div>
     </div>
 
 </div>

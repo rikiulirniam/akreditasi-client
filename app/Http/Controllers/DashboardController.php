@@ -30,16 +30,18 @@ class DashboardController extends Controller
             return redirect()->route('reviewer.dashboard');
         }
 
-        // Default KPI data matching Figma design
+        $currentYear = (string) date('Y');
+
+        // Real initial KPI data without fake fallback numbers
         $kpi = [
-            'mahasiswa_aktif' => 425,
-            'mahasiswa_baru' => 112,
-            'lulus_tepat_waktu' => 87,
-            'rata_rata_ipk' => 3.78,
-            'prestasi_nasional' => 97,
-            'prestasi_internasional' => 34,
-            'tahun_angkatan_baru' => '2026',
-            'tahun_prestasi' => '2026',
+            'mahasiswa_aktif' => 0,
+            'mahasiswa_baru' => 0,
+            'lulus_tepat_waktu' => 0,
+            'rata_rata_ipk' => 0.00,
+            'prestasi_nasional' => 0,
+            'prestasi_internasional' => 0,
+            'tahun_angkatan_baru' => $currentYear,
+            'tahun_prestasi' => $currentYear,
         ];
 
         // Ringkasan Tri Dharma dengan default fallback
@@ -60,111 +62,184 @@ class DashboardController extends Controller
         $hasAkademikSuccess = false;
         $hasTridharmaSuccess = false;
 
-        // 1. Hit API Mahasiswa (Mahasiswa Aktif, Mahasiswa Baru, Lulus Tepat Waktu)
+        // ── 1. Hit API Dashboard Pendidikan (KPI Utama Kelompok 1: A-2) ───────
+        try {
+            $dpRes = $this->akademikService->getDashboardPendidikan([], $token);
+            if ($dpRes->successful() && is_array($dpRes->json('data'))) {
+                $hasAkademikSuccess = true;
+                $dp = $dpRes->json('data');
+
+                if (isset($dp['mahasiswa_aktif_riil'])) {
+                    $kpi['mahasiswa_aktif'] = (int) $dp['mahasiswa_aktif_riil'];
+                }
+                if (isset($dp['mahasiswa_baru'])) {
+                    $kpi['mahasiswa_baru'] = (int) $dp['mahasiswa_baru'];
+                }
+                if (! empty($dp['tahun'])) {
+                    $kpi['tahun_angkatan_baru'] = (string) $dp['tahun'];
+                    $kpi['tahun_prestasi'] = (string) $dp['tahun'];
+                }
+                if (isset($dp['persen_lulus_tepat_waktu']) && $dp['persen_lulus_tepat_waktu'] !== null) {
+                    $kpi['lulus_tepat_waktu'] = (int) round((float) $dp['persen_lulus_tepat_waktu']);
+                }
+                if (isset($dp['ipk_rata_rata_tertimbang']) && $dp['ipk_rata_rata_tertimbang'] !== null) {
+                    $kpi['rata_rata_ipk'] = round((float) $dp['ipk_rata_rata_tertimbang'], 2);
+                }
+                if (! empty($dp['rekap_prestasi_per_tingkat']) && is_array($dp['rekap_prestasi_per_tingkat'])) {
+                    $kpi['prestasi_nasional'] = 0;
+                    $kpi['prestasi_internasional'] = 0;
+                    foreach ($dp['rekap_prestasi_per_tingkat'] as $tingkat => $count) {
+                        $t = strtolower((string) $tingkat);
+                        if (str_contains($t, 'internasional') || str_contains($t, 'international')) {
+                            $kpi['prestasi_internasional'] += (int) $count;
+                        } else {
+                            $kpi['prestasi_nasional'] += (int) $count;
+                        }
+                    }
+                }
+            }
+        } catch (\Throwable) {
+        }
+
+        // ── 2. Hit API Ringkasan Lulusan (D-2) untuk kelulusan & IPK jika belum ada ─
+        try {
+            $lulusanRes = $this->akademikService->getLulusanRingkasan([], $token);
+            if ($lulusanRes->successful() && is_array($lulusanRes->json('data'))) {
+                $hasAkademikSuccess = true;
+                $lData = $lulusanRes->json('data');
+                if ($kpi['lulus_tepat_waktu'] === 0 && isset($lData['persen_lulus_tepat_waktu'])) {
+                    $kpi['lulus_tepat_waktu'] = (int) round((float) $lData['persen_lulus_tepat_waktu']);
+                }
+                if ($kpi['rata_rata_ipk'] == 0.00 && isset($lData['rata_rata_ipk'])) {
+                    $kpi['rata_rata_ipk'] = round((float) $lData['rata_rata_ipk'], 2);
+                }
+            }
+        } catch (\Throwable) {
+        }
+
+        // ── 3. Hit API Mahasiswa (Fallback / pelengkap data mahasiswa aktif & baru) ──
+        $mhsData = [];
         try {
             $mhsRes = $this->akademikService->getMahasiswaList(['per_page' => 1000], $token);
             if ($mhsRes->successful()) {
                 $hasAkademikSuccess = true;
-                $mhsData = $mhsRes->json('data', []);
-                if (isset($mhsData['data']) && is_array($mhsData['data'])) {
-                    $mhsData = $mhsData['data'];
-                }
+                $rawMhs = $mhsRes->json('data', []);
+                $mhsData = isset($rawMhs['data']) && is_array($rawMhs['data']) ? $rawMhs['data'] : (is_array($rawMhs) ? $rawMhs : []);
 
                 if (! empty($mhsData)) {
                     $mhsCol = collect($mhsData);
 
-                    // 1. Mahasiswa Aktif (belum ada tanggal_kelulusan)
-                    $aktifCol = $mhsCol->filter(fn ($m) => empty($m['tanggal_kelulusan']));
-                    if ($aktifCol->isNotEmpty()) {
-                        $kpi['mahasiswa_aktif'] = $aktifCol->count();
-                    }
-
-                    // 2. Mahasiswa Baru (angkatan terbaru)
-                    $maxTahun = $mhsCol->max('tahun_masuk');
-                    if ($maxTahun) {
-                        $baruCount = $mhsCol->where('tahun_masuk', $maxTahun)->count();
-                        if ($baruCount > 0) {
-                            $kpi['mahasiswa_baru'] = $baruCount;
-                            $kpi['tahun_angkatan_baru'] = (string) $maxTahun;
+                    // Mahasiswa Aktif
+                    if ($kpi['mahasiswa_aktif'] === 0) {
+                        $aktifCol = $mhsCol->filter(fn ($m) => empty($m['tanggal_kelulusan']));
+                        if ($aktifCol->isNotEmpty()) {
+                            $kpi['mahasiswa_aktif'] = $aktifCol->count();
                         }
                     }
 
-                    // 3. Lulus Tepat Waktu (masa_studi_bulan <= 48 dari yang sudah lulus)
-                    $lulusCol = $mhsCol->filter(fn ($m) => ! empty($m['tanggal_kelulusan']));
-                    if ($lulusCol->isNotEmpty()) {
-                        $tepatWaktuCount = $lulusCol->filter(fn ($m) => (int) ($m['masa_studi_bulan'] ?? 0) <= 48)->count();
-                        $kpi['lulus_tepat_waktu'] = (int) round(($tepatWaktuCount / $lulusCol->count()) * 100);
+                    // Mahasiswa Baru (angkatan terbaru)
+                    if ($kpi['mahasiswa_baru'] === 0) {
+                        $maxTahun = $mhsCol->max('tahun_masuk');
+                        if ($maxTahun) {
+                            $baruCount = $mhsCol->where('tahun_masuk', $maxTahun)->count();
+                            if ($baruCount > 0) {
+                                $kpi['mahasiswa_baru'] = $baruCount;
+                                $kpi['tahun_angkatan_baru'] = (string) $maxTahun;
+                            }
+                        }
+                    }
+
+                    // Lulus Tepat Waktu (masa_studi_bulan <= 48)
+                    if ($kpi['lulus_tepat_waktu'] === 0) {
+                        $lulusCol = $mhsCol->filter(fn ($m) => ! empty($m['tanggal_kelulusan']));
+                        if ($lulusCol->isNotEmpty()) {
+                            $tepatWaktuCount = $lulusCol->filter(fn ($m) => (int) ($m['masa_studi_bulan'] ?? 0) <= 48)->count();
+                            $kpi['lulus_tepat_waktu'] = (int) round(($tepatWaktuCount / $lulusCol->count()) * 100);
+                        }
                     }
                 }
             }
         } catch (\Throwable) {
         }
 
-        // 2. Hit API Nilai Mahasiswa (Rata-Rata IPK)
-        try {
-            $nilaiRes = $this->akademikService->getNilaiMahasiswaList(['per_page' => 100], $token);
-            if ($nilaiRes->successful()) {
-                $hasAkademikSuccess = true;
-                $nilaiData = $nilaiRes->json('data', []);
-                if (isset($nilaiData['data']) && is_array($nilaiData['data'])) {
-                    $nilaiData = $nilaiData['data'];
+        // ── 4. Hit API Nilai Mahasiswa (Pelengkap IPK rata-rata jika belum ada) ───
+        if ($kpi['rata_rata_ipk'] == 0.00) {
+            try {
+                $nilaiRes = $this->akademikService->getNilaiMahasiswaList(['per_page' => 100], $token);
+                if ($nilaiRes->successful()) {
+                    $hasAkademikSuccess = true;
+                    $rawNilai = $nilaiRes->json('data', []);
+                    $nilaiData = isset($rawNilai['data']) && is_array($rawNilai['data']) ? $rawNilai['data'] : (is_array($rawNilai) ? $rawNilai : []);
+                    $bobotCol = collect($nilaiData)->pluck('bobot')->filter(fn ($b) => is_numeric($b));
+                    if ($bobotCol->isNotEmpty()) {
+                        $kpi['rata_rata_ipk'] = round((float) $bobotCol->avg(), 2);
+                    }
                 }
-                $bobotCol = collect($nilaiData)->pluck('bobot')->filter(fn ($b) => is_numeric($b));
-                if ($bobotCol->isNotEmpty()) {
-                    $kpi['rata_rata_ipk'] = round((float) $bobotCol->avg(), 2);
-                }
+            } catch (\Throwable) {
             }
-        } catch (\Throwable) {
         }
 
-        // Prestasi Mahasiswa Terbaru default fallback
-        $prestasiTerbaru = collect(range(1, 6))->map(fn (int $no): array => [
-            'no' => $no,
-            'nama' => 'Gerald Manunggal Fauzi',
-            'lomba' => 'UI/UX Miaw Miaw',
-            'tingkat' => 'Internasional',
-            'tahun' => '2026',
-        ])->all();
-
-        // 3. Hit API Prestasi Mahasiswa
+        // ── 5. Hit API Prestasi Mahasiswa (Daftar riil, tanpa dummy Gerald) ───────
+        $prestasiTerbaru = [];
+        $allPrestasi = [];
         try {
             $prestasiRes = $this->akademikService->getPrestasiMahasiswaList([], $token);
             if ($prestasiRes->successful()) {
                 $hasAkademikSuccess = true;
-                $prestasiData = $prestasiRes->json('data', []);
-                if (isset($prestasiData['data']) && is_array($prestasiData['data'])) {
-                    $prestasiData = $prestasiData['data'];
-                }
+                $rawPres = $prestasiRes->json('data', []);
+                $allPrestasi = isset($rawPres['data']) && is_array($rawPres['data']) ? $rawPres['data'] : (is_array($rawPres) ? $rawPres : []);
 
-                if (! empty($prestasiData)) {
+                if (! empty($allPrestasi)) {
                     $nasionalCount = 0;
                     $internasionalCount = 0;
-                    foreach ($prestasiData as $p) {
-                        $lomba = strtolower((string) ($p['nama_aktivitas'] ?? ''));
-                        if (str_contains($lomba, 'internasional') || str_contains($lomba, 'international') || str_contains($lomba, 'regional') || str_contains($lomba, 'asia') || str_contains($lomba, 'world')) {
+
+                    foreach ($allPrestasi as $p) {
+                        $tingkat = $p['jenis_prestasi']['tingkat']
+                            ?? $p['jenisPrestasi']['tingkat']
+                            ?? $p['tingkat']
+                            ?? null;
+
+                        if (! $tingkat) {
+                            $lomba = strtolower((string) ($p['nama_aktivitas'] ?? ''));
+                            if (str_contains($lomba, 'internasional') || str_contains($lomba, 'international') || str_contains($lomba, 'regional') || str_contains($lomba, 'asia') || str_contains($lomba, 'world')) {
+                                $tingkat = 'Internasional';
+                            } else {
+                                $tingkat = 'Nasional';
+                            }
+                        }
+
+                        if (strtolower($tingkat) === 'internasional') {
                             $internasionalCount++;
                         } else {
                             $nasionalCount++;
                         }
                     }
 
-                    if ($nasionalCount > 0) {
+                    if ($kpi['prestasi_nasional'] === 0 && $kpi['prestasi_internasional'] === 0) {
                         $kpi['prestasi_nasional'] = $nasionalCount;
-                    }
-                    if ($internasionalCount > 0) {
                         $kpi['prestasi_internasional'] = $internasionalCount;
                     }
 
-                    // Isi tabel Prestasi Mahasiswa Terbaru dari data riil
-                    $prestasiTerbaru = collect($prestasiData)
-                        ->sortByDesc(fn ($item) => (int) ($item['tahun'] ?? 0))
+                    // Isi tabel Prestasi Mahasiswa Terbaru dari data riil maksimal 6
+                    $sortedPrestasi = collect($allPrestasi)
+                        ->sortByDesc(fn ($item) => (int) ($item['tahun'] ?? 0) * 100000 + (int) ($item['id'] ?? 0))
                         ->take(6)
-                        ->values()
-                        ->map(function ($item, $index): array {
-                            $namaMhs = $item['mahasiswa']['nama_mahasiswa'] ?? $item['nama_mahasiswa'] ?? '-';
-                            $lomba = $item['nama_aktivitas'] ?? '-';
-                            $tahun = (string) ($item['tahun'] ?? date('Y'));
+                        ->values();
 
+                    $prestasiTerbaru = $sortedPrestasi->map(function ($item, $index): array {
+                        $namaMhs = $item['mahasiswa']['nama_mahasiswa']
+                            ?? $item['mahasiswa']['nama']
+                            ?? $item['nama_mahasiswa']
+                            ?? '-';
+                        $lomba = $item['nama_aktivitas'] ?? '-';
+                        $tahun = (string) ($item['tahun'] ?? date('Y'));
+
+                        $tingkat = $item['jenis_prestasi']['tingkat']
+                            ?? $item['jenisPrestasi']['tingkat']
+                            ?? $item['tingkat']
+                            ?? null;
+
+                        if (! $tingkat) {
                             $lombaLower = strtolower($lomba);
                             if (str_contains($lombaLower, 'internasional') || str_contains($lombaLower, 'international') || str_contains($lombaLower, 'regional') || str_contains($lombaLower, 'asia') || str_contains($lombaLower, 'world')) {
                                 $tingkat = 'Internasional';
@@ -173,21 +248,22 @@ class DashboardController extends Controller
                             } else {
                                 $tingkat = 'Nasional';
                             }
+                        }
 
-                            return [
-                                'no' => $index + 1,
-                                'nama' => $namaMhs,
-                                'lomba' => $lomba,
-                                'tingkat' => $tingkat,
-                                'tahun' => $tahun,
-                            ];
-                        })->all();
+                        return [
+                            'no' => $index + 1,
+                            'nama' => $namaMhs,
+                            'lomba' => $lomba,
+                            'tingkat' => $tingkat,
+                            'tahun' => $tahun,
+                        ];
+                    })->all();
                 }
             }
         } catch (\Throwable) {
         }
 
-        // 4. Hit API Statistik Dosen (DTPS, Dosen S3, Lektor Kepala)
+        // ── 6. Hit API Statistik Dosen (DTPS, Dosen S3, Lektor Kepala) ──────────
         try {
             $dosenRes = $this->tridharmaService->getDosenStatistik($token);
             if ($dosenRes->successful()) {
@@ -224,7 +300,7 @@ class DashboardController extends Controller
         } catch (\Throwable) {
         }
 
-        // 5. Hit API Ringkasan Tri Dharma (Penelitian, PKM, Luaran/Scopus & HKI)
+        // ── 7. Hit API Ringkasan Tri Dharma (Penelitian, PKM, Luaran/Scopus & HKI) ─
         try {
             $summaryRes = $this->tridharmaService->getTridharmaSummary([], $token);
             if ($summaryRes->successful()) {
@@ -260,7 +336,7 @@ class DashboardController extends Controller
         } catch (\Throwable) {
         }
 
-        // 6. Hit API Kerja Sama Aktif
+        // ── 8. Hit API Kerja Sama Aktif ──────────────────────────────────────
         try {
             $kerjasamaRes = $this->tridharmaService->getKerjasamaAktif([], $token);
             if ($kerjasamaRes->successful()) {
@@ -291,45 +367,66 @@ class DashboardController extends Controller
             ];
         }
 
-        // Tren data 2022 - 2026 (Default fallback)
+        // ── 9. Hit API Tren Mahasiswa (Tren IPK, Kelulusan, Mahasiswa Baru & Prestasi) ─
+        $yearsDefault = range((int) date('Y') - 4, (int) date('Y'));
+        $yearsDefaultStr = array_map('strval', $yearsDefault);
+
         $tren = [
-            'years' => ['2022', '2023', '2024', '2025', '2026'],
-            'ipk' => [3.30, 3.40, 3.52, 3.52, 3.52],
-            'kelulusan' => [73, 88, 77, 87, 85],
+            'years' => $yearsDefaultStr,
+            'ipk' => [0, 0, 0, 0, 0],
+            'kelulusan' => [0, 0, 0, 0, 0],
+            'mahasiswa_baru' => [0, 0, 0, 0, 0],
+            'prestasi' => [0, 0, 0, 0, 0],
         ];
 
-        // 7. Hit API Tren Mahasiswa (Tren IPK & Kelulusan)
         try {
             $trenRes = $this->akademikService->getMahasiswaTren([], $token);
             if ($trenRes->successful() && is_array($trenRes->json('data'))) {
                 $hasAkademikSuccess = true;
                 $trenData = $trenRes->json('data');
-                if (! empty($trenData['years']) && ! empty($trenData['ipk']) && ! empty($trenData['kelulusan'])) {
-                    $tren = [
-                        'years' => array_values($trenData['years']),
-                        'ipk' => array_map(fn ($val) => round((float) $val, 2), array_values($trenData['ipk'])),
-                        'kelulusan' => array_map(fn ($val) => (int) round((float) $val), array_values($trenData['kelulusan'])),
-                    ];
+
+                if (! empty($trenData['years']) && is_array($trenData['years'])) {
+                    $tren['years'] = array_map('strval', array_values($trenData['years']));
                 }
-            } elseif (! empty($mhsData)) {
-                // Kalkulasi mandiri berbasis data riil mahasiswa jika endpoint tren belum tersedia
-                $years = ['2022', '2023', '2024', '2025', '2026'];
-                $calcKelulusan = [];
-                foreach ($years as $y) {
-                    $cohortYear = ((int) $y) - 4;
-                    $cohort = collect($mhsData)->where('tahun_masuk', $cohortYear);
-                    $tot = $cohort->count();
-                    if ($tot > 0) {
-                        $onTime = $cohort->filter(fn ($m) => ! empty($m['tanggal_kelulusan']) && (int) ($m['masa_studi_bulan'] ?? 0) <= 48)->count();
-                        $calcKelulusan[] = (int) round(($onTime / $tot) * 100);
-                    } else {
-                        $calcKelulusan[] = $tren['kelulusan'][count($calcKelulusan)] ?? 80;
-                    }
+
+                if (! empty($trenData['ipk']) && is_array($trenData['ipk'])) {
+                    $tren['ipk'] = array_map(fn ($val) => $val !== null ? round((float) $val, 2) : 0, array_values($trenData['ipk']));
+                } elseif (! empty($trenData['rata_ipk_lulusan']) && is_array($trenData['rata_ipk_lulusan'])) {
+                    $tren['ipk'] = array_map(fn ($val) => $val !== null ? round((float) $val, 2) : 0, array_values($trenData['rata_ipk_lulusan']));
                 }
-                $tren['kelulusan'] = $calcKelulusan;
+
+                if (! empty($trenData['kelulusan']) && is_array($trenData['kelulusan'])) {
+                    $tren['kelulusan'] = array_map(fn ($val) => $val !== null ? (int) round((float) $val) : 0, array_values($trenData['kelulusan']));
+                } elseif (! empty($trenData['persen_lulus_tepat_waktu']) && is_array($trenData['persen_lulus_tepat_waktu'])) {
+                    $tren['kelulusan'] = array_map(fn ($val) => $val !== null ? (int) round((float) $val) : 0, array_values($trenData['persen_lulus_tepat_waktu']));
+                }
+
+                if (! empty($trenData['jumlah_mahasiswa_baru']) && is_array($trenData['jumlah_mahasiswa_baru'])) {
+                    $tren['mahasiswa_baru'] = array_map(fn ($val) => (int) $val, array_values($trenData['jumlah_mahasiswa_baru']));
+                }
             }
         } catch (\Throwable) {
         }
+
+        // Kalkulasi mahasiswa baru jika belum terisi dari API tren
+        if (array_sum($tren['mahasiswa_baru']) === 0 && ! empty($mhsData)) {
+            $mhsCol = collect($mhsData);
+            $calcBaru = [];
+            foreach ($tren['years'] as $yr) {
+                $yrInt = (int) $yr;
+                $calcBaru[] = $mhsCol->where('tahun_masuk', $yrInt)->count();
+            }
+            $tren['mahasiswa_baru'] = $calcBaru;
+        }
+
+        // Kalkulasi tren prestasi per tahun berdasarkan data prestasi riil
+        $prestasiCol = collect($allPrestasi);
+        $calcPrestasi = [];
+        foreach ($tren['years'] as $yr) {
+            $yrInt = (int) $yr;
+            $calcPrestasi[] = $prestasiCol->filter(fn ($p) => (int) ($p['tahun'] ?? 0) === $yrInt)->count();
+        }
+        $tren['prestasi'] = $calcPrestasi;
 
         return view('dashboard', [
             'user' => $user,
