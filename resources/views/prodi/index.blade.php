@@ -38,8 +38,10 @@
         <x-table>
             <x-slot:header>
                 <x-table.th>No</x-table.th>
+                <x-table.th>Kode</x-table.th>
                 <x-table.th>Nama Prodi</x-table.th>
-                <x-table.th>Akreditasi</x-table.th>
+                <x-table.th>Jenjang</x-table.th>
+                <x-table.th>Status Akreditasi</x-table.th>
                 <x-table.th>Nama UPPS</x-table.th>
                 <x-table.th>Action</x-table.th>
             </x-slot:header>
@@ -56,6 +58,13 @@
                         {{ $rowNumber }}
                     </x-table.cell>
 
+                    <!-- Kode Prodi -->
+                    <x-table.cell class="w-24">
+                        <span class="font-semibold text-xs text-gray-600 prodi-kode">
+                            {{ $item['kode_prodi'] ?? '-' }}
+                        </span>
+                    </x-table.cell>
+
                     <!-- Nama Prodi -->
                     <x-table.cell class="w-72">
                         <span class="font-extrabold text-sm text-gray-900 prodi-name tracking-tight font-mono">
@@ -63,10 +72,17 @@
                         </span>
                     </x-table.cell>
 
+                    <!-- Jenjang -->
+                    <x-table.cell class="w-36">
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-primary/10 text-primary border border-primary/20 prodi-jenjang">
+                            {{ $item['jenjang'] ?? '-' }}
+                        </span>
+                    </x-table.cell>
+
                     <!-- Akreditasi -->
                     <x-table.cell class="w-36">
                         <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 prodi-akreditasi">
-                            {{ $item['akreditasi'] ?? '-' }}
+                            {{ $item['status_akreditasi'] ?? $item['akreditasi'] ?? '-' }}
                         </span>
                     </x-table.cell>
 
@@ -86,9 +102,14 @@
                                 class="open-edit-prodi-btn text-[#F59E0B] hover:text-[#D97706] transition p-1 cursor-pointer"
                                 title="Edit Prodi"
                                 data-id="{{ $item['id'] }}"
-                                data-nama="{{ $item['nama_prodi'] }}"
-                                data-akreditasi="{{ $item['akreditasi'] }}"
                                 data-kode="{{ $item['kode_prodi'] ?? '' }}"
+                                data-nama="{{ $item['nama_prodi'] }}"
+                                data-jenjang="{{ $item['jenjang'] ?? '' }}"
+                                data-sk="{{ $item['sk_pendirian'] ?? '' }}"
+                                data-tgl-sk="{{ $item['tanggal_sk_pendirian'] ?? '' }}"
+                                data-akreditasi="{{ $item['status_akreditasi'] ?? $item['akreditasi'] ?? '' }}"
+                                data-masa-berlaku="{{ $item['masa_berlaku_akreditasi'] ?? '' }}"
+                                data-id-upps="{{ $item['id_upps'] ?? ($upps['id'] ?? '') }}"
                                 data-action="{{ route('prodi.update', $item['id']) }}"
                             >
                                 <x-icon.edit class="w-5 h-5" />
@@ -129,7 +150,7 @@
                     </x-table.cell>
                 </x-table.row>
             @empty
-                <x-table.empty colspan="5" message="Belum ada data program studi" submessage="Silakan klik tombol Tambah Prodi untuk membuat program studi baru." />
+                <x-table.empty colspan="7" message="Belum ada data program studi" submessage="Silakan klik tombol Tambah Prodi untuk membuat program studi baru." />
             @endforelse
         </x-table>
 
@@ -156,6 +177,21 @@
         <form action="{{ route('prodi.store') }}" method="POST" class="space-y-4">
             @csrf
 
+            <!-- Kode Prodi -->
+            <div>
+                <label for="createKodeProdi" class="block text-xs font-bold text-gray-900 mb-1.5">
+                    Kode Prodi
+                </label>
+                <input 
+                    type="text" 
+                    name="kode_prodi" 
+                    id="createKodeProdi" 
+                    placeholder="Masukkan kode" 
+                    required 
+                    class="w-full px-4 py-2.5 rounded-[10px] bg-white-form border-none text-sm font-medium text-gray-900 focus:ring-2 focus:ring-additional/30 focus:outline-none placeholder:text-gray-500"
+                >
+            </div>
+
             <!-- Field 1: Nama Prodi -->
             <div>
                 <label for="createNamaProdi" class="block text-xs font-bold text-gray-900 mb-1.5">
@@ -171,25 +207,38 @@
                 >
             </div>
 
-            <!-- Field 2: Akreditasi -->
+            <!-- Jenjang -->
             <div>
-                <label for="createAkreditasi" class="block text-xs font-bold text-gray-900 mb-1.5">
-                    Akrditasi
+                <label for="createJenjang" class="block text-xs font-bold text-gray-900 mb-1.5">
+                    Jenjang
+                </label>
+                <select name="jenjang" id="createJenjang" required class="w-full px-4 py-2.5 rounded-[10px] bg-white-form border-none text-sm font-medium text-gray-900 focus:ring-2 focus:ring-additional/30">
+                    <option value="" disabled selected>Pilih jenjang</option>
+                    <option value="D1">D1</option>
+                    <option value="D2">D2</option>
+                    <option value="D3">D3</option>
+                    <option value="D4">D4</option>
+                    <option value="S1">S1</option>
+                    <option value="S2">S2</option>
+                    <option value="S3">S3</option>
+                </select>
+            </div>
+
+            <!-- Status Akreditasi -->
+            <div>
+                <label for="createStatusAkreditasi" class="block text-xs font-bold text-gray-900 mb-1.5">
+                    Status Akreditasi
                 </label>
                 <div class="relative">
                     <select 
-                        name="akreditasi" 
-                        id="createAkreditasi" 
+                        name="status_akreditasi" 
+                        id="createStatusAkreditasi" 
                         required 
                         class="w-full px-4 py-2.5 pr-10 rounded-[10px] bg-white-form border-none text-sm font-medium text-gray-900 focus:ring-2 focus:ring-additional/30 focus:outline-none appearance-none cursor-pointer"
                     >
-                        <option value="" disabled selected>Pilih akreditasi</option>
-                        <option value="Unggul">Unggul</option>
-                        <option value="Baik Sekali">Baik Sekali</option>
-                        <option value="Baik">Baik</option>
-                        <option value="A">A</option>
-                        <option value="B">B</option>
-                        <option value="C">C</option>
+                        <option value="" disabled selected>Pilih status akreditasi</option>
+                        <option value="Terakreditasi">Terakreditasi</option>
+                        <option value="Terakreditasi Unggul">Terakreditasi Unggul</option>
                         <option value="Tidak Terakreditasi">Tidak Terakreditasi</option>
                     </select>
                     <span class="absolute inset-y-0 right-0 flex items-center pr-3.5 pointer-events-none text-gray-800">
@@ -197,6 +246,35 @@
                             <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
                         </svg>
                     </span>
+                </div>
+            </div>
+
+            <!-- SK Pendirian & Tanggal SK -->
+            <div class="grid grid-cols-2 gap-3">
+                <div>
+                    <label for="createSkPendirian" class="block text-xs font-bold text-gray-900 mb-1.5">SK Pendirian</label>
+                    <input type="text" name="sk_pendirian" id="createSkPendirian" placeholder="No. SK Pendirian" class="w-full px-4 py-2.5 rounded-[10px] bg-white-form border-none text-sm font-medium text-gray-900 focus:ring-2 focus:ring-additional/30">
+                </div>
+                <div>
+                    <label for="createTanggalSkPendirian" class="block text-xs font-bold text-gray-900 mb-1.5">Tgl SK Pendirian</label>
+                    <input type="date" name="tanggal_sk_pendirian" id="createTanggalSkPendirian" class="w-full px-4 py-2.5 rounded-[10px] bg-white-form border-none text-sm font-medium text-gray-900 focus:ring-2 focus:ring-additional/30">
+                </div>
+            </div>
+
+            <!-- Masa Berlaku & Dropdown UPPS -->
+            <div class="grid grid-cols-2 gap-3">
+                <div>
+                    <label for="createMasaBerlaku" class="block text-xs font-bold text-gray-900 mb-1.5">Masa Berlaku</label>
+                    <input type="date" name="masa_berlaku_akreditasi" id="createMasaBerlaku" class="w-full px-4 py-2.5 rounded-[10px] bg-white-form border-none text-sm font-medium text-gray-900 focus:ring-2 focus:ring-additional/30">
+                </div>
+                <div>
+                    <label for="createIdUpps" class="block text-xs font-bold text-gray-900 mb-1.5">Pilih UPPS</label>
+                    <select name="id_upps" id="createIdUpps" class="w-full px-4 py-2.5 rounded-[10px] bg-white-form border-none text-sm font-medium text-gray-900 focus:ring-2 focus:ring-additional/30">
+                        <option value="">-- Tanpa UPPS --</option>
+                        @foreach($allUpps ?? [] as $u)
+                            <option value="{{ $u['id'] }}">{{ $u['nama_upps'] ?? 'UPPS #'.$u['id'] }}</option>
+                        @endforeach
+                    </select>
                 </div>
             </div>
 
@@ -238,9 +316,22 @@
             @csrf
             @method('PUT')
 
-            <input type="hidden" name="kode_prodi" id="editKodeProdi">
+            <!-- Field 1: Kode Prodi -->
+            <div>
+                <label for="editKodeProdi" class="block text-xs font-bold text-gray-900 mb-1.5">
+                    Kode Prodi
+                </label>
+                <input 
+                    type="text" 
+                    name="kode_prodi" 
+                    id="editKodeProdi" 
+                    placeholder="Masukkan kode" 
+                    required 
+                    class="w-full px-4 py-2.5 rounded-[10px] bg-white-form border-none text-sm font-medium text-gray-900 focus:ring-2 focus:ring-additional/30 focus:outline-none placeholder:text-gray-500"
+                >
+            </div>
 
-            <!-- Field 1: Nama Prodi -->
+            <!-- Field 2: Nama Prodi -->
             <div>
                 <label for="editNamaProdi" class="block text-xs font-bold text-gray-900 mb-1.5">
                     Nama Prodi
@@ -255,25 +346,50 @@
                 >
             </div>
 
-            <!-- Field 2: Akreditasi -->
+            <!-- Field 3: Jenjang -->
             <div>
-                <label for="editAkreditasi" class="block text-xs font-bold text-gray-900 mb-1.5">
-                    Akrditasi
+                <label for="editJenjang" class="block text-xs font-bold text-gray-900 mb-1.5">
+                    Jenjang
+                </label>
+                <div class="relative">
+                    <select
+                        name="jenjang"
+                        id="editJenjang"
+                        required
+                        class="w-full px-4 py-2.5 pr-10 rounded-[10px] bg-white-form border-none text-sm font-medium text-gray-900 focus:ring-2 focus:ring-additional/30 focus:outline-none appearance-none cursor-pointer"
+                    >
+                        <option value="" disabled selected>Pilih jenjang</option>
+                        <option value="D1">D1</option>
+                        <option value="D2">D2</option>
+                        <option value="D3">D3</option>
+                        <option value="D4">D4</option>
+                        <option value="S1">S1</option>
+                        <option value="S2">S2</option>
+                        <option value="S3">S3</option>
+                    </select>
+                    <span class="absolute inset-y-0 right-0 flex items-center pr-3.5 pointer-events-none text-gray-800">
+                        <svg class="w-4 h-4 stroke-[2.5]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
+                        </svg>
+                    </span>
+                </div>
+            </div>
+
+            <!-- Field 4: Status Akreditasi -->
+            <div>
+                <label for="editStatusAkreditasi" class="block text-xs font-bold text-gray-900 mb-1.5">
+                    Status Akreditasi
                 </label>
                 <div class="relative">
                     <select 
-                        name="akreditasi" 
-                        id="editAkreditasi" 
+                        name="status_akreditasi" 
+                        id="editStatusAkreditasi" 
                         required 
                         class="w-full px-4 py-2.5 pr-10 rounded-[10px] bg-white-form border-none text-sm font-medium text-gray-900 focus:ring-2 focus:ring-additional/30 focus:outline-none appearance-none cursor-pointer"
                     >
-                        <option value="" disabled>Pilih akreditasi</option>
-                        <option value="Unggul">Unggul</option>
-                        <option value="Baik Sekali">Baik Sekali</option>
-                        <option value="Baik">Baik</option>
-                        <option value="A">A</option>
-                        <option value="B">B</option>
-                        <option value="C">C</option>
+                        <option value="" disabled>Pilih status akreditasi</option>
+                        <option value="Terakreditasi">Terakreditasi</option>
+                        <option value="Terakreditasi Unggul">Terakreditasi Unggul</option>
                         <option value="Tidak Terakreditasi">Tidak Terakreditasi</option>
                     </select>
                     <span class="absolute inset-y-0 right-0 flex items-center pr-3.5 pointer-events-none text-gray-800">
@@ -281,6 +397,35 @@
                             <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
                         </svg>
                     </span>
+                </div>
+            </div>
+
+            <!-- Field 5: SK Pendirian & Tanggal SK -->
+            <div class="grid grid-cols-2 gap-3">
+                <div>
+                    <label for="editSkPendirian" class="block text-xs font-bold text-gray-900 mb-1.5">SK Pendirian</label>
+                    <input type="text" name="sk_pendirian" id="editSkPendirian" placeholder="No. SK Pendirian" class="w-full px-4 py-2.5 rounded-[10px] bg-white-form border-none text-sm font-medium text-gray-900 focus:ring-2 focus:ring-additional/30">
+                </div>
+                <div>
+                    <label for="editTanggalSkPendirian" class="block text-xs font-bold text-gray-900 mb-1.5">Tgl SK Pendirian</label>
+                    <input type="date" name="tanggal_sk_pendirian" id="editTanggalSkPendirian" class="w-full px-4 py-2.5 rounded-[10px] bg-white-form border-none text-sm font-medium text-gray-900 focus:ring-2 focus:ring-additional/30">
+                </div>
+            </div>
+
+            <!-- Field 6: Masa Berlaku & Dropdown UPPS -->
+            <div class="grid grid-cols-2 gap-3">
+                <div>
+                    <label for="editMasaBerlaku" class="block text-xs font-bold text-gray-900 mb-1.5">Masa Berlaku</label>
+                    <input type="date" name="masa_berlaku_akreditasi" id="editMasaBerlaku" class="w-full px-4 py-2.5 rounded-[10px] bg-white-form border-none text-sm font-medium text-gray-900 focus:ring-2 focus:ring-additional/30">
+                </div>
+                <div>
+                    <label for="editIdUpps" class="block text-xs font-bold text-gray-900 mb-1.5">Pilih UPPS</label>
+                    <select name="id_upps" id="editIdUpps" class="w-full px-4 py-2.5 rounded-[10px] bg-white-form border-none text-sm font-medium text-gray-900 focus:ring-2 focus:ring-additional/30">
+                        <option value="">-- Tanpa UPPS --</option>
+                        @foreach($allUpps ?? [] as $u)
+                            <option value="{{ $u['id'] }}">{{ $u['nama_upps'] ?? 'UPPS #'.$u['id'] }}</option>
+                        @endforeach
+                    </select>
                 </div>
             </div>
 
@@ -747,14 +892,32 @@
         editButtons.forEach(btn => {
             btn.addEventListener('click', function () {
                 const action = this.getAttribute('data-action');
-                const nama = this.getAttribute('data-nama');
-                const akreditasi = this.getAttribute('data-akreditasi');
                 const kode = this.getAttribute('data-kode');
+                const nama = this.getAttribute('data-nama');
+                const jenjang = this.getAttribute('data-jenjang');
+                const sk = this.getAttribute('data-sk');
+                const tglSk = this.getAttribute('data-tgl-sk');
+                const akreditasi = this.getAttribute('data-akreditasi');
+                const masaBerlaku = this.getAttribute('data-masa-berlaku');
+                const idUpps = this.getAttribute('data-id-upps');
 
                 if (editProdiForm) editProdiForm.action = action;
-                if (editNamaProdi) editNamaProdi.value = nama || '';
-                if (editAkreditasi) editAkreditasi.value = akreditasi || '';
                 if (editKodeProdi) editKodeProdi.value = kode || '';
+                if (editNamaProdi) editNamaProdi.value = nama || '';
+                
+                const editJenjang = document.getElementById('editJenjang');
+                const editSkPendirian = document.getElementById('editSkPendirian');
+                const editTanggalSkPendirian = document.getElementById('editTanggalSkPendirian');
+                const editStatusAkreditasi = document.getElementById('editStatusAkreditasi');
+                const editMasaBerlaku = document.getElementById('editMasaBerlaku');
+                const editIdUpps = document.getElementById('editIdUpps');
+
+                if (editJenjang) editJenjang.value = jenjang || '';
+                if (editSkPendirian) editSkPendirian.value = sk || '';
+                if (editTanggalSkPendirian) editTanggalSkPendirian.value = tglSk || '';
+                if (editStatusAkreditasi) editStatusAkreditasi.value = akreditasi || '';
+                if (editMasaBerlaku) editMasaBerlaku.value = masaBerlaku || '';
+                if (editIdUpps) editIdUpps.value = idUpps || '';
 
                 showModal(editProdiModal);
             });
