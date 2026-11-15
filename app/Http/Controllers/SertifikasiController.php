@@ -465,7 +465,28 @@ class SertifikasiController extends Controller
         $user = session('user', []);
         $ownerId = is_array($user) ? ($user['id_dosen'] ?? $user['id'] ?? null) : null;
 
-        return is_numeric($ownerId) && (int) $ownerId > 0 ? (int) $ownerId : null;
+        if (is_numeric($ownerId) && (int) $ownerId > 0) {
+            return (int) $ownerId;
+        }
+
+        // Fallback: cari ID dosen berdasarkan email user login
+        $email = is_array($user) ? ($user['email'] ?? null) : null;
+        if ($email) {
+            try {
+                $resp = $this->tridharmaService->getDosenList(['search' => $email, 'per_page' => 1]);
+                if ($resp->successful()) {
+                    $dosenData = $resp->json('data.data', $resp->json('data', []));
+                    if (! empty($dosenData) && isset($dosenData[0]['id_dosen'])) {
+                        session(['user.id_dosen' => (int) $dosenData[0]['id_dosen']]);
+
+                        return (int) $dosenData[0]['id_dosen'];
+                    }
+                }
+            } catch (\Throwable) {
+            }
+        }
+
+        return null;
     }
 
     private function successfulResponse(Response $response): bool

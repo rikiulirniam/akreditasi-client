@@ -71,6 +71,7 @@ class DosenShowTest extends TestCase
         $response->assertSee('Budisantoso@gmail.com');
         $response->assertSee('Aktif');
         $response->assertSee('Lihat sertifikasi');
+        $response->assertSee(route('sertifikasi.index', ['tipe_pemilik' => 'dosen', 'id_dosen' => 1]));
         $response->assertSee('Penelitian');
         $response->assertSee('HaKI');
         $response->assertSee('Riwayat Pendidikan');
@@ -381,7 +382,6 @@ class DosenShowTest extends TestCase
             'nidn' => '0029088401',
             'status_dosen' => 'DTPS',
             'email' => 'hendra@example.com',
-            'sertifikasi' => 'https://drive.google.com/cert',
             'id_jabatan' => 4,
             'id_pendidikan' => 3,
         ]);
@@ -396,6 +396,7 @@ class DosenShowTest extends TestCase
 
             return ($data['id_jabatan'] ?? null) === 4
                 && ($data['id_pendidikan'] ?? null) === 3
+                && ! array_key_exists('sertifikasi', $data)
                 && ($data['nama_dosen'] ?? null) === 'Dr. Hendra Gunawan';
         });
     }

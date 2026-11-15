@@ -144,7 +144,6 @@ class DosenController extends Controller
             'nidn' => ['required', 'string', 'max:50'],
             'status_dosen' => ['required', 'string', 'max:50'],
             'email' => ['required', 'email', 'max:255'],
-            'sertifikasi' => ['nullable', 'string', 'max:500'],
             'id_jabatan' => ['nullable', 'integer'],
             'id_pendidikan' => ['nullable', 'integer'],
         ], [
@@ -160,7 +159,6 @@ class DosenController extends Controller
             'nidn' => trim($validated['nidn']),
             'status_dosen' => trim($validated['status_dosen']),
             'email' => strtolower(trim($validated['email'])),
-            'sertifikasi' => ! empty($validated['sertifikasi']) ? trim($validated['sertifikasi']) : null,
             'id_jabatan' => isset($validated['id_jabatan']) && $validated['id_jabatan'] !== null ? (int) $validated['id_jabatan'] : null,
             'id_pendidikan' => isset($validated['id_pendidikan']) && $validated['id_pendidikan'] !== null ? (int) $validated['id_pendidikan'] : null,
         ];
@@ -394,7 +392,6 @@ class DosenController extends Controller
             'nidn' => ['required', 'string', 'max:50'],
             'status_dosen' => ['required', 'string', 'max:50'],
             'email' => ['required', 'email', 'max:255'],
-            'sertifikasi' => ['nullable', 'string', 'max:500'],
             'id_jabatan' => ['nullable', 'integer'],
             'id_pendidikan' => ['nullable', 'integer'],
         ], [
@@ -410,7 +407,6 @@ class DosenController extends Controller
             'nidn' => trim($validated['nidn']),
             'status_dosen' => trim($validated['status_dosen']),
             'email' => strtolower(trim($validated['email'])),
-            'sertifikasi' => ! empty($validated['sertifikasi']) ? trim($validated['sertifikasi']) : null,
             'id_jabatan' => isset($validated['id_jabatan']) && $validated['id_jabatan'] !== null ? (int) $validated['id_jabatan'] : null,
             'id_pendidikan' => isset($validated['id_pendidikan']) && $validated['id_pendidikan'] !== null ? (int) $validated['id_pendidikan'] : null,
         ];

@@ -71,8 +71,10 @@ class TenagaKependidikanController extends Controller
                 ->filter(fn (array $item) => ! empty($item['id']) && $item['jenjang'] !== '')
                 ->all();
 
+            $smaId = $this->resolvePendidikanId('SMA');
+
             $standardOptions = [
-                ['id' => 22, 'id_pendidikan' => 22, 'jenjang' => 'SMA/SMK'],
+                ['id' => $smaId, 'id_pendidikan' => $smaId, 'jenjang' => 'SMA/SMK'],
                 ['id' => 4, 'id_pendidikan' => 4, 'jenjang' => 'D4/S1'],
                 ['id' => 1, 'id_pendidikan' => 1, 'jenjang' => 'S2'],
                 ['id' => 3, 'id_pendidikan' => 3, 'jenjang' => 'S3'],
@@ -708,11 +710,11 @@ class TenagaKependidikanController extends Controller
             if ($id > 0 && ($rawNip === '' || preg_match('/^\d{8,}$/', $rawNip) !== 1)) {
                 $nama = trim((string) ($record['nama_tendik'] ?? $record['nama'] ?? ''));
                 $jabatan = trim((string) ($record['jabatan_tendik'] ?? $record['jabatan'] ?? 'Tenaga Kependidikan'));
-                $idPendidikan = (int) ($record['id_pendidikan'] ?? ($record['pendidikan']['id_pendidikan'] ?? 22));
+                $idPendidikan = (int) ($record['id_pendidikan'] ?? ($record['pendidikan']['id_pendidikan'] ?? $this->resolvePendidikanId('SMA')));
                 $dummyNip = ImportPdaTendikCommand::generateDummyNip($rawNip !== '' ? $rawNip : $nama);
 
                 $toUpdate[$id] = [
-                    'id_pendidikan' => $idPendidikan > 0 ? $idPendidikan : 22,
+                    'id_pendidikan' => $idPendidikan > 0 ? $idPendidikan : $this->resolvePendidikanId('SMA'),
                     'nama_tendik' => $nama,
                     'jabatan_tendik' => $jabatan,
                     'nip' => $dummyNip,
@@ -895,6 +897,8 @@ class TenagaKependidikanController extends Controller
             'query' => $request->query(),
         ]);
 
+        $smaId = $this->resolvePendidikanId('SMA');
+
         return view('tenaga-kependidikan.index', [
             'tenagaKependidikan' => $paginator,
             'totalData' => 0,
@@ -902,12 +906,34 @@ class TenagaKependidikanController extends Controller
             'selectedJabatan' => $selectedJabatan,
             'jabatans' => collect(),
             'pendidikan' => [
-                ['id' => 22, 'id_pendidikan' => 22, 'jenjang' => 'SMA/SMK'],
+                ['id' => $smaId, 'id_pendidikan' => $smaId, 'jenjang' => 'SMA/SMK'],
                 ['id' => 4, 'id_pendidikan' => 4, 'jenjang' => 'D4/S1'],
                 ['id' => 1, 'id_pendidikan' => 1, 'jenjang' => 'S2'],
                 ['id' => 3, 'id_pendidikan' => 3, 'jenjang' => 'S3'],
             ],
             'apiError' => $message,
         ]);
+    }
+
+    private function resolvePendidikanId(string $jenjangKeyword): int
+    {
+        try {
+            $resp = $this->tridharmaService->getPendidikanList(['per_page' => 100]);
+            if ($resp->successful()) {
+                $list = $resp->json('data.data', $resp->json('data', []));
+                foreach ($list as $item) {
+                    $jenjang = strtolower((string) ($item['jenjang'] ?? $item['nama_pendidikan'] ?? ''));
+                    if (str_contains($jenjang, strtolower($jenjangKeyword))) {
+                        return (int) ($item['id_pendidikan'] ?? $item['id']);
+                    }
+                }
+                if (! empty($list[0])) {
+                    return (int) ($list[0]['id_pendidikan'] ?? $list[0]['id']);
+                }
+            }
+        } catch (\Throwable) {
+        }
+
+        return 1;
     }
 }

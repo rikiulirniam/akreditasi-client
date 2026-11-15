@@ -184,7 +184,6 @@
                                             data-nidn="{{ $nidn }}"
                                             data-status="{{ $statusDosen }}"
                                             data-email="{{ $email }}"
-                                            data-sertifikasi="{{ $sertifikasi }}"
                                             data-id-jabatan="{{ $idJabatan }}"
                                             data-id-pendidikan="{{ $d['id_pendidikan'] ?? ($d['pendidikan']['id_pendidikan'] ?? '') }}"
                                             data-action="{{ route('dosen.update', $dosenId) }}"
@@ -311,20 +310,6 @@
                     id="createEmailInput" 
                     placeholder="Isi Email" 
                     required 
-                    class="w-full px-4 py-2.5 rounded-[10px] bg-white-form border-none text-sm font-medium text-gray-900 focus:ring-2 focus:ring-primary/20 focus:outline-none placeholder:text-gray-500"
-                >
-            </div>
-
-            <!-- 5. Sertifikasi (G. Drive) -->
-            <div>
-                <label for="createSertifikasiInput" class="block text-xs font-bold text-gray-900 mb-1.5">
-                    Sertifikasi (G. Drive)
-                </label>
-                <input
-                    type="text"
-                    name="sertifikasi"
-                    id="createSertifikasiInput"
-                    placeholder="Masukkan Tautan Sertifikasi"
                     class="w-full px-4 py-2.5 rounded-[10px] bg-white-form border-none text-sm font-medium text-gray-900 focus:ring-2 focus:ring-primary/20 focus:outline-none placeholder:text-gray-500"
                 >
             </div>
@@ -493,20 +478,6 @@
                     id="editEmailInput" 
                     placeholder="Isi Email" 
                     required 
-                    class="w-full px-4 py-2.5 rounded-[10px] bg-white-form border-none text-sm font-medium text-gray-900 focus:ring-2 focus:ring-primary/20 focus:outline-none placeholder:text-gray-500"
-                >
-            </div>
-
-            <!-- 5. Sertifikasi (G. Drive) -->
-            <div>
-                <label for="editSertifikasiInput" class="block text-xs font-bold text-gray-900 mb-1.5">
-                    Sertifikasi (G. Drive)
-                </label>
-                <input
-                    type="text"
-                    name="sertifikasi"
-                    id="editSertifikasiInput"
-                    placeholder="Masukkan Tautan Sertifikasi"
                     class="w-full px-4 py-2.5 rounded-[10px] bg-white-form border-none text-sm font-medium text-gray-900 focus:ring-2 focus:ring-primary/20 focus:outline-none placeholder:text-gray-500"
                 >
             </div>
@@ -810,7 +781,6 @@
         const editNidn = document.getElementById('editNidnInput');
         const editStatus = document.getElementById('editStatusSelect');
         const editEmail = document.getElementById('editEmailInput');
-        const editSertifikasi = document.getElementById('editSertifikasiInput');
         const editJabatan = document.getElementById('editJabatanSelect');
         const editJabatanPreserved = document.getElementById('editJabatanPreserved');
         const editPendidikanPreserved = document.getElementById('editPendidikanPreserved');
@@ -822,7 +792,6 @@
                 const nidn = this.getAttribute('data-nidn');
                 const status = this.getAttribute('data-status');
                 const email = this.getAttribute('data-email');
-                const sertifikasi = this.getAttribute('data-sertifikasi');
                 const idJabatan = this.getAttribute('data-id-jabatan') || '';
                 const idPendidikan = this.getAttribute('data-id-pendidikan') || '';
 
@@ -839,7 +808,6 @@
                     }
                 }
                 if (editEmail) editEmail.value = (email && email !== '-') ? email : '';
-                if (editSertifikasi) editSertifikasi.value = sertifikasi || '';
                 if (editJabatan) editJabatan.value = idJabatan;
                 if (editJabatanPreserved) editJabatanPreserved.value = idJabatan;
                 if (editPendidikanPreserved) editPendidikanPreserved.value = idPendidikan;
