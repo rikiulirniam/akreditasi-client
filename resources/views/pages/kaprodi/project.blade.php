@@ -32,16 +32,35 @@
             <h1 class="text-2xl font-extrabold text-primary tracking-tight leading-tight">Dashboard Project Akreditasi</h1>
             <p class="text-xs sm:text-sm text-[#5A6E85] mt-1">Monitoring status pengajuan akreditasi prodi dan manajemen data project akreditasi terintegrasi.</p>
         </div>
-        <button 
-            type="button" 
-            onclick="openModal()" 
-            class="inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-primary text-white text-sm font-bold shadow-sm hover:bg-additional transition cursor-pointer"
-        >
-            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-            </svg>
-            Project Baru
-        </button>
+        <div class="flex items-center gap-2.5 flex-wrap">
+            <!-- Tombol Utama: Buat Cepat Project TRK 2026 -->
+            <form action="{{ route('kaprodi.project.quick-create') }}" method="POST" id="formQuickCreate" class="inline">
+                @csrf
+                <input type="hidden" name="id_prodi" value="101">
+                <button 
+                    type="submit" 
+                    id="btnQuickCreateTRK"
+                    class="inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-emerald-600 hover:bg-emerald-700 active:scale-[0.99] text-white text-sm font-bold shadow-sm transition-all duration-200 cursor-pointer hover:shadow-md"
+                    title="Buat Cepat Project Akreditasi TRK 2026 otomatis dengan id_prodi: 101"
+                >
+                    <svg class="w-5 h-5 text-emerald-200" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z" />
+                    </svg>
+                    <span>Buat Cepat Project TRK 2026</span>
+                </button>
+            </form>
+
+            <button 
+                type="button" 
+                onclick="openModal()" 
+                class="inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-primary text-white text-sm font-bold shadow-sm hover:bg-additional transition cursor-pointer"
+            >
+                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                </svg>
+                Project Baru
+            </button>
+        </div>
     </div>
 
     <!-- Bagian 4 Kotak Statistik (Grid) -->
@@ -74,7 +93,7 @@
 
         <!-- Card 3 -->
         <div class="bg-white rounded-2xl border border-[#EAEAEA] p-5 flex flex-col justify-center shadow-xs">
-            <div class="text-gray-500 text-xs font-bold tracking-wider uppercase mb-2">In Progress</div>
+            <div class="text-gray-500 text-xs font-bold tracking-wider uppercase mb-2">On Progress</div>
             <div class="flex items-center gap-2.5">
                 <div class="w-9 h-9 rounded-xl bg-amber-500/10 text-amber-600 flex items-center justify-center">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
@@ -139,8 +158,19 @@
                     $jenisNama = $item['jenis_instrumen']['nama_jenis'] ?? 'APS';
                     $tahunSubmit = $item['tahun_target_submit'] ?? '2026';
                     $statusRaw = strtolower((string) ($item['status_project'] ?? 'draft'));
-                    $isInProgress = $statusRaw === 'in_progress' || $statusRaw === 'pengisian' || str_contains($statusRaw, 'progress');
-                    $statusLabel = $isInProgress ? 'In Progress' : 'Draft';
+                    // Normalise "on progress" (spasi, dari backend Title Case) → "on_progress"
+                    $statusKey = str_replace(' ', '_', $statusRaw);
+                    $statusConfig = [
+                        'draft' => ['label' => 'Draft', 'badge' => 'bg-slate-100 text-slate-700 border-slate-300', 'dot' => 'bg-slate-400'],
+                        'in_progress' => ['label' => 'On Progress', 'badge' => 'bg-amber-100 text-amber-800 border-amber-300', 'dot' => 'bg-amber-500 animate-pulse'],
+                        'on_progress' => ['label' => 'On Progress', 'badge' => 'bg-amber-100 text-amber-800 border-amber-300', 'dot' => 'bg-amber-500 animate-pulse'],
+                        'pending' => ['label' => 'Pending', 'badge' => 'bg-orange-100 text-orange-800 border-orange-300', 'dot' => 'bg-orange-500'],
+                        'cancel' => ['label' => 'Cancel', 'badge' => 'bg-rose-100 text-rose-800 border-rose-300', 'dot' => 'bg-rose-500'],
+                        'selesai' => ['label' => 'Selesai', 'badge' => 'bg-emerald-100 text-emerald-800 border-emerald-300', 'dot' => 'bg-emerald-500'],
+                    ];
+                    $currentStatusCfg = $statusConfig[$statusKey] ?? $statusConfig[$statusRaw] ?? $statusConfig['draft'];
+                    $statusLabel = $currentStatusCfg['label'];
+                    $isInProgress = str_contains($statusRaw, 'progress');
                 @endphp
                 <x-table.row>
                     <!-- Program Studi / Project -->
@@ -178,49 +208,55 @@
                     <x-table.cell>
                         <div class="flex items-center gap-2">
                             <div class="w-16 h-2 bg-slate-100 rounded-full overflow-hidden">
-                                <div class="h-full bg-additional {{ $isInProgress ? 'w-2/5' : 'w-0' }} transition-all duration-300"></div>
+                                <div class="h-full bg-additional {{ $isInProgress || $statusRaw === 'selesai' ? 'w-2/5' : 'w-0' }} transition-all duration-300"></div>
                             </div>
-                            <span class="text-gray-500 text-xs font-medium">{{ $isInProgress ? 'Monev' : '0/36' }}</span>
+                            <span class="text-gray-500 text-xs font-medium">{{ $statusRaw === 'selesai' ? 'Tuntas' : ($isInProgress ? 'Monev' : '0/36') }}</span>
                         </div>
                     </x-table.cell>
 
-                    <!-- Status Project (Dapat diubah oleh Kaprodi via Select Dropdown) -->
-                    <x-table.cell class="text-center whitespace-nowrap min-w-[170px]">
+                    <!-- Status Project (Dapat diubah melalui Modal Lifecycle Status) -->
+                    <x-table.cell class="text-center">
                         <div class="flex items-center justify-center">
                             @if ($isKaprodi && $id)
-                                <form action="{{ route('kaprodi.project.update-status', $id) }}" method="POST" class="inline-block m-0">
-                                    @csrf
-                                    @method('PATCH')
-                                    <div class="relative inline-flex items-center">
-                                        <span class="absolute left-2.5 top-1/2 -translate-y-1/2 w-2 h-2 rounded-full pointer-events-none {{ $isInProgress ? 'bg-amber-500' : 'bg-slate-400' }}"></span>
-                                        <select 
-                                            name="status_project" 
-                                            onchange="this.form.submit()" 
-                                            class="appearance-none cursor-pointer pl-6 pr-7 py-1 rounded-full text-xs font-bold transition border shadow-2xs focus:outline-none focus:ring-2 focus:ring-primary/20 {{ $isInProgress ? 'bg-amber-50 text-amber-800 border-amber-200 hover:bg-amber-100' : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100' }}"
-                                            title="Pilih status project"
-                                        >
-                                            <option value="draft" {{ ! $isInProgress ? 'selected' : '' }}>Draft</option>
-                                            <option value="in_progress" {{ $isInProgress ? 'selected' : '' }}>In Progress</option>
-                                        </select>
-                                        <svg class="absolute right-2.5 top-1/2 -translate-y-1/2 w-3 h-3 pointer-events-none opacity-60" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-                                            <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
-                                        </svg>
-                                    </div>
-                                </form>
+                                <button 
+                                    type="button" 
+                                    onclick="openStatusModal({{ json_encode($item) }})"
+                                    title="Klik untuk ubah lifecycle status project"
+                                    class="group inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold transition-all cursor-pointer shadow-2xs hover:scale-105 {{ $currentStatusCfg['badge'] }} border"
+                                >
+                                    <span class="w-2 h-2 rounded-full {{ $currentStatusCfg['dot'] }}"></span>
+                                    <span>{{ $statusLabel }}</span>
+                                    <svg class="w-3 h-3 opacity-60 group-hover:opacity-100 transition-opacity" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
+                                    </svg>
+                                </button>
                             @else
-                                <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold {{ $isInProgress ? 'bg-amber-50 text-amber-700 border border-amber-200' : 'bg-slate-100 text-slate-600 border border-slate-200' }}">
-                                    <span class="w-2 h-2 rounded-full {{ $isInProgress ? 'bg-amber-500' : 'bg-slate-400' }}"></span>
+                                <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold {{ $currentStatusCfg['badge'] }} border">
+                                    <span class="w-2 h-2 rounded-full {{ $currentStatusCfg['dot'] }}"></span>
                                     {{ $statusLabel }}
                                 </span>
                             @endif
                         </div>
                     </x-table.cell>
 
-                    <!-- Action (Plotting & Monitoring vertikal) -->
-                    <x-table.cell class="text-right whitespace-nowrap min-w-[200px]">
+                    <!-- Action (Kesiapan, Plotting & Monitoring vertikal, Edit & Delete) -->
+                    <x-table.cell class="text-right whitespace-nowrap min-w-[220px]">
                         <div class="flex items-center justify-end gap-2.5">
+                            <!-- Tombol Kesiapan Submit (Readiness Check) -->
+                            <button 
+                                type="button" 
+                                onclick="openReadinessModal({{ $id }}, '{{ addslashes($namaProject) }}')" 
+                                class="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded-lg transition-colors cursor-pointer shadow-2xs shrink-0"
+                                title="Pengecekan Kesiapan Submit (Readiness Check)"
+                            >
+                                <svg class="w-3.5 h-3.5 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                                <span>Kesiapan</span>
+                            </button>
+
                             <!-- Stack Vertikal Tombol Plotting & Monitoring -->
-                            <div class="flex flex-col gap-1.5 items-end shrink-0 min-w-[110px]">
+                            <div class="flex flex-col gap-1.5 items-end shrink-0 min-w-[105px]">
                                 @if(Route::has('kaprodi.plotting'))
                                 <a 
                                     href="{{ route('kaprodi.plotting', ['project_id' => $id]) }}" 
@@ -374,8 +410,8 @@
                             </label>
                             @if ($isKaprodi)
                             <label class="cursor-pointer">
-                                <input type="radio" name="status_project" value="in_progress" class="peer sr-only">
-                                <div class="bg-slate-100 text-gray-600 text-xs font-semibold px-3 py-1.5 rounded-lg peer-checked:bg-primary peer-checked:text-white hover:bg-slate-200 transition-colors">In Progress</div>
+                                <input type="radio" name="status_project" value="on_progress" class="peer sr-only">
+                                <div class="bg-slate-100 text-gray-600 text-xs font-semibold px-3 py-1.5 rounded-lg peer-checked:bg-primary peer-checked:text-white hover:bg-slate-200 transition-colors">On Progress</div>
                             </label>
                             @endif
                         </div>
@@ -499,8 +535,8 @@
                                     <div class="bg-slate-100 text-gray-600 text-xs font-semibold px-4 py-2 rounded-xl peer-checked:bg-primary peer-checked:text-white hover:bg-slate-200 transition-colors">Draft</div>
                                 </label>
                                 <label class="cursor-pointer">
-                                    <input type="radio" name="status_project" value="in_progress" id="editStatusInProgress" class="peer sr-only">
-                                    <div class="bg-slate-100 text-gray-600 text-xs font-semibold px-4 py-2 rounded-xl peer-checked:bg-primary peer-checked:text-white hover:bg-slate-200 transition-colors">In Progress</div>
+                                    <input type="radio" name="status_project" value="on_progress" id="editStatusInProgress" class="peer sr-only">
+                                    <div class="bg-slate-100 text-gray-600 text-xs font-semibold px-4 py-2 rounded-xl peer-checked:bg-primary peer-checked:text-white hover:bg-slate-200 transition-colors">On Progress</div>
                                 </label>
                             </div>
                         @else
@@ -636,7 +672,7 @@
         }
         const statusReadonly = document.getElementById('editStatusReadonly');
         if (statusReadonly) {
-            statusReadonly.innerText = isProg ? 'In Progress' : 'Draft';
+            statusReadonly.innerText = isProg ? 'On Progress' : 'Draft';
         }
 
         modal.classList.remove('hidden');
@@ -648,5 +684,44 @@
             modal.classList.add('hidden');
         }
     }
+
+    // Sinkronisasi JWT Token dan User Profile dari Session ke LocalStorage browser untuk Otorisasi Axios
+    (function syncAuthCredentials() {
+        try {
+            const token = @json(session('access_token'));
+            const user = @json(session('user'));
+
+            if (token) {
+                localStorage.setItem('access_token', token);
+                localStorage.setItem('jwt_token', token);
+                localStorage.setItem('token', token);
+
+                if (window.axios) {
+                    window.axios.defaults.headers.common['Authorization'] = 'Bearer ' + token;
+                }
+            }
+
+            if (user && typeof user === 'object') {
+                localStorage.setItem('user', JSON.stringify(user));
+                if (user.role || user.role_name) {
+                    localStorage.setItem('role', user.role || user.role_name);
+                }
+                if (user.nama || user.name) {
+                    localStorage.setItem('nama', user.nama || user.name);
+                }
+                if (user.email) {
+                    localStorage.setItem('email', user.email);
+                }
+            }
+        } catch (e) {
+            console.error('Gagal sinkronisasi kredensial ke localStorage:', e);
+        }
+    })();
 </script>
+
+<!-- MODAL LIFECYCLE STATUS & VERIFIKASI SK AKREDITASI -->
+<x-modal-status-project />
+
+<!-- MODAL PENGECEKAN KESIAPAN SUBMIT (READINESS CHECK) -->
+<x-modal-readiness-check />
 @endsection

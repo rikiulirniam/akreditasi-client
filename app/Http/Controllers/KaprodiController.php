@@ -388,18 +388,91 @@ class KaprodiController extends Controller
     }
 
     /**
-     * Ubah status project akreditasi (draft / in_progress). Khusus untuk Kaprodi.
+     * Buat Cepat Project TRK 2026 dengan id_prodi: 101.
      */
-    public function updateStatusProject(Request $request, $id): RedirectResponse
+    public function quickCreateProject(Request $request): RedirectResponse|JsonResponse
+    {
+        try {
+            $payload = [
+                'id_prodi' => (int) $request->input('id_prodi', 101),
+            ];
+
+            $response = $this->akreditasiService->quickCreateProject($payload);
+
+            if ($request->wantsJson() || $request->ajax()) {
+                if ($response->successful()) {
+                    return response()->json([
+                        'success' => true,
+                        'message' => 'Project TRK 2026 berhasil dibuat secara otomatis!',
+                        'data' => $response->json('data') ?? $response->json(),
+                    ]);
+                }
+
+                return response()->json([
+                    'success' => false,
+                    'message' => $response->json('message') ?? 'Gagal membuat Project TRK 2026 di server API.',
+                ], $response->status() ?: 400);
+            }
+
+            if ($response->successful()) {
+                return redirect()->route('kaprodi.project')->with('success', 'Project TRK 2026 berhasil dibuat secara otomatis!');
+            }
+
+            $errMsg = $response->json('message') ?? 'Gagal membuat Project TRK 2026.';
+            if (! empty($response->json('errors'))) {
+                $firstErr = collect($response->json('errors'))->flatten()->first();
+                if ($firstErr) {
+                    $errMsg .= " ({$firstErr})";
+                }
+            }
+
+            return redirect()->route('kaprodi.project')->with('error', $errMsg);
+        } catch (\Throwable $e) {
+            if ($request->wantsJson() || $request->ajax()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Terjadi kesalahan sistem: '.$e->getMessage(),
+                ], 500);
+            }
+
+            return redirect()->route('kaprodi.project')->with('error', 'Terjadi kesalahan sistem: '.$e->getMessage());
+        }
+    }
+
+    /**
+     * Ubah status project akreditasi (draft, in_progress, pending, cancel, selesai). Khusus untuk Kaprodi.
+     */
+    public function updateStatusProject(Request $request, $id): RedirectResponse|JsonResponse
     {
         $userRole = strtolower((string) (session('user.role') ?? session('user.role_name') ?? ''));
-        if (! str_contains($userRole, 'kaprodi')) {
+        if (! str_contains($userRole, 'kaprodi') && ! str_contains($userRole, 'admin')) {
+            if ($request->wantsJson() || $request->ajax()) {
+                return response()->json(['success' => false, 'message' => 'Hanya Kaprodi yang dapat mengubah status project akreditasi.'], 403);
+            }
+
             return redirect()->back()->with('error', 'Hanya Kaprodi yang dapat mengubah status project akreditasi.');
         }
 
         $validated = $request->validate([
-            'status_project' => 'required|string|in:draft,in_progress,selesai',
+            'status_project' => 'required|string|in:Draft,On Progress,Pending,Cancel,Selesai',
+            'nomor_sk_akreditasi' => 'nullable|string|max:255',
+            'tanggal_verifikasi_akreditasi' => 'nullable|date',
         ]);
+
+        $statusProject = $validated['status_project'];
+
+        if ($statusProject === 'Selesai') {
+            if (empty($validated['nomor_sk_akreditasi']) || empty($validated['tanggal_verifikasi_akreditasi'])) {
+                if ($request->wantsJson() || $request->ajax()) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Nomor SK Akreditasi dan Tanggal Verifikasi Akreditasi wajib diisi untuk status Selesai.',
+                    ], 422);
+                }
+
+                return redirect()->back()->with('error', 'Nomor SK Akreditasi dan Tanggal Verifikasi Akreditasi wajib diisi untuk status Selesai.');
+            }
+        }
 
         try {
             $currentRes = $this->akreditasiService->getProject($id);
@@ -412,20 +485,236 @@ class KaprodiController extends Controller
                 'id_jenis_instrumen' => (int) ($currentData['id_jenis_instrumen'] ?? 1),
                 'nama_project' => $currentData['nama_project'] ?? 'Project Akreditasi',
                 'tahun_target_submit' => (int) ($currentData['tahun_target_submit'] ?? date('Y')),
-                'status_project' => $validated['status_project'],
+                'status_project' => $statusProject,
             ];
 
-            $response = $this->akreditasiService->updateProject($id, $payload);
-            if ($response->successful()) {
-                $label = $validated['status_project'] === 'in_progress' ? 'In Progress' : ucfirst($validated['status_project']);
+            if (! empty($validated['nomor_sk_akreditasi'])) {
+                $payload['nomor_sk_akreditasi'] = $validated['nomor_sk_akreditasi'];
+                $payload['nomor_sk'] = $validated['nomor_sk_akreditasi'];
+            }
+            if (! empty($validated['tanggal_verifikasi_akreditasi'])) {
+                $payload['tanggal_verifikasi_akreditasi'] = $validated['tanggal_verifikasi_akreditasi'];
+                $payload['tanggal_sk'] = $validated['tanggal_verifikasi_akreditasi'];
+            }
 
+            $response = $this->akreditasiService->updateProjectStatus($id, $payload);
+
+            $statusLabels = [
+                'Draft' => 'Draft',
+                'On Progress' => 'On Progress',
+                'Pending' => 'Pending',
+                'Cancel' => 'Cancel',
+                'Selesai' => 'Selesai',
+            ];
+            $label = $statusLabels[$statusProject] ?? $statusProject;
+
+            if ($request->wantsJson() || $request->ajax()) {
+                if ($response->successful()) {
+                    return response()->json([
+                        'success' => true,
+                        'message' => "Status project berhasil diubah menjadi {$label}.",
+                        'data' => $payload,
+                    ]);
+                }
+
+                $apiErrors = $response->json('errors');
+                $apiMessage = $response->json('message') ?? 'Gagal memperbarui status project di server.';
+                if (! empty($apiErrors)) {
+                    $apiMessage .= ' Detail: '.implode(' ', array_map(
+                        fn ($msgs) => is_array($msgs) ? implode(' ', $msgs) : $msgs,
+                        $apiErrors
+                    ));
+                }
+
+                return response()->json([
+                    'success' => false,
+                    'message' => $apiMessage,
+                ], $response->status() ?: 400);
+            }
+
+            if ($response->successful()) {
                 return redirect()->back()->with('success', "Status project berhasil diubah menjadi {$label}.");
             }
 
-            return redirect()->back()->with('error', $response->json('message') ?? 'Gagal memperbarui status project.');
+            $apiErrors = $response->json('errors');
+            $apiMessage = $response->json('message') ?? 'Gagal memperbarui status project.';
+            if (! empty($apiErrors)) {
+                $apiMessage .= ' Detail: '.implode(' ', array_map(
+                    fn ($msgs) => is_array($msgs) ? implode(' ', $msgs) : $msgs,
+                    $apiErrors
+                ));
+            }
+
+            return redirect()->back()->with('error', $apiMessage);
         } catch (\Throwable $e) {
+            if ($request->wantsJson() || $request->ajax()) {
+                return response()->json(['success' => false, 'message' => 'Terjadi kesalahan sistem: '.$e->getMessage()], 500);
+            }
+
             return redirect()->back()->with('error', 'Terjadi kesalahan sistem: '.$e->getMessage());
         }
+    }
+
+    /**
+     * Pengecekan kesiapan submit (Readiness Check) project akreditasi.
+     */
+    public function projectReadiness(Request $request, $id): JsonResponse
+    {
+        try {
+            $response = $this->akreditasiService->getProjectReadiness($id);
+
+            if ($response->successful() && ! empty($response->json('data'))) {
+                return response()->json($response->json());
+            }
+
+            $fallback = $this->calculateProjectReadiness($id);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Data kesiapan submit project berhasil dimuat.',
+                'data' => $fallback,
+            ]);
+        } catch (\Throwable $e) {
+            $fallback = $this->calculateProjectReadiness($id);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Data kesiapan submit project berhasil dimuat.',
+                'data' => $fallback,
+            ]);
+        }
+    }
+
+    /**
+     * Helper untuk menghitung kesiapan indikator kritis jika endpoint backend /readiness belum aktif.
+     *
+     * @return array<string, mixed>
+     */
+    protected function calculateProjectReadiness(int|string $id): array
+    {
+        $projectRes = $this->akreditasiService->getProject($id);
+        $projectData = $projectRes->successful() ? ($projectRes->json('data') ?? []) : ['id' => $id, 'nama_project' => 'Project Akreditasi'];
+
+        $rawIndikator = $this->extractData($this->akreditasiService->getIndikator());
+        if (empty($rawIndikator)) {
+            $rawIndikator = [
+                ['id' => 1, 'kode_indikator' => 'IND-1.1.1', 'deskripsi_indikator' => 'Kesesuaian Visi, Misi, Tujuan dan Strategi Program Studi'],
+                ['id' => 2, 'kode_indikator' => 'IND-2.1.1', 'deskripsi_indikator' => 'Ketersediaan Sistem Penjaminan Mutu Internal (SPMI)'],
+                ['id' => 3, 'kode_indikator' => 'IND-3.1.1', 'deskripsi_indikator' => 'Rasio Dosen Tetap terhadap Mahasiswa Reguler'],
+                ['id' => 4, 'kode_indikator' => 'IND-4.1.1', 'deskripsi_indikator' => 'Kurikulum dan Pemenuhan Capaian Pembelajaran Lulusan (CPL)'],
+                ['id' => 5, 'kode_indikator' => 'IND-5.1.1', 'deskripsi_indikator' => 'Kecukupan dan Aksesibilitas Sarana Prasarana Laboratorium'],
+            ];
+        }
+
+        $mappingTim = [];
+        try {
+            $mappingTim = $this->extractData($this->akreditasiService->getMappingTim(['project_id' => $id]));
+        } catch (\Throwable) {
+        }
+
+        $evidenceList = [];
+        try {
+            $evidenceList = $this->extractData($this->akreditasiService->getEvidenceSpmi(['project_id' => $id]));
+        } catch (\Throwable) {
+        }
+
+        $assessmentList = [];
+        try {
+            $assessmentList = $this->extractData($this->akreditasiService->getSelfAssessment(['project_id' => $id]));
+        } catch (\Throwable) {
+        }
+
+        $picByIndikator = [];
+        foreach ($mappingTim as $m) {
+            $indId = $m['id_indikator'] ?? ($m['indikator']['id'] ?? null);
+            if ($indId && strtolower((string) ($m['role'] ?? '')) === 'pic') {
+                $picByIndikator[$indId] = $m['user']['nama'] ?? ($m['user_name'] ?? 'PIC Terpilih');
+            }
+        }
+
+        $evidenceByIndikator = [];
+        foreach ($evidenceList as $ev) {
+            $indId = $ev['id_indikator'] ?? null;
+            if ($indId && ! empty($ev['link_dokumen'] ?? ($ev['file_path'] ?? null))) {
+                $evidenceByIndikator[$indId] = $ev['link_dokumen'] ?? $ev['file_path'];
+            }
+        }
+
+        $scoreByIndikator = [];
+        foreach ($assessmentList as $as) {
+            $indId = $as['id_indikator'] ?? null;
+            if ($indId && isset($as['skor'])) {
+                $scoreByIndikator[$indId] = $as['skor'];
+            }
+        }
+
+        $indicators = [];
+        $unreadyCount = 0;
+        $missingPicCount = 0;
+        $missingEvidenceCount = 0;
+        $missingAssessmentCount = 0;
+
+        foreach ($rawIndikator as $item) {
+            $indId = $item['id'] ?? 0;
+            $kode = $item['kode_indikator'] ?? 'IND-'.$indId;
+            $deskripsi = $item['deskripsi_indikator'] ?? ($item['nama_indikator'] ?? 'Indikator Akreditasi');
+
+            $hasPic = isset($picByIndikator[$indId]);
+            $hasEvidence = isset($evidenceByIndikator[$indId]);
+            $hasAssessment = isset($scoreByIndikator[$indId]);
+
+            $missingItems = [];
+            if (! $hasPic) {
+                $missingItems[] = 'Belum memiliki PIC';
+                $missingPicCount++;
+            }
+            if (! $hasEvidence) {
+                $missingItems[] = 'Belum ada link bukti';
+                $missingEvidenceCount++;
+            }
+            if (! $hasAssessment) {
+                $missingItems[] = 'Belum dinilai oleh reviewer';
+                $missingAssessmentCount++;
+            }
+
+            $isReady = empty($missingItems);
+            if (! $isReady) {
+                $unreadyCount++;
+            }
+
+            $indicators[] = [
+                'id_indikator' => $indId,
+                'kode_indikator' => $kode,
+                'deskripsi_indikator' => $deskripsi,
+                'has_pic' => $hasPic,
+                'pic_name' => $picByIndikator[$indId] ?? null,
+                'has_evidence' => $hasEvidence,
+                'evidence_link' => $evidenceByIndikator[$indId] ?? null,
+                'has_assessment' => $hasAssessment,
+                'score' => $scoreByIndikator[$indId] ?? null,
+                'is_ready' => $isReady,
+                'missing_items' => $missingItems,
+            ];
+        }
+
+        $total = count($indicators);
+        $readyCount = $total - $unreadyCount;
+        $percentage = $total > 0 ? round(($readyCount / $total) * 100) : 0;
+        $isAllReady = $unreadyCount === 0 && $total > 0;
+
+        return [
+            'project_id' => $id,
+            'nama_project' => $projectData['nama_project'] ?? 'Project Akreditasi',
+            'is_ready' => $isAllReady,
+            'total_indikator' => $total,
+            'ready_indikator' => $readyCount,
+            'unready_indikator' => $unreadyCount,
+            'percentage' => $percentage,
+            'missing_pic_count' => $missingPicCount,
+            'missing_evidence_count' => $missingEvidenceCount,
+            'missing_assessment_count' => $missingAssessmentCount,
+            'indicators' => $indicators,
+        ];
     }
 
     /**
