@@ -16,6 +16,7 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CplController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DosenController;
+use App\Http\Controllers\EvidenceController;
 use App\Http\Controllers\KaprodiController;
 use App\Http\Controllers\KegiatanMahasiswaController;
 use App\Http\Controllers\KelasController;
@@ -164,6 +165,13 @@ Route::middleware('auth.akademik')->group(function () {
     Route::put('/sertifikasi/{sertifikasi}', [SertifikasiController::class, 'update'])->whereNumber('sertifikasi')->name('sertifikasi.update');
     Route::delete('/sertifikasi/{sertifikasi}', [SertifikasiController::class, 'destroy'])->whereNumber('sertifikasi')->name('sertifikasi.destroy');
     Route::get('/sertifikasi/{sertifikasi}', [SertifikasiController::class, 'show'])->whereNumber('sertifikasi')->name('sertifikasi.show');
+
+    // Modul Evidence (Kelompok 2: SDM & Tri Dharma)
+    Route::get('/evidence', [EvidenceController::class, 'index'])->name('evidence.index');
+    Route::post('/evidence', [EvidenceController::class, 'store'])->name('evidence.store');
+    Route::get('/evidence/{id}', [EvidenceController::class, 'show'])->whereNumber('id')->name('evidence.show');
+    Route::post('/evidence/{id}/ganti-link', [EvidenceController::class, 'updateLink'])->whereNumber('id')->name('evidence.update-link');
+    Route::delete('/evidence/{id}', [EvidenceController::class, 'destroy'])->whereNumber('id')->name('evidence.destroy');
 
     // Modul Tenaga Kependidikan
     Route::resource('tenaga-kependidikan', TenagaKependidikanController::class);
