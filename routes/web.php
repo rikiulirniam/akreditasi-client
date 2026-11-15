@@ -179,6 +179,7 @@ Route::middleware('auth.akademik')->group(function () {
     Route::get('/dosen/export', [DosenController::class, 'export'])->name('dosen.export');
     Route::post('/dosen/import', [DosenController::class, 'import'])->name('dosen.import');
     Route::resource('dosen', DosenController::class);
+    Route::post('/dosen/{dosenId}/pendidikan', [DosenController::class, 'storePendidikan'])->name('dosen.pendidikan.store');
     Route::get('/dosen/{dosenId}/sertifikasi', function ($dosenId) {
         return redirect()->route('sertifikasi.index', ['tipe_pemilik' => 'dosen', 'id_dosen' => $dosenId]);
     })->name('dosen.sertifikasi.index');

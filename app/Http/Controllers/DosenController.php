@@ -630,4 +630,37 @@ class DosenController extends Controller
             ['Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'],
         );
     }
+
+    /**
+     * Store riwayat pendidikan for a dosen.
+     */
+    public function storePendidikan(Request $request, int|string $dosenId): RedirectResponse
+    {
+        $validated = $request->validate([
+            'jenjang' => ['required', 'string', 'max:50'],
+            'universitas' => ['required', 'string', 'max:255'],
+            'program_studi' => ['required', 'string', 'max:255'],
+            'tahun_lulus' => ['nullable', 'string', 'max:10'],
+        ], [
+            'jenjang.required' => 'Jenjang pendidikan wajib dipilih.',
+            'universitas.required' => 'Nama institusi/universitas wajib diisi.',
+            'program_studi.required' => 'Program studi wajib diisi.',
+        ]);
+
+        $this->tridharmaService->storeDosenPendidikan((int) $dosenId, [
+            'jenjang' => $validated['jenjang'],
+            'universitas' => $validated['universitas'],
+            'institusi' => $validated['universitas'],
+            'program_studi' => $validated['program_studi'],
+            'jurusan' => $validated['program_studi'],
+            'tahun_lulus' => $validated['tahun_lulus'] ?? null,
+            'gelar' => '',
+        ]);
+
+        return redirect()->route('dosen.show', $dosenId)->with('toast', [
+            'type' => 'success',
+            'title' => 'Berhasil',
+            'message' => 'Riwayat pendidikan berhasil ditambahkan.',
+        ]);
+    }
 }
