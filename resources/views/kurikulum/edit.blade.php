@@ -51,7 +51,26 @@
                     @enderror
                 </div>
 
-                <!-- Row 2: Berlaku Hingga (Kiri) & Prodi (Kanan) -->
+                <!-- Row 2: Tahun Mulai (Kiri) & Berlaku Hingga (Kanan) -->
+                <div>
+                    <label for="tahunMulaiInput" class="block text-xs font-bold text-gray-900 mb-1.5">
+                        Tahun Mulai
+                    </label>
+                    <x-year
+                        name="tahun_mulai"
+                        id="tahunMulaiInput"
+                        placeholder="yyyy"
+                        min="1900"
+                        max="2100"
+                        step="1"
+                        value="{{ old('tahun_mulai', $kurikulum['tahun_mulai'] ?? '') }}"
+                        required
+                    />
+                    @error('tahun_mulai')
+                        <p class="text-xs text-red-500 mt-1">{{ $message }}</p>
+                    @enderror
+                </div>
+
                 <div>
                     <label for="berlakuSampaiInput" class="block text-xs font-bold text-gray-900 mb-1.5">
                         Berlaku Hingga
@@ -71,6 +90,7 @@
                     @enderror
                 </div>
 
+                <!-- Row 3: Prodi (Kiri) & Link Dokumen Kurikulum (Kanan) -->
                 <div>
                     <label for="prodiSelect" class="block text-xs font-bold text-gray-900 mb-1.5">
                         Prodi
@@ -103,7 +123,24 @@
                     @enderror
                 </div>
 
-                <!-- Row 3: Deskripsi CPL (Kiri) & Kategori CPL + Tombol (Kanan) -->
+                <div>
+                    <label for="linkDokumenInput" class="block text-xs font-bold text-gray-900 mb-1.5">
+                        Link Dokumen Kurikulum
+                    </label>
+                    <input
+                        type="url"
+                        name="link_dokumen"
+                        id="linkDokumenInput"
+                        placeholder="https://drive.google.com/..."
+                        value="{{ old('link_dokumen', $kurikulum['link_dokumen'] ?? '') }}"
+                        class="w-full px-4 py-2.5 rounded-[10px] bg-white-form border-none text-sm font-medium text-gray-900 focus:ring-2 focus:ring-primary/20 focus:outline-none placeholder:text-gray-400"
+                    >
+                    @error('link_dokumen')
+                        <p class="text-xs text-red-500 mt-1">{{ $message }}</p>
+                    @enderror
+                </div>
+
+                <!-- Row 4: Deskripsi CPL (Kiri) & Kategori CPL + Tombol (Kanan) -->
                 <div>
                     <label for="deskripsiCplTextarea" class="block text-xs font-bold text-gray-900 mb-1.5">
                         Deskripsi CPL

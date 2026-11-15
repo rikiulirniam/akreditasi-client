@@ -72,12 +72,14 @@
         <!-- Table -->
         <x-table>
             <x-slot:header>
-                <x-table.th>No</x-table.th>
-                <x-table.th>Nama Kurikulum</x-table.th>
-                <x-table.th>SK Kurikulum</x-table.th>
-                <x-table.th>Berlaku Hingga</x-table.th>
-                <x-table.th>Prodi</x-table.th>
-                <x-table.th>Action</x-table.th>
+                <x-table.th class="w-12 whitespace-nowrap">No</x-table.th>
+                <x-table.th class="whitespace-nowrap">Nama Kurikulum</x-table.th>
+                <x-table.th class="whitespace-nowrap">SK Kurikulum</x-table.th>
+                <x-table.th class="text-center whitespace-nowrap">Tahun Mulai</x-table.th>
+                <x-table.th class="text-center whitespace-nowrap">Berlaku Hingga</x-table.th>
+                <x-table.th class="whitespace-nowrap">Prodi</x-table.thz>
+                <x-table.th class="text-center whitespace-nowrap">Dokumen</x-table.th>
+                <x-table.th class="text-right whitespace-nowrap">Action</x-table.th>
             </x-slot:header>
 
             @forelse($kurikulumList as $index => $item)
@@ -85,31 +87,48 @@
                     $rowNumber = $index + 1 + (($pagination['current_page'] - 1) * $pagination['per_page']);
                 @endphp
                 <x-table.row class="kurikulum-row">
-                    <x-table.cell class="text-gray-500 font-medium w-16">
+                    <x-table.cell class="text-gray-500 font-medium">
                         {{ $rowNumber }}
                     </x-table.cell>
-                    <x-table.cell class="w-56">
-                        <span class="font-extrabold text-sm text-gray-900 tracking-tight">
+                    <x-table.cell class="min-w-[200px] max-w-[260px]">
+                        <span class="font-extrabold text-sm text-gray-900 tracking-tight leading-snug block">
                             {{ $item['nama_kurikulum'] ?? '-' }}
                         </span>
                     </x-table.cell>
-                    <x-table.cell class="w-36">
-                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-blue-50 text-blue-700 border border-blue-200">
+                    <x-table.cell class="max-w-[180px]">
+                        <span 
+                            class="inline-block max-w-full truncate px-3 py-1 rounded-full text-[11px] font-semibold bg-blue-50 text-blue-700 border border-blue-200 align-middle"
+                            title="{{ $item['sk_kurikulum'] ?? '-' }}"
+                        >
                             {{ $item['sk_kurikulum'] ?? '-' }}
                         </span>
                     </x-table.cell>
-                    <x-table.cell class="w-28">
+                    <x-table.cell class="text-center whitespace-nowrap">
+                        <span class="text-sm font-semibold text-gray-700">
+                            {{ $item['tahun_mulai'] ?? '-' }}
+                        </span>
+                    </x-table.cell>
+                    <x-table.cell class="text-center whitespace-nowrap">
                         <span class="text-sm font-semibold text-gray-700">
                             {{ $item['berlaku_sampai'] ?? '-' }}
                         </span>
                     </x-table.cell>
-                    <x-table.cell>
-                        <span class="text-sm font-medium text-gray-600">
+                    <x-table.cell class="min-w-[160px]">
+                        <span class="text-sm font-medium text-gray-600 leading-snug block">
                             {{ $item['nama_prodi'] ?? '-' }}
                         </span>
                     </x-table.cell>
-                    <x-table.cell class="w-28">
-                        <div class="flex items-center justify-end gap-3">
+                    <x-table.cell class="text-center whitespace-nowrap">
+                        @if(!empty($item['link_dokumen']))
+                            <a href="{{ $item['link_dokumen'] }}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1 text-xs font-bold text-primary hover:underline">
+                                Lihat ↗
+                            </a>
+                        @else
+                            <span class="text-xs text-gray-400">-</span>
+                        @endif
+                    </x-table.cell>
+                    <x-table.cell class="whitespace-nowrap">
+                        <div class="flex items-center justify-end gap-2.5">
                             @haspermission('kurikulum.update')
                             <!-- Edit -->
                             <a
