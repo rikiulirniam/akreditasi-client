@@ -124,13 +124,26 @@ class LuaranController extends Controller
             return back()->withInput()->with('toast', ['type' => 'error', 'title' => 'Gagal', 'message' => $errorMsg]);
         }
 
+        // Get authenticated dosen ID from session
+        $idDosen = session('dosen.id_dosen') ?? session('user.id_dosen') ?? auth()->user()?->id_dosen ?? 1;
+
+        // Map jenis_luaran string to id_jenis_luaran FK
+        $jenisLuaranMap = [
+            'Buku' => 7,        // Buku Ajar / Monograf (id 5) or Buku (id 7)
+            'Jurnal' => 1,      // Jurnal Internasional Bereputasi
+            'Seminar' => 11,    // Prosiding Seminar Internasional (id 3) or Prosiding (id 11)
+            'HKI' => 4,         // Hak Cipta / HKI
+            'Produk' => 6,      // Produk Teknologi / Prototipe
+        ];
+        $idJenisLuaran = $jenisLuaranMap[$jenis] ?? 1;
+
         // Validasi dan rakit payload spesifik
         $payload = match ($jenis) {
-            'Buku' => $this->validateAndBuildBukuPayload($request),
-            'Jurnal' => $this->validateAndBuildJurnalPayload($request),
-            'Seminar' => $this->validateAndBuildSeminarPayload($request),
-            'HKI' => $this->validateAndBuildHkiPayload($request),
-            'Produk' => $this->validateAndBuildProdukPayload($request),
+            'Buku' => $this->validateAndBuildBukuPayload($request, $idDosen, $idJenisLuaran),
+            'Jurnal' => $this->validateAndBuildJurnalPayload($request, $idDosen, $idJenisLuaran),
+            'Seminar' => $this->validateAndBuildSeminarPayload($request, $idDosen, $idJenisLuaran),
+            'HKI' => $this->validateAndBuildHkiPayload($request, $idDosen, $idJenisLuaran),
+            'Produk' => $this->validateAndBuildProdukPayload($request, $idDosen, $idJenisLuaran),
         };
 
         // Pastikan atribut jenis_luaran wajib ada
@@ -311,7 +324,7 @@ class LuaranController extends Controller
     // PRIVATE: PAYLOAD BUILDERS DENGAN VALIDASI
     // ══════════════════════════════════════════════════════════════════════════
 
-    private function validateAndBuildBukuPayload(Request $request): array
+    private function validateAndBuildBukuPayload(Request $request, int $idDosen, int $idJenisLuaran): array
     {
         $val = $request->validate([
             'judul_buku' => ['required', 'string', 'max:500'],
@@ -320,7 +333,7 @@ class LuaranController extends Controller
             'tahun_terbit' => ['required', 'string', 'max:50'],
             'jenis_buku' => ['required', 'string', 'max:100'],
             'bidang_ilmu' => ['nullable', 'string', 'max:255'],
-            'total_halaman' => ['nullable', 'integer', 'min:1'],
+            'total_halaman' => ['nullable', 'string', 'min:1'],  // Changed to string for page range format
             'url_buku' => ['nullable', 'string', 'max:1000'],
         ], [
             'judul_buku.required' => 'Judul buku wajib diisi.',
@@ -330,25 +343,26 @@ class LuaranController extends Controller
         ]);
 
         return array_filter([
+            'id_dosen' => $idDosen,
+            'id_jenis_luaran' => $idJenisLuaran,
             'judul' => trim($val['judul_buku']),
             'judul_luaran' => trim($val['judul_buku']),
             'judul_buku' => trim($val['judul_buku']),
             'isbn' => ! empty($val['isbn']) ? trim($val['isbn']) : null,
-            'nama_penerbit' => trim($val['nama_penerbit']),
-            'penerbit_buku' => trim($val['nama_penerbit']),
+            'penerbit_buku' => trim($val['nama_penerbit']),  // BE field: penerbit_buku
             'tahun_terbit' => trim($val['tahun_terbit']),
             'tanggal_terbit' => trim($val['tahun_terbit']),
             'tahun' => (int) substr(trim($val['tahun_terbit']), 0, 4) ?: null,
             'jenis_buku' => trim($val['jenis_buku']),
             'bidang_ilmu' => ! empty($val['bidang_ilmu']) ? trim($val['bidang_ilmu']) : null,
-            'total_halaman' => isset($val['total_halaman']) ? (int) $val['total_halaman'] : null,
+            'halaman_buku' => ! empty($val['total_halaman']) ? trim($val['total_halaman']) : null,  // BE field: halaman_buku (string)
             'url_luaran' => ! empty($val['url_buku']) ? trim($val['url_buku']) : null,
             'url_buku' => ! empty($val['url_buku']) ? trim($val['url_buku']) : null,
             'tautan_buku' => ! empty($val['url_buku']) ? trim($val['url_buku']) : null,
         ], fn ($v) => $v !== null && $v !== '');
     }
 
-    private function validateAndBuildJurnalPayload(Request $request): array
+    private function validateAndBuildJurnalPayload(Request $request, int $idDosen, int $idJenisLuaran): array
     {
         $val = $request->validate([
             'nama_jurnal' => ['required', 'string', 'max:500'],
@@ -357,7 +371,7 @@ class LuaranController extends Controller
             'tanggal_terbit' => ['required', 'string', 'max:50'],
             'doi' => ['nullable', 'string', 'max:255'],
             'nomor_edisi' => ['nullable', 'string', 'max:100'],
-            'total_halaman' => ['nullable', 'integer', 'min:1'],
+            'total_halaman' => ['nullable', 'string', 'min:1'],  // Changed to string for page range format
             'indeksasi' => ['nullable', 'string', 'max:100'],
             'url_publikasi' => ['nullable', 'string', 'max:1000'],
         ], [
@@ -366,6 +380,8 @@ class LuaranController extends Controller
         ]);
 
         return array_filter([
+            'id_dosen' => $idDosen,
+            'id_jenis_luaran' => $idJenisLuaran,
             'judul' => trim($val['nama_jurnal']),
             'judul_luaran' => trim($val['nama_jurnal']),
             'judul_publikasi' => trim($val['nama_jurnal']),
@@ -377,7 +393,7 @@ class LuaranController extends Controller
             'tanggal_terbit' => trim($val['tanggal_terbit']),
             'doi' => ! empty($val['doi']) ? trim($val['doi']) : null,
             'nomor_edisi' => ! empty($val['nomor_edisi']) ? trim($val['nomor_edisi']) : null,
-            'total_halaman' => isset($val['total_halaman']) ? (int) $val['total_halaman'] : null,
+            'halaman_jurnal' => ! empty($val['total_halaman']) ? trim($val['total_halaman']) : null,  // BE field: halaman_jurnal (string)
             'indeksasi' => ! empty($val['indeksasi']) ? trim($val['indeksasi']) : null,
             'url_luaran' => ! empty($val['url_publikasi']) ? trim($val['url_publikasi']) : null,
             'url_publikasi' => ! empty($val['url_publikasi']) ? trim($val['url_publikasi']) : null,
@@ -385,7 +401,7 @@ class LuaranController extends Controller
         ], fn ($v) => $v !== null && $v !== '');
     }
 
-    private function validateAndBuildSeminarPayload(Request $request): array
+    private function validateAndBuildSeminarPayload(Request $request, int $idDosen, int $idJenisLuaran): array
     {
         $val = $request->validate([
             'nama_seminar' => ['required', 'string', 'max:500'],
@@ -394,7 +410,7 @@ class LuaranController extends Controller
             'penyelenggara' => ['nullable', 'string', 'max:255'],
             'tanggal_seminar' => ['required', 'string', 'max:50'],
             'lokasi_seminar' => ['nullable', 'string', 'max:255'],
-            'total_halaman' => ['nullable', 'integer', 'min:1'],
+            'total_halaman' => ['nullable', 'string', 'min:1'],  // Changed to string for page range format
             'doi' => ['nullable', 'string', 'max:255'],
             'url_publikasi' => ['nullable', 'string', 'max:1000'],
         ], [
@@ -404,6 +420,8 @@ class LuaranController extends Controller
         ]);
 
         return array_filter([
+            'id_dosen' => $idDosen,
+            'id_jenis_luaran' => $idJenisLuaran,
             'judul' => trim($val['nama_seminar']),
             'judul_luaran' => trim($val['nama_seminar']),
             'judul_publikasi' => trim($val['nama_seminar']),
@@ -411,12 +429,12 @@ class LuaranController extends Controller
             'nama_prosiding' => trim($val['nama_prosiding']),
             'nama_penerbit' => trim($val['nama_prosiding']),
             'jenis_publikasi' => 'Seminar',
-            'isbn' => ! empty($val['isbn']) ? trim($val['isbn']) : null,
+            'isbn_prosiding' => ! empty($val['isbn']) ? trim($val['isbn']) : null,  // BE field: isbn_prosiding
             'penyelenggara' => ! empty($val['penyelenggara']) ? trim($val['penyelenggara']) : null,
             'tanggal_seminar' => trim($val['tanggal_seminar']),
             'tanggal_terbit' => trim($val['tanggal_seminar']),
             'lokasi_seminar' => ! empty($val['lokasi_seminar']) ? trim($val['lokasi_seminar']) : null,
-            'total_halaman' => isset($val['total_halaman']) ? (int) $val['total_halaman'] : null,
+            'halaman_prosiding' => ! empty($val['total_halaman']) ? trim($val['total_halaman']) : null,  // BE field: halaman_prosiding (string)
             'doi' => ! empty($val['doi']) ? trim($val['doi']) : null,
             'doi_prosiding' => ! empty($val['doi']) ? trim($val['doi']) : null,
             'url_luaran' => ! empty($val['url_publikasi']) ? trim($val['url_publikasi']) : null,
@@ -425,7 +443,7 @@ class LuaranController extends Controller
         ], fn ($v) => $v !== null && $v !== '');
     }
 
-    private function validateAndBuildHkiPayload(Request $request): array
+    private function validateAndBuildHkiPayload(Request $request, int $idDosen, int $idJenisLuaran): array
     {
         $val = $request->validate([
             'judul_hak_cipta' => ['required', 'string', 'max:500'],
@@ -442,6 +460,8 @@ class LuaranController extends Controller
         ]);
 
         return array_filter([
+            'id_dosen' => $idDosen,
+            'id_jenis_luaran' => $idJenisLuaran,
             'judul' => trim($val['judul_hak_cipta']),
             'judul_luaran' => trim($val['judul_hak_cipta']),
             'judul_hak_cipta' => trim($val['judul_hak_cipta']),
@@ -456,7 +476,7 @@ class LuaranController extends Controller
         ], fn ($v) => $v !== null && $v !== '');
     }
 
-    private function validateAndBuildProdukPayload(Request $request): array
+    private function validateAndBuildProdukPayload(Request $request, int $idDosen, int $idJenisLuaran): array
     {
         $val = $request->validate([
             'nama_produk' => ['required', 'string', 'max:500'],
@@ -471,6 +491,8 @@ class LuaranController extends Controller
         ]);
 
         return array_filter([
+            'id_dosen' => $idDosen,
+            'id_jenis_luaran' => $idJenisLuaran,
             'judul' => trim($val['nama_produk']),
             'judul_luaran' => trim($val['nama_produk']),
             'nama_produk' => trim($val['nama_produk']),

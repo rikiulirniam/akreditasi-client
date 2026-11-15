@@ -15,11 +15,11 @@ use App\Http\Controllers\AngkatanKelasController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CplController;
 use App\Http\Controllers\DashboardController;
-use App\Http\Controllers\KerjaSamaController;
 use App\Http\Controllers\DosenController;
 use App\Http\Controllers\KaprodiController;
 use App\Http\Controllers\KegiatanMahasiswaController;
 use App\Http\Controllers\KelasController;
+use App\Http\Controllers\KerjaSamaController;
 use App\Http\Controllers\KurikulumController;
 use App\Http\Controllers\LaporanAkhirController;
 use App\Http\Controllers\LuaranController;
@@ -178,6 +178,9 @@ Route::middleware('auth.akademik')->group(function () {
     Route::get('/dosen/template', [DosenController::class, 'template'])->name('dosen.template');
     Route::post('/dosen/import', [DosenController::class, 'import'])->name('dosen.import');
     Route::resource('dosen', DosenController::class);
+    Route::get('/dosen/{dosenId}/sertifikasi', function ($dosenId) {
+        return redirect()->route('sertifikasi.index', ['tipe_pemilik' => 'dosen', 'id_dosen' => $dosenId]);
+    })->name('dosen.sertifikasi.index');
 
     // Modul Sertifikasi
     Route::get('/sertifikasi', [SertifikasiController::class, 'index'])->name('sertifikasi.index');

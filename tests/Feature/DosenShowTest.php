@@ -71,6 +71,7 @@ class DosenShowTest extends TestCase
         $response->assertSee('Budisantoso@gmail.com');
         $response->assertSee('Aktif');
         $response->assertSee('Lihat sertifikasi');
+        $response->assertSee(e(route('sertifikasi.index', ['tipe_pemilik' => 'dosen', 'id_dosen' => 1])), false);
         $response->assertSee('Penelitian');
         $response->assertSee('HaKI');
         $response->assertSee('Riwayat Pendidikan');
@@ -632,5 +633,63 @@ class DosenShowTest extends TestCase
         );
         $this->assertStringContainsString('template_data_dosen.xlsx', (string) $response->headers->get('content-disposition'));
         $this->assertSame('PK', substr($response->streamedContent(), 0, 2));
+    }
+
+    public function test_dosen_sertifikasi_route_redirects_and_filters_certifications_by_id_dosen(): void
+    {
+        $redirectResponse = $this->withSession([
+            'access_token' => 'dummy-token',
+            'user' => ['nama' => 'Kuwat', 'role' => 'Kaprodi'],
+        ])->get(route('dosen.sertifikasi.index', 1));
+
+        $redirectResponse->assertRedirect(route('sertifikasi.index', ['tipe_pemilik' => 'dosen', 'id_dosen' => 1]));
+
+        Http::fake([
+            'https://tridharma.fayra.my.id/api/dosen/1*' => Http::response([
+                'success' => true,
+                'data' => [
+                    'id_dosen' => 1,
+                    'nama_dosen' => 'Dr. Budi Santoso',
+                ],
+            ], 200),
+            'https://tridharma.fayra.my.id/api/sertifikasi*' => Http::response([
+                'success' => true,
+                'data' => [
+                    'data' => [
+                        [
+                            'id' => 10,
+                            'id_dosen' => 1,
+                            'jenis_sertifikasi' => 'Sertifikasi Pendidik Dosen 1',
+                            'nomor_sertifikat' => 'CERT-DOSEN-1',
+                            'status_sertifikasi' => 'Aktif',
+                            'tahun_sertifikasi' => '2024',
+                        ],
+                        [
+                            'id' => 20,
+                            'id_dosen' => 2,
+                            'jenis_sertifikasi' => 'Sertifikasi Dosen Lain',
+                            'nomor_sertifikat' => 'CERT-DOSEN-2',
+                            'status_sertifikasi' => 'Aktif',
+                            'tahun_sertifikasi' => '2024',
+                        ],
+                    ],
+                    'current_page' => 1,
+                    'last_page' => 1,
+                    'per_page' => 10,
+                    'total' => 2,
+                ],
+            ], 200),
+        ]);
+
+        $response = $this->withSession([
+            'access_token' => 'dummy-token',
+            'user' => ['nama' => 'Kuwat', 'role' => 'Kaprodi'],
+        ])->get(route('sertifikasi.index', ['tipe_pemilik' => 'dosen', 'id_dosen' => 1]));
+
+        $response->assertOk();
+        $response->assertSee('Sertifikasi Pendidik');
+        $response->assertSee('CERT-DOSEN-1');
+        $response->assertDontSee('CERT-DOSEN-2');
+        $response->assertSee(route('dosen.show', 1));
     }
 }
