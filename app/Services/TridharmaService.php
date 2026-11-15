@@ -1090,7 +1090,6 @@ class TridharmaService
     {
         return $this->get('jenis-kegiatan', $query, $token);
     }
-
     /*
     |==========================================================================
     | MODUL: PUBLIKASI (/api/publikasi/*)

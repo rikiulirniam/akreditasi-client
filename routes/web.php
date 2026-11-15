@@ -176,11 +176,20 @@ Route::middleware('auth.akademik')->group(function () {
     // MODUL DOSEN & SDM
     // ==========================================
     Route::get('/dosen/template', [DosenController::class, 'template'])->name('dosen.template');
+    Route::get('/dosen/export', [DosenController::class, 'export'])->name('dosen.export');
     Route::post('/dosen/import', [DosenController::class, 'import'])->name('dosen.import');
     Route::resource('dosen', DosenController::class);
     Route::get('/dosen/{dosenId}/sertifikasi', function ($dosenId) {
         return redirect()->route('sertifikasi.index', ['tipe_pemilik' => 'dosen', 'id_dosen' => $dosenId]);
     })->name('dosen.sertifikasi.index');
+
+    // ==========================================
+    // MODUL TRI DHARMA: LUARAN (Publikasi, HKI, Buku)
+    // ==========================================
+    Route::get('/luaran', [LuaranController::class, 'index'])->name('luaran.index');
+    Route::post('/luaran', [LuaranController::class, 'store'])->name('luaran.store');
+    Route::put('/luaran/{id}', [LuaranController::class, 'update'])->name('luaran.update');
+    Route::delete('/luaran/{id}', [LuaranController::class, 'destroy'])->name('luaran.destroy');
 
     // Modul Sertifikasi
     Route::get('/sertifikasi', [SertifikasiController::class, 'index'])->name('sertifikasi.index');

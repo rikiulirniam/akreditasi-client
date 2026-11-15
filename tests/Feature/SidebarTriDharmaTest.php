@@ -112,6 +112,12 @@ class SidebarTriDharmaTest extends TestCase
                     'items' => [],
                 ],
             ]),
+            '*dosen*' => Http::response([
+                'success' => true,
+                'data' => [
+                    'items' => [],
+                ],
+            ]),
         ]);
 
         $response = $this->withSession($this->authSession())->get(route('luaran.index'));

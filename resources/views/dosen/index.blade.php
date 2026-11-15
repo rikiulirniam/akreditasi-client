@@ -3,7 +3,7 @@
 @section('title', 'Dosen')
 
 @php
-    $hasActiveFilters = !empty($search) || !empty($selectedStatus);
+    $hasActiveFilters = !empty($search) || !empty($selectedStatus) || !empty($jabatanFilter) || !empty($serdosFilter);
 @endphp
 
 @if(!empty($dosenList) && count($dosenList) > 0)
@@ -12,10 +12,34 @@
 
 @section('content')
 @php
-    $canManageJabatan = in_array(strtolower((string) (session('user.role') ?? '')), ['admin', 'administrator', 'reviewer'], true);
+    $eligiblePendidikanList = collect($pendidikanList)
+        ->map(function ($pendidikan) {
+            $jenjang = trim((string) ($pendidikan['jenjang'] ?? ($pendidikan['nama_pendidikan'] ?? ($pendidikan['nama'] ?? ''))));
+            $pendidikan['id'] = $pendidikan['id_pendidikan'] ?? ($pendidikan['id'] ?? '');
+            $pendidikan['jenjang'] = $jenjang;
+            $pendidikan['label'] = $jenjang;
+
+            if (! empty($pendidikan['program_studi']) || ! empty($pendidikan['universitas'])) {
+                $details = array_filter([
+                    $pendidikan['program_studi'] ?? null,
+                    $pendidikan['universitas'] ?? null,
+                ]);
+                $pendidikan['label'] .= ' - '.implode(', ', $details);
+            }
+
+            return $pendidikan;
+        })
+        ->filter(fn ($pendidikan) => !empty($pendidikan['id']) && preg_match('/(?:^|[^A-Z0-9])(?:S[123]|D4)(?:$|[^A-Z0-9])|terapan/i', $pendidikan['jenjang']) === 1)
+        ->unique(fn ($pendidikan) => mb_strtoupper(trim((string) $pendidikan['label'])))
+        ->sortByDesc(function ($pendidikan) {
+            $jenjang = strtoupper($pendidikan['jenjang']);
+
+            return preg_match('/S3/', $jenjang) ? 3 : (preg_match('/S2/', $jenjang) ? 2 : 1);
+        })
+        ->values();
 @endphp
 <div class="space-y-5">
-        <!-- Toolbar: Left (Search & Status Filter Form), Right (Import Excel & Tambah Dosen) -->
+        <!-- Toolbar: Search and filters, export/import, and add lecturer -->
             <div class="flex flex-wrap items-center justify-between gap-3 mb-2">
                 <!-- Left: Search "Cari nama" & Status Dropdown Form -->
                 <form method="GET" action="{{ route('dosen.index') }}" id="searchFilterForm" class="flex items-center gap-3">
@@ -91,10 +115,52 @@
                             </button>
                         </div>
                     </div>
+
+                    <select
+                        name="jabatan"
+                        id="filterJabatanSelect"
+                        aria-label="Filter jabatan akademik"
+                        class="h-[36px] max-w-48 rounded-[10px] bg-[#D9D9D9] border-2 border-primary px-3 text-sm font-medium text-gray-900 focus:outline-none focus:ring-2 focus:ring-primary/20"
+                        onchange="this.form.submit()"
+                    >
+                        <option value="">Semua Jabatan</option>
+                        @foreach($jabatanList as $jabatan)
+                            @php
+                                $filterJabatanId = $jabatan['id_jabatan'] ?? ($jabatan['id'] ?? '');
+                                $filterJabatanName = $jabatan['nama_jabatan'] ?? ($jabatan['nama'] ?? '');
+                            @endphp
+                            @if($filterJabatanId !== '' && $filterJabatanName !== '')
+                                <option value="{{ $filterJabatanId }}" {{ (string) $jabatanFilter === (string) $filterJabatanId ? 'selected' : '' }}>
+                                    {{ $filterJabatanName }}
+                                </option>
+                            @endif
+                        @endforeach
+                    </select>
+
+                    <select
+                        name="serdos"
+                        id="filterSerdosSelect"
+                        aria-label="Filter sertifikasi dosen"
+                        class="h-[36px] max-w-48 rounded-[10px] bg-[#D9D9D9] border-2 border-primary px-3 text-sm font-medium text-gray-900 focus:outline-none focus:ring-2 focus:ring-primary/20"
+                        onchange="this.form.submit()"
+                    >
+                        <option value="">Semua Serdos</option>
+                        <option value="tersertifikasi" {{ $serdosFilter === 'tersertifikasi' ? 'selected' : '' }}>Tersertifikasi</option>
+                        <option value="belum" {{ $serdosFilter === 'belum' ? 'selected' : '' }}>Belum Tersertifikasi</option>
+                    </select>
+
                 </form>
 
-                <!-- Right Action Buttons: Import Excel & Tambah Dosen -->
+                <!-- Right Action Buttons: Export, import, and add lecturer -->
                 <div class="flex items-center gap-3 shrink-0">
+                    <button
+                        type="button"
+                        id="exportDosenBtn"
+                        data-export-url="{{ route('dosen.export') }}"
+                        class="h-[35px] inline-flex items-center gap-2 px-3.5 rounded-[8px] border border-[#01568D] text-[#01568D] hover:bg-blue-50 text-xs sm:text-[13px] font-bold transition cursor-pointer shadow-2xs whitespace-nowrap shrink-0"
+                    >
+                        <span class="export-dosen-label">Download Excel</span>
+                    </button>
                     <a
                         href="{{ route('dosen.template') }}"
                         class="h-[35px] inline-flex items-center gap-2 px-3.5 rounded-[8px] border border-secondary text-secondary hover:bg-secondary/10 text-xs sm:text-[13px] font-bold transition cursor-pointer shadow-2xs whitespace-nowrap shrink-0"
@@ -128,15 +194,16 @@
                 </div>
             </div>
 
-            <div class="mt-7 min-w-0 overflow-x-hidden">
-                <table id="dosen-table" class="w-full table-fixed text-left border-collapse">
+            <div class="mt-7 min-w-0 overflow-x-auto">
+                <table id="dosen-table" class="w-full min-w-[1050px] table-fixed text-left border-collapse">
                     <thead>
                         <tr class="border-y border-gray-200 text-gray-900 font-semibold text-sm">
                             <th class="w-16 text-center py-3.5 px-2 sm:px-3">No</th>
-                            <th class="py-3.5 px-2 sm:px-3">Nama Dosen</th>
-                            <th class="py-3.5 px-2 sm:px-3">NIDN</th>
-                            <th class="py-3.5 px-2 sm:px-3">Status</th>
-                            <th class="py-3.5 px-2 sm:px-3">Sertifikasi</th>
+                            <th class="py-3.5 px-2 sm:px-3">Identitas Dosen</th>
+                            <th class="py-3.5 px-2 sm:px-3">Status DTPS/DTT</th>
+                            <th class="py-3.5 px-2 sm:px-3">Pendidikan Terakhir</th>
+                            <th class="py-3.5 px-2 sm:px-3">Jabatan Akademik</th>
+                            <th class="py-3.5 px-2 sm:px-3">Sertifikasi Dosen</th>
                             <th class="w-28 text-center py-3.5 px-2 sm:px-3">Action</th>
                         </tr>
                     </thead>
@@ -154,6 +221,8 @@
 
                                 $rawNidn = $d['nidn'] ?? '-';
                                 $nidn = is_scalar($rawNidn) ? (string) $rawNidn : '-';
+                                $rawNuptk = $d['nuptk'] ?? '-';
+                                $nuptk = is_scalar($rawNuptk) ? (string) $rawNuptk : '-';
 
                                 $rawStatus = $d['status_dosen'] ?? ($d['status'] ?? 'DTPS');
                                 $statusDosen = is_string($rawStatus) ? $rawStatus : (is_array($rawStatus) ? ($rawStatus['status'] ?? ($rawStatus['nama'] ?? 'DTPS')) : 'DTPS');
@@ -161,18 +230,48 @@
                                 $rawEmail = $d['email'] ?? '-';
                                 $email = is_string($rawEmail) ? $rawEmail : '-';
 
-                                $rawSertifikasi = $d['sertifikasi'] ?? '';
-                                $sertifikasi = is_string($rawSertifikasi) ? $rawSertifikasi : (is_array($rawSertifikasi) ? ($rawSertifikasi['url'] ?? ($rawSertifikasi['link'] ?? '')) : '');
-                                $isSertifikasi = ! empty($sertifikasi);
-                                $rawJabatan = $d['id_jabatan'] ?? ($d['jabatan']['id_jabatan'] ?? '');
-                                $idJabatan = is_scalar($rawJabatan) ? (string) $rawJabatan : '';
+                                $rawSertifikasi = $d['sertifikasi_dosen'] ?? ($d['sertifikasi'] ?? '');
+                                $sertifikasi = is_string($rawSertifikasi)
+                                    ? trim($rawSertifikasi)
+                                    : (is_array($rawSertifikasi) ? ($rawSertifikasi['nama_sertifikasi'] ?? ($rawSertifikasi['jenis_sertifikasi'] ?? '')) : '');
+                                $sertifikasiLower = strtolower($sertifikasi);
+                                $isSertifikasi = $sertifikasi !== ''
+                                    && !str_contains($sertifikasiLower, 'belum')
+                                    && (
+                                        str_contains($sertifikasiLower, 'tersertifikasi')
+                                        || str_contains($sertifikasiLower, 'serdos')
+                                        || str_contains($sertifikasiLower, 'sertifikat pendidik')
+                                    );
+                                $rawJabatan = $d['jabatan_akademik'] ?? ($d['jabatan'] ?? []);
+                                $jabatanNama = is_array($rawJabatan)
+                                    ? ($rawJabatan['nama_jabatan'] ?? ($rawJabatan['nama'] ?? ''))
+                                    : (is_string($rawJabatan) ? $rawJabatan : '');
+                                $rawJabatanId = $d['id_jabatan'] ?? (is_array($rawJabatan) ? ($rawJabatan['id_jabatan'] ?? ($rawJabatan['id'] ?? '')) : '');
+                                $idJabatan = is_scalar($rawJabatanId) ? (string) $rawJabatanId : '';
+                                $rawPendidikan = $d['pendidikan_terakhir'] ?? ($d['pendidikan'] ?? []);
+                                $pendidikanJenjang = is_array($rawPendidikan)
+                                    ? ($rawPendidikan['jenjang'] ?? ($rawPendidikan['nama_pendidikan'] ?? ''))
+                                    : (is_string($rawPendidikan) ? $rawPendidikan : '');
+                                $pendidikanJenjang = preg_match('/(?:^|[^A-Z0-9])(?:S[123]|D4)(?:$|[^A-Z0-9])|terapan/i', $pendidikanJenjang) === 1
+                                    ? $pendidikanJenjang
+                                    : '-';
+                                $rawPendidikanId = $d['id_pendidikan'] ?? (is_array($rawPendidikan) ? ($rawPendidikan['id_pendidikan'] ?? ($rawPendidikan['id'] ?? '')) : '');
+                                $idPendidikan = is_scalar($rawPendidikanId) ? (string) $rawPendidikanId : '';
                             @endphp
                             <tr class="dosen-row border-b border-gray-200 hover:bg-gray-50/60 transition-colors duration-150 group">
                                 <td class="w-16 text-center text-gray-900 py-4 px-2 sm:px-3">{{ $rowNumber }}.</td>
-                                <td class="text-sm font-medium text-gray-900 py-4 px-2 sm:px-3 break-words">{{ $nama }}</td>
-                                <td class="text-sm text-gray-900 py-4 px-2 sm:px-3 break-all">{{ $nidn }}</td>
+                                <td class="text-sm text-gray-900 py-4 px-2 sm:px-3 break-words">
+                                    <span class="block font-semibold">{{ $nama }}</span>
+                                    <span class="mt-1 block text-xs text-gray-600">NIDN: {{ $nidn }} · NUPTK: {{ $nuptk }}</span>
+                                </td>
                                 <td class="text-sm text-gray-900 py-4 px-2 sm:px-3 break-words">{{ $statusDosen }}</td>
-                                <td class="text-sm text-gray-900 py-4 px-2 sm:px-3 break-words">{{ $isSertifikasi ? 'Tersertifikasi' : 'Belum' }}</td>
+                                <td class="text-sm text-gray-900 py-4 px-2 sm:px-3 break-words">{{ $pendidikanJenjang }}</td>
+                                <td class="text-sm text-gray-900 py-4 px-2 sm:px-3 break-words">{{ $jabatanNama !== '' ? $jabatanNama : '-' }}</td>
+                                <td class="text-sm py-4 px-2 sm:px-3">
+                                    <span class="inline-flex rounded-full px-2.5 py-1 text-xs font-semibold {{ $isSertifikasi ? 'bg-emerald-100 text-emerald-800' : 'bg-gray-100 text-gray-600' }}">
+                                        {{ $isSertifikasi ? 'Tersertifikasi' : 'Belum Tersertifikasi' }}
+                                    </span>
+                                </td>
                                 <td class="w-28 py-4 px-2 sm:px-3">
                                     <div class="flex items-center justify-center gap-2 sm:gap-4">
                                         <button
@@ -182,11 +281,12 @@
                                             data-id="{{ $dosenId }}"
                                             data-nama="{{ $nama }}"
                                             data-nidn="{{ $nidn }}"
+                                            data-nuptk="{{ $nuptk }}"
                                             data-status="{{ $statusDosen }}"
                                             data-email="{{ $email }}"
                                             data-sertifikasi="{{ $sertifikasi }}"
                                             data-id-jabatan="{{ $idJabatan }}"
-                                            data-id-pendidikan="{{ $d['id_pendidikan'] ?? ($d['pendidikan']['id_pendidikan'] ?? '') }}"
+                                            data-id-pendidikan="{{ $idPendidikan }}"
                                             data-action="{{ route('dosen.update', $dosenId) }}"
                                         >
                                             <x-icon.edit class="w-5 h-5" />
@@ -215,9 +315,9 @@
                             </tr>
                         @empty
                             @if($hasActiveFilters)
-                                <tr><td colspan="6" class="py-12 px-6 border-b border-gray-200 text-center text-gray-400"><p class="text-sm font-semibold text-gray-600">Tidak ada data dosen yang sesuai</p><p class="text-xs text-gray-400 mt-1">Coba ubah kata kunci pencarian atau filter status Anda.</p></td></tr>
+                                <tr><td colspan="7" class="py-12 px-6 border-b border-gray-200 text-center text-gray-400"><p class="text-sm font-semibold text-gray-600">Tidak ada data dosen yang sesuai</p><p class="text-xs text-gray-400 mt-1">Coba ubah kata kunci pencarian atau filter Anda.</p></td></tr>
                             @else
-                                <tr><td colspan="6" class="py-12 px-6 border-b border-gray-200 text-center text-gray-400"><p class="text-sm font-semibold text-gray-600">Belum ada data dosen</p><p class="text-xs text-gray-400 mt-1">Silakan klik tombol Tambah Dosen atau Import Excel untuk menambahkan data.</p></td></tr>
+                                <tr><td colspan="7" class="py-12 px-6 border-b border-gray-200 text-center text-gray-400"><p class="text-sm font-semibold text-gray-600">Belum ada data dosen</p><p class="text-xs text-gray-400 mt-1">Silakan klik tombol Tambah Dosen atau Import Excel untuk menambahkan data.</p></td></tr>
                             @endif
                         @endforelse
                     </tbody>
@@ -237,13 +337,13 @@
     aria-modal="true"
     aria-labelledby="createDosenModalTitle"
 >
-    <div class="dosen-modal-card relative bg-white rounded-[20px] p-8 max-w-[440px] w-full shadow-2xl text-left transform scale-95 transition-all duration-200 overflow-hidden">
+    <div class="dosen-modal-card relative bg-white rounded-[20px] p-8 max-w-[440px] w-full shadow-2xl text-left transform scale-95 transition-all duration-200 max-h-[90vh] overflow-y-auto">
         <!-- Title: Tambahkan Dosen -->
         <h3 id="createDosenModalTitle" class="text-xl font-bold text-gray-900 tracking-tight text-center mb-6">
             Tambahkan Dosen
         </h3>
 
-        <form action="{{ route('dosen.store') }}" method="POST" class="space-y-4">
+        <form id="createDosenForm" action="{{ route('dosen.store') }}" method="POST" class="space-y-4">
             @csrf
 
             <!-- 1. Nama -->
@@ -276,6 +376,17 @@
                 >
             </div>
 
+            <div>
+                <label for="createNuptkInput" class="block text-xs font-bold text-gray-900 mb-1.5">NUPTK</label>
+                <input
+                    type="text"
+                    name="nuptk"
+                    id="createNuptkInput"
+                    placeholder="Isi NUPTK (opsional)"
+                    class="w-full px-4 py-2.5 rounded-[10px] bg-white-form border-none text-sm font-medium text-gray-900 focus:ring-2 focus:ring-primary/20 focus:outline-none placeholder:text-gray-500"
+                >
+            </div>
+
             <!-- 3. Status -->
             <div>
                 <label for="createStatusSelect" class="block text-xs font-bold text-gray-900 mb-1.5">
@@ -290,7 +401,7 @@
                     >
                         <option value="" disabled selected>Pilih Status Dosen</option>
                         <option value="DTPS">DTPS</option>
-                        <option value="Tidak Tetap">Tidak Tetap</option>
+                        <option value="DTT">Tidak Tetap</option>
                     </select>
                     <span class="absolute inset-y-0 right-0 flex items-center pr-3.5 pointer-events-none text-primary">
                         <svg class="w-5 h-5 stroke-[3]" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
@@ -315,46 +426,43 @@
                 >
             </div>
 
-            <!-- 5. Sertifikasi (G. Drive) -->
+            <!-- 5. Sertifikasi Dosen -->
             <div>
                 <label for="createSertifikasiInput" class="block text-xs font-bold text-gray-900 mb-1.5">
-                    Sertifikasi (G. Drive)
+                    Sertifikasi Dosen (Serdos)
                 </label>
-                <input
-                    type="text"
-                    name="sertifikasi"
+                <select
+                    name="sertifikasi_dosen"
                     id="createSertifikasiInput"
-                    placeholder="Masukkan Tautan Sertifikasi"
-                    class="w-full px-4 py-2.5 rounded-[10px] bg-white-form border-none text-sm font-medium text-gray-900 focus:ring-2 focus:ring-primary/20 focus:outline-none placeholder:text-gray-500"
+                    class="w-full px-4 py-2.5 rounded-[10px] bg-white-form border-none text-sm font-medium text-gray-700 focus:ring-2 focus:ring-primary/20 focus:outline-none"
                 >
+                    <option value="">Pilih Status Serdos</option>
+                    <option value="Tersertifikasi">Tersertifikasi</option>
+                    <option value="Belum Tersertifikasi">Belum Tersertifikasi</option>
+                </select>
             </div>
 
-            @if($canManageJabatan)
-                <div>
-                    <label for="createJabatanSelect" class="block text-xs font-bold text-gray-900 mb-1.5">
-                        Jabatan Akademik
-                    </label>
-                    <div class="relative">
-                        <select name="id_jabatan" id="createJabatanSelect" class="w-full appearance-none px-4 py-2.5 pr-10 rounded-[10px] bg-white-form border-none text-sm font-medium text-gray-700 focus:ring-2 focus:ring-primary/20 focus:outline-none cursor-pointer">
-                            <option value="">Pilih Jabatan Akademik</option>
-                            @foreach($jabatanList as $jabatan)
-                                @php
-                                    $jabatanId = $jabatan['id_jabatan'] ?? ($jabatan['id'] ?? '');
-                                    $jabatanNama = $jabatan['nama_jabatan'] ?? ($jabatan['nama'] ?? '');
-                                @endphp
-                                @if($jabatanId !== '' && $jabatanNama !== '')
-                                    <option value="{{ $jabatanId }}">{{ $jabatanNama }}</option>
-                                @endif
-                            @endforeach
-                        </select>
-                        <span class="absolute inset-y-0 right-0 flex items-center pr-3.5 pointer-events-none text-primary">
-                            <svg class="w-5 h-5 stroke-[3]" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6" /></svg>
-                        </span>
-                    </div>
+            <div>
+                <label for="createJabatanSelect" class="block text-xs font-bold text-gray-900 mb-1.5">Jabatan Fungsional / Akademik</label>
+                <div class="relative">
+                    <select name="id_jabatan" id="createJabatanSelect" required class="w-full appearance-none px-4 py-2.5 pr-10 rounded-[10px] bg-white-form border-none text-sm font-medium text-gray-700 focus:ring-2 focus:ring-primary/20 focus:outline-none cursor-pointer">
+                        <option value="">Pilih Jabatan Akademik</option>
+                        @foreach($jabatanList as $jabatan)
+                            @php
+                                $jabatanId = $jabatan['id_jabatan'] ?? ($jabatan['id'] ?? '');
+                                $jabatanNama = $jabatan['nama_jabatan'] ?? ($jabatan['nama'] ?? '');
+                            @endphp
+                            @if($jabatanId !== '' && $jabatanNama !== '')
+                                <option value="{{ $jabatanId }}">{{ $jabatanNama }}</option>
+                            @endif
+                        @endforeach
+                    </select>
+                    <span class="absolute inset-y-0 right-0 flex items-center pr-3.5 pointer-events-none text-primary">
+                        <svg class="w-5 h-5 stroke-[3]" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6" /></svg>
+                    </span>
                 </div>
-            @endif
+            </div>
 
-            <!-- 6. Pendidikan Terakhir -->
             <div>
                 <label for="createPendidikanSelect" class="block text-xs font-bold text-gray-900 mb-1.5">
                     Pendidikan Terakhir
@@ -363,22 +471,12 @@
                     <select
                         name="id_pendidikan"
                         id="createPendidikanSelect"
+                        required
                         class="w-full appearance-none px-4 py-2.5 pr-10 rounded-[10px] bg-white-form border-none text-sm font-medium text-gray-700 focus:ring-2 focus:ring-primary/20 focus:outline-none cursor-pointer"
                     >
-                        @php
-                            $sortedPendidikanList = collect($pendidikanList)
-                                ->map(function ($pendidikan) {
-                                    $pendidikan['id'] = $pendidikan['id_pendidikan'] ?? ($pendidikan['id'] ?? '');
-                                    $pendidikan['nama'] = $pendidikan['nama_pendidikan'] ?? ($pendidikan['jenjang'] ?? ($pendidikan['nama'] ?? $pendidikan['id']));
-
-                                    return $pendidikan;
-                                })
-                                ->filter(fn ($pendidikan) => ! empty($pendidikan['id']) && preg_match('/\bS[23]\b/i', (string) $pendidikan['nama']) === 1)
-                                ->unique(fn ($pendidikan) => mb_strtoupper(trim((string) $pendidikan['nama'])))
-                                ->sortBy(fn ($pendidikan) => preg_match('/\bS3\b/i', (string) $pendidikan['nama']) === 1 ? 1 : 0);
-                        @endphp
-                        @foreach($sortedPendidikanList as $p)
-                            <option value="{{ $p['id'] }}">{{ $p['nama'] }}</option>
+                        <option value="">Pilih Pendidikan Terakhir</option>
+                        @foreach($eligiblePendidikanList as $pendidikanOption)
+                            <option value="{{ $pendidikanOption['id'] }}">{{ $pendidikanOption['label'] }}</option>
                         @endforeach
                     </select>
                     <span class="absolute inset-y-0 right-0 flex items-center pr-3.5 pointer-events-none text-primary">
@@ -400,9 +498,9 @@
                 </button>
                 <button
                     type="submit"
-                    class="w-full py-2.5 px-6 rounded-[8px] bg-[#01568D] hover:bg-primary text-white font-bold text-sm shadow-xs transition cursor-pointer text-center"
+                    class="dosen-submit-btn w-full py-2.5 px-6 rounded-[8px] bg-[#01568D] hover:bg-primary text-white font-bold text-sm shadow-xs transition cursor-pointer text-center disabled:opacity-60 disabled:cursor-not-allowed"
                 >
-                    Simpan
+                    <span class="dosen-submit-label">Simpan</span>
                 </button>
             </div>
         </form>
@@ -417,7 +515,7 @@
     aria-modal="true"
     aria-labelledby="editDosenModalTitle"
 >
-    <div class="dosen-modal-card relative bg-white rounded-[20px] p-8 max-w-[440px] w-full shadow-2xl text-left transform scale-95 transition-all duration-200 overflow-hidden">
+    <div class="dosen-modal-card relative bg-white rounded-[20px] p-8 max-w-[440px] w-full shadow-2xl text-left transform scale-95 transition-all duration-200 max-h-[90vh] overflow-y-auto">
         <!-- Title: Perbarui Data Dosen -->
         <h3 id="editDosenModalTitle" class="text-xl font-bold text-gray-900 tracking-tight text-center mb-6">
             Perbarui Data Dosen
@@ -426,7 +524,6 @@
         <form id="editDosenForm" action="#" method="POST" class="space-y-4">
             @csrf
             @method('PUT')
-            <input type="hidden" name="id_pendidikan" id="editPendidikanPreserved" value="">
 
             <!-- 1. Nama -->
             <div>
@@ -458,6 +555,17 @@
                 >
             </div>
 
+            <div>
+                <label for="editNuptkInput" class="block text-xs font-bold text-gray-900 mb-1.5">NUPTK</label>
+                <input
+                    type="text"
+                    name="nuptk"
+                    id="editNuptkInput"
+                    placeholder="Isi NUPTK (opsional)"
+                    class="w-full px-4 py-2.5 rounded-[10px] bg-white-form border-none text-sm font-medium text-gray-900 focus:ring-2 focus:ring-primary/20 focus:outline-none placeholder:text-gray-500"
+                >
+            </div>
+
             <!-- 3. Status -->
             <div>
                 <label for="editStatusSelect" class="block text-xs font-bold text-gray-900 mb-1.5">
@@ -472,7 +580,7 @@
                     >
                         <option value="" disabled selected>Pilih Status Dosen</option>
                         <option value="DTPS">DTPS</option>
-                        <option value="Tidak Tetap">Tidak Tetap</option>
+                        <option value="DTT">Tidak Tetap</option>
                     </select>
                     <span class="absolute inset-y-0 right-0 flex items-center pr-3.5 pointer-events-none text-primary">
                         <svg class="w-5 h-5 stroke-[3]" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
@@ -497,46 +605,57 @@
                 >
             </div>
 
-            <!-- 5. Sertifikasi (G. Drive) -->
+            <!-- 5. Sertifikasi Dosen -->
             <div>
                 <label for="editSertifikasiInput" class="block text-xs font-bold text-gray-900 mb-1.5">
-                    Sertifikasi (G. Drive)
+                    Sertifikasi Dosen (Serdos)
                 </label>
-                <input
-                    type="text"
-                    name="sertifikasi"
+                <select
+                    name="sertifikasi_dosen"
                     id="editSertifikasiInput"
-                    placeholder="Masukkan Tautan Sertifikasi"
-                    class="w-full px-4 py-2.5 rounded-[10px] bg-white-form border-none text-sm font-medium text-gray-900 focus:ring-2 focus:ring-primary/20 focus:outline-none placeholder:text-gray-500"
+                    class="w-full px-4 py-2.5 rounded-[10px] bg-white-form border-none text-sm font-medium text-gray-700 focus:ring-2 focus:ring-primary/20 focus:outline-none"
                 >
+                    <option value="">Pilih Status Serdos</option>
+                    <option value="Tersertifikasi">Tersertifikasi</option>
+                    <option value="Belum Tersertifikasi">Belum Tersertifikasi</option>
+                </select>
             </div>
 
-            @if($canManageJabatan)
-                <div>
-                    <label for="editJabatanSelect" class="block text-xs font-bold text-gray-900 mb-1.5">
-                        Jabatan Akademik
-                    </label>
-                    <div class="relative">
-                        <select name="id_jabatan" id="editJabatanSelect" class="w-full appearance-none px-4 py-2.5 pr-10 rounded-[10px] bg-white-form border-none text-sm font-medium text-gray-700 focus:ring-2 focus:ring-primary/20 focus:outline-none cursor-pointer">
-                            <option value="">Pilih Jabatan Akademik</option>
-                            @foreach($jabatanList as $jabatan)
-                                @php
-                                    $jabatanId = $jabatan['id_jabatan'] ?? ($jabatan['id'] ?? '');
-                                    $jabatanNama = $jabatan['nama_jabatan'] ?? ($jabatan['nama'] ?? '');
-                                @endphp
-                                @if($jabatanId !== '' && $jabatanNama !== '')
-                                    <option value="{{ $jabatanId }}">{{ $jabatanNama }}</option>
-                                @endif
-                            @endforeach
-                        </select>
-                        <span class="absolute inset-y-0 right-0 flex items-center pr-3.5 pointer-events-none text-primary">
-                            <svg class="w-5 h-5 stroke-[3]" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6" /></svg>
-                        </span>
-                    </div>
+            <div>
+                <label for="editJabatanSelect" class="block text-xs font-bold text-gray-900 mb-1.5">Jabatan Fungsional / Akademik</label>
+                <div class="relative">
+                    <select name="id_jabatan" id="editJabatanSelect" required class="w-full appearance-none px-4 py-2.5 pr-10 rounded-[10px] bg-white-form border-none text-sm font-medium text-gray-700 focus:ring-2 focus:ring-primary/20 focus:outline-none cursor-pointer">
+                        <option value="">Pilih Jabatan Akademik</option>
+                        @foreach($jabatanList as $jabatan)
+                            @php
+                                $jabatanId = $jabatan['id_jabatan'] ?? ($jabatan['id'] ?? '');
+                                $jabatanNama = $jabatan['nama_jabatan'] ?? ($jabatan['nama'] ?? '');
+                            @endphp
+                            @if($jabatanId !== '' && $jabatanNama !== '')
+                                <option value="{{ $jabatanId }}">{{ $jabatanNama }}</option>
+                            @endif
+                        @endforeach
+                    </select>
+                    <span class="absolute inset-y-0 right-0 flex items-center pr-3.5 pointer-events-none text-primary">
+                        <svg class="w-5 h-5 stroke-[3]" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6" /></svg>
+                    </span>
                 </div>
-            @else
-                <input type="hidden" name="id_jabatan" id="editJabatanPreserved" value="">
-            @endif
+            </div>
+
+            <div>
+                <label for="editPendidikanSelect" class="block text-xs font-bold text-gray-900 mb-1.5">Pendidikan Terakhir</label>
+                <div class="relative">
+                    <select name="id_pendidikan" id="editPendidikanSelect" required class="w-full appearance-none px-4 py-2.5 pr-10 rounded-[10px] bg-white-form border-none text-sm font-medium text-gray-700 focus:ring-2 focus:ring-primary/20 focus:outline-none cursor-pointer">
+                        <option value="">Pilih Pendidikan Terakhir</option>
+                        @foreach($eligiblePendidikanList as $pendidikanOption)
+                            <option value="{{ $pendidikanOption['id'] }}">{{ $pendidikanOption['label'] }}</option>
+                        @endforeach
+                    </select>
+                    <span class="absolute inset-y-0 right-0 flex items-center pr-3.5 pointer-events-none text-primary">
+                        <svg class="w-5 h-5 stroke-[3]" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6" /></svg>
+                    </span>
+                </div>
+            </div>
 
             <!-- Action Buttons: Batal & Simpan -->
             <div class="grid grid-cols-2 gap-4 pt-3">
@@ -549,9 +668,9 @@
                 </button>
                 <button
                     type="submit"
-                    class="w-full py-2.5 px-6 rounded-[8px] bg-[#01568D] hover:bg-primary text-white font-bold text-sm shadow-xs transition cursor-pointer text-center"
+                    class="dosen-submit-btn w-full py-2.5 px-6 rounded-[8px] bg-[#01568D] hover:bg-primary text-white font-bold text-sm shadow-xs transition cursor-pointer text-center disabled:opacity-60 disabled:cursor-not-allowed"
                 >
-                    Simpan
+                    <span class="dosen-submit-label">Simpan</span>
                 </button>
             </div>
         </form>
@@ -658,6 +777,52 @@
 
 <script>
     document.addEventListener('DOMContentLoaded', function () {
+        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+
+        function showDosenToast(message, type, title) {
+            if (typeof window.showToast === 'function') {
+                window.showToast(message, type, title);
+            } else {
+                alert(message);
+            }
+        }
+
+        function clearDosenFormErrors(form) {
+            form.querySelectorAll('[data-validation-error]').forEach(error => error.remove());
+            form.querySelectorAll('[aria-invalid="true"]').forEach(field => field.removeAttribute('aria-invalid'));
+        }
+
+        function showDosenFormErrors(form, errors) {
+            if (!errors || typeof errors !== 'object') return;
+
+            Object.entries(errors).forEach(([name, messages]) => {
+                const field = Array.from(form.elements).find(element => element.name === name);
+                const message = Array.isArray(messages) ? messages[0] : messages;
+                if (!field || typeof message !== 'string') return;
+
+                const container = field.closest('.relative')?.parentElement || field.parentElement;
+                if (!container) return;
+
+                field.setAttribute('aria-invalid', 'true');
+                const errorElement = document.createElement('p');
+                errorElement.dataset.validationError = '';
+                errorElement.className = 'mt-1 text-xs text-red-600';
+                errorElement.textContent = message;
+                container.append(errorElement);
+            });
+        }
+
+        const savedToast = sessionStorage.getItem('dosen-success-toast');
+        if (savedToast) {
+            sessionStorage.removeItem('dosen-success-toast');
+            try {
+                const toast = JSON.parse(savedToast);
+                showDosenToast(toast.message, 'success', 'Berhasil');
+            } catch (error) {
+                console.error('Notifikasi dosen tidak dapat dipulihkan.', error);
+            }
+        }
+
         function showModal(modalEl) {
             if (!modalEl) return;
             const card = modalEl.querySelector('.dosen-modal-card');
@@ -697,6 +862,114 @@
         if (closeCreateBtn) {
             closeCreateBtn.addEventListener('click', () => hideModal(createModal));
         }
+
+        const createForm = document.getElementById('createDosenForm');
+        const editForm = document.getElementById('editDosenForm');
+
+        async function submitDosenForm(form, modal, defaultLabel) {
+            const submitButton = form.querySelector('.dosen-submit-btn');
+            const submitLabel = submitButton?.querySelector('.dosen-submit-label');
+            if (submitButton?.disabled) return;
+
+            clearDosenFormErrors(form);
+            if (submitButton) submitButton.disabled = true;
+            if (submitLabel) submitLabel.textContent = 'Menyimpan...';
+
+            try {
+                const formData = new FormData(form);
+                const payload = {};
+                formData.forEach((value, key) => {
+                    if (key !== '_token' && key !== '_method') payload[key] = value;
+                });
+                ['id_jabatan', 'id_pendidikan'].forEach(key => {
+                    if (payload[key]) payload[key] = Number(payload[key]);
+                });
+
+                const isUpdate = form.id === 'editDosenForm';
+                const response = await fetch(form.action, {
+                    method: isUpdate ? 'PUT' : 'POST',
+                    headers: {
+                        'X-CSRF-TOKEN': csrfToken,
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    body: JSON.stringify(payload)
+                });
+                const result = await response.json().catch(() => ({}));
+
+                if (!response.ok || result.success === false) {
+                    const error = new Error(result.message || 'Data dosen gagal disimpan.');
+                    error.validationErrors = result.errors || {};
+                    throw error;
+                }
+
+                form.reset();
+                clearDosenFormErrors(form);
+                hideModal(modal);
+                sessionStorage.setItem('dosen-success-toast', JSON.stringify({
+                    message: result.message || (isUpdate ? 'Data dosen berhasil diperbarui.' : 'Data dosen berhasil ditambahkan.')
+                }));
+                window.location.reload();
+            } catch (error) {
+                showDosenFormErrors(form, error.validationErrors);
+                showDosenToast(error.message || 'Data dosen gagal disimpan.', 'error', 'Gagal');
+            } finally {
+                if (submitButton) submitButton.disabled = false;
+                if (submitLabel) submitLabel.textContent = defaultLabel;
+            }
+        }
+
+        [createForm, editForm].forEach(form => {
+            form?.addEventListener('submit', function (event) {
+                event.preventDefault();
+                const modal = form === createForm ? createModal : document.getElementById('editDosenModal');
+                submitDosenForm(form, modal, 'Simpan');
+            });
+        });
+
+        const exportButton = document.getElementById('exportDosenBtn');
+        exportButton?.addEventListener('click', async function () {
+            const button = this;
+            const label = button.querySelector('.export-dosen-label');
+            if (button.disabled) return;
+
+            button.disabled = true;
+            if (label) label.textContent = 'Mengunduh...';
+
+            try {
+                const response = await fetch(button.dataset.exportUrl, {
+                    headers: { 'Accept': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }
+                });
+                const contentType = response.headers.get('content-type') || '';
+
+                if (!response.ok || !contentType.includes('spreadsheetml')) {
+                    const body = await response.text();
+                    let message = 'Gagal mengunduh file Excel dosen.';
+                    try {
+                        message = JSON.parse(body).message || message;
+                    } catch (error) {
+                        if (response.redirected) message = 'Sesi Anda berakhir. Silakan login kembali.';
+                    }
+                    throw new Error(message);
+                }
+
+                const responseBlob = await response.blob();
+                const objectUrl = window.URL.createObjectURL(new Blob([responseBlob], { type: contentType }));
+                const downloadLink = document.createElement('a');
+                downloadLink.href = objectUrl;
+                downloadLink.download = 'Data_Dosen.xlsx';
+                document.body.append(downloadLink);
+                downloadLink.click();
+                downloadLink.remove();
+                window.setTimeout(() => window.URL.revokeObjectURL(objectUrl), 1000);
+            } catch (error) {
+                showDosenToast(error.message || 'Gagal mengunduh file Excel dosen.', 'error', 'Gagal');
+            } finally {
+                button.disabled = false;
+                if (label) label.textContent = 'Download Excel';
+            }
+        });
 
         // 2. Import Modal & File Upload Logic
         const importModal = document.getElementById('importExcelModal');
@@ -804,34 +1077,36 @@
 
         // 3. Edit Modal
         const editModal = document.getElementById('editDosenModal');
-        const editForm = document.getElementById('editDosenForm');
         const closeEditBtn = document.getElementById('closeEditModalBtn');
         const editNama = document.getElementById('editNamaInput');
         const editNidn = document.getElementById('editNidnInput');
+        const editNuptk = document.getElementById('editNuptkInput');
         const editStatus = document.getElementById('editStatusSelect');
         const editEmail = document.getElementById('editEmailInput');
         const editSertifikasi = document.getElementById('editSertifikasiInput');
         const editJabatan = document.getElementById('editJabatanSelect');
-        const editJabatanPreserved = document.getElementById('editJabatanPreserved');
-        const editPendidikanPreserved = document.getElementById('editPendidikanPreserved');
+        const editPendidikan = document.getElementById('editPendidikanSelect');
 
-        document.querySelectorAll('.edit-dosen-btn').forEach(btn => {
-            btn.addEventListener('click', function () {
-                const action = this.getAttribute('data-action');
-                const nama = this.getAttribute('data-nama');
-                const nidn = this.getAttribute('data-nidn');
-                const status = this.getAttribute('data-status');
-                const email = this.getAttribute('data-email');
-                const sertifikasi = this.getAttribute('data-sertifikasi');
-                const idJabatan = this.getAttribute('data-id-jabatan') || '';
-                const idPendidikan = this.getAttribute('data-id-pendidikan') || '';
+        document.addEventListener('click', function (event) {
+            const editButton = event.target.closest('.edit-dosen-btn');
+            if (editButton) {
+                const action = editButton.getAttribute('data-action');
+                const nama = editButton.getAttribute('data-nama');
+                const nidn = editButton.getAttribute('data-nidn');
+                const nuptk = editButton.getAttribute('data-nuptk');
+                const status = editButton.getAttribute('data-status');
+                const email = editButton.getAttribute('data-email');
+                const sertifikasi = editButton.getAttribute('data-sertifikasi');
+                const idJabatan = editButton.getAttribute('data-id-jabatan') || '';
+                const idPendidikan = editButton.getAttribute('data-id-pendidikan') || '';
 
                 if (editForm) editForm.action = action;
                 if (editNama) editNama.value = nama || '';
                 if (editNidn) editNidn.value = (nidn && nidn !== '-') ? nidn : '';
+                if (editNuptk) editNuptk.value = (nuptk && nuptk !== '-') ? nuptk : '';
                 if (editStatus) {
                     if (status === 'Tidak Tetap' || status === 'DTT' || (status && status.toLowerCase().includes('tidak tetap'))) {
-                        editStatus.value = 'Tidak Tetap';
+                        editStatus.value = 'DTT';
                     } else if (status === 'DTPS') {
                         editStatus.value = 'DTPS';
                     } else {
@@ -841,12 +1116,12 @@
                 if (editEmail) editEmail.value = (email && email !== '-') ? email : '';
                 if (editSertifikasi) editSertifikasi.value = sertifikasi || '';
                 if (editJabatan) editJabatan.value = idJabatan;
-                if (editJabatanPreserved) editJabatanPreserved.value = idJabatan;
-                if (editPendidikanPreserved) editPendidikanPreserved.value = idPendidikan;
+                if (editPendidikan) editPendidikan.value = idPendidikan;
+                if (editForm) clearDosenFormErrors(editForm);
 
                 showModal(editModal);
                 setTimeout(() => editNama?.focus(), 100);
-            });
+            }
         });
 
         if (closeEditBtn) {

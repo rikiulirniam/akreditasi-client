@@ -12,8 +12,21 @@
 
 @section('content')
 
+<div id="luaran-loading-state" class="hidden mb-4 items-center gap-2 text-sm font-medium text-primary" role="status" aria-live="polite">
+    <svg class="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24" aria-hidden="true">
+        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+    </svg>
+    <span>Memuat data luaran...</span>
+</div>
+
 {{-- Container Utama Halaman Luaran (Bisa di-refresh via AJAX tanpa reload utuh) --}}
 <div id="luaran-main-wrapper">
+    @if($luaranLoadError ?? false)
+        <div class="mb-5 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700" role="alert">
+            Data luaran gagal dimuat dari server. Silakan coba muat ulang halaman.
+        </div>
+    @endif
 
     @if(empty($luaranList) && empty($search) && empty($selectedJenis))
 
@@ -135,6 +148,7 @@
                         <col style="width: 3.5rem;">
                         <col>
                         <col style="width: 12rem;">
+                        <col style="width: 12rem;">
                         <col style="width: 14rem;">
                         <col style="width: 9rem;">
                         <col style="width: 7rem;">
@@ -144,6 +158,7 @@
                             <th class="text-center py-3.5 px-2 sm:px-3">No</th>
                             <th class="py-3.5 px-2 sm:px-3">Judul Luaran</th>
                             <th class="py-3.5 px-2 sm:px-3">Jenis Luaran</th>
+                            <th class="py-3.5 px-2 sm:px-3">Penulis / Dosen</th>
                             <th class="py-3.5 px-2 sm:px-3">Nama Penerbit</th>
                             <th class="py-3.5 px-2 sm:px-3">Tanggal terbit</th>
                             <th class="text-center py-3.5 px-2 sm:px-3">Action</th>
@@ -159,6 +174,7 @@
                                 $kategori    = $item['kategori'] ?? 'jurnal';
                                 $judul       = $item['judul'] ?? '-';
                                 $jenis       = $item['jenis'] ?? '-';
+                                $namaDosen   = $item['nama_dosen'] ?? '-';
                                 $penerbit    = $item['nama_penerbit'] ?? '-';
                                 $url         = $item['url'] ?? null;
                                 $extra       = $item['extra'] ?? [];
@@ -185,6 +201,7 @@
                                 <td class="py-4 px-2 sm:px-3 text-sm text-gray-800">
                                     {{ $jenis }}
                                 </td>
+                                <td class="text-sm text-gray-800 py-4 px-2 sm:px-3 break-words">{{ $namaDosen }}</td>
                                 <td class="text-sm text-gray-800 py-4 px-2 sm:px-3 break-words">{{ $penerbit }}</td>
                                 <td class="text-sm text-gray-800 py-4 px-2 sm:px-3 whitespace-nowrap">{{ $tanggal }}</td>
                                 <td class="py-4 px-2 sm:px-3">
@@ -237,7 +254,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="6" class="py-14 px-6 border-b border-gray-200 text-center">
+                                <td colspan="7" class="py-14 px-6 border-b border-gray-200 text-center">
                                     <p class="text-sm font-semibold text-gray-600">Tidak ada data luaran yang sesuai</p>
                                     <p class="text-xs text-gray-400 mt-1">Coba ubah kata kunci pencarian atau filter jenis luaran.</p>
                                 </td>
@@ -436,6 +453,29 @@
             {{-- Hidden input yang selalu mengirim jenis_luaran --}}
             <input type="hidden" name="jenis_luaran" id="hiddenInputJenisLuaran" value="Buku">
 
+            <div>
+                <label for="createLuaranDosen" class="block text-xs font-bold text-gray-900 mb-1.5">
+                    Dosen Penanggung Jawab <span class="text-red-500">*</span>
+                </label>
+                <select
+                    name="id_dosen"
+                    id="createLuaranDosen"
+                    required
+                    {{ empty($dosenOptions) ? 'disabled' : '' }}
+                    class="w-full px-4 py-2.5 rounded-[10px] bg-white-form border-none text-sm font-medium text-gray-700 focus:ring-2 focus:ring-primary/20 focus:outline-none"
+                >
+                    <option value="">Pilih Dosen</option>
+                    @foreach($dosenOptions as $dosen)
+                        <option value="{{ $dosen['id'] }}" {{ (int) $selectedDosenId === $dosen['id'] ? 'selected' : '' }}>
+                            {{ $dosen['name'] }}
+                        </option>
+                    @endforeach
+                </select>
+                @if($dosenLoadError)
+                    <p class="mt-1 text-xs text-red-600">Daftar dosen gagal dimuat atau belum tersedia. Muat ulang halaman sebelum mengirim luaran.</p>
+                @endif
+            </div>
+
             {{-- 1. SUBFORM BUKU (Gambar 2) --}}
             <div id="subform_Buku" class="step2-subform space-y-4 hidden">
                 @include('luaran._form_buku', ['prefix' => 'create_buku', 'data' => []])
@@ -488,6 +528,27 @@
             @method('PUT')
             <input type="hidden" name="jenis_luaran" id="editHiddenJenisLuaran" value="Jurnal">
 
+            <div>
+                <label for="editLuaranDosen" class="block text-xs font-bold text-gray-900 mb-1.5">
+                    Dosen Penanggung Jawab <span class="text-red-500">*</span>
+                </label>
+                <select
+                    name="id_dosen"
+                    id="editLuaranDosen"
+                    required
+                    {{ empty($dosenOptions) ? 'disabled' : '' }}
+                    class="w-full px-4 py-2.5 rounded-[10px] bg-white-form border-none text-sm font-medium text-gray-700 focus:ring-2 focus:ring-primary/20 focus:outline-none"
+                >
+                    <option value="">Pilih Dosen</option>
+                    @foreach($dosenOptions as $dosen)
+                        <option value="{{ $dosen['id'] }}">{{ $dosen['name'] }}</option>
+                    @endforeach
+                </select>
+                @if($dosenLoadError)
+                    <p class="mt-1 text-xs text-red-600">Daftar dosen gagal dimuat atau belum tersedia. Muat ulang halaman sebelum mengirim perubahan.</p>
+                @endif
+            </div>
+
             <div id="editSubform_Buku" class="edit-subform space-y-4 hidden">
                 @include('luaran._form_buku', ['prefix' => 'edit_buku', 'data' => []])
             </div>
@@ -519,6 +580,39 @@
 document.addEventListener('DOMContentLoaded', function () {
 
     const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+
+    function clearValidationErrors(form) {
+        form.querySelectorAll('[data-validation-error]').forEach(error => error.remove());
+        form.querySelectorAll('[aria-invalid="true"]').forEach(field => field.removeAttribute('aria-invalid'));
+    }
+
+    function showValidationErrors(form, errors) {
+        if (!errors || typeof errors !== 'object') return;
+
+        Object.entries(errors).forEach(([name, messages]) => {
+            const field = Array.from(form.elements).find(element => element.name === name);
+            if (!field) return;
+
+            const container = field.closest('div');
+            const message = Array.isArray(messages) ? messages[0] : messages;
+            if (!container || typeof message !== 'string') return;
+
+            field.setAttribute('aria-invalid', 'true');
+            const errorElement = document.createElement('p');
+            errorElement.dataset.validationError = '';
+            errorElement.className = 'mt-1 text-xs text-red-600';
+            errorElement.textContent = message;
+            container.append(errorElement);
+        });
+    }
+
+    function showErrorNotification(message) {
+        if (typeof window.showToast === 'function') {
+            window.showToast(message, 'error', 'Gagal');
+        } else {
+            alert(message);
+        }
+    }
 
     // ── Helper Animasi Modal ───────────────────────────────────────────────
     function showModal(modalEl) {
@@ -629,17 +723,26 @@ document.addEventListener('DOMContentLoaded', function () {
     const hiddenJenis = document.getElementById('hiddenInputJenisLuaran');
     const step2Subforms = document.querySelectorAll('.step2-subform');
 
+    function activateSubform(subforms, activeSubform) {
+        subforms.forEach(subform => {
+            const isActive = subform === activeSubform;
+            subform.classList.toggle('hidden', !isActive);
+            subform.querySelectorAll('input, select, textarea').forEach(field => {
+                field.disabled = !isActive;
+            });
+        });
+    }
+
+    activateSubform(step2Subforms, null);
+
     function bukaModalStep2(jenis) {
         if (titleStep2) titleStep2.textContent = `Tambah ${jenis}`;
         if (badgeJenis) badgeJenis.textContent = jenis;
         if (hiddenJenis) hiddenJenis.value = jenis;
 
-        // Tampilkan hanya subform yang sesuai
-        step2Subforms.forEach(sub => sub.classList.add('hidden'));
         const targetSubform = document.getElementById(`subform_${jenis}`);
-        if (targetSubform) {
-            targetSubform.classList.remove('hidden');
-        }
+        activateSubform(step2Subforms, targetSubform);
+        clearValidationErrors(formCreateAjax);
 
         showModal(modalStep2);
     }
@@ -653,6 +756,8 @@ document.addEventListener('DOMContentLoaded', function () {
         const submitBtn = this.querySelector('.btn-submit-luaran');
         const btnText = submitBtn?.querySelector('.btn-text');
         const btnSpinner = submitBtn?.querySelector('.btn-spinner');
+
+        clearValidationErrors(this);
 
         // State loading
         if (submitBtn) submitBtn.disabled = true;
@@ -670,6 +775,9 @@ document.addEventListener('DOMContentLoaded', function () {
 
             // Pastikan atribut jenis_luaran selalu terkirim
             payload['jenis_luaran'] = selectedJenisLuaran || hiddenJenis?.value || 'Jurnal';
+            ['id_dosen', 'id_kegiatan'].forEach(key => {
+                if (payload[key] !== undefined) payload[key] = Number(payload[key]);
+            });
 
             const response = await fetch("{{ route('luaran.store') }}", {
                 method: 'POST',
@@ -685,28 +793,29 @@ document.addEventListener('DOMContentLoaded', function () {
             const result = await response.json().catch(() => ({}));
 
             if (!response.ok || result.success === false) {
-                const errMsg = result.message || 'Terjadi kesalahan saat menyimpan data luaran.';
-                throw new Error(errMsg);
+                const error = new Error(result.message || 'Terjadi kesalahan saat menyimpan data luaran.');
+                error.validationErrors = result.errors || {};
+                throw error;
             }
 
             // Notifikasi sukses via komponen Toast
             if (typeof window.showToast === 'function') {
                 window.showToast(result.message || `Data ${payload['jenis_luaran']} berhasil ditambahkan.`, 'success', 'Berhasil');
+            } else {
+                alert(result.message || 'Data luaran berhasil disimpan!');
             }
 
             // Tutup modal Step 2 & Reset form
             hideModal(modalStep2);
             formCreateAjax.reset();
+            clearValidationErrors(formCreateAjax);
 
             // Refresh tabel secara dinamis tanpa reload halaman
-            await refreshTableData();
+            await refreshTableData(true);
 
         } catch (error) {
-            if (typeof window.showToast === 'function') {
-                window.showToast(error.message, 'error', 'Gagal');
-            } else {
-                alert(error.message);
-            }
+            showValidationErrors(this, error.validationErrors);
+            showErrorNotification(error.message || 'Terjadi kesalahan saat menyimpan data luaran.');
         } finally {
             if (submitBtn) submitBtn.disabled = false;
             if (btnText) btnText.textContent = 'Simpan';
@@ -715,12 +824,21 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
     // ── FUNGSI REFRESH DATA TABEL OTOMATIS (SPA-Like Update) ────────────────
-    async function refreshTableData() {
+    async function refreshTableData(resetFilters = false) {
+        const loadingState = document.getElementById('luaran-loading-state');
+        const tableContainer = document.getElementById('luaran-main-wrapper');
+        if (loadingState) {
+            loadingState.classList.remove('hidden');
+            loadingState.classList.add('flex');
+        }
+        tableContainer?.setAttribute('aria-busy', 'true');
+
         try {
-            const res = await fetch(window.location.href, {
+            const url = resetFilters ? @json(route('luaran.index')) : window.location.href;
+            const res = await fetch(url, {
                 headers: { 'X-Requested-With': 'XMLHttpRequest' }
             });
-            if (!res.ok) return;
+            if (!res.ok) throw new Error('Data luaran gagal dimuat ulang.');
 
             const html = await res.text();
             const parser = new DOMParser();
@@ -732,9 +850,18 @@ document.addEventListener('DOMContentLoaded', function () {
             if (newContent && currentContent) {
                 currentContent.innerHTML = newContent.innerHTML;
                 attachTableRowListeners();
+            } else {
+                throw new Error('Tampilan tabel luaran tidak ditemukan pada respons server.');
             }
-        } catch (e) {
-            console.error('Gagal memperbarui tabel:', e);
+        } catch (error) {
+            console.error('Gagal memperbarui tabel:', error);
+            showErrorNotification(error.message || 'Data luaran gagal dimuat ulang.');
+        } finally {
+            if (loadingState) {
+                loadingState.classList.add('hidden');
+                loadingState.classList.remove('flex');
+            }
+            tableContainer?.removeAttribute('aria-busy');
         }
     }
 
@@ -743,7 +870,10 @@ document.addEventListener('DOMContentLoaded', function () {
     const formEditAjax = document.getElementById('formEditLuaranAjax');
     const editSubforms = document.querySelectorAll('.edit-subform');
     const editHiddenJenis = document.getElementById('editHiddenJenisLuaran');
+    const editLuaranDosen = document.getElementById('editLuaranDosen');
     const closeEditModalBtn = document.getElementById('closeEditModalBtn');
+
+    activateSubform(editSubforms, null);
 
     closeEditModalBtn?.addEventListener('click', () => hideModal(modalEdit));
 
@@ -763,18 +893,19 @@ document.addEventListener('DOMContentLoaded', function () {
                 try { extra = JSON.parse(this.dataset.extra || '{}'); } catch(e) {}
 
                 if (formEditAjax) {
-                    formEditAjax.action = `/luaran/${id}`;
+                    formEditAjax.action = @json(route('luaran.update', ['id' => '__ID__'])).replace('__ID__', encodeURIComponent(id));
                 }
                 if (editHiddenJenis) {
                     editHiddenJenis.value = kategori;
                 }
-
-                editSubforms.forEach(s => s.classList.add('hidden'));
-                const activeEditSub = document.getElementById(`editSubform_${kategori}`);
-                if (activeEditSub) {
-                    activeEditSub.classList.remove('hidden');
-                    populateEditFields(activeEditSub, kategori, extra);
+                if (editLuaranDosen) {
+                    editLuaranDosen.value = String(extra.id_dosen ?? '');
                 }
+
+                const activeEditSub = document.getElementById(`editSubform_${kategori}`);
+                activateSubform(editSubforms, activeEditSub);
+                clearValidationErrors(formEditAjax);
+                if (activeEditSub) populateEditFields(activeEditSub, kategori, extra);
 
                 showModal(modalEdit);
             });
@@ -784,42 +915,48 @@ document.addEventListener('DOMContentLoaded', function () {
     function populateEditFields(container, kategori, data) {
         function val(name, value) {
             const el = container.querySelector(`[name="${name}"]`);
-            if (el && value !== undefined && value !== null) el.value = value;
+            if (el && value !== undefined && value !== null) {
+                el.value = el.type === 'date' ? String(value).slice(0, 10) : value;
+            }
         }
 
         if (kategori === 'Buku') {
             val('judul_buku', data.judul_buku ?? data.judul ?? '');
             val('isbn', data.isbn ?? '');
-            val('nama_penerbit', data.penerbit_buku ?? data.nama_penerbit ?? data.penerbit ?? '');
+            val('penerbit_buku', data.penerbit_buku ?? data.nama_penerbit ?? data.penerbit ?? '');
             val('tahun_terbit', data.tahun_terbit ?? data.tahun ?? '');
             val('jenis_buku', data.jenis_buku ?? '');
             val('bidang_ilmu', data.bidang_ilmu ?? '');
-            val('total_halaman', data.total_halaman ?? '');
-            val('url_buku', data.url_buku ?? data.url ?? '');
+            val('halaman_buku', data.halaman_buku ?? data.total_halaman ?? '');
+            val('url_luaran', data.url_luaran ?? data.tautan_buku ?? data.url_buku ?? data.url ?? '');
         } else if (kategori === 'Seminar') {
             val('nama_seminar', data.nama_seminar ?? data.judul_publikasi ?? data.judul ?? '');
             val('nama_prosiding', data.nama_prosiding ?? data.nama_penerbit ?? '');
-            val('isbn', data.isbn ?? '');
+            val('isbn_prosiding', data.isbn_prosiding ?? data.isbn ?? '');
             val('penyelenggara', data.penyelenggara ?? '');
             val('tanggal_seminar', data.tanggal_seminar ?? data.tanggal_terbit ?? '');
             val('lokasi_seminar', data.lokasi_seminar ?? '');
-            val('total_halaman', data.total_halaman ?? '');
-            val('doi', data.doi ?? '');
-            val('url_publikasi', data.url_publikasi ?? data.url ?? '');
+            val('halaman_prosiding', data.halaman_prosiding ?? data.total_halaman ?? '');
+            val('doi_prosiding', data.doi_prosiding ?? data.doi ?? '');
+            val('tautan_seminar', data.tautan_seminar ?? data.tautan_prosiding ?? data.url_luaran ?? data.url_publikasi ?? data.url ?? '');
         } else if (kategori === 'HKI') {
             val('judul_hak_cipta', data.judul_hak_cipta ?? data.judul ?? '');
-            val('nama_penerbit', data.nama_penerbit ?? '');
             val('jenis_hki', data.jenis_hki ?? '');
             val('nomor_pendaftaran_hki', data.nomor_pendaftaran_hki ?? '');
+            val('nomor_sertifikat_hki', data.nomor_sertifikat_hki ?? '');
+            val('tanggal_pendaftaran_hki', data.tanggal_pendaftaran_hki ?? '');
+            val('tanggal_terbit_sertifikat_hki', data.tanggal_terbit_sertifikat_hki ?? '');
+            val('pemegang_hki', data.pemegang_hki ?? '');
             val('status_hki', data.status_hki ?? '');
-            val('tanggal_terbit', data.tanggal_terbit ?? '');
-            val('url_hki', data.url_hki ?? data.url ?? '');
+            val('url_luaran', data.url_luaran ?? data.tautan_hki ?? data.url_hki ?? data.url ?? '');
         } else if (kategori === 'Produk') {
             val('nama_produk', data.nama_produk ?? data.judul ?? '');
-            val('penerbit_produk', data.penerbit_produk ?? data.nama_penerbit ?? '');
-            val('deskripsi', data.deskripsi ?? '');
-            val('tanggal_terbit', data.tanggal_terbit ?? '');
-            val('url_produk', data.url_produk ?? data.url ?? '');
+            val('jenis_produk', data.jenis_produk ?? '');
+            val('status_pengembangan', data.status_pengembangan ?? '');
+            val('tingkat_kesiapanterapan', data.tingkat_kesiapanterapan ?? '');
+            val('deskripsi_produk', data.deskripsi_produk ?? data.deskripsi ?? '');
+            val('tanggal_pembuatan', data.tanggal_pembuatan ?? '');
+            val('url_luaran', data.url_luaran ?? data.tautan_produk ?? data.url_produk ?? data.url ?? '');
         } else {
             val('nama_jurnal', data.nama_jurnal ?? data.judul_publikasi ?? data.judul ?? '');
             val('issn', data.issn ?? '');
@@ -827,9 +964,9 @@ document.addEventListener('DOMContentLoaded', function () {
             val('tanggal_terbit', data.tanggal_terbit ?? '');
             val('doi', data.doi ?? '');
             val('nomor_edisi', data.nomor_edisi ?? '');
-            val('total_halaman', data.total_halaman ?? '');
+            val('halaman_jurnal', data.halaman_jurnal ?? data.total_halaman ?? '');
             val('indeksasi', data.indeksasi ?? '');
-            val('url_publikasi', data.url_publikasi ?? data.url ?? '');
+            val('url_luaran', data.url_luaran ?? data.tautan_jurnal ?? data.url_publikasi ?? data.url ?? '');
         }
     }
 
@@ -839,6 +976,8 @@ document.addEventListener('DOMContentLoaded', function () {
         const submitBtn = this.querySelector('.btn-submit-luaran');
         const btnText = submitBtn?.querySelector('.btn-text');
         const btnSpinner = submitBtn?.querySelector('.btn-spinner');
+
+        clearValidationErrors(this);
 
         if (submitBtn) submitBtn.disabled = true;
         if (btnText) btnText.textContent = 'Menyimpan...';
@@ -852,10 +991,13 @@ document.addEventListener('DOMContentLoaded', function () {
                     payload[key] = val;
                 }
             });
+            ['id_dosen', 'id_kegiatan'].forEach(key => {
+                if (payload[key] !== undefined) payload[key] = Number(payload[key]);
+            });
 
             const actionUrl = this.action;
             const response = await fetch(actionUrl, {
-                method: 'POST',
+                method: 'PUT',
                 headers: {
                     'X-CSRF-TOKEN': csrfToken,
                     'Accept': 'application/json',
@@ -867,7 +1009,9 @@ document.addEventListener('DOMContentLoaded', function () {
 
             const result = await response.json().catch(() => ({}));
             if (!response.ok || result.success === false) {
-                throw new Error(result.message || 'Gagal memperbarui data.');
+                const error = new Error(result.message || 'Gagal memperbarui data.');
+                error.validationErrors = result.errors || {};
+                throw error;
             }
 
             if (typeof window.showToast === 'function') {
@@ -878,11 +1022,8 @@ document.addEventListener('DOMContentLoaded', function () {
             await refreshTableData();
 
         } catch (error) {
-            if (typeof window.showToast === 'function') {
-                window.showToast(error.message, 'error', 'Gagal');
-            } else {
-                alert(error.message);
-            }
+            showValidationErrors(this, error.validationErrors);
+            showErrorNotification(error.message || 'Gagal memperbarui data.');
         } finally {
             if (submitBtn) submitBtn.disabled = false;
             if (btnText) btnText.textContent = 'Perbarui';
