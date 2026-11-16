@@ -265,6 +265,10 @@ class MataKuliahTest extends TestCase
                     ['id' => 11, 'nama_mahasiswa' => 'Bima Saputra', 'nim' => '230102'],
                 ],
             ], 200),
+            '*/api/mata-kuliah/*/rps*' => Http::response([
+                'success' => true,
+                'data' => [],
+            ], 200),
         ]);
 
         $response = $this->withSession([
