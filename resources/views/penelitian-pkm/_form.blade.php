@@ -3,6 +3,7 @@
     $input = 'h-[52px] w-full rounded-[8px] border border-transparent bg-[#D9D9D9] px-5 text-sm text-black placeholder-[#6B6B6B] focus:border-[#075B91] focus:outline-none focus:ring-2 focus:ring-[#075B91]/30';
     $label = 'mb-2 block text-base font-bold text-black';
     $statusOptions = array_values(array_unique(array_filter(array_merge(['Pengajuan', 'Berjalan', 'Selesai', 'Ditolak'], [$nilai('status_kegiatan')]))));
+    $opsiDosen = fn ($dipilih) => collect($dosenList)->map(fn ($nama, $id) => '<option value="' . e($id) . '"' . ((string) $dipilih === (string) $id ? ' selected' : '') . '>' . e($nama) . '</option>')->implode('');
 @endphp
 
 <div class="mx-auto max-w-6xl pb-8">
@@ -25,24 +26,16 @@
         @endif
 
         <div>
-            <label for="judul_kegiatan" class="{{ $label }}">Judul Penelitian</label>
-            <input id="judul_kegiatan" type="text" name="judul_kegiatan" value="{{ $nilai('judul_kegiatan') }}" placeholder="Masukkan judul penelitian" class="{{ $input }}" required>
+            <label for="judul_kegiatan" class="{{ $label }}">Judul {{ $halaman }}</label>
+            <input id="judul_kegiatan" type="text" name="judul_kegiatan" value="{{ $nilai('judul_kegiatan') }}" placeholder="Masukkan Judul kegiatan {{ $halaman }}" class="{{ $input }}" required>
         </div>
 
-        <div class="grid gap-5 md:grid-cols-3">
+        <div class="grid gap-5 md:grid-cols-2">
+            
             <div>
-                <label for="id_jenis_kegiatan" class="{{ $label }}">Jenis Kegiatan</label>
-                <select id="id_jenis_kegiatan" name="id_jenis_kegiatan" class="{{ $input }}" required>
-                    <option value="">Pilih jenis kegiatan</option>
-                    @foreach($jenisKegiatan as $jenis)
-                        <option value="{{ $jenis['id_jenis_kegiatan'] }}" @selected((string) $nilai('id_jenis_kegiatan') === (string) $jenis['id_jenis_kegiatan'])>{{ $jenis['nama_jenis_kegiatan'] }}</option>
-                    @endforeach
-                </select>
-            </div>
-            <div>
-                <label for="status_kegiatan" class="{{ $label }}">Status Kegiatan Penelitian</label>
+                <label for="status_kegiatan" class="{{ $label }}">Status Kegiatan</label>
                 <select id="status_kegiatan" name="status_kegiatan" class="{{ $input }}" required>
-                    <option value="">Pilih status penelitian</option>
+                    <option value="">Pilih status kegiatan</option>
                     @foreach($statusOptions as $status)
                         <option value="{{ $status }}" @selected($nilai('status_kegiatan') === $status)>{{ $status }}</option>
                     @endforeach
@@ -57,15 +50,15 @@
         <div class="grid gap-5 md:grid-cols-3">
             <div>
                 <label for="tahun_usulan" class="{{ $label }}">Tahun Usulan</label>
-                <input id="tahun_usulan" type="number" name="tahun_usulan" value="{{ $nilai('tahun_usulan') }}" placeholder="Isi tahun usulan penelitian" class="{{ $input }}" required>
+                <input id="tahun_usulan" type="number" min="1900" max="2099" step="1" name="tahun_usulan" value="{{ $nilai('tahun_usulan') }}" placeholder="Isi tahun usulan" class="{{ $input }}" required>
             </div>
             <div>
                 <label for="tahun_kegiatan" class="{{ $label }}">Tahun Kegiatan</label>
-                <input id="tahun_kegiatan" type="number" name="tahun_kegiatan" value="{{ $nilai('tahun_kegiatan') }}" placeholder="Isi tahun kegiatan penelitian" class="{{ $input }}" required>
+                <input id="tahun_kegiatan" type="number" min="1900" max="2099" step="1" name="tahun_kegiatan" value="{{ $nilai('tahun_kegiatan') }}" placeholder="Isi tahun kegiatan" class="{{ $input }}" required>
             </div>
             <div>
                 <label for="tahun_pelaksanaan" class="{{ $label }}">Tahun Pelaksanaan</label>
-                <input id="tahun_pelaksanaan" type="number" name="tahun_pelaksanaan" value="{{ $nilai('tahun_pelaksanaan') }}" placeholder="Isi tahun pelaksanaan penelitian" class="{{ $input }}" required>
+                <input id="tahun_pelaksanaan" type="number" min="1900" max="2099" step="1" name="tahun_pelaksanaan" value="{{ $nilai('tahun_pelaksanaan') }}" placeholder="Isi tahun pelaksanaan" class="{{ $input }}" required>
             </div>
         </div>
 
@@ -73,10 +66,174 @@
             <label for="lokasi_kegiatan" class="{{ $label }}">Lokasi Kegiatan</label>
             <input id="lokasi_kegiatan" type="text" name="lokasi_kegiatan" value="{{ $nilai('lokasi_kegiatan') }}" placeholder="Contoh: Semarang, Jawa Tengah" class="{{ $input }}">
         </div>
+        <div class="space-y-4 rounded-[8px] bg-[#EEF3F7] p-5">
+            <h3 class="text-base font-bold text-black">Anggota Kegiatan</h3>
 
+            @if(empty($dosenList))
+                <p class="rounded-lg bg-amber-50 px-4 py-3 text-sm text-amber-700">Daftar dosen belum dapat dimuat. Muat ulang halaman ini.</p>
+            @endif
+
+            <div>
+                <label for="ketua" class="{{ $label }}">Ketua</label>
+                <select id="ketua" name="ketua" class="{{ $input }}" required>
+                    <option value="">Pilih ketua</option>
+                    {!! $opsiDosen(old('ketua', $anggota['ketua'] ?? '')) !!}
+                </select>
+            </div>
+
+            <div>
+                <span class="{{ $label }}">Anggota Dosen</span>
+                <div id="anggota-dosen-list" class="space-y-3">
+                    @foreach(old('anggota_dosen', $anggota['dosen'] ?? []) as $terpilih)
+                        <div class="flex items-center gap-3" data-anggota-baris>
+                            <select name="anggota_dosen[]" class="{{ $input }}">
+                                <option value="">Pilih dosen</option>
+                                {!! $opsiDosen($terpilih) !!}
+                            </select>
+                            <button type="button" data-anggota-hapus class="inline-flex h-[52px] shrink-0 items-center rounded-[8px] border border-red-300 px-4 text-sm font-bold text-red-600 transition hover:bg-red-50">Hapus</button>
+                        </div>
+                    @endforeach
+                </div>
+                <button type="button" id="anggota-dosen-tambah" class="mt-3 inline-flex h-10 items-center rounded-[8px] bg-[#01568D] px-4 text-sm font-bold text-white transition hover:bg-[#012650]">+ Tambah Anggota</button>
+            </div>
+            <div>
+                <span class="{{ $label }}">Anggota Mahasiswa</span>
+                <div id="mhs-daftar" class="mb-3 flex flex-wrap gap-2">
+                    @foreach(old('anggota_mahasiswa', $anggota['mahasiswa'] ?? []) as $idMhs => $labelMhs)
+                        <div class="inline-flex items-center gap-2 rounded-full bg-white px-3 py-1.5 text-sm text-black" data-mhs-chip>
+                            <span>{{ $labelMhs }}</span>
+                            <input type="hidden" name="anggota_mahasiswa[{{ $idMhs }}]" value="{{ $labelMhs }}">
+                            <button type="button" data-mhs-hapus class="font-bold text-red-600" aria-label="Hapus">&times;</button>
+                        </div>
+                    @endforeach
+                </div>
+                <div class="relative">
+                    <input id="mhs-cari" type="text" autocomplete="off" data-url="{{ route($rute . '.mahasiswa') }}" placeholder="Cari nama atau NIM mahasiswa" class="{{ $input }}">
+                    <div id="mhs-hasil" class="absolute z-20 mt-1 hidden max-h-64 w-full overflow-auto rounded-[8px] border border-gray-300 bg-white shadow-md"></div>
+                </div>
+            </div>
+            <input type="hidden" name="anggota_lain" value="{{ old('anggota_lain', json_encode($anggota['lain'] ?? [])) }}">
+        </div>
+
+        <template id="anggota-dosen-template">
+            <div class="flex items-center gap-3" data-anggota-baris>
+                <select name="anggota_dosen[]" class="{{ $input }}">
+                    <option value="">Pilih dosen</option>
+                    {!! $opsiDosen('') !!}
+                </select>
+                <button type="button" data-anggota-hapus class="inline-flex h-[52px] shrink-0 items-center rounded-[8px] border border-red-300 px-4 text-sm font-bold text-red-600 transition hover:bg-red-50">Hapus</button>
+            </div>
+        </template>
         <div class="flex justify-end gap-3 pt-8">
-            <a href="{{ route('penelitian-pkm.index') }}" class="inline-flex h-11 w-[190px] items-center justify-center rounded-[6px] bg-[#D9D9D9] text-sm font-bold text-black transition hover:bg-gray-300">Kembali</a>
+            <a href="{{ route($rute . '.index') }}" class="inline-flex h-11 w-[190px] items-center justify-center rounded-[6px] bg-[#D9D9D9] text-sm font-bold text-black transition hover:bg-gray-300">Kembali</a>
             <button type="submit" class="inline-flex h-11 w-[190px] items-center justify-center rounded-[6px] bg-additional text-sm font-bold text-white transition hover:bg-primary">Simpan</button>
         </div>
     </form>
 </div>
+<script>
+    (function () {
+        const daftar = document.getElementById('anggota-dosen-list');
+        const templat = document.getElementById('anggota-dosen-template');
+
+        document.getElementById('anggota-dosen-tambah').addEventListener('click', () => {
+            daftar.appendChild(templat.content.cloneNode(true));
+        });
+
+        daftar.addEventListener('click', (event) => {
+            const tombol = event.target.closest('[data-anggota-hapus]');
+            if (tombol) tombol.closest('[data-anggota-baris]').remove();
+        });
+    })();
+</script>
+<script>
+    (function () {
+        const cari = document.getElementById('mhs-cari');
+        const hasil = document.getElementById('mhs-hasil');
+        const daftar = document.getElementById('mhs-daftar');
+        let timer;
+
+        const isiHasil = (node) => {
+            hasil.replaceChildren(node);
+            hasil.classList.remove('hidden');
+        };
+
+        const pesan = (teks) => {
+            const p = document.createElement('p');
+            p.className = 'px-4 py-3 text-sm text-gray-600';
+            p.textContent = teks;
+            return p;
+        };
+
+        const tambah = (id, label) => {
+            if (daftar.querySelector(`input[name="anggota_mahasiswa[${id}]"]`)) return;
+
+            const chip = document.createElement('div');
+            chip.className = 'inline-flex items-center gap-2 rounded-full bg-white px-3 py-1.5 text-sm text-black';
+            chip.dataset.mhsChip = '';
+
+            const teks = document.createElement('span');
+            teks.textContent = label;
+
+            const input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = `anggota_mahasiswa[${id}]`;
+            input.value = label;
+
+            const hapus = document.createElement('button');
+            hapus.type = 'button';
+            hapus.dataset.mhsHapus = '';
+            hapus.className = 'font-bold text-red-600';
+            hapus.textContent = '×';
+
+            chip.append(teks, input, hapus);
+            daftar.appendChild(chip);
+        };
+
+        const cariMahasiswa = async (kata) => {
+            try {
+                const respons = await fetch(`${cari.dataset.url}?q=${encodeURIComponent(kata)}`, { headers: { Accept: 'application/json' } });
+                if (!respons.ok) throw new Error();
+                const data = await respons.json();
+
+                if (!data.length) return isiHasil(pesan('Mahasiswa tidak ditemukan.'));
+
+                const list = document.createElement('div');
+                data.forEach((mhs) => {
+                    const tombol = document.createElement('button');
+                    tombol.type = 'button';
+                    tombol.className = 'block w-full px-4 py-2.5 text-left text-sm hover:bg-gray-100';
+                    tombol.textContent = mhs.nim ? `${mhs.nama} (${mhs.nim})` : mhs.nama;
+                    tombol.addEventListener('click', () => {
+                        tambah(mhs.id, mhs.nama);
+                        hasil.classList.add('hidden');
+                        cari.value = '';
+                    });
+                    list.appendChild(tombol);
+                });
+                isiHasil(list);
+            } catch {
+                isiHasil(pesan('Gagal memuat data mahasiswa.'));
+            }
+        };
+
+        cari.addEventListener('input', () => {
+            clearTimeout(timer);
+            const kata = cari.value.trim();
+            if (kata.length < 2) return hasil.classList.add('hidden');
+            timer = setTimeout(() => cariMahasiswa(kata), 300);
+        });
+
+        cari.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter') event.preventDefault();
+        });
+
+        daftar.addEventListener('click', (event) => {
+            const tombol = event.target.closest('[data-mhs-hapus]');
+            if (tombol) tombol.closest('[data-mhs-chip]').remove();
+        });
+
+        document.addEventListener('click', (event) => {
+            if (!cari.contains(event.target) && !hasil.contains(event.target)) hasil.classList.add('hidden');
+        });
+    })();
+</script>

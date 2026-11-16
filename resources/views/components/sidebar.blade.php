@@ -258,12 +258,17 @@
                     </div>
                 </div>
 
-                <!-- Tri Dharma -->
-                @php
-                    $isPenelitianPkmPage = request()->routeIs('penelitian-pkm.*') || request()->routeIs('penelitian.*') || request()->routeIs('pkm.*');
-                    $isLuaranPage = request()->routeIs('luaran.*') || request()->routeIs('luaran-tridharma.*');
-                    $isTridharmaActive = $isPenelitianPkmPage || $isLuaranPage;
-                @endphp
+
+<!-- Tri Dharma -->
+@php
+    $isPenelitianPage = request()->routeIs('penelitian.*');
+    $isPkmPage = request()->routeIs('pkm.*');
+    $isLuaranPage = request()->routeIs('luaran.*') || request()->routeIs('luaran-tridharma.*');
+
+    $isTridharmaActive = $isPenelitianPage || $isPkmPage || $isLuaranPage;
+@endphp
+
+                
                 <div>
                     <button 
                         type="button" 
@@ -276,27 +281,43 @@
                                 <path d="M12 3L1 9l4 2.18v6L12 21l7-3.82v-6l2-1.09V17h2V9L12 3zm6.82 6L12 12.72 5.18 9 12 5.28 18.82 9zM17 15.99l-5 2.73-5-2.73v-3.72L12 15l5-2.73v3.72z"/>
                             </svg>
                             <span class="sidebar-text truncate">Tri Dharma</span>
-                        </div>
-                        <svg class="submenu-chevron sidebar-chevron w-4 h-4 text-white/60 group-hover:text-white transition-transform duration-200 {{ $isTridharmaActive ? 'rotate-180' : '' }}"
-                            fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
-                        </svg>
+
+                            </div>
+                    <svg
+    class="submenu-chevron sidebar-chevron w-4 h-4 text-white/60 group-hover:text-white transition-transform duration-200 {{ $isTridharmaActive ? 'rotate-180' : '' }}"
+    fill="none"
+    viewBox="0 0 24 24"
+    stroke="currentColor"
+    stroke-width="2.5"
+>
+    <path
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        d="M19.5 8.25l-7.5 7.5-7.5-7.5"
+    />
+</svg>
                     </button>
 
                     <div id="submenu-tridharma"
                         data-is-active="{{ $isTridharmaActive ? 'true' : 'false' }}"
                         class="submenu-container {{ $isTridharmaActive ? '' : 'hidden' }} pl-10 pr-2 pt-1 pb-1 space-y-1.5">
-                        <a href="{{ route('penelitian-pkm.index') }}"
-                            class="flex items-center gap-2.5 py-2.5 px-3.5 rounded-xl text-sm font-semibold transition-all duration-150 {{ $isPenelitianPkmPage ? 'bg-white/20 text-white shadow-xs font-bold' : 'text-white/80 hover:text-white hover:bg-white/10' }}">
-                            <span
-                                class="w-1.5 h-1.5 rounded-full {{ $isPenelitianPkmPage ? 'bg-secondary' : 'bg-white/40' }} shrink-0"></span>
-                            <span>Penelitian &amp; PKM</span>
-                        </a>
-                        <a href="{{ route('luaran.index') }}"
-                            class="flex items-center gap-2.5 py-2.5 px-3.5 rounded-xl text-sm font-semibold transition-all duration-150 {{ $isLuaranPage ? 'bg-white/20 text-white shadow-xs font-bold' : 'text-white/80 hover:text-white hover:bg-white/10' }}">
-                            <span
-                                class="w-1.5 h-1.5 rounded-full {{ $isLuaranPage ? 'bg-secondary' : 'bg-white/40' }} shrink-0"></span>
-                            <span>Luaran</span>
+
+<a href="{{ route('penelitian.index') }}"
+    class="flex items-center gap-2.5 py-2.5 px-3.5 rounded-xl text-sm font-semibold transition-all duration-150 {{ $isPenelitianPage ? 'bg-white/20 text-white shadow-xs font-bold' : 'text-white/80 hover:text-white hover:bg-white/10' }}">
+    <span class="w-1.5 h-1.5 rounded-full {{ $isPenelitianPage ? 'bg-secondary' : 'bg-white/40' }} shrink-0"></span>
+    <span>Penelitian</span>
+</a>
+
+<a href="{{ route('pkm.index') }}"
+    class="flex items-center gap-2.5 py-2.5 px-3.5 rounded-xl text-sm font-semibold transition-all duration-150 {{ $isPkmPage ? 'bg-white/20 text-white shadow-xs font-bold' : 'text-white/80 hover:text-white hover:bg-white/10' }}">
+    <span class="w-1.5 h-1.5 rounded-full {{ $isPkmPage ? 'bg-secondary' : 'bg-white/40' }} shrink-0"></span>
+    <span>PKM</span>
+</a>
+
+<a href="{{ route('luaran.index') }}"
+    class="flex items-center gap-2.5 py-2.5 px-3.5 rounded-xl text-sm font-semibold transition-all duration-150 {{ $isLuaranPage ? 'bg-white/20 text-white shadow-xs font-bold' : 'text-white/80 hover:text-white hover:bg-white/10' }}">
+    <span class="w-1.5 h-1.5 rounded-full {{ $isLuaranPage ? 'bg-secondary' : 'bg-white/40' }} shrink-0"></span>
+    <span>Luaran</span>
                         </a>
                     </div>
                 </div>

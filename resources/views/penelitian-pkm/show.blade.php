@@ -1,11 +1,11 @@
 @extends('layouts.app')
 
-@section('meta_title', 'Detail Kegiatan')
-@section('title', 'Penelitian & PKM')
+    @section('meta_title', 'Detail Kegiatan')
+    @section('title', $halaman)
 
-@section('subtitle')
-    <a href="{{ route('penelitian-pkm.index') }}" class="hover:underline">Penelitian & PKM</a> &rsaquo; Detail
-@endsection
+    @section('subtitle')
+        <a href="{{ route($rute . '.index') }}" class="hover:underline">{{ $halaman }}</a> &rsaquo; Detail
+    @endsection
 
 @section('content')
 @php
@@ -30,7 +30,7 @@
 @endphp
 
 <div class="space-y-5 pb-8">
-    <a href="{{ route('penelitian-pkm.index') }}" class="inline-flex items-center gap-1 rounded-md border border-primary px-3 py-1 text-xs font-medium text-black transition hover:bg-gray-100">
+    <a href="{{ route($rute . '.index') }}" class="inline-flex items-center gap-1 rounded-md border border-primary px-3 py-1 text-xs font-medium text-black transition hover:bg-gray-100">
         <svg class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="m15.75 19.5-7.5-7.5 7.5-7.5" /></svg>
         Kembali ke daftar
     </a>
@@ -73,13 +73,21 @@
         <section class="{{ $kartu }} self-start lg:col-span-4">
             <h3 class="{{ $judulKartu }}">Nama Anggota</h3>
             <ul class="divide-y divide-[#BAC7D5] px-5">
-                @forelse($anggota as $item)
+                    @forelse($anggota as $item)
+                    @php
+                        $idDosen = empty($item['id_mahasiswa']) ? ($item['id_dosen'] ?? null) : null;
+                        $nama = $item['dosen']['nama_dosen'] ?? $item['mahasiswa']['nama_mahasiswa'] ?? $item['nama_mahasiswa'] ?? $item['nama'] ?? '-';
+                    @endphp
                     <li class="flex items-center gap-3 py-3">
                         <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border-2 border-[#002B49] text-[#002B49]">
                             <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.5 20.25a7.5 7.5 0 0 1 15 0" /></svg>
                         </span>
                         <div class="min-w-0 text-sm leading-snug text-black">
-                            <p class="font-medium">{{ $item['dosen']['nama_dosen'] ?? $item['mahasiswa']['nama_mahasiswa'] ?? $item['nama'] ?? '-' }}</p>
+                            @if($idDosen)
+                                <a href="{{ route('dosen.show', $idDosen) }}" class="font-medium transition hover:text-additional hover:underline">{{ $nama }}</a>
+                            @else
+                                <p class="font-medium">{{ $nama }}</p>
+                            @endif
                             <p class="text-xs text-gray-600">{{ $item['peran'] ?? '-' }}</p>
                         </div>
                     </li>
