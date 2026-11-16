@@ -8,7 +8,7 @@
         $firstName = explode(' ', trim((string) $userName))[0] ?: 'Reviewer';
     @endphp
 
-    <div class="space-y-6 sm:space-y-7">
+    <div class="reviewer-page space-y-6 sm:space-y-7">
         <section class="relative overflow-hidden rounded-3xl bg-primary px-6 py-7 text-white shadow-lg sm:px-8 sm:py-8">
             <div class="relative z-10 max-w-2xl">
                 <div class="mb-3 flex flex-wrap items-center gap-2">
@@ -48,7 +48,7 @@
                 ['label' => 'Selesai dinilai', 'value' => $completedCount, 'caption' => 'Project sudah diselesaikan', 'tone' => 'bg-emerald-50 text-emerald-600', 'icon' => 'm5 12 4 4L19 6'],
                 ['label' => 'Rata-rata progres', 'value' => $averageProgress.'%', 'caption' => 'Progres seluruh project', 'tone' => 'bg-rose-50 text-rose-500', 'icon' => 'M12 3v18m9-9H3'],
             ] as $stat)
-                <article class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
+                <article class="reviewer-stat-card transition hover:-translate-y-0.5 hover:shadow-md">
                     <div class="flex items-start justify-between gap-3">
                         <div>
                             <p class="text-base font-medium text-slate-500">{{ $stat['label'] }}</p>

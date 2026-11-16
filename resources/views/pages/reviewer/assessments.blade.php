@@ -3,7 +3,7 @@
 @section('title', 'Penilaian')
 
 @section('content')
-    <div class="space-y-5">
+    <div class="reviewer-page space-y-5">
         <section class="flex flex-wrap items-end justify-between gap-4">
             <div>
                 <p class="text-base font-medium text-slate-500">Ruang kerja reviewer</p>
@@ -36,7 +36,7 @@
                 </div>
                 <form method="GET" action="{{ route('reviewer.assessments') }}" class="flex flex-wrap items-center gap-2">
                     <label class="sr-only" for="status-filter">Filter status</label>
-                    <select id="status-filter" name="status" class="rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm font-medium text-slate-700 shadow-sm focus:border-additional focus:outline-none focus:ring-2 focus:ring-blue-100">
+                    <select id="status-filter" name="status" class="reviewer-filter-select">
                         <option value="">Semua status</option>
                         @foreach ($statuses as $statusOption)
                             @php
@@ -51,7 +51,7 @@
                         @endforeach
                     </select>
                     <label class="sr-only" for="year-filter">Filter tahun</label>
-                    <select id="year-filter" name="tahun" class="rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm font-medium text-slate-700 shadow-sm focus:border-additional focus:outline-none focus:ring-2 focus:ring-blue-100">
+                    <select id="year-filter" name="tahun" class="reviewer-filter-select">
                         <option value="">Semua tahun</option>
                         @foreach ($years as $yearOption)
                             <option value="{{ $yearOption }}" @selected($yearFilter === $yearOption)>{{ $yearOption }}</option>
