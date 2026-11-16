@@ -1,21 +1,21 @@
 @extends('layouts.app')
 
-@section('title', 'Data Lulusan')
+@section('title', 'Lulusan')
 
 @section('content')
 <div class="space-y-6">
     <!-- Page Header -->
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-            <h2 class="text-2xl font-bold tracking-tight text-gray-900">Data Lulusan</h2>
-            <p class="text-sm font-medium text-gray-500 mt-1">
-                Informasi data kelulusan, masa studi, IPK riil, dan capaian kelulusan tepat waktu mahasiswa.
+            <h1 class="text-2xl font-extrabold text-primary tracking-tight">Lulusan</h1>
+            <p class="text-xs sm:text-sm text-[#5A6E85] mt-1">
+                Visualisasi tren kelulusan, masa studi, distribusi IPK, dan data capaian kelulusan mahasiswa terintegrasi API.
             </p>
         </div>
     </div>
 
-    <!-- Summary Cards (Kartu Ringkasan Lulusan - Endpoint Lian API-D2) -->
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+    <!-- Summary Cards (KPI Summary Cards) -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
         <!-- Card 1: Total Lulusan -->
         <div class="bg-white rounded-2xl p-5 border border-gray-200/80 shadow-xs flex items-center justify-between">
             <div class="space-y-1">
@@ -86,8 +86,431 @@
         </div>
     </div>
 
-    <!-- Main Content: Filters & Table -->
-    <div class="space-y-4">
+    <!-- Charts Row 1: Tren Kelulusan Tepat Waktu & Tren Masa Studi -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+        <!-- Grafik Tren Kelulusan Tepat Waktu (Line Chart SVG) -->
+        <div class="bg-white rounded-2xl border border-[#EAEAEA] p-6 shadow-xs">
+            <div class="mb-4">
+                <h2 class="text-base font-extrabold text-primary tracking-tight">Tren Kelulusan Tepat Waktu</h2>
+                <p class="text-xs text-gray-500 mt-1">Persentase mahasiswa yang lulus tepat waktu per kohort/tahun</p>
+            </div>
+
+            @php
+                $trenYears        = $tren['years'] ?? [];
+                $trenTepatWaktu   = $tren['persen_lulus_tepat_waktu'] ?? [];
+                $totalTrenPoints  = max(1, count($trenYears));
+
+                // SVG layout constants
+                $svgW       = 520;
+                $svgH       = 240;
+                $padLeft    = 52;
+                $padRight   = 20;
+                $padTop     = 20;
+                $padBottom  = 36;
+                $plotW      = $svgW - $padLeft - $padRight;
+                $plotH      = $svgH - $padTop - $padBottom;
+
+                // Y scale: 50% at bottom, 100% at top
+                $yMin       = 50;
+                $yMax       = 100;
+                $yRange     = $yMax - $yMin;
+
+                // X step
+                $xStep      = $totalTrenPoints > 1 ? $plotW / ($totalTrenPoints - 1) : $plotW / 2;
+
+                // Build points (skip null values)
+                $tepatWaktuPts = [];
+                foreach ($trenYears as $i => $yr) {
+                    $val = $trenTepatWaktu[$i] ?? null;
+                    if ($val === null) { continue; }
+                    $xPos = $padLeft + ($i * $xStep);
+                    $yPos = $padTop + $plotH - (((float)$val - $yMin) / $yRange * $plotH);
+                    $yPos = max($padTop, min($padTop + $plotH, $yPos));
+                    $tepatWaktuPts[] = ['x' => round($xPos, 1), 'y' => round($yPos, 1), 'val' => (float)$val, 'year' => $yr];
+                }
+
+                // Build smooth cubic bezier path
+                $buildPath = function (array $pts): string {
+                    if (count($pts) < 2) {
+                        if (count($pts) === 1) { return 'M '.$pts[0]['x'].' '.$pts[0]['y']; }
+                        return '';
+                    }
+                    $d = 'M '.$pts[0]['x'].' '.$pts[0]['y'];
+                    $len = count($pts);
+                    for ($i = 0; $i < $len - 1; $i++) {
+                        $p0 = $pts[$i];
+                        $p1 = $pts[$i + 1];
+                        $dx = ($p1['x'] - $p0['x']) / 2;
+                        $d .= ' C '.($p0['x'] + $dx).' '.$p0['y'].', '.($p1['x'] - $dx).' '.$p1['y'].', '.$p1['x'].' '.$p1['y'];
+                    }
+                    return $d;
+                };
+
+                // Build area fill path (close to baseline)
+                $buildAreaPath = function (array $pts, float $baseY) use ($buildPath): string {
+                    if (empty($pts)) { return ''; }
+                    $linePath = $buildPath($pts);
+                    if (empty($linePath)) { return ''; }
+                    $last = end($pts);
+                    $first = $pts[0];
+                    return $linePath . ' L '.$last['x'].' '.$baseY.' L '.$first['x'].' '.$baseY.' Z';
+                };
+
+                $baselineY   = $padTop + $plotH;
+                $twPath      = $buildPath($tepatWaktuPts);
+                $twAreaPath  = $buildAreaPath($tepatWaktuPts, $baselineY);
+
+                // Y-axis grid lines (50%, 65%, 80%, 95%, 100%)
+                $yGrids = [50, 65, 80, 95, 100];
+            @endphp
+
+            @if (empty($trenYears))
+                <div class="flex items-center justify-center h-48 text-gray-400 text-xs font-medium">
+                    <div class="text-center">
+                        <svg class="w-10 h-10 mx-auto mb-2 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z" />
+                        </svg>
+                        Data tren belum tersedia
+                    </div>
+                </div>
+            @else
+                <svg viewBox="0 0 {{ $svgW }} {{ $svgH }}" class="w-full h-auto overflow-visible select-none" preserveAspectRatio="xMidYMid meet">
+                    <defs>
+                        <linearGradient id="tepatWaktuGrad" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stop-color="#10B981" stop-opacity="0.25" />
+                            <stop offset="100%" stop-color="#10B981" stop-opacity="0.03" />
+                        </linearGradient>
+                    </defs>
+
+                    {{-- Y-axis grid lines --}}
+                    @foreach ($yGrids as $yg)
+                        @php
+                            $yPos = $padTop + $plotH - (($yg - $yMin) / $yRange * $plotH);
+                            $yPos = max($padTop, min($padTop + $plotH, $yPos));
+                        @endphp
+                        <line x1="{{ $padLeft }}" y1="{{ round($yPos, 1) }}" x2="{{ $svgW - $padRight }}" y2="{{ round($yPos, 1) }}"
+                            stroke="{{ $yg === 85 ? '#10B981' : '#E5EAF0' }}"
+                            stroke-width="{{ $yg === 85 ? '1.5' : '1' }}"
+                            stroke-dasharray="{{ $yg === 85 ? '4,3' : 'none' }}" />
+                        <text x="{{ $padLeft - 6 }}" y="{{ round($yPos + 4, 1) }}" text-anchor="end" font-size="10" font-weight="600" fill="#64748B">{{ $yg }}%</text>
+                        @if ($yg === 85)
+                            <text x="{{ $svgW - $padRight + 4 }}" y="{{ round($yPos + 4, 1) }}" text-anchor="start" font-size="9" font-weight="700" fill="#10B981">Target</text>
+                        @endif
+                    @endforeach
+
+                    {{-- Area fill --}}
+                    @if (!empty($twAreaPath))
+                        <path d="{{ $twAreaPath }}" fill="url(#tepatWaktuGrad)" />
+                    @endif
+
+                    {{-- Line --}}
+                    @if (!empty($twPath))
+                        <path d="{{ $twPath }}" fill="none" stroke="#10B981" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />
+                    @endif
+
+                    {{-- Data points & labels --}}
+                    @foreach ($tepatWaktuPts as $pt)
+                        <circle cx="{{ $pt['x'] }}" cy="{{ $pt['y'] }}" r="4" fill="#10B981" stroke="white" stroke-width="2" />
+                        <text x="{{ $pt['x'] }}" y="{{ $pt['y'] - 10 }}" text-anchor="middle" font-size="10" font-weight="800" fill="#059669">{{ number_format($pt['val'], 1) }}%</text>
+                    @endforeach
+
+                    {{-- X-axis year labels --}}
+                    @foreach ($trenYears as $i => $yr)
+                        @php $xPos = $padLeft + ($i * $xStep); @endphp
+                        <line x1="{{ round($xPos, 1) }}" y1="{{ $padTop + $plotH }}" x2="{{ round($xPos, 1) }}" y2="{{ $padTop + $plotH + 5 }}" stroke="#CBD5E1" stroke-width="1" />
+                        <text x="{{ round($xPos, 1) }}" y="{{ $padTop + $plotH + 18 }}" text-anchor="middle" font-size="10.5" font-weight="700" fill="#334155">{{ $yr }}</text>
+                    @endforeach
+                </svg>
+            @endif
+        </div>
+
+        <!-- Grafik Tren Masa Studi Lulusan (Bar Chart SVG) -->
+        <div class="bg-white rounded-2xl border border-[#EAEAEA] p-6 shadow-xs">
+            <div class="mb-4">
+                <h2 class="text-base font-extrabold text-primary tracking-tight">Tren Masa Studi Lulusan</h2>
+                <p class="text-xs text-gray-500 mt-1">Rata-rata masa studi (bulan) lulusan per kohort/tahun</p>
+            </div>
+
+            @php
+                $masaStudiData  = $tren['rata_masa_studi_bulan'] ?? [];
+
+                // Build bar data (skip null)
+                $barPts = [];
+                foreach ($trenYears as $i => $yr) {
+                    $val = $masaStudiData[$i] ?? null;
+                    if ($val === null) { continue; }
+                    $barPts[] = ['val' => (float)$val, 'year' => $yr, 'idx' => $i];
+                }
+
+                // Y scale for bars: 0 to max value (round up to nearest 10)
+                $maxBarVal  = !empty($barPts) ? max(array_column($barPts, 'val')) : 60;
+                $yMaxBar    = max(60, ceil($maxBarVal / 10) * 10 + 10);
+
+                $svgBarW    = 520;
+                $svgBarH    = 240;
+                $bPadLeft   = 52;
+                $bPadRight  = 20;
+                $bPadTop    = 20;
+                $bPadBottom = 36;
+                $bPlotW     = $svgBarW - $bPadLeft - $bPadRight;
+                $bPlotH     = $svgBarH - $bPadTop - $bPadBottom;
+
+                $barCount   = count($barPts);
+                $barW       = $barCount > 0 ? min(50, ($bPlotW / max(1, $barCount)) * 0.6) : 40;
+                $barSpacing = $barCount > 0 ? $bPlotW / max(1, $barCount) : $bPlotW;
+
+                // Target standard masa studi (D4 = 48 bulan)
+                $targetBulan    = 48;
+                $targetYPos     = $bPadTop + $bPlotH - ($targetBulan / $yMaxBar * $bPlotH);
+                $targetYPos     = max($bPadTop, min($bPadTop + $bPlotH, $targetYPos));
+
+                $barYGrids = [0, 12, 24, 36, 48, 60];
+            @endphp
+
+            @if (empty($barPts))
+                <div class="flex items-center justify-center h-48 text-gray-400 text-xs font-medium">
+                    <div class="text-center">
+                        <svg class="w-10 h-10 mx-auto mb-2 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75z" />
+                        </svg>
+                        Data tren belum tersedia
+                    </div>
+                </div>
+            @else
+                <svg viewBox="0 0 {{ $svgBarW }} {{ $svgBarH }}" class="w-full h-auto overflow-visible select-none" preserveAspectRatio="xMidYMid meet">
+                    <defs>
+                        <linearGradient id="barGrad" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stop-color="#6366F1" stop-opacity="0.9" />
+                            <stop offset="100%" stop-color="#6366F1" stop-opacity="0.5" />
+                        </linearGradient>
+                    </defs>
+
+                    {{-- Y-axis grid lines --}}
+                    @foreach ($barYGrids as $yg)
+                        @php
+                            $yPos = $bPadTop + $bPlotH - ($yg / $yMaxBar * $bPlotH);
+                        @endphp
+                        <line x1="{{ $bPadLeft }}" y1="{{ round($yPos, 1) }}" x2="{{ $svgBarW - $bPadRight }}" y2="{{ round($yPos, 1) }}"
+                            stroke="#E5EAF0" stroke-width="1" />
+                        <text x="{{ $bPadLeft - 6 }}" y="{{ round($yPos + 4, 1) }}" text-anchor="end" font-size="10" font-weight="600" fill="#64748B">{{ $yg }}</text>
+                    @endforeach
+
+                    {{-- Target batas masa studi line --}}
+                    <line x1="{{ $bPadLeft }}" y1="{{ round($targetYPos, 1) }}" x2="{{ $svgBarW - $bPadRight }}" y2="{{ round($targetYPos, 1) }}"
+                        stroke="#F59E0B" stroke-width="1.5" stroke-dasharray="5,3" />
+                    <text x="{{ $svgBarW - $bPadRight + 4 }}" y="{{ round($targetYPos + 4, 1) }}" text-anchor="start" font-size="9" font-weight="700" fill="#D97706">{{ $targetBulan }} bln</text>
+
+                    {{-- Bars --}}
+                    @foreach ($barPts as $k => $bp)
+                        @php
+                            $xCenter   = $bPadLeft + ($k + 0.5) * $barSpacing;
+                            $barHeight = ($bp['val'] / $yMaxBar) * $bPlotH;
+                            $barHeight = max(2, $barHeight);
+                            $barX      = $xCenter - $barW / 2;
+                            $barY      = $bPadTop + $bPlotH - $barHeight;
+                            $aboveTarget = $bp['val'] <= $targetBulan;
+                        @endphp
+                        <rect x="{{ round($barX, 1) }}" y="{{ round($barY, 1) }}"
+                            width="{{ round($barW, 1) }}" height="{{ round($barHeight, 1) }}"
+                            rx="4" ry="4"
+                            fill="{{ $aboveTarget ? 'url(#barGrad)' : '#F87171' }}"
+                            opacity="0.9" />
+                        <text x="{{ round($xCenter, 1) }}" y="{{ round($barY - 5, 1) }}" text-anchor="middle"
+                            font-size="10" font-weight="800" fill="{{ $aboveTarget ? '#4338CA' : '#DC2626' }}">
+                            {{ number_format($bp['val'], 1) }}
+                        </text>
+                        <text x="{{ round($xCenter, 1) }}" y="{{ $bPadTop + $bPlotH + 18 }}" text-anchor="middle"
+                            font-size="10.5" font-weight="700" fill="#334155">{{ $bp['year'] }}</text>
+                    @endforeach
+
+                    {{-- Y-axis label --}}
+                    <text x="12" y="{{ $bPadTop + $bPlotH / 2 }}" text-anchor="middle" font-size="9.5" font-weight="600" fill="#94A3B8"
+                        transform="rotate(-90, 12, {{ $bPadTop + $bPlotH / 2 }})">Bulan</text>
+                </svg>
+
+                {{-- Legend --}}
+                <div class="flex items-center gap-4 mt-3 text-xs font-medium text-gray-500 flex-wrap">
+                    <div class="flex items-center gap-1.5">
+                        <span class="w-3 h-3 rounded-sm bg-indigo-500 inline-block shrink-0"></span>
+                        Masa Studi ≤ {{ $targetBulan }} bln (tepat / lebih cepat)
+                    </div>
+                    <div class="flex items-center gap-1.5">
+                        <span class="w-3 h-3 rounded-sm bg-red-400 inline-block shrink-0"></span>
+                        Masa Studi > {{ $targetBulan }} bln (melewati batas)
+                    </div>
+                    <div class="flex items-center gap-1.5">
+                        <span class="w-5 h-0 border-t-2 border-dashed border-amber-400 inline-block"></span>
+                        Target batas D4 ({{ $targetBulan }} bln)
+                    </div>
+                </div>
+            @endif
+        </div>
+
+    </div>
+
+    <!-- Charts Row 2: Distribusi IPK & Ringkasan Kohort -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+        <!-- Grafik Distribusi IPK (Horizontal Bar Chart Standar LAM-INFOKOM) -->
+        <div class="bg-white rounded-2xl border border-[#EAEAEA] p-6 shadow-xs">
+            <div class="mb-5">
+                <h2 class="text-base font-extrabold text-primary tracking-tight">Distribusi IPK Lulusan</h2>
+                <p class="text-xs text-gray-500 mt-1">Sebaran IPK lulusan berdasarkan kategori standar LAM-INFOKOM</p>
+            </div>
+
+            @php
+                $distribusiIpk  = $ringkasan['distribusi_ipk'] ?? [];
+                $totalDistribusi = array_sum($distribusiIpk);
+
+                $ipkColors = [
+                    '< 2.75'       => ['bg' => '#F87171', 'text' => '#DC2626', 'label' => 'bg-red-100 text-red-700'],
+                    '2.75 - 3.00'  => ['bg' => '#FBBF24', 'text' => '#D97706', 'label' => 'bg-amber-100 text-amber-700'],
+                    '3.01 - 3.50'  => ['bg' => '#60A5FA', 'text' => '#2563EB', 'label' => 'bg-blue-100 text-blue-700'],
+                    '> 3.50'       => ['bg' => '#34D399', 'text' => '#059669', 'label' => 'bg-emerald-100 text-emerald-700'],
+                ];
+                $maxIpkVal = !empty($distribusiIpk) ? max(array_values($distribusiIpk)) : 1;
+            @endphp
+
+            @if (empty($distribusiIpk))
+                <div class="flex items-center justify-center h-48 text-gray-400 text-xs font-medium">
+                    <div class="text-center">
+                        <svg class="w-10 h-10 mx-auto mb-2 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M11.48 3.499a.562.562 0 0 1 1.04 0l2.125 5.111a.563.563 0 0 0 .475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 0 0-.182.557l1.285 5.385a.562.562 0 0 1-.84.61l-4.725-2.885a.562.562 0 0 0-.586 0L6.982 20.54a.562.562 0 0 1-.84-.61l1.285-5.386a.562.562 0 0 0-.182-.557l-4.204-3.602a.562.562 0 0 1 .321-.988l5.518-.442a.563.563 0 0 0 .475-.345L11.48 3.5Z" />
+                        </svg>
+                        Data distribusi IPK belum tersedia
+                    </div>
+                </div>
+            @else
+                <div class="space-y-4">
+                    @foreach ($distribusiIpk as $kategori => $jumlah)
+                        @php
+                            $color   = $ipkColors[$kategori] ?? ['bg' => '#94A3B8', 'text' => '#475569', 'label' => 'bg-gray-100 text-gray-700'];
+                            $pct     = $totalDistribusi > 0 ? round($jumlah / $totalDistribusi * 100, 1) : 0;
+                            $barPct  = $maxIpkVal > 0 ? round($jumlah / $maxIpkVal * 100, 1) : 0;
+                        @endphp
+                        <div>
+                            <div class="flex items-center justify-between mb-1.5">
+                                <span class="text-xs font-bold text-gray-800">IPK {{ $kategori }}</span>
+                                <div class="flex items-center gap-2">
+                                    <span class="text-xs font-bold text-gray-900">{{ number_format($jumlah) }} mhs</span>
+                                    <span class="inline-block px-2 py-0.5 rounded text-[10px] font-bold {{ $color['label'] }}">
+                                        {{ number_format($pct, 1) }}%
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="w-full h-5 bg-gray-100 rounded-full overflow-hidden">
+                                <div class="h-full rounded-full transition-all duration-500"
+                                    style="width: {{ $barPct }}%; background-color: {{ $color['bg'] }};"></div>
+                            </div>
+                        </div>
+                    @endforeach
+                </div>
+
+                {{-- IPK Summary --}}
+                <div class="mt-5 pt-4 border-t border-gray-100 flex items-center justify-between text-xs font-medium text-gray-500">
+                    <span>Total lulusan terdistribusi</span>
+                    <span class="font-bold text-gray-900">{{ number_format($totalDistribusi) }} mahasiswa</span>
+                </div>
+            @endif
+        </div>
+
+        <!-- Ringkasan Per Kohort -->
+        <div class="bg-white rounded-2xl border border-[#EAEAEA] p-6 shadow-xs">
+            <div class="mb-4">
+                <h2 class="text-base font-extrabold text-primary tracking-tight">Ringkasan Per Kohort</h2>
+                <p class="text-xs text-gray-500 mt-1">Data mahasiswa baru dan IPK rata-rata per tahun kohort</p>
+            </div>
+
+            @php
+                $trenMhsBaru    = $tren['jumlah_mahasiswa_baru'] ?? [];
+                $trenIpkLulusan = $tren['rata_ipk_lulusan'] ?? [];
+            @endphp
+
+            @if (empty($trenYears))
+                <div class="flex items-center justify-center h-48 text-gray-400 text-xs font-medium">
+                    <div class="text-center">
+                        <svg class="w-10 h-10 mx-auto mb-2 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H18a2.25 2.25 0 002.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 00-1.123-.08m-5.801 0c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 00.75-.75 2.25 2.25 0 00-.1-.664m-5.8 0A2.251 2.251 0 0113.5 2.25H15c1.012 0 1.867.668 2.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25m0 0H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V9.375c0-.621-.504-1.125-1.125-1.125H8.25z" />
+                        </svg>
+                        Data kohort belum tersedia
+                    </div>
+                </div>
+            @else
+                <div class="overflow-x-auto">
+                    <table class="w-full text-xs">
+                        <thead>
+                            <tr class="border-b border-gray-100">
+                                <th class="py-2.5 px-3 text-left font-bold text-gray-500 uppercase tracking-wide">Tahun</th>
+                                <th class="py-2.5 px-3 text-center font-bold text-gray-500 uppercase tracking-wide">Mhs Baru</th>
+                                <th class="py-2.5 px-3 text-center font-bold text-gray-500 uppercase tracking-wide">IPK Lulusan</th>
+                                <th class="py-2.5 px-3 text-center font-bold text-gray-500 uppercase tracking-wide">% Tepat Waktu</th>
+                                <th class="py-2.5 px-3 text-center font-bold text-gray-500 uppercase tracking-wide">Masa Studi</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-50">
+                            @foreach ($trenYears as $i => $yr)
+                                @php
+                                    $mhsBaru    = $trenMhsBaru[$i] ?? null;
+                                    $ipkLulus   = $trenIpkLulusan[$i] ?? null;
+                                    $tepatWaktu = ($tren['persen_lulus_tepat_waktu'] ?? [])[$i] ?? null;
+                                    $masaStudi  = ($tren['rata_masa_studi_bulan'] ?? [])[$i] ?? null;
+                                    $isCurrentYear = ($yr == date('Y'));
+                                @endphp
+                                <tr class="hover:bg-gray-50/70 transition-colors {{ $isCurrentYear ? 'bg-blue-50/40' : '' }}">
+                                    <td class="py-3 px-3 font-bold text-gray-900 whitespace-nowrap">
+                                        {{ $yr }}
+                                        @if ($isCurrentYear)
+                                            <span class="ml-1 inline-block px-1.5 py-0.5 rounded text-[9px] font-bold bg-blue-100 text-blue-700">Saat ini</span>
+                                        @endif
+                                    </td>
+                                    <td class="py-3 px-3 text-center font-semibold text-gray-700">
+                                        {{ $mhsBaru !== null ? number_format($mhsBaru) : '-' }}
+                                    </td>
+                                    <td class="py-3 px-3 text-center">
+                                        @if ($ipkLulus !== null)
+                                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold {{ $ipkLulus >= 3.5 ? 'bg-emerald-50 text-emerald-700' : ($ipkLulus >= 3.0 ? 'bg-blue-50 text-blue-700' : 'bg-amber-50 text-amber-700') }}">
+                                                {{ number_format($ipkLulus, 2) }}
+                                            </span>
+                                        @else
+                                            <span class="text-gray-300 font-medium">—</span>
+                                        @endif
+                                    </td>
+                                    <td class="py-3 px-3 text-center">
+                                        @if ($tepatWaktu !== null)
+                                            <span class="font-bold {{ $tepatWaktu >= 85 ? 'text-emerald-600' : 'text-amber-600' }}">
+                                                {{ number_format($tepatWaktu, 1) }}%
+                                            </span>
+                                        @else
+                                            <span class="text-gray-300 font-medium">—</span>
+                                        @endif
+                                    </td>
+                                    <td class="py-3 px-3 text-center font-semibold text-gray-700">
+                                        {{ $masaStudi !== null ? number_format($masaStudi, 1).' bln' : '—' }}
+                                    </td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+            @endif
+        </div>
+
+    </div>
+
+    <!-- Main Content: Filters & Table Lulusan (Paling Bawah) -->
+    <div class="space-y-4 pt-2">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+            <div>
+                <h2 class="text-lg font-bold tracking-tight text-gray-900">Daftar Lulusan</h2>
+                <p class="text-xs font-medium text-gray-500 mt-0.5">
+                    Data kelulusan mahasiswa dengan rincian masa studi, masa tunggu, tempat kerja, IPK riil, dan status kelulusan.
+                </p>
+            </div>
+        </div>
+
         <!-- Top Action / Filter Bar -->
         <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
             <div class="flex flex-wrap items-center gap-3 flex-1">
@@ -187,7 +610,7 @@
             </div>
         </div>
 
-        <!-- Table: Data Lulusan -->
+        <!-- Table: Lulusan -->
         <x-table>
             <x-slot:header>
                 <x-table.th class="w-14">No</x-table.th>
@@ -197,6 +620,8 @@
                 <x-table.th class="w-28">Tahun Masuk</x-table.th>
                 <x-table.th class="whitespace-nowrap">Tanggal Lulus</x-table.th>
                 <x-table.th class="w-28">Masa Studi</x-table.th>
+                <x-table.th class="w-28">Masa Tunggu</x-table.th>
+                <x-table.th class="min-w-[180px]">Tempat Kerja</x-table.th>
                 <x-table.th class="w-24">IPK</x-table.th>
                 <x-table.th class="w-36 text-right">Kelulusan</x-table.th>
             </x-slot:header>
@@ -211,6 +636,8 @@
                     $rawKelulusan = $item['tanggal_kelulusan'] ?? '';
                     $formattedKelulusan = !empty($rawKelulusan) ? \Carbon\Carbon::parse($rawKelulusan)->format('d-m-Y') : '-';
                     $masaStudi = $item['masa_studi_bulan'] ?? null;
+                    $masaTunggu = $item['masa_tunggu_bulan'] ?? null;
+                    $tempatKerja = $item['tempat_kerja'] ?? null;
                     $ipk = $item['ipk_riil'] ?? null;
                     $lulusTepatWaktu = $item['lulus_tepat_waktu'] ?? null;
                 @endphp
@@ -272,6 +699,33 @@
                         @endif
                     </x-table.cell>
 
+                    <!-- Masa Tunggu -->
+                    <x-table.cell class="w-28 whitespace-nowrap">
+                        @if($masaTunggu !== null)
+                            <span class="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-200">
+                                {{ $masaTunggu }} bln
+                            </span>
+                        @else
+                            <span class="text-gray-400 text-xs">-</span>
+                        @endif
+                    </x-table.cell>
+
+                    <!-- Tempat Bekerja -->
+                    <x-table.cell class="min-w-[180px]">
+                        @if(!empty($tempatKerja))
+                            <div class="flex items-center gap-1.5">
+                                <svg class="w-3.5 h-3.5 text-gray-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 21h19.5m-18-18v18m10.5-18v18m6-13.5V21M6.75 6.75h.75m-.75 3h.75m-.75 3h.75m3-6h.75m-.75 3h.75m-.75 3h.75M6.75 21v-3.375c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21M3 3h12m-.75 4.5H21m-3.75 3.75h.008v.008h-.008v-.008Zm0 3h.008v.008h-.008v-.008Zm0 3h.008v.008h-.008v-.008Z" />
+                                </svg>
+                                <span class="text-xs sm:text-sm font-semibold text-gray-800">
+                                    {{ $tempatKerja }}
+                                </span>
+                            </div>
+                        @else
+                            <span class="text-gray-400 text-xs italic">Belum Bekerja</span>
+                        @endif
+                    </x-table.cell>
+
                     <!-- IPK -->
                     <x-table.cell class="w-24">
                         @if($ipk !== null)
@@ -306,14 +760,14 @@
                 </x-table.row>
             @empty
                 <x-table.empty 
-                    colspan="9" 
-                    message="Belum ada data lulusan" 
+                    colspan="11" 
+                    message="Belum ada lulusan" 
                     submessage="Data lulusan dari endpoint API belum tersedia atau filter yang dipilih tidak memiliki hasil." 
                 />
             @endforelse
             <tr id="noLulusanFilterMatchRow" class="hidden">
-                <td colspan="9" class="text-center py-10 text-gray-400 text-xs font-medium">
-                    Tidak ada data lulusan yang sesuai dengan filter yang dipilih.
+                <td colspan="11" class="text-center py-10 text-gray-400 text-xs font-medium">
+                    Tidak ada lulusan yang sesuai dengan filter yang dipilih.
                 </td>
             </tr>
         </x-table>
@@ -430,4 +884,3 @@
     });
 </script>
 @endsection
-
