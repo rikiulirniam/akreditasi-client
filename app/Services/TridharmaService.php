@@ -1348,6 +1348,7 @@ class TridharmaService
             }
             $tahunA = (int) ($a['tahun_lulus'] ?? 0);
             $tahunB = (int) ($b['tahun_lulus'] ?? 0);
+
             return $tahunB <=> $tahunA;
         });
 
@@ -1439,5 +1440,39 @@ class TridharmaService
             'program_studi' => $prodi,
             'tahun_lulus' => $tahun,
         ];
+    }
+
+    /*
+    |==========================================================================
+    | MODUL: EVIDENCE (/api/evidence/*)
+    |==========================================================================
+    */
+
+    /** @param array<string, mixed> $query */
+    public function getEvidenceList(array $query = [], ?string $token = null): Response
+    {
+        return $this->http($token)->get($this->url('evidence'), $query);
+    }
+
+    public function getEvidenceById(int|string $id, ?string $token = null): Response
+    {
+        return $this->http($token)->get($this->url("evidence/{$id}"));
+    }
+
+    /** @param array{nama_file: string, jenis_dokumen: string, status_validasi: string} $payload */
+    public function createEvidence(array $payload, ?string $token = null): Response
+    {
+        return $this->post('evidence', $payload, $token);
+    }
+
+    public function deleteEvidence(int|string $id, ?string $token = null): Response
+    {
+        return $this->delete("evidence/{$id}", [], $token);
+    }
+
+    /** @param array{url_drive_baru: string, alasan_perubahan?: string} $payload */
+    public function changeEvidenceLink(int|string $id, array $payload, ?string $token = null): Response
+    {
+        return $this->post("evidence/{$id}/ganti-link", $payload, $token);
     }
 }
