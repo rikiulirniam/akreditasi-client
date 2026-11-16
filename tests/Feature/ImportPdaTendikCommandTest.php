@@ -113,7 +113,7 @@ class ImportPdaTendikCommandTest extends TestCase
                 ->push($page2Inertia, 200),
         ]);
 
-        $this->artisan('pda:import-tendik')
+        $this->artisan('pda:import-tendik', ['--unit-kerja' => 'all'])
             ->assertSuccessful();
 
         $this->assertDatabaseCount('tenaga_kependidikan', 2);
@@ -141,7 +141,7 @@ class ImportPdaTendikCommandTest extends TestCase
             && str_contains($request->header('User-Agent')[0] ?? '', 'Mozilla/5.0'));
 
         // Jalankan ulang dengan perubahan jabatan untuk memastikan updateOrCreate tidak membuat duplikat
-        $this->artisan('pda:import-tendik')
+        $this->artisan('pda:import-tendik', ['--unit-kerja' => 'all'])
             ->assertSuccessful();
 
         $this->assertDatabaseCount('tenaga_kependidikan', 2);
@@ -149,6 +149,56 @@ class ImportPdaTendikCommandTest extends TestCase
             'Kepala Laboratorium Mesin',
             TenagaKependidikan::query()->where('nip', $expectedFallbackNip)->value('jabatan_tendik'),
         );
+    }
+
+    public function test_imports_only_tendik_from_jurusan_teknik_elektro_by_default(): void
+    {
+        $inertia = [
+            'component' => 'Public/TendikIndex',
+            'props' => [
+                'listTendik' => [
+                    'current_page' => 1,
+                    'last_page' => 1,
+                    'total' => 2,
+                    'data' => [
+                        [
+                            'slug' => 'budi-elektro-1',
+                            'nama' => 'Budi Elektro',
+                            'gelar_depan' => null,
+                            'gelar_belakang' => 'S.T.',
+                            'nip' => '198501012010011001',
+                            'jabatan' => 'Pranata Laboratorium Pendidikan',
+                            'pangkat' => 'Penata',
+                            'golongan' => 'III/c',
+                            'penempatan_nama' => 'Jurusan Teknik Elektro',
+                        ],
+                        [
+                            'slug' => 'siti-akuntansi-1',
+                            'nama' => 'Siti Akuntansi',
+                            'gelar_depan' => null,
+                            'gelar_belakang' => 'S.E.',
+                            'nip' => '198601012010012002',
+                            'jabatan' => 'Staff',
+                            'pangkat' => 'Penata',
+                            'golongan' => 'III/c',
+                            'penempatan_nama' => 'Jurusan Akuntansi',
+                        ],
+                    ],
+                ],
+            ],
+        ];
+
+        Http::fake([
+            'https://pda.polines.ac.id/tendik*' => Http::response($inertia, 200),
+        ]);
+
+        $this->artisan('pda:import-tendik')->assertSuccessful();
+
+        $this->assertDatabaseCount('tenaga_kependidikan', 1);
+        $this->assertDatabaseHas('tenaga_kependidikan', ['nip' => '198501012010011001']);
+        $this->assertDatabaseMissing('tenaga_kependidikan', ['nip' => '198601012010012002']);
+
+        Http::assertSent(fn (ClientRequest $request) => $request->url() === 'https://pda.polines.ac.id/tendik?mode=tabel&page=1&unit_kerja=Jurusan%20Teknik%20Elektro');
     }
 
     public function test_schedule_registers_pda_import_tendik_twice_monthly_at_02_30(): void
