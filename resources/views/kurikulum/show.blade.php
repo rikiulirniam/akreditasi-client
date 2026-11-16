@@ -93,6 +93,18 @@
                     </p>
                 </div>
 
+                <!-- Tahun Mulai -->
+                <div class="flex items-center gap-3">
+                    <span class="text-gray-500 shrink-0">
+                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                    </span>
+                    <p class="text-gray-700">
+                        <span class="font-bold text-gray-900">Tahun Mulai:</span> {{ $kurikulum['tahun_mulai'] ?? '-' }}
+                    </p>
+                </div>
+
                 <!-- Berlaku Hingga -->
                 <div class="flex items-center gap-3">
                     <span class="text-gray-500 shrink-0">
@@ -102,6 +114,25 @@
                     </span>
                     <p class="text-gray-700">
                         <span class="font-bold text-gray-900">Berlaku Hingga:</span> {{ $kurikulum['berlaku_sampai'] ?? '-' }}
+                    </p>
+                </div>
+
+                <!-- Link Dokumen Kurikulum -->
+                <div class="flex items-center gap-3">
+                    <span class="text-gray-500 shrink-0">
+                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M13.19 8.688a4.5 4.5 0 011.242 7.244l-4.5 4.5a4.5 4.5 0 01-6.364-6.364l1.757-1.757m13.35-.622l1.757-1.757a4.5 4.5 0 00-6.364-6.364l-4.5 4.5a4.5 4.5 0 001.242 7.244" />
+                        </svg>
+                    </span>
+                    <p class="text-gray-700">
+                        <span class="font-bold text-gray-900">Dokumen Kurikulum:</span>
+                        @if(!empty($kurikulum['link_dokumen']))
+                            <a href="{{ $kurikulum['link_dokumen'] }}" target="_blank" rel="noopener noreferrer" class="text-primary hover:underline font-semibold">
+                                Buka Dokumen ↗
+                            </a>
+                        @else
+                            <span class="text-gray-400">-</span>
+                        @endif
                     </p>
                 </div>
             </div>
