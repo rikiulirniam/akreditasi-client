@@ -159,7 +159,22 @@ class LulusanController extends Controller
             $distribusiIpk = (array) $rawRingkasan['distribusi_ipk'];
         }
 
+        // Precompute masa tunggu average from lulusan list in case summary lacks it
+        $totalMasaTunggu = 0;
+        $validMasaTungguCount = 0;
+        foreach ($lulusanList as $item) {
+            if (isset($item['masa_tunggu_bulan']) && is_numeric($item['masa_tunggu_bulan'])) {
+                $totalMasaTunggu += (float) $item['masa_tunggu_bulan'];
+                $validMasaTungguCount++;
+            }
+        }
+        $avgMasaTungguFromList = $validMasaTungguCount > 0 ? round($totalMasaTunggu / $validMasaTungguCount, 1) : 0.0;
+
         if (! empty($rawRingkasan) && is_array($rawRingkasan)) {
+            $apiMasaTunggu = isset($rawRingkasan['rata_rata_masa_tunggu_bulan']) && is_numeric($rawRingkasan['rata_rata_masa_tunggu_bulan'])
+                ? (float) $rawRingkasan['rata_rata_masa_tunggu_bulan']
+                : 0.0;
+
             $ringkasan = [
                 'total_lulusan' => (int) ($rawRingkasan['total_lulusan'] ?? count($lulusanList)),
                 'rata_rata_masa_studi_bulan' => (float) ($rawRingkasan['rata_rata_masa_studi_bulan'] ?? 0),
@@ -167,7 +182,7 @@ class LulusanController extends Controller
                 'persen_lulus_tepat_waktu' => (float) ($rawRingkasan['persen_lulus_tepat_waktu'] ?? 0),
                 'jumlah_lulus_tepat_waktu' => (int) ($rawRingkasan['jumlah_lulus_tepat_waktu'] ?? 0),
                 'distribusi_ipk' => $distribusiIpk,
-                'rata_rata_masa_tunggu_bulan' => (float) ($rawRingkasan['rata_rata_masa_tunggu_bulan'] ?? 0),
+                'rata_rata_masa_tunggu_bulan' => $apiMasaTunggu > 0 ? $apiMasaTunggu : $avgMasaTungguFromList,
             ];
         } else {
             // Compute fallback summary metrics from available items
@@ -213,7 +228,7 @@ class LulusanController extends Controller
                 'persen_lulus_tepat_waktu' => $totalItems > 0 ? round(($tepatWaktuCount / $totalItems) * 100, 1) : 0.0,
                 'jumlah_lulus_tepat_waktu' => $tepatWaktuCount,
                 'distribusi_ipk' => empty($distribusiIpk) ? $fallbackDist : $distribusiIpk,
-                'rata_rata_masa_tunggu_bulan' => 0.0,
+                'rata_rata_masa_tunggu_bulan' => $avgMasaTungguFromList,
             ];
         }
 
@@ -240,6 +255,52 @@ class LulusanController extends Controller
                 }
             }
             $ringkasan['distribusi_ipk'] = $fallbackDist;
+        }
+
+        // Populate tren['rata_masa_tunggu_bulan'] if empty or all null from API
+        $hasTrenMasaTunggu = false;
+        foreach ($tren['rata_masa_tunggu_bulan'] as $val) {
+            if ($val !== null && $val !== '') {
+                $hasTrenMasaTunggu = true;
+                break;
+            }
+        }
+
+        if (! $hasTrenMasaTunggu && ! empty($tren['years']) && ! empty($lulusanList)) {
+            $yearGroups = [];
+            foreach ($lulusanList as $item) {
+                if (! isset($item['masa_tunggu_bulan']) || ! is_numeric($item['masa_tunggu_bulan'])) {
+                    continue;
+                }
+                $val = (float) $item['masa_tunggu_bulan'];
+                $yLulus = ! empty($item['tanggal_kelulusan']) ? (int) date('Y', strtotime((string) $item['tanggal_kelulusan'])) : null;
+                $yMasuk = ! empty($item['tahun_masuk']) ? (int) $item['tahun_masuk'] : null;
+
+                if ($yLulus) {
+                    $yearGroups['lulus'][$yLulus][] = $val;
+                }
+                if ($yMasuk) {
+                    $yearGroups['masuk'][$yMasuk][] = $val;
+                }
+            }
+
+            $computedTrenTunggu = [];
+            $foundMatch = false;
+            foreach ($tren['years'] as $yr) {
+                if (! empty($yearGroups['lulus'][$yr])) {
+                    $computedTrenTunggu[] = round(array_sum($yearGroups['lulus'][$yr]) / count($yearGroups['lulus'][$yr]), 1);
+                    $foundMatch = true;
+                } elseif (! empty($yearGroups['masuk'][$yr])) {
+                    $computedTrenTunggu[] = round(array_sum($yearGroups['masuk'][$yr]) / count($yearGroups['masuk'][$yr]), 1);
+                    $foundMatch = true;
+                } else {
+                    $computedTrenTunggu[] = null;
+                }
+            }
+
+            if ($foundMatch) {
+                $tren['rata_masa_tunggu_bulan'] = $computedTrenTunggu;
+            }
         }
 
         // Fetch Program Studi options for filter

@@ -56,6 +56,7 @@ class LulusanTest extends TestCase
                     'rata_ipk_lulusan' => [3.45, 3.50, 3.55],
                     'rata_masa_studi_bulan' => [46.0, 45.2, 44.5],
                     'persen_lulus_tepat_waktu' => [82.0, 85.0, 88.0],
+                    'rata_masa_tunggu_bulan' => [4.2, 3.8, 3.5],
                 ],
             ], 200),
             '*/api/lulusan/ringkasan*' => Http::response([
@@ -66,6 +67,7 @@ class LulusanTest extends TestCase
                     'rata_rata_ipk' => 3.54,
                     'persen_lulus_tepat_waktu' => 87.5,
                     'jumlah_lulus_tepat_waktu' => 105,
+                    'rata_rata_masa_tunggu_bulan' => 3.8,
                     'distribusi_ipk' => [
                         '< 2.75' => 5,
                         '2.75 - 3.00' => 15,
@@ -88,6 +90,7 @@ class LulusanTest extends TestCase
                         'jenjang_prodi' => 'D4',
                         'batas_masa_studi_bulan' => 48,
                         'masa_studi_bulan' => 48,
+                        'masa_tunggu_bulan' => 3.5,
                         'ipk_riil' => 3.78,
                         'total_sks' => 144,
                         'lulus_tepat_waktu' => true,
@@ -103,6 +106,7 @@ class LulusanTest extends TestCase
                         'jenjang_prodi' => 'D4',
                         'batas_masa_studi_bulan' => 48,
                         'masa_studi_bulan' => 54,
+                        'masa_tunggu_bulan' => 4.0,
                         'ipk_riil' => 3.45,
                         'total_sks' => 144,
                         'lulus_tepat_waktu' => false,
@@ -136,10 +140,13 @@ class LulusanTest extends TestCase
         $response->assertSee('Lulusan');
         $response->assertSee('Tren Kelulusan Tepat Waktu');
         $response->assertSee('Tren Masa Studi Lulusan');
+        $response->assertSee('Tren Masa Tunggu Lulusan');
         $response->assertSee('Distribusi IPK Lulusan');
+        $response->assertSee('Rata-Rata Masa Tunggu');
         $response->assertSee('120'); // Total lulusan
         $response->assertSee('87.5%'); // Persen tepat waktu
         $response->assertSee('3.54'); // Rata-rata IPK
+        $response->assertSee('3.8'); // Rata-rata masa tunggu
         $response->assertSee('Budi Santoso');
         $response->assertSee('3.34.20.0.05');
         $response->assertSee('Tepat Waktu');
