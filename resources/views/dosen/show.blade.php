@@ -26,12 +26,12 @@
             </p>
 
             <div class="border-t border-[#CBD5E1]">
-                {{-- Bidang Keahlian --}}
+                {{-- Bidang Keahlian / Jurusan --}}
                 <div class="py-3.5 border-b border-[#CBD5E1] flex items-center gap-3.5 text-xs sm:text-sm font-semibold text-gray-900">
                     <svg class="w-4 h-4 sm:w-5 sm:h-5 shrink-0" viewBox="0 0 24 24" fill="currentColor">
                         <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
                     </svg>
-                    <span>{{ is_string($dosen['jurusan'] ?? null) ? $dosen['jurusan'] : '-' }}</span>
+                    <span>{{ (!empty($dosen['jurusan']) && $dosen['jurusan'] !== '-') ? $dosen['jurusan'] : 'Teknik Elektro' }}</span>
                 </div>
 
                 {{-- Program Studi --}}
@@ -39,7 +39,7 @@
                     <svg class="w-4 h-4 sm:w-5 sm:h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M9 17.25v1.007a3 3 0 01-.879 2.122L7.5 21h9l-.621-.621A3 3 0 0115 18.257V17.25m6-12V15a2.25 2.25 0 01-2.25 2.25H5.25A2.25 2.25 0 013 15V5.25m18 0A2.25 2.25 0 0018.75 3H5.25A2.25 2.25 0 003 5.25m18 0H3" />
                     </svg>
-                    <span>{{ is_string($dosen['prodi'] ?? null) ? $dosen['prodi'] : '-' }}</span>
+                    <span>{{ (!empty($dosen['prodi']) && $dosen['prodi'] !== '-') ? $dosen['prodi'] : 'Teknologi Rekayasa Komputer' }}</span>
                 </div>
 
                 {{-- Email --}}
@@ -60,25 +60,14 @@
             </div>
 
             <div class="flex justify-end pt-5">
-                @if(!empty($dosen['sertifikasi']) && is_string($dosen['sertifikasi']))
-                    <a href="{{ $dosen['sertifikasi'] }}" target="_blank" rel="noopener noreferrer"
-                        class="inline-flex items-center gap-2 px-4 py-2 bg-[#01568D] hover:bg-[#012650] text-white text-xs sm:text-sm font-semibold rounded-[10px] shadow-xs transition duration-150">
-                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" />
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                        </svg>
-                        <span>Lihat sertifikasi</span>
-                    </a>
-                @else
-                    <button type="button" onclick="alert('Sertifikasi belum tersedia untuk dosen ini.')"
-                        class="inline-flex items-center gap-2 px-4 py-2 bg-[#01568D] hover:bg-[#012650] text-white text-xs sm:text-sm font-semibold rounded-[10px] shadow-xs transition duration-150 cursor-pointer">
-                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" />
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                        </svg>
-                        <span>Lihat sertifikasi</span>
-                    </button>
-                @endif
+                <a href="{{ route('sertifikasi.index', ['tipe_pemilik' => 'dosen', 'id_dosen' => $dosen['id']]) }}"
+                    class="inline-flex items-center gap-2 px-4 py-2 bg-[#01568D] hover:bg-[#012650] text-white text-xs sm:text-sm font-semibold rounded-[10px] shadow-xs transition duration-150">
+                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" />
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
+                    <span>Lihat sertifikasi</span>
+                </a>
             </div>
         </div>
 
@@ -187,9 +176,11 @@
                         </div>
                         <div class="min-w-0 flex-1">
                             <div class="flex items-center gap-2">
+                                @if(!empty($item['gelar']) && $item['gelar'] !== '-')
                                 <span class="text-sm sm:text-base font-bold text-gray-900">
-                                    {{ is_scalar($item['gelar'] ?? null) ? $item['gelar'] : '-' }}
+                                    {{ $item['gelar'] }}
                                 </span>
+                                @endif
                                 @if(!empty($item['jenjang']) && $item['jenjang'] !== '-')
                                 <span class="bg-[#012650] text-white text-[10px] sm:text-[11px] font-bold px-2 py-0.5 rounded-[4px]">
                                     {{ $item['jenjang'] }}
@@ -213,13 +204,13 @@
             </div>
 
             {{-- Tombol Tambah Pendidikan (footer full-width flush) --}}
-            <a href="{{ route('pendidikan.index', ['id_dosen' => $dosen['id']]) }}"
+            <button type="button" id="openAddPendidikanModalBtn"
                 class="w-full bg-[#012650] hover:bg-[#01568D] py-3 px-4 text-white text-center flex items-center justify-center gap-2 transition duration-150 cursor-pointer">
                 <svg class="w-5 h-5 text-white shrink-0" viewBox="0 0 20 20" fill="currentColor">
                     <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm.75-11.25a.75.75 0 00-1.5 0v2.5h-2.5a.75.75 0 000 1.5h2.5v2.5a.75.75 0 001.5 0v-2.5h2.5a.75.75 0 000-1.5h-2.5v-2.5z" clip-rule="evenodd" />
                 </svg>
                 <span class="text-sm sm:text-base font-normal tracking-wide">Tambah Pendidikan</span>
-            </a>
+            </button>
         </div>
 
         {{-- CARD 4: Luaran (HKI + Luaran + Buku) --}}
@@ -266,6 +257,81 @@
 
 </div>
 
+{{-- Modal Tambah Riwayat Pendidikan Dosen (Tanpa Gelar Pendidikan) --}}
+<div id="addPendidikanModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs hidden p-4" role="dialog" aria-modal="true" aria-labelledby="modalPendidikanTitle">
+    <div class="relative w-full max-w-lg bg-white rounded-2xl shadow-xl overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+        <div class="flex items-center justify-between bg-[#012650] px-6 py-4">
+            <h3 id="modalPendidikanTitle" class="text-base font-bold text-white tracking-wide">Tambah Riwayat Pendidikan</h3>
+            <button type="button" id="closeAddPendidikanModalBtn" class="text-white/70 hover:text-white transition cursor-pointer" aria-label="Tutup">
+                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </button>
+        </div>
+        <form method="POST" action="{{ route('dosen.pendidikan.store', $dosen['id']) }}" class="p-6 space-y-4" id="addDosenPendidikanForm">
+            @csrf
+
+            {{-- Jenjang --}}
+            <div>
+                <label for="modal_jenjang" class="block text-xs font-bold text-gray-900 mb-1.5">
+                    Jenjang Pendidikan <span class="text-red-500">*</span>
+                </label>
+                <div class="relative">
+                    <select name="jenjang" id="modal_jenjang" required class="w-full appearance-none px-4 py-2.5 pr-10 rounded-[10px] bg-[#F2F4F7] border-none text-sm font-medium text-gray-700 focus:ring-2 focus:ring-[#012650]/20 focus:outline-none cursor-pointer">
+                        <option value="" disabled selected>Pilih jenjang pendidikan</option>
+                        <option value="D4/S1">D4/S1</option>
+                        <option value="S2">S2</option>
+                        <option value="S3">S3</option>
+                    </select>
+                    <span class="absolute inset-y-0 right-0 flex items-center pr-3.5 pointer-events-none text-gray-600">
+                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="m6 9 6 6 6-6" /></svg>
+                    </span>
+                </div>
+            </div>
+
+            {{-- Universitas --}}
+            <div>
+                <label for="modal_universitas" class="block text-xs font-bold text-gray-900 mb-1.5">
+                    Universitas / Institusi <span class="text-red-500">*</span>
+                </label>
+                <input type="text" name="universitas" id="modal_universitas" required placeholder="Contoh: Universitas Diponegoro" class="w-full px-4 py-2.5 rounded-[10px] bg-[#F2F4F7] border-none text-sm font-medium text-gray-900 focus:ring-2 focus:ring-[#012650]/20 focus:outline-none placeholder:text-gray-400">
+            </div>
+
+            {{-- Program Studi --}}
+            <div>
+                <label for="modal_program_studi" class="block text-xs font-bold text-gray-900 mb-1.5">
+                    Program Studi / Jurusan <span class="text-red-500">*</span>
+                </label>
+                <input type="text" name="program_studi" id="modal_program_studi" required placeholder="Contoh: Teknik Informatika" class="w-full px-4 py-2.5 rounded-[10px] bg-[#F2F4F7] border-none text-sm font-medium text-gray-900 focus:ring-2 focus:ring-[#012650]/20 focus:outline-none placeholder:text-gray-400">
+            </div>
+
+            {{-- Tahun Lulus --}}
+            <div>
+                <label for="modal_tahun_lulus" class="block text-xs font-bold text-gray-900 mb-1.5">
+                    Tahun Lulus
+                </label>
+                <input type="number" name="tahun_lulus" id="modal_tahun_lulus" min="1900" max="2100" placeholder="Contoh: 2026" class="w-full px-4 py-2.5 rounded-[10px] bg-[#F2F4F7] border-none text-sm font-medium text-gray-900 focus:ring-2 focus:ring-[#012650]/20 focus:outline-none placeholder:text-gray-400">
+            </div>
+
+            {{-- Action Buttons --}}
+            <div class="grid grid-cols-2 gap-3 pt-3">
+                <button type="button" id="cancelAddPendidikanModalBtn" class="w-full py-2.5 px-4 rounded-xl bg-gray-200 hover:bg-gray-300 text-gray-900 font-bold text-xs sm:text-sm transition cursor-pointer text-center">
+                    Batal
+                </button>
+                <button type="submit" class="w-full py-2.5 px-4 rounded-xl bg-[#012650] hover:bg-[#01568D] text-white font-bold text-xs sm:text-sm transition cursor-pointer text-center shadow-xs">
+                    Simpan
+                </button>
+            </div>
+
+            <div class="text-center pt-1">
+                <a href="{{ route('pendidikan.index', ['id_dosen' => $dosen['id']]) }}" class="text-xs font-semibold text-[#01568D] hover:underline">
+                    Buka Halaman Riwayat Pendidikan &rarr;
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
 <script>
     document.addEventListener('DOMContentLoaded', function () {
         const btnPenelitian = document.getElementById('tabPenelitianBtn');
@@ -288,6 +354,38 @@
 
         btnPenelitian?.addEventListener('click', () => activate(btnPenelitian, btnPengabdian, contentPenelitian, contentPengabdian));
         btnPengabdian?.addEventListener('click', () => activate(btnPengabdian, btnPenelitian, contentPengabdian, contentPenelitian));
+
+        // Modal Tambah Pendidikan Dosen
+        const modal = document.getElementById('addPendidikanModal');
+        const openBtn = document.getElementById('openAddPendidikanModalBtn');
+        const closeBtn = document.getElementById('closeAddPendidikanModalBtn');
+        const cancelBtn = document.getElementById('cancelAddPendidikanModalBtn');
+
+        function openModal() {
+            modal?.classList.remove('hidden');
+            document.body.classList.add('overflow-hidden');
+        }
+
+        function closeModal() {
+            modal?.classList.add('hidden');
+            document.body.classList.remove('overflow-hidden');
+        }
+
+        openBtn?.addEventListener('click', openModal);
+        closeBtn?.addEventListener('click', closeModal);
+        cancelBtn?.addEventListener('click', closeModal);
+
+        modal?.addEventListener('click', function (e) {
+            if (e.target === modal) {
+                closeModal();
+            }
+        });
+
+        document.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape' && modal && !modal.classList.contains('hidden')) {
+                closeModal();
+            }
+        });
     });
 </script>
 @endsection

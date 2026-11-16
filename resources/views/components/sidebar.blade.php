@@ -81,12 +81,11 @@
 
                     {{-- Dashboard --}}
                     @php
-                        $isSuperadminContext = request()->routeIs('akreditasi.superadmin.*');
                         $isKaprodiContext = request()->routeIs('kaprodi.*');
-                        $dashboardRoute = $isSuperadminContext && Route::has('akreditasi.superadmin.dashboard')
-                            ? route('akreditasi.superadmin.dashboard')
-                            : ($isKaprodiContext && Route::has('kaprodi.dashboard') ? route('kaprodi.dashboard') : route('dashboard'));
-                        $isDashboardActive = request()->routeIs('dashboard') || request()->routeIs('akreditasi.superadmin.dashboard') || request()->routeIs('kaprodi.dashboard');
+                        $dashboardRoute = $isKaprodiContext && Route::has('kaprodi.dashboard')
+                            ? route('kaprodi.dashboard')
+                            : route('dashboard');
+                        $isDashboardActive = request()->routeIs('dashboard') || ($isKaprodiContext && request()->routeIs('kaprodi.dashboard'));
                     @endphp
                     <div>
                         <a href="{{ $dashboardRoute }}"
@@ -251,9 +250,10 @@
                             </a>
                             @if (Route::has('lulusan.index'))
                             <a href="{{ route('lulusan.index') }}"
-                                class="flex items-center gap-2.5 py-2.5 px-3.5 rounded-xl text-sm font-semibold transition-all duration-150 {{ request()->routeIs('lulusan.*') ? 'bg-white/20 text-white shadow-xs font-bold' : 'text-white/80 hover:text-white hover:bg-white/10' }}">
+                                class="flex items-center gap-2.5 py-2.5 px-3.5 rounded-xl text-sm font-semibold transition-all duration-150 {{ request()->routeIs('lulusan.*') ? 'bg-white/20 text-white shadow-xs font-bold' : 'text-white/80 hover:text-white hover:bg-white/10' }}"
+                                title="Lulusan">
                                 <span class="w-1.5 h-1.5 rounded-full {{ request()->routeIs('lulusan.*') ? 'bg-secondary' : 'bg-white/40' }} shrink-0"></span>
-                                <span class="truncate">Data Lulusan</span>
+                                <span class="truncate">Lulusan</span>
                             </a>
                             @endif
                             @if (Route::has('kegiatan-mahasiswa.index'))

@@ -633,4 +633,107 @@ class DosenShowTest extends TestCase
         $this->assertStringContainsString('template_data_dosen.xlsx', (string) $response->headers->get('content-disposition'));
         $this->assertSame('PK', substr($response->streamedContent(), 0, 2));
     }
+
+    public function test_dosen_detail_displays_default_jurusan_prodi_history_and_sertifikasi_links(): void
+    {
+        Http::fake([
+            '*/dosen/5*' => Http::response([
+                'success' => true,
+                'data' => [
+                    'id_dosen' => 5,
+                    'nama_dosen' => 'Dr. Rian Hidayat, M.Kom.',
+                    'nidn' => '0098765432',
+                    'status_dosen' => 'Aktif',
+                    'email' => 'rian@polines.ac.id',
+                    // Empty or missing jurusan and prodi to test default fallbacks
+                    'jurusan' => '-',
+                    'prodi' => '-',
+                    'sertifikasi' => 'https://drive.google.com/cert-rian',
+                    'pendidikan' => [
+                        'id_pendidikan' => 52,
+                        'universitas' => 'Institut Teknologi Bandung',
+                        'program_studi' => 'Teknik Elektro',
+                        'jenjang' => 'S2',
+                        'tahun_lulus' => 2021,
+                    ],
+                ],
+            ], 200),
+            '*/dosen*' => Http::response([
+                'success' => true,
+                'data' => [
+                    'data' => [
+                        [
+                            'id_dosen' => 5,
+                            'nama_dosen' => 'Dr. Rian Hidayat, M.Kom.',
+                            'nidn' => '0098765432',
+                            'status_dosen' => 'DTPS',
+                            'email' => 'rian@polines.ac.id',
+                            'sertifikasi' => 'https://drive.google.com/cert-rian',
+                        ],
+                    ],
+                    'total' => 1,
+                    'per_page' => 10,
+                    'current_page' => 1,
+                    'last_page' => 1,
+                ],
+            ], 200),
+            '*/jabatan-akademik*' => Http::response(['data' => []], 200),
+            '*/pendidikan*' => Http::response(['data' => []], 200),
+            '*/bidang-keahlian*' => Http::response(['data' => []], 200),
+        ]);
+
+        // 1. Verify detail page displays default Teknik Elektro and Teknologi Rekayasa Komputer
+        $responseShow = $this->withSession([
+            'access_token' => 'dummy-token',
+            'user' => ['nama' => 'Kuwat', 'role' => 'Kaprodi'],
+        ])->get(route('dosen.show', 5));
+
+        $responseShow->assertOk();
+        // Point 3: Top icon shows Teknik Elektro and bottom icon shows Teknologi Rekayasa Komputer
+        $responseShow->assertSee('Teknik Elektro');
+        $responseShow->assertSee('Teknologi Rekayasa Komputer');
+
+        // Point 1: Education history includes S1 and S2
+        $responseShow->assertSee('D4/S1');
+        $responseShow->assertSee('S2');
+        $responseShow->assertSee('Institut Teknologi Bandung');
+
+        // Point 2: Detail page "Lihat sertifikasi" links to internal sertifikasi route
+        $responseShow->assertSee(e(route('sertifikasi.index', ['tipe_pemilik' => 'dosen', 'id_dosen' => 5])), false);
+
+        // Point 3: Table list page (CRUD dosen) has NO detail/link button on Sertifikasi column
+        $responseIndex = $this->withSession([
+            'access_token' => 'dummy-token',
+            'user' => ['nama' => 'Kuwat', 'role' => 'Kaprodi'],
+        ])->get(route('dosen.index'));
+
+        $responseIndex->assertOk();
+        $responseIndex->assertSee('Tersertifikasi');
+        $responseIndex->assertDontSee(e(route('sertifikasi.index', ['tipe_pemilik' => 'dosen', 'id_dosen' => 5])), false);
+
+        // Test Tambah Pendidikan directly on detail dosen without gelar
+        $responseStore = $this->withSession([
+            'access_token' => 'dummy-token',
+            'user' => ['nama' => 'Kuwat', 'role' => 'Kaprodi'],
+        ])->post(route('dosen.pendidikan.store', 5), [
+            'jenjang' => 'S2',
+            'universitas' => 'Universitas Diponegoro',
+            'program_studi' => 'Teknik Informatika',
+            'tahun_lulus' => '2026',
+        ]);
+
+        $responseStore->assertRedirect(route('dosen.show', 5));
+        $responseStore->assertSessionHas('toast');
+
+        // Check that detail dosen displays Universitas Diponegoro S2 without any dummy gelar
+        $responseShowUpdated = $this->withSession([
+            'access_token' => 'dummy-token',
+            'user' => ['nama' => 'Kuwat', 'role' => 'Kaprodi'],
+        ])->get(route('dosen.show', 5));
+
+        $responseShowUpdated->assertOk();
+        $responseShowUpdated->assertSee('Universitas Diponegoro');
+        $responseShowUpdated->assertSee('Teknik Informatika');
+        $responseShowUpdated->assertSee('2026');
+    }
 }

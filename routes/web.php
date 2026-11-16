@@ -119,6 +119,7 @@ Route::middleware('auth.akademik')->group(function () {
     Route::put('/mahasiswa/{mahasiswa}/status/{statusId}', [MahasiswaController::class, 'updateStatus'])->name('mahasiswa.status.update');
     Route::delete('/mahasiswa/{mahasiswa}/status/{statusId}', [MahasiswaController::class, 'destroyStatus'])->name('mahasiswa.status.destroy');
     Route::resource('kegiatan-mahasiswa', KegiatanMahasiswaController::class);
+    Route::get('/lulusan/dashboard', [LulusanController::class, 'dashboard'])->name('lulusan.dashboard');
     Route::get('/lulusan', [LulusanController::class, 'index'])->name('lulusan.index');
 
     Route::get('/kemahasiswaan/jenis-prestasi', [MahasiswaController::class, 'jenisPrestasi'])->name('kemahasiswaan.jenis-prestasi.index');
@@ -198,6 +199,14 @@ Route::middleware('auth.akademik')->group(function () {
     })->name('tenaga-pendidikan.pendidikan.index');
     Route::post('/tenaga-kependidikan/{tendikId}/pendidikan', [TenagaKependidikanController::class, 'storePendidikan'])->name('tenaga-kependidikan.pendidikan.store');
     Route::post('/tenaga-pendidikan/{tendikId}/pendidikan', [TenagaKependidikanController::class, 'storePendidikan'])->name('tenaga-pendidikan.pendidikan.store');
+
+    Route::get('/dosen/{dosenId}/sertifikasi', function ($dosenId) {
+        return redirect()->route('sertifikasi.index', ['tipe_pemilik' => 'dosen', 'id_dosen' => $dosenId]);
+    })->name('dosen.sertifikasi.index');
+    Route::get('/dosen/{dosenId}/pendidikan', function ($dosenId) {
+        return redirect()->route('pendidikan.index', ['id_dosen' => $dosenId]);
+    })->name('dosen.pendidikan.index');
+    Route::post('/dosen/{dosenId}/pendidikan', [DosenController::class, 'storePendidikan'])->name('dosen.pendidikan.store');
 
     // Modul Pendidikan
     Route::resource('pendidikan', PendidikanController::class);
