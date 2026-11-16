@@ -284,7 +284,7 @@
                                             data-nuptk="{{ $nuptk }}"
                                             data-status="{{ $statusDosen }}"
                                             data-email="{{ $email }}"
-                                            data-sertifikasi="{{ $sertifikasi }}"
+                                            data-sertifikasi-dosen="{{ $sertifikasi }}"
                                             data-id-jabatan="{{ $idJabatan }}"
                                             data-id-pendidikan="{{ $idPendidikan }}"
                                             data-action="{{ route('dosen.update', $dosenId) }}"
@@ -442,26 +442,30 @@
                 </select>
             </div>
 
-            <div>
-                <label for="createJabatanSelect" class="block text-xs font-bold text-gray-900 mb-1.5">Jabatan Fungsional / Akademik</label>
-                <div class="relative">
-                    <select name="id_jabatan" id="createJabatanSelect" required class="w-full appearance-none px-4 py-2.5 pr-10 rounded-[10px] bg-white-form border-none text-sm font-medium text-gray-700 focus:ring-2 focus:ring-primary/20 focus:outline-none cursor-pointer">
-                        <option value="">Pilih Jabatan Akademik</option>
-                        @foreach($jabatanList as $jabatan)
-                            @php
-                                $jabatanId = $jabatan['id_jabatan'] ?? ($jabatan['id'] ?? '');
-                                $jabatanNama = $jabatan['nama_jabatan'] ?? ($jabatan['nama'] ?? '');
-                            @endphp
-                            @if($jabatanId !== '' && $jabatanNama !== '')
-                                <option value="{{ $jabatanId }}">{{ $jabatanNama }}</option>
-                            @endif
-                        @endforeach
-                    </select>
-                    <span class="absolute inset-y-0 right-0 flex items-center pr-3.5 pointer-events-none text-primary">
-                        <svg class="w-5 h-5 stroke-[3]" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6" /></svg>
-                    </span>
+            @if($canManageJabatan)
+                <div>
+                    <label for="createJabatanSelect" class="block text-xs font-bold text-gray-900 mb-1.5">
+                        Jabatan Akademik
+                    </label>
+                    <div class="relative">
+                        <select name="id_jabatan" id="createJabatanSelect" class="w-full appearance-none px-4 py-2.5 pr-10 rounded-[10px] bg-white-form border-none text-sm font-medium text-gray-700 focus:ring-2 focus:ring-primary/20 focus:outline-none cursor-pointer">
+                            <option value="">Pilih Jabatan Akademik</option>
+                            @foreach($jabatanList as $jabatan)
+                                @php
+                                    $jabatanId = $jabatan['id_jabatan'] ?? ($jabatan['id'] ?? '');
+                                    $jabatanNama = $jabatan['nama_jabatan'] ?? ($jabatan['nama'] ?? '');
+                                @endphp
+                                @if($jabatanId !== '' && $jabatanNama !== '')
+                                    <option value="{{ $jabatanId }}">{{ $jabatanNama }}</option>
+                                @endif
+                            @endforeach
+                        </select>
+                        <span class="absolute inset-y-0 right-0 flex items-center pr-3.5 pointer-events-none text-primary">
+                            <svg class="w-5 h-5 stroke-[3]" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6" /></svg>
+                        </span>
+                    </div>
                 </div>
-            </div>
+            @endif
 
             <div>
                 <label for="createPendidikanSelect" class="block text-xs font-bold text-gray-900 mb-1.5">
@@ -621,26 +625,30 @@
                 </select>
             </div>
 
-            <div>
-                <label for="editJabatanSelect" class="block text-xs font-bold text-gray-900 mb-1.5">Jabatan Fungsional / Akademik</label>
-                <div class="relative">
-                    <select name="id_jabatan" id="editJabatanSelect" required class="w-full appearance-none px-4 py-2.5 pr-10 rounded-[10px] bg-white-form border-none text-sm font-medium text-gray-700 focus:ring-2 focus:ring-primary/20 focus:outline-none cursor-pointer">
-                        <option value="">Pilih Jabatan Akademik</option>
-                        @foreach($jabatanList as $jabatan)
-                            @php
-                                $jabatanId = $jabatan['id_jabatan'] ?? ($jabatan['id'] ?? '');
-                                $jabatanNama = $jabatan['nama_jabatan'] ?? ($jabatan['nama'] ?? '');
-                            @endphp
-                            @if($jabatanId !== '' && $jabatanNama !== '')
-                                <option value="{{ $jabatanId }}">{{ $jabatanNama }}</option>
-                            @endif
-                        @endforeach
-                    </select>
-                    <span class="absolute inset-y-0 right-0 flex items-center pr-3.5 pointer-events-none text-primary">
-                        <svg class="w-5 h-5 stroke-[3]" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6" /></svg>
-                    </span>
+            @if($canManageJabatan)
+                <div>
+                    <label for="editJabatanSelect" class="block text-xs font-bold text-gray-900 mb-1.5">
+                        Jabatan Akademik
+                    </label>
+                    <div class="relative">
+                        <select name="id_jabatan" id="editJabatanSelect" class="w-full appearance-none px-4 py-2.5 pr-10 rounded-[10px] bg-white-form border-none text-sm font-medium text-gray-700 focus:ring-2 focus:ring-primary/20 focus:outline-none cursor-pointer">
+                            <option value="">Pilih Jabatan Akademik</option>
+                            @foreach($jabatanList as $jabatan)
+                                @php
+                                    $jabatanId = $jabatan['id_jabatan'] ?? ($jabatan['id'] ?? '');
+                                    $jabatanNama = $jabatan['nama_jabatan'] ?? ($jabatan['nama'] ?? '');
+                                @endphp
+                                @if($jabatanId !== '' && $jabatanNama !== '')
+                                    <option value="{{ $jabatanId }}">{{ $jabatanNama }}</option>
+                                @endif
+                            @endforeach
+                        </select>
+                        <span class="absolute inset-y-0 right-0 flex items-center pr-3.5 pointer-events-none text-primary">
+                            <svg class="w-5 h-5 stroke-[3]" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6" /></svg>
+                        </span>
+                    </div>
                 </div>
-            </div>
+            @endif
 
             <div>
                 <label for="editPendidikanSelect" class="block text-xs font-bold text-gray-900 mb-1.5">Pendidikan Terakhir</label>
@@ -1096,7 +1104,7 @@
                 const nuptk = editButton.getAttribute('data-nuptk');
                 const status = editButton.getAttribute('data-status');
                 const email = editButton.getAttribute('data-email');
-                const sertifikasi = editButton.getAttribute('data-sertifikasi');
+                const sertifikasiDosen = editButton.getAttribute('data-sertifikasi-dosen');
                 const idJabatan = editButton.getAttribute('data-id-jabatan') || '';
                 const idPendidikan = editButton.getAttribute('data-id-pendidikan') || '';
 
@@ -1114,7 +1122,7 @@
                     }
                 }
                 if (editEmail) editEmail.value = (email && email !== '-') ? email : '';
-                if (editSertifikasi) editSertifikasi.value = sertifikasi || '';
+                if (editSertifikasi) editSertifikasi.value = sertifikasiDosen || '';
                 if (editJabatan) editJabatan.value = idJabatan;
                 if (editPendidikan) editPendidikan.value = idPendidikan;
                 if (editForm) clearDosenFormErrors(editForm);

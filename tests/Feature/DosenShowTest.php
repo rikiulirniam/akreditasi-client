@@ -352,6 +352,15 @@ class DosenShowTest extends TestCase
                 ->assertSee('Lektor');
         }
 
+        $dosenResponse = $this->withSession([
+            'access_token' => 'dummy-token',
+            'user' => ['nama' => 'Dosen', 'role' => 'Dosen'],
+        ])->get(route('dosen.index'));
+
+        $dosenResponse->assertOk()
+            ->assertDontSee('id="createJabatanSelect"', false)
+            ->assertDontSee('id="editJabatanSelect"', false);
+
         $response->assertSee('id="createPendidikanSelect"', false)
             ->assertSee('id="editPendidikanSelect"', false)
             ->assertSee('data-id-jabatan="4"', false)
@@ -375,7 +384,6 @@ class DosenShowTest extends TestCase
             'nidn' => '0029088401',
             'status_dosen' => 'DTPS',
             'email' => 'hendra@example.com',
-            'sertifikasi' => 'https://drive.google.com/cert',
             'id_jabatan' => 4,
             'id_pendidikan' => 3,
         ]);
@@ -390,6 +398,7 @@ class DosenShowTest extends TestCase
 
             return ($data['id_jabatan'] ?? null) === 4
                 && ($data['id_pendidikan'] ?? null) === 3
+                && ! array_key_exists('sertifikasi', $data)
                 && ($data['nama_dosen'] ?? null) === 'Dr. Hendra Gunawan';
         });
     }
