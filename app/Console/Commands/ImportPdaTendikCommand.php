@@ -25,7 +25,18 @@ class ImportPdaTendikCommand extends Command
                             {--start-page=1 : Halaman awal yang akan diambil dari PDA Polines}
                             {--max-pages=20 : Batas maksimum halaman yang akan diambil}
                             {--sync-api : Sinkronkan juga data hasil scraping ke API Tridharma}
-                            {--token= : Token Bearer API Tridharma (opsional, otomatis membaca sesi aktif jika kosong)}';
+                            {--token= : Token Bearer API Tridharma (opsional, otomatis membaca sesi aktif jika kosong)}
+                            {--unit-kerja=Jurusan Teknik Elektro : Unit kerja yang diambil dari PDA Polines (isi "all" untuk semua unit)}';
+
+    /**
+     * Unit kerja default yang diambil dari PDA Polines.
+     */
+    public const DEFAULT_UNIT_KERJA = 'Jurusan Teknik Elektro';
+
+    /**
+     * Unit kerja aktif hasil opsi --unit-kerja (null berarti semua unit).
+     */
+    protected ?string $unitKerja = null;
 
     /**
      * The console command description.
@@ -64,6 +75,13 @@ class ImportPdaTendikCommand extends Command
     protected array $existingApiByNip = [];
 
     /**
+     * Pemetaan nama tendik (lowercase) => id_tendik yang sudah ada di API Tridharma.
+     *
+     * @var array<string, int>
+     */
+    protected array $existingApiByName = [];
+
+    /**
      * Pemetaan signature pendidikan => id_pendidikan pada API Tridharma.
      *
      * @var array<string, int>
@@ -82,6 +100,7 @@ class ImportPdaTendikCommand extends Command
     {
         $startPage = max(1, (int) $this->option('start-page'));
         $maxPages = max($startPage, (int) $this->option('max-pages'));
+        $this->unitKerja = $this->resolveUnitKerjaOption($this->option('unit-kerja'));
 
         $this->hasLocalTable = $this->checkLocalTable();
         $this->resolvePendidikanMapping();
@@ -90,7 +109,8 @@ class ImportPdaTendikCommand extends Command
             $this->initializeApiSync();
         }
 
-        $this->info("Memulai impor data Tenaga Kependidikan dari PDA Polines (halaman {$startPage} s.d. {$maxPages})...");
+        $unitLabel = $this->unitKerja ?? 'semua unit kerja';
+        $this->info("Memulai impor data Tenaga Kependidikan dari PDA Polines ({$unitLabel}, halaman {$startPage} s.d. {$maxPages})...");
 
         $totalImported = 0;
         $currentPage = $startPage;
@@ -119,10 +139,18 @@ class ImportPdaTendikCommand extends Command
                 $targetLastPage = min($maxPages, $reportedLastPage);
             }
 
-            $records = $this->extractRecords($listTendik);
+            $pageRecords = $this->extractRecords($listTendik);
+
+            if ($pageRecords === []) {
+                break;
+            }
+
+            $records = $this->filterByUnitKerja($pageRecords);
 
             if ($records === []) {
-                break;
+                $currentPage++;
+
+                continue;
             }
 
             if ($this->apiService !== null && ! app()->runningUnitTests()) {
@@ -149,6 +177,9 @@ class ImportPdaTendikCommand extends Command
     protected function fetchPage(int $page): ?Response
     {
         $url = self::PDA_TENDIK_URL."?mode=tabel&page={$page}";
+        if ($this->unitKerja !== null) {
+            $url .= '&unit_kerja='.rawurlencode($this->unitKerja);
+        }
 
         try {
             return Http::withOptions([
@@ -199,6 +230,41 @@ class ImportPdaTendikCommand extends Command
         }
 
         return null;
+    }
+
+    /**
+     * Menormalkan nilai opsi --unit-kerja; "all", "semua", atau kosong berarti tanpa filter.
+     */
+    protected function resolveUnitKerjaOption(mixed $value): ?string
+    {
+        $unit = $this->cleanText($value);
+
+        if ($unit === '' || in_array(Str::lower($unit), ['all', 'semua', '*'], true)) {
+            return null;
+        }
+
+        return $unit;
+    }
+
+    /**
+     * Menyaring record agar hanya tendik pada unit kerja yang dipilih yang diproses.
+     *
+     * @param  array<int, array<string, mixed>>  $records
+     * @return array<int, array<string, mixed>>
+     */
+    protected function filterByUnitKerja(array $records): array
+    {
+        if ($this->unitKerja === null) {
+            return $records;
+        }
+
+        $target = Str::lower($this->unitKerja);
+
+        return array_values(array_filter($records, function (array $item) use ($target): bool {
+            $unit = $this->cleanText($item['penempatan_nama'] ?? $item['unit_penempatan'] ?? $item['penempatan'] ?? null);
+
+            return Str::lower($unit) === $target;
+        }));
     }
 
     /**
@@ -596,6 +662,13 @@ class ImportPdaTendikCommand extends Command
                     break;
                 }
                 foreach ($items as $existing) {
+                    if (is_array($existing)) {
+                        $existingId = (int) ($existing['id_tendik'] ?? $existing['id'] ?? 0);
+                        $existingName = Str::lower(trim((string) ($existing['nama_tendik'] ?? '')));
+                        if ($existingId > 0 && $existingName !== '') {
+                            $this->existingApiByName[$existingName] = $existingId;
+                        }
+                    }
                     if (is_array($existing) && ! empty($existing['nip'])) {
                         $id = (int) ($existing['id_tendik'] ?? $existing['id'] ?? 0);
                         if ($id > 0) {
@@ -629,27 +702,58 @@ class ImportPdaTendikCommand extends Command
 
         try {
             $nip = $payload['nip'];
-            if (isset($this->existingApiByNip[$nip])) {
-                $existingId = $this->existingApiByNip[$nip];
-                $this->apiService->perbaruiTendik($existingId, $payload);
+            $nameKey = Str::lower(trim($payload['nama_tendik']));
+            $existingId = $this->existingApiByNip[$nip] ?? $this->existingApiByName[$nameKey] ?? null;
+
+            if ($existingId !== null) {
+                $response = $this->apiService->perbaruiTendik($existingId, $payload);
+                if ($response->status() === 422 && $this->isNipTakenResponse($response)) {
+                    unset($payload['nip']);
+                    $this->apiService->perbaruiTendik($existingId, $payload);
+                }
 
                 return $existingId;
             }
 
-            $response = $this->apiService->tambahTendik($payload);
-            if ($response->successful()) {
-                $newId = (int) ($response->json('data.id_tendik') ?? $response->json('data.id') ?? 0);
-                if ($newId > 0) {
-                    $this->existingApiByNip[$nip] = $newId;
+            for ($attempt = 0; $attempt < 5; $attempt++) {
+                $response = $this->apiService->tambahTendik($payload);
 
-                    return $newId;
+                if ($response->successful()) {
+                    $newId = (int) ($response->json('data.id_tendik') ?? $response->json('data.id') ?? 0);
+                    if ($newId > 0) {
+                        $this->existingApiByNip[$payload['nip']] = $newId;
+                        $this->existingApiByName[$nameKey] = $newId;
+
+                        return $newId;
+                    }
+
+                    break;
                 }
+
+                if ($response->status() === 422 && $this->isNipTakenResponse($response)) {
+                    // NIP masih terkunci oleh record yang sudah dihapus (soft delete) di API; buat NIP dummy alternatif.
+                    $payload['nip'] = self::generateDummyNip($nip.'#'.($attempt + 1));
+
+                    continue;
+                }
+
+                $this->warn("Gagal menyinkronkan {$payload['nama_tendik']} ke API (HTTP {$response->status()}): ".(string) $response->json('message'));
+
+                break;
             }
-        } catch (Throwable) {
-            // Abaikan kegagalan jaringan per-item agar proses impor tetap berjalan
+        } catch (Throwable $exception) {
+            $this->warn("Gagal menyinkronkan {$payload['nama_tendik']} ke API: {$exception->getMessage()}");
         }
 
         return null;
+    }
+
+    /**
+     * Memeriksa apakah respons validasi API menandakan NIP sudah terpakai.
+     */
+    protected function isNipTakenResponse(Response $response): bool
+    {
+        return ! empty($response->json('errors.nip'));
     }
 
     /**
