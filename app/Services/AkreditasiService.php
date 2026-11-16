@@ -309,6 +309,14 @@ class AkreditasiService
     }
 
     /**
+     * Mengaktifkan versi instrumen.
+     */
+    public function activateVersiInstrumen(int|string $id): Response
+    {
+        return $this->patch("/master/versi-instrumen/{$id}/aktifkan");
+    }
+
+    /**
      * Menghapus versi instrumen.
      */
     public function deleteVersiInstrumen(int|string $id): Response
@@ -591,6 +599,14 @@ class AkreditasiService
     }
 
     /**
+     * Mengambil metrik dasbor keterisian 9 kriteria akreditasi.
+     */
+    public function getDashboardProgress(int|string $id): Response
+    {
+        return $this->get("/projects/{$id}/dashboard-progress");
+    }
+
+    /**
      * Mengambil data kesiapan submit (readiness check) project akreditasi.
      */
     public function getProjectReadiness(int|string $id): Response
@@ -653,6 +669,26 @@ class AkreditasiService
     public function deleteMappingTim(int|string $id): Response
     {
         return $this->delete("/mapping-tim/{$id}");
+    }
+
+    /**
+     * Mengambil daftar penugasan indikator untuk dosen yang sedang login.
+     *
+     * @param  array<string, mixed>  $query
+     */
+    public function getMyAssignments(array $query = []): Response
+    {
+        return $this->get('/dosen/my-assignments', $query);
+    }
+
+    /**
+     * Memperbarui tautan bukti dukung (Google Drive) untuk indikator tertentu pada project.
+     *
+     * @param  array<string, mixed>  $data
+     */
+    public function updateIndicatorEvidence(int|string $projectId, int|string $indicatorId, array $data): Response
+    {
+        return $this->put("/projects/{$projectId}/indicators/{$indicatorId}/evidence", $data);
     }
 
     /*
@@ -790,7 +826,15 @@ class AkreditasiService
     }
 
     /**
-     * Menyimpan atau memperbarui data evidence SPMI project.
+     * Mengambil rekapitulasi evidence overview per project akreditasi (4 pilar + mapping tim + audit).
+     */
+    public function getEvidenceOverview(int|string $projectId): Response
+    {
+        return $this->get("/projects/{$projectId}/evidence-overview");
+    }
+
+    /**
+     * Menyimpan atau memperbarui data evidence SPMI project (One-to-One updateOrCreate).
      *
      * @param  array<string, mixed>  $data
      */
@@ -822,8 +866,8 @@ class AkreditasiService
     public function updateEvidenceSpmi(int|string $id, array $data): Response
     {
         $res = $this->put("/evidence-spmi/{$id}", $data);
-        if ($res->status() === 404) {
-            return $this->put("/spmi-evidence/{$id}", $data);
+        if ($res->status() === 404 || $res->status() === 405) {
+            return $this->saveEvidenceSpmi($data);
         }
 
         return $res;

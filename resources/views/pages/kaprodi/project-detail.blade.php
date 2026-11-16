@@ -10,14 +10,68 @@
     $isAdmin = ! $isKaprodi && ! str_contains($userRole, 'reviewer');
 
     $id = $project['id'] ?? null;
-    $namaProject = $project['nama_project'] ?? 'Sarjana Terapan Test';
-    $versiNomor = $project['versi_instrumen']['nomor_versi'] ?? '2.1';
+    $namaProject = $project['nama_project'] ?? 'Project Akreditasi';
+    $rawVersi = (string) ($project['versi_instrumen']['nomor_versi'] ?? ($project['nomor_versi'] ?? '2.1'));
+    $versiNomor = ltrim($rawVersi, 'vV');
+    $lembagaNama = $project['versi_instrumen']['lembaga']['nama_lembaga'] ?? ($project['lembaga']['nama_lembaga'] ?? 'LAM INFOKOM');
     $jenjangNama = $project['jenjang']['nama_jenjang'] ?? 'Sarjana Terapan';
-    $jenisNama = $project['jenis_instrumen']['nama_jenis'] ?? ($project['status_project'] ?? 'Unggul');
+    $jenisNama = $project['jenis_instrumen']['nama_jenis'] ?? 'APS';
     $tahunTarget = $project['tahun_target_submit'] ?? 2026;
-    $statusRaw = strtolower((string) ($project['status_project'] ?? 'draft'));
-    $isInProgress = $statusRaw === 'in_progress' || $statusRaw === 'pengisian' || str_contains($statusRaw, 'progress');
-    $statusLabel = $isInProgress ? 'In Progress' : 'Draft';
+
+    $statusRaw = strtolower(trim((string) ($project['status_project'] ?? 'draft')));
+    $statusKey = str_replace([' ', '-'], '_', $statusRaw);
+
+    $statusConfig = [
+        'draft' => [
+            'label' => 'Draft',
+            'badge' => 'bg-slate-100 text-slate-700 border-slate-300',
+            'dot' => 'bg-slate-400',
+            'text' => 'text-slate-600',
+            'desc' => 'Penyusunan Awal',
+        ],
+        'in_progress' => [
+            'label' => 'On Progress',
+            'badge' => 'bg-amber-100 text-amber-800 border-amber-300',
+            'dot' => 'bg-amber-500 animate-pulse',
+            'text' => 'text-amber-600',
+            'desc' => 'Sedang Berjalan',
+        ],
+        'on_progress' => [
+            'label' => 'On Progress',
+            'badge' => 'bg-amber-100 text-amber-800 border-amber-300',
+            'dot' => 'bg-amber-500 animate-pulse',
+            'text' => 'text-amber-600',
+            'desc' => 'Sedang Berjalan',
+        ],
+        'pending' => [
+            'label' => 'Pending',
+            'badge' => 'bg-orange-100 text-orange-800 border-orange-300',
+            'dot' => 'bg-orange-500',
+            'text' => 'text-orange-600',
+            'desc' => 'Ditangguhkan',
+        ],
+        'cancel' => [
+            'label' => 'Cancel',
+            'badge' => 'bg-rose-100 text-rose-800 border-rose-300',
+            'dot' => 'bg-rose-500',
+            'text' => 'text-rose-600',
+            'desc' => 'Dibatalkan',
+        ],
+        'selesai' => [
+            'label' => 'Selesai',
+            'badge' => 'bg-emerald-100 text-emerald-800 border-emerald-300',
+            'dot' => 'bg-emerald-500',
+            'text' => 'text-emerald-600',
+            'desc' => 'Selesai & Terverifikasi SK',
+        ],
+    ];
+
+    $currentStatusCfg = $statusConfig[$statusKey] ?? $statusConfig[$statusRaw] ?? $statusConfig['draft'];
+    $statusLabel = $currentStatusCfg['label'];
+    $isInProgress = str_contains($statusRaw, 'progress');
+    $isSelesai = $statusRaw === 'selesai' || str_contains($statusRaw, 'selesai');
+    $nomorSk = $project['nomor_sk_akreditasi'] ?? ($project['nomor_sk'] ?? null);
+    $tanggalSk = $project['tanggal_verifikasi_akreditasi'] ?? ($project['tanggal_sk'] ?? null);
 @endphp
 
 <div class="space-y-6 pb-10">
@@ -88,44 +142,48 @@
         <!-- Informasi Project -->
         <div class="md:col-span-2 bg-white rounded-2xl border border-[#EAEAEA] p-6 flex flex-col justify-center shadow-xs">
             <div class="text-additional text-[10px] font-bold tracking-widest uppercase mb-2">
-                LAM INFOKOM · V{{ $versiNomor }} · {{ strtoupper($jenjangNama) }}
+                {{ $lembagaNama }} · V{{ $versiNomor }} · {{ strtoupper($jenjangNama) }}
             </div>
             <h2 class="text-2xl sm:text-3xl font-extrabold text-primary mb-1 tracking-tight">{{ $namaProject }}</h2>
-            <p class="text-gray-500 text-xs sm:text-sm font-medium">{{ $jenisNama }} · Tahun Target Submit: {{ $tahunTarget }}</p>
+            <p class="text-gray-500 text-xs sm:text-sm font-medium">Instrumen {{ $jenisNama }} untuk Status Terakreditasi Unggul · Tahun Target Submit: {{ $tahunTarget }}</p>
         </div>
 
         <!-- Status & Monitoring Pengerjaan -->
-        <div class="md:col-span-1 bg-white rounded-2xl border border-[#EAEAEA] p-6 flex flex-col justify-center shadow-xs">
-            <div class="text-gray-400 text-xs font-bold mb-1 uppercase tracking-wider">Status Project</div>
-            <div class="flex items-center gap-2 mb-2">
-                <span class="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl text-sm font-extrabold {{ $isInProgress ? 'bg-amber-100 text-amber-800 border border-amber-300' : 'bg-slate-100 text-slate-700 border border-slate-300' }}">
-                    <span class="w-2.5 h-2.5 rounded-full {{ $isInProgress ? 'bg-amber-500 animate-pulse' : 'bg-slate-400' }}"></span>
-                    {{ $statusLabel }}
-                </span>
+        <div class="md:col-span-1 bg-white rounded-2xl border border-[#EAEAEA] p-6 flex flex-col justify-between shadow-xs">
+            <div>
+                <div class="text-gray-400 text-xs font-bold mb-2 uppercase tracking-wider">Status Project</div>
+                <div class="flex flex-wrap items-center gap-2 mb-2">
+                    <span class="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl text-sm font-extrabold border {{ $currentStatusCfg['badge'] }}">
+                        <span class="w-2.5 h-2.5 rounded-full {{ $currentStatusCfg['dot'] }}"></span>
+                        {{ $statusLabel }}
+                    </span>
+                    @if ($isSelesai && $nomorSk)
+                        <span class="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200" title="Nomor SK: {{ $nomorSk }}">
+                            SK: {{ \Illuminate\Support\Str::limit($nomorSk, 16) }}
+                        </span>
+                    @endif
+                </div>
             </div>
 
-            @if ($isKaprodi && $id)
-                <form action="{{ route('kaprodi.project.update-status', $id) }}" method="POST" class="mt-2">
-                    @csrf
-                    @method('PATCH')
-                    <input type="hidden" name="status_project" value="{{ $isInProgress ? 'draft' : 'in_progress' }}">
-                    <button type="submit" class="w-full inline-flex items-center justify-center gap-2 px-3 py-2 rounded-xl text-xs font-bold transition-all shadow-xs cursor-pointer {{ $isInProgress ? 'bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300' : 'bg-amber-500 hover:bg-amber-600 text-white' }}">
-                        @if ($isInProgress)
-                            <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                            </svg>
-                            Kembalikan ke Draft
-                        @else
-                            
-                            Mulai Pengerjaan (In Progress)
-                        @endif
+            <div class="mt-3">
+                @if ($isKaprodi && $id)
+                    <button
+                        type="button"
+                        onclick="openStatusModal({{ json_encode($project) }})"
+                        class="w-full inline-flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl text-xs font-bold transition-all shadow-xs cursor-pointer bg-primary hover:bg-additional text-white"
+                        title="Ubah Lifecycle Status Project"
+                    >
+                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" />
+                        </svg>
+                        Ubah Status Project
                     </button>
-                </form>
-            @endif
+                @endif
 
-            <p class="text-[11px] text-gray-400 mt-2">
-                *Penilaian formal borang dilakukan oleh Tim Reviewer.
-            </p>
+                <p class="text-[11px] text-gray-400 mt-2">
+                    *Penilaian formal borang dilakukan oleh Tim Reviewer.
+                </p>
+            </div>
         </div>
     </div>
 
@@ -149,7 +207,7 @@
         </div>
         <div class="bg-white border border-[#EAEAEA] p-5 rounded-2xl shadow-xs">
             <div class="text-gray-400 text-[10px] font-bold uppercase tracking-wider mb-2">Status</div>
-            <div class="text-primary text-sm font-extrabold leading-none uppercase {{ $isInProgress ? 'text-amber-600' : 'text-slate-600' }}">
+            <div class="text-sm font-extrabold leading-none uppercase {{ $currentStatusCfg['text'] }}">
                 {{ $statusLabel }}
             </div>
         </div>
@@ -520,12 +578,12 @@
                         @if ($isKaprodi)
                             <div class="flex flex-wrap gap-2 pt-1">
                                 <label class="cursor-pointer">
-                                    <input type="radio" name="status_project" value="draft" id="editStatusDraft" class="peer sr-only">
+                                    <input type="radio" name="status_project" value="Draft" id="editStatusDraft" class="peer sr-only">
                                     <div class="bg-slate-100 text-gray-600 text-xs font-semibold px-4 py-2 rounded-xl peer-checked:bg-primary peer-checked:text-white hover:bg-slate-200 transition-colors">Draft</div>
                                 </label>
                                 <label class="cursor-pointer">
-                                    <input type="radio" name="status_project" value="in_progress" id="editStatusInProgress" class="peer sr-only">
-                                    <div class="bg-slate-100 text-gray-600 text-xs font-semibold px-4 py-2 rounded-xl peer-checked:bg-primary peer-checked:text-white hover:bg-slate-200 transition-colors">In Progress</div>
+                                    <input type="radio" name="status_project" value="On Progress" id="editStatusInProgress" class="peer sr-only">
+                                    <div class="bg-slate-100 text-gray-600 text-xs font-semibold px-4 py-2 rounded-xl peer-checked:bg-primary peer-checked:text-white hover:bg-slate-200 transition-colors">On Progress</div>
                                 </label>
                             </div>
                         @else
@@ -627,7 +685,7 @@
         }
 
         const status = (item.status_project || 'draft').toLowerCase();
-        const isProg = status === 'in_progress' || status === 'pengisian' || status.includes('progress');
+        const isProg = status === 'in_progress' || status === 'on_progress' || status === 'pengisian' || status.includes('progress');
         const draftRadio = document.getElementById('editStatusDraft');
         const inProgRadio = document.getElementById('editStatusInProgress');
         if (draftRadio && inProgRadio) {
@@ -639,7 +697,7 @@
         }
         const statusReadonly = document.getElementById('editStatusReadonly');
         if (statusReadonly) {
-            statusReadonly.innerText = isProg ? 'In Progress' : 'Draft';
+            statusReadonly.innerText = isProg ? 'On Progress' : 'Draft';
         }
 
         modal.classList.remove('hidden');
@@ -652,4 +710,10 @@
         }
     }
 </script>
+
+<!-- MODAL LIFECYCLE STATUS & VERIFIKASI SK AKREDITASI -->
+<x-modal-status-project />
+
+<!-- MODAL PENGECEKAN KESIAPAN SUBMIT (READINESS CHECK) -->
+<x-modal-readiness-check />
 @endsection

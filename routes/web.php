@@ -15,6 +15,7 @@ use App\Http\Controllers\AngkatanKelasController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CplController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\DosenAssignmentController;
 use App\Http\Controllers\DosenController;
 use App\Http\Controllers\KaprodiController;
 use App\Http\Controllers\KegiatanMahasiswaController;
@@ -53,6 +54,11 @@ Route::get('/', function () {
             return redirect()->route('kaprodi.dashboard');
         }
 
+        if (str_contains($role, 'dosen')) {
+            return redirect()->route('dosen.my-assignments');
+        }
+
+        return redirect()->route('dashboard');
         if (str_contains($role, 'admin') || str_contains($role, 'superadmin')) {
             return redirect('/pages/superadmin');
         }
@@ -92,6 +98,12 @@ Route::middleware('auth.akademik')->group(function () {
         Route::get('/plotting', [KaprodiController::class, 'plotting'])->name('plotting');
         Route::post('/plotting', [KaprodiController::class, 'storePlotting'])->name('plotting.store');
     });
+
+    // ==========================================
+    // MODUL DOSEN (PENUGASAN TIM & EVIDENCE)
+    // ==========================================
+    Route::get('/dosen/my-assignments', [DosenAssignmentController::class, 'myAssignments'])->name('dosen.my-assignments');
+    Route::post('/dosen/evidence', [DosenAssignmentController::class, 'storeEvidence'])->name('dosen.evidence.store');
 
     // ==========================================
     // MODUL PERGURUAN TINGGI & KELEMBAGAAN
@@ -249,13 +261,13 @@ Route::prefix('pages')->name('akreditasi.superadmin.')->group(function () {
     Route::delete('/superadmin/lembaga-akreditasi/{id}', [LembagaAkreditasiController::class, 'destroy'])->name('lembaga_akreditasi.destroy');
 
     // Master Data Akreditasi - Level 2: Detail Lembaga -> Daftar Versi Instrumen
-    // Master Data Akreditasi - Level 2: Detail Lembaga -> Daftar Versi Instrumen
     Route::get('/superadmin/lembaga-akreditasi/{lembagaId}', [VersiInstrumenController::class, 'index'])->name('versi_instrumen');
     Route::get('/superadmin/lembaga-akreditasi/{lembagaId}/versi', [VersiInstrumenController::class, 'index']);
     Route::post('/superadmin/lembaga-akreditasi/{lembagaId}/versi-instrumen', [VersiInstrumenController::class, 'store'])->name('versi_instrumen.store');
     Route::post('/superadmin/lembaga-akreditasi/{lembagaId}/versi', [VersiInstrumenController::class, 'store']);
     Route::put('/superadmin/versi-instrumen/{id}', [VersiInstrumenController::class, 'update'])->name('versi_instrumen.update');
     Route::put('/superadmin/lembaga-akreditasi/{lembagaId}/versi/{versiId}', [VersiInstrumenController::class, 'update']);
+    Route::patch('/superadmin/versi-instrumen/{id}/aktifkan', [VersiInstrumenController::class, 'activate'])->name('versi_instrumen.aktifkan');
     Route::delete('/superadmin/versi-instrumen/{id}', [VersiInstrumenController::class, 'destroy'])->name('versi_instrumen.destroy');
     Route::delete('/superadmin/lembaga-akreditasi/{lembagaId}/versi/{versiId}', [VersiInstrumenController::class, 'destroy']);
 

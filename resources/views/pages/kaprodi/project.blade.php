@@ -108,7 +108,15 @@
 
         <!-- Card 4 -->
         <div class="bg-white rounded-2xl border border-[#EAEAEA] p-5 flex flex-col justify-center shadow-xs">
-            <div class="text-gray-500 text-xs font-bold tracking-wider uppercase mb-2">Draft</div>
+            <div class="flex items-center justify-between mb-2">
+                <span class="text-gray-500 text-xs font-bold tracking-wider uppercase">Draft</span>
+                @if (!empty($stats['selesai']) && $stats['selesai'] > 0)
+                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200" title="{{ $stats['selesai'] }} Project Berstatus Selesai">
+                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                        {{ $stats['selesai'] }} Selesai
+                    </span>
+                @endif
+            </div>
             <div class="flex items-center gap-2.5">
                 <div class="w-9 h-9 rounded-xl bg-slate-100 text-slate-600 flex items-center justify-center">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
@@ -176,7 +184,13 @@
                     <!-- Program Studi / Project -->
                     <x-table.cell>
                         <div class="flex flex-col">
-                            <span class="text-primary font-bold text-sm tracking-tight leading-snug">{{ $namaProject }}</span>
+                            @if ($id)
+                                <a href="{{ route('kaprodi.project.detail', $id) }}" class="text-primary hover:text-additional hover:underline font-bold text-sm tracking-tight leading-snug transition-colors" title="Lihat detail monitoring {{ $namaProject }}">
+                                    {{ $namaProject }}
+                                </a>
+                            @else
+                                <span class="text-primary font-bold text-sm tracking-tight leading-snug">{{ $namaProject }}</span>
+                            @endif
                             <span class="text-gray-400 text-[10px] font-semibold uppercase mt-0.5">{{ $lembagaNama }} · {{ $versiNomor }}</span>
                         </div>
                     </x-table.cell>

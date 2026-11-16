@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Services\AkademikService;
 use App\Services\AkreditasiService;
+use App\Services\TridharmaService;
 use Illuminate\Http\Client\Response;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -16,10 +17,16 @@ class KaprodiController extends Controller
 
     protected AkademikService $akademikService;
 
-    public function __construct(AkreditasiService $akreditasiService, AkademikService $akademikService)
-    {
+    protected TridharmaService $tridharmaService;
+
+    public function __construct(
+        AkreditasiService $akreditasiService,
+        AkademikService $akademikService,
+        TridharmaService $tridharmaService
+    ) {
         $this->akreditasiService = $akreditasiService;
         $this->akademikService = $akademikService;
+        $this->tridharmaService = $tridharmaService;
     }
 
     /**
@@ -33,6 +40,52 @@ class KaprodiController extends Controller
 
         if (is_array($response)) {
             return $response;
+        }
+
+        return $default;
+    }
+
+    /**
+     * Helper untuk memastikan nilai diekstrak sebagai string yang aman.
+     */
+    protected function extractString(mixed $value, string $default = '-'): string
+    {
+        if (is_null($value)) {
+            return $default;
+        }
+
+        if (is_string($value)) {
+            $trimmed = trim($value);
+
+            return $trimmed !== '' ? $trimmed : $default;
+        }
+
+        if (is_numeric($value)) {
+            return (string) $value;
+        }
+
+        if (is_array($value)) {
+            $keys = [
+                'nama_bidang', 'nama_jabatan', 'nama', 'name', 'nama_dosen',
+                'bidang', 'keahlian', 'label', 'title', 'judul',
+            ];
+            foreach ($keys as $key) {
+                if (! empty($value[$key]) && is_string($value[$key])) {
+                    return trim($value[$key]);
+                }
+            }
+
+            $first = reset($value);
+            if (is_string($first)) {
+                return trim($first);
+            }
+            if (is_array($first)) {
+                foreach ($keys as $key) {
+                    if (! empty($first[$key]) && is_string($first[$key])) {
+                        return trim($first[$key]);
+                    }
+                }
+            }
         }
 
         return $default;
@@ -142,13 +195,27 @@ class KaprodiController extends Controller
         $tahunBerjalanCount = 0;
         $inProgressCount = 0;
         $draftCount = 0;
+        $selesaiCount = 0;
+        $pendingCount = 0;
+        $cancelCount = 0;
+
         foreach ($projects as $p) {
             if ((int) ($p['tahun_target_submit'] ?? 0) === $currentYear) {
                 $tahunBerjalanCount++;
             }
-            $st = strtolower((string) ($p['status_project'] ?? 'draft'));
-            if ($st === 'in_progress' || $st === 'pengisian' || str_contains($st, 'progress')) {
+            $st = strtolower(trim((string) ($p['status_project'] ?? 'draft')));
+            $normalizedStatus = str_replace([' ', '-'], '_', $st);
+
+            if ($normalizedStatus === 'draft') {
+                $draftCount++;
+            } elseif ($normalizedStatus === 'in_progress' || $normalizedStatus === 'on_progress' || $normalizedStatus === 'pengisian' || str_contains($st, 'progress')) {
                 $inProgressCount++;
+            } elseif ($normalizedStatus === 'selesai' || str_contains($st, 'selesai') || str_contains($st, 'tuntas')) {
+                $selesaiCount++;
+            } elseif ($normalizedStatus === 'pending') {
+                $pendingCount++;
+            } elseif ($normalizedStatus === 'cancel') {
+                $cancelCount++;
             } else {
                 $draftCount++;
             }
@@ -164,6 +231,9 @@ class KaprodiController extends Controller
             'tahun_berjalan' => $tahunBerjalanCount,
             'in_progress' => $inProgressCount,
             'draft' => $draftCount,
+            'selesai' => $selesaiCount,
+            'pending' => $pendingCount,
+            'cancel' => $cancelCount,
             'rata_kelengkapan' => $totalProject > 0 ? '0%' : '—',
             'instrumen_aktif' => $activeInstrumen,
         ];
@@ -453,6 +523,20 @@ class KaprodiController extends Controller
             return redirect()->back()->with('error', 'Hanya Kaprodi yang dapat mengubah status project akreditasi.');
         }
 
+        $rawStatus = (string) $request->input('status_project', '');
+        $normalizedMap = [
+            'draft' => 'Draft',
+            'in_progress' => 'On Progress',
+            'on_progress' => 'On Progress',
+            'on progress' => 'On Progress',
+            'pengisian' => 'On Progress',
+            'pending' => 'Pending',
+            'cancel' => 'Cancel',
+            'selesai' => 'Selesai',
+        ];
+        $targetStatus = $normalizedMap[strtolower(trim($rawStatus))] ?? $rawStatus;
+        $request->merge(['status_project' => $targetStatus]);
+
         $validated = $request->validate([
             'status_project' => 'required|string|in:Draft,On Progress,Pending,Cancel,Selesai',
             'nomor_sk_akreditasi' => 'nullable|string|max:255',
@@ -475,8 +559,25 @@ class KaprodiController extends Controller
         }
 
         try {
-            $currentRes = $this->akreditasiService->getProject($id);
-            $currentData = $currentRes->successful() ? ($currentRes->json('data') ?? []) : [];
+            $currentData = [];
+            try {
+                $currentRes = $this->akreditasiService->getProject($id);
+                if ($currentRes->successful()) {
+                    $currentData = $currentRes->json('data') ?? [];
+                }
+            } catch (\Throwable) {
+                $currentData = [];
+            }
+
+            if (empty($currentData)) {
+                $allProjects = $this->extractData($this->akreditasiService->getProjects());
+                foreach ($allProjects as $p) {
+                    if ((string) ($p['id'] ?? '') === (string) $id) {
+                        $currentData = $p;
+                        break;
+                    }
+                }
+            }
 
             $payload = [
                 'id_prodi' => (int) ($currentData['id_prodi'] ?? 1),
@@ -739,26 +840,76 @@ class KaprodiController extends Controller
      */
     public function projectDetail(Request $request, $id = null): View
     {
+        $id = $id ?? $request->query('project_id') ?? $request->query('id');
+
+        // 1. Ambil seluruh data project dari API
+        $allProjects = $this->extractData($this->akreditasiService->getProjects());
+
         $project = null;
 
-        if ($id) {
-            $project = $this->extractData($this->akreditasiService->getProject($id), null);
+        // 2. Jika ada ID, cari project yang dipilih dari daftar $allProjects
+        if ($id !== null && $id !== '') {
+            foreach ($allProjects as $p) {
+                if ((string) ($p['id'] ?? '') === (string) $id) {
+                    $project = $p;
+                    break;
+                }
+            }
         }
 
+        // 3. Coba panggil getProject($id) jika API menyediakan endpoint detail individual
+        if ($id !== null && $id !== '') {
+            try {
+                $detailRes = $this->akreditasiService->getProject($id);
+                if ($detailRes->successful()) {
+                    $detailData = $this->extractData($detailRes, null);
+                    if (is_array($detailData) && ! empty($detailData)) {
+                        $project = is_array($project) ? array_merge($project, $detailData) : $detailData;
+                    }
+                }
+            } catch (\Throwable) {
+                // Endpoint individual opsional
+            }
+        }
+
+        // 4. Fallback ke project pertama jika ID tidak ditemukan atau tidak diberikan
         if (! $project) {
-            // Ambil project pertama yang ada dari API jika ID tidak diberikan
-            $allProjects = $this->extractData($this->akreditasiService->getProjects());
             $project = $allProjects[0] ?? [
                 'id' => 1,
-                'nama_project' => 'Sarjana Terapan Test',
+                'nama_project' => 'Akreditasi Program Studi TRK 2026',
                 'tahun_target_submit' => 2026,
-                'versi_instrumen' => ['nomor_versi' => '2.1'],
+                'status_project' => 'Draft',
+                'versi_instrumen' => [
+                    'nomor_versi' => '2.1',
+                    'lembaga' => ['nama_lembaga' => 'LAM INFOKOM'],
+                ],
                 'jenjang' => ['nama_jenjang' => 'Sarjana Terapan'],
-                'jenis_instrumen' => ['nama_jenis' => 'Unggul'],
+                'jenis_instrumen' => ['nama_jenis' => 'APS Unggul'],
             ];
         }
 
-        // Ambil data kriteria, indikator, dan instrumen dari API
+        // 5. Ambil data metrik keterisian kriteria & kesiapan submit jika tersedia
+        $dashboardProgress = null;
+        $readiness = null;
+        if (! empty($project['id'])) {
+            try {
+                $resProg = $this->akreditasiService->getDashboardProgress($project['id']);
+                if ($resProg->successful()) {
+                    $dashboardProgress = $this->extractData($resProg, null);
+                }
+            } catch (\Throwable) {
+            }
+
+            try {
+                $resReady = $this->akreditasiService->getProjectReadiness($project['id']);
+                if ($resReady->successful()) {
+                    $readiness = $this->extractData($resReady, null);
+                }
+            } catch (\Throwable) {
+            }
+        }
+
+        // 6. Ambil data kriteria, indikator, dan master instrumen dari API
         $rawKriteria = $this->extractData($this->akreditasiService->getKriteria());
         $rawIndikator = $this->extractData($this->akreditasiService->getIndikator());
         $versiList = $this->extractData($this->akreditasiService->getVersiInstrumen());
@@ -770,6 +921,8 @@ class KaprodiController extends Controller
             'apiIndikator' => $rawIndikator,
             'versiList' => $versiList,
             'instrumenList' => $instrumenList,
+            'dashboardProgress' => $dashboardProgress,
+            'readiness' => $readiness,
         ]);
     }
 
@@ -791,16 +944,83 @@ class KaprodiController extends Controller
             $mappingTim = [];
         }
 
-        // Mapping default awal jika belum ada perubahan
+        // Ambil data dosen dari API Kelompok 2 (Tridharma)
+        $dosenList = [];
+        try {
+            $resDosen = $this->tridharmaService->getDosenList(['per_page' => 100]);
+            if ($resDosen->successful()) {
+                $rawDosen = $resDosen->json('data') ?? [];
+                $dosenList = isset($rawDosen['data']) && is_array($rawDosen['data']) ? $rawDosen['data'] : (is_array($rawDosen) ? $rawDosen : []);
+            }
+        } catch (\Throwable $e) {
+            $dosenList = [];
+        }
+
+        // Fallback ke API Akademik jika Tridharma belum mengembalikan data
+        if (empty($dosenList)) {
+            try {
+                $resAkademik = $this->akademikService->getDosenList(['per_page' => 100]);
+                if ($resAkademik->successful()) {
+                    $rawDosen = $resAkademik->json('data') ?? [];
+                    $dosenList = isset($rawDosen['data']) && is_array($rawDosen['data']) ? $rawDosen['data'] : (is_array($rawDosen) ? $rawDosen : []);
+                }
+            } catch (\Throwable $e) {
+                $dosenList = [];
+            }
+        }
+
+        // Standarisasi dan fallback dosen Prodi TRK
+        if (empty($dosenList)) {
+            $dosenList = [
+                ['id' => 1, 'nama' => 'Prof. Dr. Ir. KURNIANINGSIH S.T., M.T.', 'nidn' => '0026047903', 'bidang_keahlian' => 'Artificial Intelligence & Machine Learning', 'jabatan' => 'Guru Besar'],
+                ['id' => 2, 'nama' => 'KUWAT SANTOSO M.Kom.', 'nidn' => '0419078404', 'bidang_keahlian' => 'Rekayasa Perangkat Lunak & Sistem Terdistribusi', 'jabatan' => 'Lektor'],
+                ['id' => 3, 'nama' => 'Dr. LILIEK TRIYONO S.T., M.Kom.', 'nidn' => '0620048402', 'bidang_keahlian' => 'Jaringan Komputer & Cyber Security', 'jabatan' => 'Lektor Kepala'],
+                ['id' => 4, 'nama' => 'MARDIYONO S.Kom., M.Sc.', 'nidn' => '0011037401', 'bidang_keahlian' => 'Data Science & Big Data Analytics', 'jabatan' => 'Lektor'],
+                ['id' => 5, 'nama' => 'SARNO S.T., M.T.', 'nidn' => '0028118705', 'bidang_keahlian' => 'Keamanan Siber & Kriptografi Terapan', 'jabatan' => 'Asisten Ahli'],
+                ['id' => 6, 'nama' => 'SLAMET HANDOKO S.T., M.Kom.', 'nidn' => '0031129001', 'bidang_keahlian' => 'Tata Kelola TI & Manajemen Proyek', 'jabatan' => 'Asisten Ahli'],
+                ['id' => 7, 'nama' => 'TRISNO CAHYO S.Pd., M.Cs.', 'nidn' => '0019048902', 'bidang_keahlian' => 'Web & Mobile Engineering', 'jabatan' => 'Asisten Ahli'],
+                ['id' => 8, 'nama' => 'SUROSO S.Kom., M.Kom.', 'nidn' => '0022068603', 'bidang_keahlian' => 'Sistem Informasi Enterprise & Basis Data', 'jabatan' => 'Lektor'],
+            ];
+        } else {
+            $dosenList = array_map(function ($d) {
+                return [
+                    'id' => $d['id'] ?? null,
+                    'nama' => $this->extractString($d['nama'] ?? ($d['nama_dosen'] ?? ($d['name'] ?? null)), 'Dosen'),
+                    'nidn' => $this->extractString($d['nidn'] ?? ($d['nip'] ?? null), '-'),
+                    'bidang_keahlian' => $this->extractString($d['bidang_keahlian'] ?? ($d['bidang_keahlian_name'] ?? ($d['keahlian'] ?? null)), 'Teknologi Rekayasa Komputer'),
+                    'jabatan' => $this->extractString($d['jabatan_fungsional'] ?? ($d['jabatan'] ?? null), 'Dosen Tetap'),
+                ];
+            }, $dosenList);
+        }
+
+        // Ambil nama-nama dosen aktual untuk default assignment dinamis
+        $dosenNames = array_values(array_filter(array_map(fn ($d) => $d['nama'] ?? null, $dosenList)));
+        $d0 = $dosenNames[0] ?? 'Prof. Dr. Ir. KURNIANINGSIH S.T., M.T.';
+        $d1 = $dosenNames[1] ?? ($dosenNames[0] ?? 'KUWAT SANTOSO M.Kom.');
+        $d2 = $dosenNames[2] ?? ($dosenNames[0] ?? 'Dr. LILIEK TRIYONO S.T., M.Kom.');
+        $d3 = $dosenNames[3] ?? ($dosenNames[1] ?? 'MARDIYONO S.Kom., M.Sc.');
+        $d4 = $dosenNames[4] ?? ($dosenNames[2] ?? 'SARNO S.T., M.T.');
+        $d5 = $dosenNames[5] ?? ($dosenNames[3] ?? 'SLAMET HANDOKO S.T., M.Kom.');
+        $d6 = $dosenNames[6] ?? ($dosenNames[0] ?? 'TRISNO CAHYO S.Pd., M.Cs.');
+        $d7 = $dosenNames[7] ?? ($dosenNames[1] ?? 'SUROSO S.Kom., M.Kom.');
+
+        // Mapping default awal menggunakan dosen aktual Tridharma
         $defaultAssignments = [
-            'K1.1' => ['pj' => 'Dr. Rina Kusuma', 'pic' => 'Budi Santoso M.Kom.'],
-            'K2.1' => ['pj' => 'Dr. Rina Kusuma', 'pic' => 'Budi Santoso M.Kom.'],
-            'K2.2' => ['pj' => 'Dr. Rina Kusuma', 'pic' => null],
-            'K2.3' => ['pj' => null, 'pic' => 'Sari Wulandari'],
-            'K3.1' => ['pj' => 'Budi Santoso M.Kom.', 'pic' => 'Andi Pratama'],
-            'K3.2' => ['pj' => 'Budi Santoso M.Kom.', 'pic' => 'Budi Santoso M.Kom.'],
+            'K1.1' => ['pj' => $d0, 'pic' => $d1],
+            'K2.1' => ['pj' => $d0, 'pic' => $d2],
+            'K2.2' => ['pj' => $d0, 'pic' => null],
+            'K2.3' => ['pj' => null, 'pic' => $d3],
+            'K3.1' => ['pj' => $d1, 'pic' => $d4],
+            'K3.2' => ['pj' => $d1, 'pic' => $d1],
             'K3.3' => ['pj' => null, 'pic' => null],
-            'K3.4' => ['pj' => 'Dr. Rina Kusuma', 'pic' => 'Dr. Rina Kusuma'],
+            'K3.4' => ['pj' => $d0, 'pic' => $d0],
+            'K4.1' => ['pj' => $d2, 'pic' => $d3],
+            'K4.2' => ['pj' => $d2, 'pic' => $d5],
+            'K5.1' => ['pj' => $d0, 'pic' => $d6],
+            'K6.1' => ['pj' => $d3, 'pic' => $d4],
+            'K7.1' => ['pj' => $d2, 'pic' => $d5],
+            'K8.1' => ['pj' => $d1, 'pic' => $d6],
+            'K9.1' => ['pj' => $d0, 'pic' => $d7],
         ];
 
         // Jika mapping dari API ada, sinkronkan
@@ -820,12 +1040,34 @@ class KaprodiController extends Controller
 
         // Ambil mapping yang tersimpan di session untuk project ini
         $sessionAssignments = session("plotting_assignments_{$projectId}", null);
+
+        // Jika session assignments berisi data mock lama (misal 'Dr. Rina' / 'Budi Santoso' yang tidak ada di daftar dosen riil), bersihkan session
+        if (is_array($sessionAssignments)) {
+            $hasObsoleteMock = false;
+            foreach ($sessionAssignments as $roles) {
+                foreach (['pj', 'pic'] as $r) {
+                    if (! empty($roles[$r])) {
+                        $val = (string) $roles[$r];
+                        if (str_contains($val, 'Dr. Rina') || str_contains($val, 'Budi Santoso') || str_contains($val, 'Sari Wulandari') || str_contains($val, 'Andi Pratama') || str_contains($val, 'Hendra Wijaya')) {
+                            $hasObsoleteMock = true;
+                            break 2;
+                        }
+                    }
+                }
+            }
+            if ($hasObsoleteMock) {
+                session()->forget("plotting_assignments_{$projectId}");
+                $sessionAssignments = null;
+            }
+        }
+
         $assignments = is_array($sessionAssignments) ? array_merge($defaultAssignments, $sessionAssignments) : $defaultAssignments;
 
         return view('pages.kaprodi.plotting', [
             'projects' => $projects,
             'kriteriaList' => $rawKriteria,
             'indikatorList' => $rawIndikator,
+            'dosenList' => $dosenList,
             'mappingTim' => $mappingTim,
             'projectId' => $projectId,
             'assignments' => $assignments,
@@ -849,16 +1091,7 @@ class KaprodiController extends Controller
         }
 
         $sessionKey = "plotting_assignments_{$projectId}";
-        $current = session($sessionKey, [
-            'K1.1' => ['pj' => 'Dr. Rina Kusuma', 'pic' => 'Budi Santoso M.Kom.'],
-            'K2.1' => ['pj' => 'Dr. Rina Kusuma', 'pic' => 'Budi Santoso M.Kom.'],
-            'K2.2' => ['pj' => 'Dr. Rina Kusuma', 'pic' => null],
-            'K2.3' => ['pj' => null, 'pic' => 'Sari Wulandari'],
-            'K3.1' => ['pj' => 'Budi Santoso M.Kom.', 'pic' => 'Andi Pratama'],
-            'K3.2' => ['pj' => 'Budi Santoso M.Kom.', 'pic' => 'Budi Santoso M.Kom.'],
-            'K3.3' => ['pj' => null, 'pic' => null],
-            'K3.4' => ['pj' => 'Dr. Rina Kusuma', 'pic' => 'Dr. Rina Kusuma'],
-        ]);
+        $current = session($sessionKey, []);
 
         foreach ($assignments as $item) {
             $code = $item['code'] ?? null;
@@ -880,19 +1113,26 @@ class KaprodiController extends Controller
         // Simpan ke session agar saat refresh data langsung tetap ada
         session([$sessionKey => $current]);
 
-        // Coba kirim ke API backend
+        // Kirim payload batch ke backend API: POST /api/v1/projects/{id}/mapping-tim
         try {
-            $payload = [
-                'assignments' => array_map(function ($item) use ($role) {
-                    return [
-                        'id_indikator' => is_array($item) ? ($item['id_indikator'] ?? (int) preg_replace('/\D/', '', $item['code'] ?? '1')) : (int) $item,
-                        'id_user' => 101,
-                        'role' => strtoupper($role),
-                    ];
-                }, $assignments),
-            ];
+            $apiAssignments = [];
+            foreach ($assignments as $item) {
+                if (! empty($item['remove'])) {
+                    continue;
+                }
+                $apiAssignments[] = [
+                    'id_indikator' => (int) ($item['id_indikator'] ?? (int) preg_replace('/\D/', '', $item['code'] ?? '1')),
+                    'id_user' => (int) ($item['id_user'] ?? 101),
+                    'role' => strtoupper($role),
+                ];
+            }
 
-            $this->akreditasiService->saveMappingTim($projectId, $payload);
+            if (! empty($apiAssignments)) {
+                $this->akreditasiService->saveMappingTim($projectId, [
+                    'id_project' => (int) $projectId,
+                    'assignments' => $apiAssignments,
+                ]);
+            }
         } catch (\Throwable $e) {
             // Silently fallback to session
         }

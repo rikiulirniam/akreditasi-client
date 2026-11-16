@@ -200,6 +200,27 @@ class VersiInstrumenController extends Controller
     }
 
     /**
+     * Mengaktifkan versi instrumen.
+     */
+    public function activate(int|string $id): RedirectResponse
+    {
+        try {
+            $response = $this->akreditasiService->activateVersiInstrumen($id);
+
+            if ($response->successful()) {
+                return back()->with('success', 'Versi instrumen berhasil diaktifkan!');
+            }
+
+            return back()->with(
+                'error',
+                (string) ($response->json('message') ?? 'Gagal mengaktifkan versi instrumen.')
+            );
+        } catch (\Throwable $e) {
+            return back()->with('error', 'Terjadi kesalahan: '.$e->getMessage());
+        }
+    }
+
+    /**
      * Menghapus data versi instrumen.
      */
     public function destroy(int|string $id, int|string|null $versiId = null): RedirectResponse

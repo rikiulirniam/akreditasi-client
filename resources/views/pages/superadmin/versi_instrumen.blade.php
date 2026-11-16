@@ -124,30 +124,66 @@
                                 </div>
                             </div>
 
+
                             {{-- Action Buttons --}}
                             <div class="flex items-center gap-1 shrink-0" onclick="event.stopPropagation()">
-                                <button
-                                    type="button"
-                                    class="text-[#F59E0B] hover:text-[#D97706] transition p-1.5 rounded-lg hover:bg-amber-50 cursor-pointer"
-                                    title="Edit Versi"
-                                    onclick="openEditVersiModal({{ json_encode($v) }})"
-                                >
-                                    <x-icon.edit class="w-5 h-5" />
-                                </button>
 
-                                <button
-                                    type="button"
-                                    class="text-[#DC2626] hover:text-[#B91C1C] transition p-1.5 rounded-lg hover:bg-rose-50 cursor-pointer"
-                                    title="Hapus Versi"
-                                    data-confirm-delete
-                                    data-action="{{ route('akreditasi.superadmin.versi_instrumen.destroy', $v['id']) }}"
-                                    data-title="Hapus Versi Instrumen?"
-                                    data-message="Apakah Anda yakin ingin menghapus versi {{ $v['nomor_versi'] ?? '' }}? Seluruh instrumen terkait akan ikut terhapus."
-                                >
-                                    <x-icon.delete class="w-5 h-5" />
-                                </button>
-                            </div>
+                                {{-- Tombol Aktifkan, hanya muncul jika versi belum aktif --}}
+                                @if (empty($v['status_aktif']))
+                                    <form
+                                        action="{{ route('akreditasi.superadmin.versi_instrumen.aktifkan', $v['id']) }}"
+                                        method="POST"
+                                        onsubmit="return confirm('Yakin ingin mengaktifkan versi instrumen ini?')"
+                                    >
+                                        @csrf
+                                        @method('PATCH')
+
+                                        <button
+                                            type="submit"
+                                            class="text-emerald-600 hover:text-emerald-700 transition p-1.5 rounded-lg hover:bg-emerald-50 cursor-pointer"
+                                            title="Aktifkan Versi"
+                                        >
+                                            <svg
+                                                xmlns="http://www.w3.org/2000/svg"
+                                                class="w-5 h-5"
+                                                viewBox="0 0 24 24"
+                                                fill="none"
+                                                stroke="currentColor"
+                                                stroke-width="2"
+                                                stroke-linecap="round"
+                                                stroke-linejoin="round"
+                                            >
+                                                <path d="m5 12 4 4L19 6" />
+                                            </svg>
+                                        </button>
+                                    </form>
+                                @endif
+
+                            {{-- Tombol Edit --}}
+                            <button
+                                type="button"
+                                class="text-[#F59E0B] hover:text-[#D97706] transition p-1.5 rounded-lg hover:bg-amber-50 cursor-pointer"
+                                title="Edit Versi"
+                                onclick="openEditVersiModal({{ json_encode($v) }})"
+                            >
+                                <x-icon.edit class="w-5 h-5" />
+                            </button>
+
+                            {{-- Tombol Hapus --}}
+                            <button
+                                type="button"
+                                class="text-[#DC2626] hover:text-[#B91C1C] transition p-1.5 rounded-lg hover:bg-rose-50 cursor-pointer"
+                                title="Hapus Versi"
+                                data-confirm-delete
+                                data-action="{{ route('akreditasi.superadmin.versi_instrumen.destroy', $v['id']) }}"
+                                data-title="Hapus Versi Instrumen?"
+                                data-message="Apakah Anda yakin ingin menghapus versi {{ $v['nomor_versi'] ?? '' }}? Seluruh instrumen terkait akan ikut terhapus."
+                            >
+                                <x-icon.delete class="w-5 h-5" />
+                            </button>
                         </div>
+                        </div>
+
 
                         <div class="mt-3 text-xs text-gray-500 font-medium">
                             @if (!empty($v['tanggal_berlaku']))

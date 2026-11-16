@@ -256,4 +256,88 @@ class AkreditasiIntegrationTest extends TestCase
             ->assertSee('Project Akreditasi RPL 2026')
             ->assertSee('v2.1');
     }
+
+    public function test_kaprodi_project_stats_calculates_draft_and_selesai_accurately(): void
+    {
+        Http::fake([
+            'https://akreditasi.fayra.my.id/api/v1/projects*' => Http::response([
+                'success' => true,
+                'data' => [
+                    ['id' => 1, 'nama_project' => 'Project 1', 'status_project' => 'Draft', 'tahun_target_submit' => 2026],
+                    ['id' => 2, 'nama_project' => 'Project 2', 'status_project' => 'On Progress', 'tahun_target_submit' => 2026],
+                    ['id' => 3, 'nama_project' => 'Project 3', 'status_project' => 'Selesai', 'tahun_target_submit' => 2026],
+                    ['id' => 4, 'nama_project' => 'Project 4', 'status_project' => 'Draft', 'tahun_target_submit' => 2026],
+                    ['id' => 5, 'nama_project' => 'Project 5', 'status_project' => 'On Progress', 'tahun_target_submit' => 2026],
+                    ['id' => 6, 'nama_project' => 'Project 6', 'status_project' => 'Draft', 'tahun_target_submit' => 2026],
+                ],
+            ]),
+            'https://akreditasi.fayra.my.id/api/v1/master/*' => Http::response([
+                'success' => true,
+                'data' => [],
+            ]),
+        ]);
+
+        $response = $this->withSession([
+            'access_token' => 'kaprodi-token',
+            'user' => ['nama' => 'Kaprodi', 'role' => 'Kaprodi', 'id_prodi' => 1],
+        ])->get(route('kaprodi.project'));
+
+        $response->assertOk();
+        $stats = $response->viewData('stats');
+        $this->assertEquals(6, $stats['total']);
+        $this->assertEquals(3, $stats['draft']);
+        $this->assertEquals(2, $stats['in_progress']);
+        $this->assertEquals(1, $stats['selesai']);
+        $response->assertSee('1 Selesai');
+    }
+
+    public function test_kaprodi_project_detail_loads_chosen_project_data(): void
+    {
+        Http::fake([
+            'https://akreditasi.fayra.my.id/api/v1/projects/5' => Http::response([
+                'success' => false,
+                'message' => 'Not found',
+            ], 404),
+            'https://akreditasi.fayra.my.id/api/v1/projects*' => Http::response([
+                'success' => true,
+                'data' => [
+                    [
+                        'id' => 1,
+                        'nama_project' => 'Akreditasi TRK 2026',
+                        'status_project' => 'Draft',
+                        'tahun_target_submit' => 2026,
+                        'jenjang' => ['nama_jenjang' => 'D4'],
+                        'jenis_instrumen' => ['nama_jenis' => 'APS'],
+                        'versi_instrumen' => ['nomor_versi' => '2.1', 'lembaga' => ['nama_lembaga' => 'LAM INFOKOM']],
+                    ],
+                    [
+                        'id' => 5,
+                        'nama_project' => 'Akreditasi Sarjana Terapan Rekayasa Perangkat Lunak 2026',
+                        'status_project' => 'On Progress',
+                        'tahun_target_submit' => 2026,
+                        'jenjang' => ['nama_jenjang' => 'Sarjana Terapan'],
+                        'jenis_instrumen' => ['nama_jenis' => 'APS Unggul'],
+                        'versi_instrumen' => ['nomor_versi' => '2.1', 'lembaga' => ['nama_lembaga' => 'LAM INFOKOM']],
+                    ],
+                ],
+            ]),
+            'https://akreditasi.fayra.my.id/api/v1/master/*' => Http::response([
+                'success' => true,
+                'data' => [],
+            ]),
+        ]);
+
+        $response = $this->withSession([
+            'access_token' => 'kaprodi-token',
+            'user' => ['nama' => 'Kaprodi', 'role' => 'Kaprodi', 'id_prodi' => 1],
+        ])->get(route('kaprodi.project.detail', 5));
+
+        $response->assertOk();
+        $project = $response->viewData('project');
+        $this->assertEquals(5, $project['id']);
+        $this->assertEquals('Akreditasi Sarjana Terapan Rekayasa Perangkat Lunak 2026', $project['nama_project']);
+        $this->assertEquals('On Progress', $project['status_project']);
+        $response->assertSee('Akreditasi Sarjana Terapan Rekayasa Perangkat Lunak 2026')
+            ->assertSee('On Progress');
+    }
 }
