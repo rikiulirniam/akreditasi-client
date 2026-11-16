@@ -48,6 +48,16 @@ class LulusanTest extends TestCase
     public function test_authenticated_user_can_view_lulusan_index_with_summary_cards_and_badges(): void
     {
         Http::fake([
+            '*/api/mahasiswa/tren*' => Http::response([
+                'success' => true,
+                'data' => [
+                    'years' => [2022, 2023, 2024],
+                    'jumlah_mahasiswa_baru' => [120, 130, 140],
+                    'rata_ipk_lulusan' => [3.45, 3.50, 3.55],
+                    'rata_masa_studi_bulan' => [46.0, 45.2, 44.5],
+                    'persen_lulus_tepat_waktu' => [82.0, 85.0, 88.0],
+                ],
+            ], 200),
             '*/api/lulusan/ringkasan*' => Http::response([
                 'success' => true,
                 'data' => [
@@ -56,6 +66,12 @@ class LulusanTest extends TestCase
                     'rata_rata_ipk' => 3.54,
                     'persen_lulus_tepat_waktu' => 87.5,
                     'jumlah_lulus_tepat_waktu' => 105,
+                    'distribusi_ipk' => [
+                        '< 2.75' => 5,
+                        '2.75 - 3.00' => 15,
+                        '3.01 - 3.50' => 60,
+                        '> 3.50' => 40,
+                    ],
                 ],
             ], 200),
             '*/api/lulusan*' => Http::response([
@@ -117,7 +133,10 @@ class LulusanTest extends TestCase
             ->get(route('lulusan.index'));
 
         $response->assertStatus(200);
-        $response->assertSee('Data Lulusan');
+        $response->assertSee('Lulusan');
+        $response->assertSee('Tren Kelulusan Tepat Waktu');
+        $response->assertSee('Tren Masa Studi Lulusan');
+        $response->assertSee('Distribusi IPK Lulusan');
         $response->assertSee('120'); // Total lulusan
         $response->assertSee('87.5%'); // Persen tepat waktu
         $response->assertSee('3.54'); // Rata-rata IPK
@@ -130,5 +149,13 @@ class LulusanTest extends TestCase
         $response->assertDontSee('/ 48 bln');
         $response->assertDontSee('Total SKS');
         $response->assertDontSee('IPK Riil');
+    }
+
+    public function test_dashboard_route_redirects_to_lulusan_index(): void
+    {
+        $response = $this->withSession($this->authSession())
+            ->get(route('lulusan.dashboard'));
+
+        $response->assertRedirect(route('lulusan.index'));
     }
 }

@@ -119,6 +119,7 @@ Route::middleware('auth.akademik')->group(function () {
     Route::put('/mahasiswa/{mahasiswa}/status/{statusId}', [MahasiswaController::class, 'updateStatus'])->name('mahasiswa.status.update');
     Route::delete('/mahasiswa/{mahasiswa}/status/{statusId}', [MahasiswaController::class, 'destroyStatus'])->name('mahasiswa.status.destroy');
     Route::resource('kegiatan-mahasiswa', KegiatanMahasiswaController::class);
+    Route::get('/lulusan/dashboard', [LulusanController::class, 'dashboard'])->name('lulusan.dashboard');
     Route::get('/lulusan', [LulusanController::class, 'index'])->name('lulusan.index');
 
     Route::get('/kemahasiswaan/jenis-prestasi', [MahasiswaController::class, 'jenisPrestasi'])->name('kemahasiswaan.jenis-prestasi.index');
