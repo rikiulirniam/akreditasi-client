@@ -31,6 +31,76 @@
     --gray-form: #8093A7;
 }
 
+body {
+    font-size: 15px;
+    line-height: 1.5;
+}
+
+.reviewer-page {
+    font-size: 15px;
+}
+
+.reviewer-page .reviewer-stat-card,
+.reviewer-page .reviewer-panel,
+.reviewer-page .reviewer-table-card {
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+}
+
+.reviewer-page .reviewer-stat-card {
+    border-radius: 1rem;
+    background: #ffffff;
+    padding: 1.1rem 1.15rem;
+}
+
+.reviewer-page .reviewer-filter-select {
+    min-width: 160px;
+    border-radius: 0.8rem;
+    border: 1px solid #dbe3ee;
+    background: #ffffff;
+    padding: 0.7rem 0.9rem;
+    font-size: 0.92rem;
+    color: #334155;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.reviewer-page .reviewer-filter-select:focus {
+    border-color: var(--additional, #01568D);
+    box-shadow: 0 0 0 3px rgba(1, 86, 141, 0.10);
+    outline: none;
+}
+
+.reviewer-page .reviewer-status-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 9999px;
+    padding: 0.42rem 0.72rem;
+    font-size: 0.76rem;
+    font-weight: 800;
+    letter-spacing: 0.01em;
+    line-height: 1;
+}
+
+.reviewer-page .reviewer-progress-track {
+    width: 100%;
+    height: 0.62rem;
+    border-radius: 9999px;
+    background: #e2e8f0;
+    overflow: hidden;
+}
+
+.reviewer-page .reviewer-progress-bar {
+    height: 100%;
+    border-radius: inherit;
+    background: linear-gradient(90deg, #0ea5e9 0%, #01568D 100%);
+}
+
+.reviewer-page .reviewer-compact-label {
+    font-size: 0.8rem;
+    letter-spacing: 0.02em;
+}
+
 @layer base {
     input[type='text'],
     input[type='password'],

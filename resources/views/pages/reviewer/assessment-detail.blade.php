@@ -17,7 +17,7 @@
         $evidenceStatuses = $savedAssessment['evidence_status'] ?? [];
     @endphp
 
-    <div class="space-y-5" id="reviewer-assessment">
+    <div class="reviewer-page space-y-5" id="reviewer-assessment">
         <div class="flex flex-wrap items-center justify-between gap-3">
             <div class="min-w-0">
                 <a href="{{ route('reviewer.assessments') }}" class="text-sm font-semibold text-additional hover:text-primary">
@@ -34,14 +34,14 @@
 
         @if ($indicator)
             <div class="grid items-start gap-4 xl:grid-cols-[250px_minmax(0,1fr)_320px]">
-                <aside class="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+                <aside class="reviewer-panel overflow-hidden rounded-xl bg-white">
                     <div class="border-b border-slate-100 px-4 py-3">
                         <div class="flex items-center justify-between gap-2">
                             <h3 class="text-sm font-bold text-slate-800">Navigasi penilaian</h3>
                             <span class="text-xs font-bold text-additional">{{ $savedCount }}/{{ $totalIndicators }}</span>
                         </div>
-                        <div class="mt-2 h-1.5 overflow-hidden rounded-full bg-slate-100">
-                            <div class="h-full rounded-full bg-additional" style="width: {{ $totalIndicators > 0 ? ($savedCount / $totalIndicators) * 100 : 0 }}%"></div>
+                        <div class="reviewer-progress-track mt-2">
+                            <div class="reviewer-progress-bar" style="width: {{ $totalIndicators > 0 ? ($savedCount / $totalIndicators) * 100 : 0 }}%"></div>
                         </div>
                         <p class="mt-1 text-right text-xs text-slate-400">{{ $totalIndicators > 0 ? round(($savedCount / $totalIndicators) * 100) : 0 }}% selesai</p>
                     </div>
@@ -79,7 +79,7 @@
                 </aside>
 
                 <main class="min-w-0 space-y-3">
-                    <section class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
+                    <section class="reviewer-panel rounded-xl bg-white p-4 sm:p-5">
                         <div class="mb-3 flex items-center justify-between">
                             <span class="rounded-md bg-blue-50 px-2 py-1 font-mono text-xs font-bold text-additional">{{ $indicator['code'] }}</span>
                             <span class="text-xs text-slate-400">Indikator {{ $indicatorIndex + 1 }} dari {{ $totalIndicators }}</span>
@@ -91,7 +91,7 @@
                         </div>
                     </section>
 
-                    <section class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
+                    <section class="reviewer-panel rounded-xl bg-white p-4 sm:p-5">
                         <div class="flex items-center justify-between gap-3 border-b border-slate-100 pb-3">
                             <div>
                                 <h3 class="text-sm font-bold text-slate-800">Narasi program studi</h3>
