@@ -122,7 +122,7 @@ class IndikatorController extends Controller
             'kode_indikator' => 'required|string|max:50',
             'deskripsi_indikator' => 'required|string|max:1000',
             'parameter_penilaian' => 'nullable|string|max:1000',
-            'bobot' => 'nullable|numeric',
+            'bobot' => 'required|numeric|between:0,999999.99',
         ]);
 
         $payload = array_merge($validated, [
@@ -149,7 +149,7 @@ class IndikatorController extends Controller
             'kode_indikator' => 'required|string|max:50',
             'deskripsi_indikator' => 'required|string|max:1000',
             'parameter_penilaian' => 'nullable|string|max:1000',
-            'bobot' => 'nullable|numeric',
+            'bobot' => 'required|numeric|between:0,999999.99',
         ]);
 
         try {

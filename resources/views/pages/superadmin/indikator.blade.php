@@ -205,6 +205,22 @@
                         <label class="mb-2 block text-xs sm:text-sm font-bold text-gray-700">Parameter Penilaian (Opsional)</label>
                         <textarea name="parameter_penilaian" rows="2" placeholder="Catatan parameter penilaian..." class="block w-full rounded-xl border border-gray-200 bg-gray-50 p-3 text-sm text-gray-900 focus:border-primary focus:bg-white focus:outline-none focus:ring-1 focus:ring-primary"></textarea>
                     </div>
+                    <div>
+                    <label class="mb-2 block text-xs sm:text-sm font-bold text-gray-700">
+                        Bobot Indikator <span class="text-red-500">*</span>
+                    </label>
+                    <input
+                        type="number"
+                        name="bobot"
+                        required
+                        min="0"
+                        max="999999.99"
+                        step="0.01"
+                        value="1"
+                        placeholder="Masukkan bobot indikator"
+                        class="block w-full rounded-xl border border-gray-200 bg-gray-50 p-3 text-sm text-gray-900 focus:border-primary focus:bg-white focus:outline-none focus:ring-1 focus:ring-primary"
+                    >
+                </div>
                 </div>
                 <div class="flex items-center justify-end gap-3 border-t border-gray-200 p-5 sm:p-6 bg-gray-50">
                     <button onclick="toggleModal('modal-tambah')" type="button" class="rounded-xl bg-white border border-gray-300 px-5 py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-100 transition cursor-pointer">Batal</button>
@@ -243,6 +259,21 @@
                         <label class="mb-2 block text-xs sm:text-sm font-bold text-gray-700">Parameter Penilaian (Opsional)</label>
                         <textarea id="edit-parameter-indikator" name="parameter_penilaian" rows="2" class="block w-full rounded-xl border border-gray-200 bg-gray-50 p-3 text-sm text-gray-900 focus:border-primary focus:bg-white focus:outline-none focus:ring-1 focus:ring-primary"></textarea>
                     </div>
+                    <div>
+                    <label class="mb-2 block text-xs sm:text-sm font-bold text-gray-700">
+                        Bobot Indikator <span class="text-red-500">*</span>
+                    </label>
+                    <input
+                        type="number"
+                        id="edit-bobot-indikator"
+                        name="bobot"
+                        required
+                        min="0"
+                        max="999999.99"
+                        step="0.01"
+                        class="block w-full rounded-xl border border-gray-200 bg-gray-50 p-3 text-sm text-gray-900 focus:border-primary focus:bg-white focus:outline-none focus:ring-1 focus:ring-primary"
+                    >
+                </div>
                 </div>
                 <div class="flex items-center justify-end gap-3 border-t border-gray-200 p-5 sm:p-6 bg-gray-50">
                     <button onclick="toggleModal('modal-edit-indikator')" type="button" class="rounded-xl bg-white border border-gray-300 px-5 py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-100 transition cursor-pointer">Batal</button>
@@ -269,12 +300,14 @@
         const kodeInput = document.getElementById('edit-kode-indikator');
         const deskripsiInput = document.getElementById('edit-deskripsi-indikator');
         const paramInput = document.getElementById('edit-parameter-indikator');
+        const bobotInput = document.getElementById('edit-bobot-indikator');
 
         if (form && item) {
             form.action = "{{ route('akreditasi.superadmin.indikator.update', ['lembagaId' => $lembagaId, 'instrumenId' => $instrumenId, 'kriteriaId' => $kriteriaId, 'subkriteriaId' => $subkriteriaId, 'indikatorId' => ':id']) }}".replace(':id', item.id);
             if (kodeInput) kodeInput.value = item.kode_indikator || item.kode || '';
             if (deskripsiInput) deskripsiInput.value = item.deskripsi_indikator || item.deskripsi || '';
             if (paramInput) paramInput.value = item.parameter_penilaian || item.parameter || '';
+            if (bobotInput) bobotInput.value = item.bobot ?? 1;
             toggleModal('modal-edit-indikator');
         }
     }
