@@ -128,7 +128,7 @@ class ValidasiMonitoringController extends Controller
             [
                 'kode' => 'K1.1',
                 'nama' => 'Kejelasan visi dan misi',
-                'pic' => 'Dr. Rina Kusuma',
+                'pic' => 'Prof. Dr. Ir. Kurnianingsih, M.T.',
                 'status' => 'menunggu_validasi',
                 'narasi' => 'Visi program studi telah dirumuskan berdasarkan analisis kebutuhan industri dan perkembangan IPTEKS. Misi disusun untuk mendukung pencapaian visi melalui pendidikan, penelitian, dan pengabdian.',
                 'bukti' => [
@@ -139,7 +139,7 @@ class ValidasiMonitoringController extends Controller
             [
                 'kode' => 'K1.2',
                 'nama' => 'Strategi pencapaian tujuan',
-                'pic' => 'Dr. Rina Kusuma',
+                'pic' => 'Prof. Dr. Ir. Kurnianingsih, M.T.',
                 'status' => 'perlu_revisi',
                 'narasi' => 'Strategi pencapaian tujuan disusun melalui rencana strategis 5 tahun yang mencakup pengembangan kurikulum, peningkatan kompetensi dosen, dan perluasan kerjasama industri.',
                 'bukti' => [
@@ -150,7 +150,7 @@ class ValidasiMonitoringController extends Controller
             [
                 'kode' => 'K2.1',
                 'nama' => 'Sistem tata pamong',
-                'pic' => 'Budi Santoso M.Kom.',
+                'pic' => 'Kuwat Santoso, M.Kom.',
                 'status' => 'siap_ditinjau',
                 'narasi' => 'Sistem tata pamong telah menerapkan prinsip kredibilitas, transparansi, akuntabilitas, tanggung jawab, dan keadilan sesuai pedoman BAN-PT.',
                 'bukti' => [
@@ -162,7 +162,7 @@ class ValidasiMonitoringController extends Controller
             [
                 'kode' => 'K2.2',
                 'nama' => 'Kerja sama dengan industri',
-                'pic' => 'Sari Wulandari',
+                'pic' => 'Dr. Liliek Triyono, M.Kom.',
                 'status' => 'menunggu_validasi',
                 'narasi' => 'Program studi telah menjalin kerjasama dengan 12 perusahaan industri dan 5 instansi pemerintah untuk pelaksanaan magang, penelitian bersama, dan pengabdian masyarakat.',
                 'bukti' => [

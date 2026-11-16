@@ -616,6 +616,26 @@ class AkreditasiService
         return $this->delete("/mapping-tim/{$id}");
     }
 
+    /**
+     * Mengambil daftar penugasan indikator untuk dosen yang sedang login.
+     *
+     * @param  array<string, mixed>  $query
+     */
+    public function getMyAssignments(array $query = []): Response
+    {
+        return $this->get('/dosen/my-assignments', $query);
+    }
+
+    /**
+     * Memperbarui tautan bukti dukung (Google Drive) untuk indikator tertentu pada project.
+     *
+     * @param  array<string, mixed>  $data
+     */
+    public function updateIndicatorEvidence(int|string $projectId, int|string $indicatorId, array $data): Response
+    {
+        return $this->put("/projects/{$projectId}/indicators/{$indicatorId}/evidence", $data);
+    }
+
     /*
     |--------------------------------------------------------------------------
     | Self Assessment Endpoints

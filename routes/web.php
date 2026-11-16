@@ -15,6 +15,7 @@ use App\Http\Controllers\AngkatanKelasController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CplController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\DosenAssignmentController;
 use App\Http\Controllers\DosenController;
 use App\Http\Controllers\KaprodiController;
 use App\Http\Controllers\KegiatanMahasiswaController;
@@ -53,6 +54,10 @@ Route::get('/', function () {
             return redirect()->route('kaprodi.dashboard');
         }
 
+        if (str_contains($role, 'dosen')) {
+            return redirect()->route('dosen.my-assignments');
+        }
+
         return redirect()->route('dashboard');
     }
 
@@ -86,6 +91,12 @@ Route::middleware('auth.akademik')->group(function () {
         Route::get('/plotting', [KaprodiController::class, 'plotting'])->name('plotting');
         Route::post('/plotting', [KaprodiController::class, 'storePlotting'])->name('plotting.store');
     });
+
+    // ==========================================
+    // MODUL DOSEN (PENUGASAN TIM & EVIDENCE)
+    // ==========================================
+    Route::get('/dosen/my-assignments', [DosenAssignmentController::class, 'myAssignments'])->name('dosen.my-assignments');
+    Route::post('/dosen/evidence', [DosenAssignmentController::class, 'storeEvidence'])->name('dosen.evidence.store');
 
     // ==========================================
     // MODUL PERGURUAN TINGGI & KELEMBAGAAN
