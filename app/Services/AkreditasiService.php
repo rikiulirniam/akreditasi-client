@@ -309,6 +309,14 @@ class AkreditasiService
     }
 
     /**
+     * Mengaktifkan versi instrumen.
+     */
+    public function activateVersiInstrumen(int|string $id): Response
+    {
+        return $this->patch("/master/versi-instrumen/{$id}/aktifkan");
+    }
+
+    /**
      * Menghapus versi instrumen.
      */
     public function deleteVersiInstrumen(int|string $id): Response
