@@ -89,6 +89,11 @@ class AkreditasiService
         return $this->sendRequest('put', $endpoint, $data, $token);
     }
 
+    public function patch(string $endpoint, array $data = [], ?string $token = null): Response
+    {
+        return $this->sendRequest('patch', $endpoint, $data, $token);
+    }
+
     public function delete(string $endpoint, array $data = [], ?string $token = null): Response
     {
         return $this->sendRequest('delete', $endpoint, $data, $token);
@@ -105,6 +110,7 @@ class AkreditasiService
             return match (strtolower($method)) {
                 'post' => $client->post($url, $params),
                 'put' => $client->put($url, $params),
+                'patch' => $client->patch($url, $params),
                 'delete' => $client->delete($url, $params),
                 default => $client->get($url, $params),
             };
@@ -300,6 +306,14 @@ class AkreditasiService
     public function updateVersiInstrumen(int|string $id, array $data): Response
     {
         return $this->put("/master/versi-instrumen/{$id}", $data);
+    }
+
+    /**
+     * Mengaktifkan versi instrumen.
+     */
+    public function activateVersiInstrumen(int|string $id): Response
+    {
+        return $this->patch("/master/versi-instrumen/{$id}/aktifkan");
     }
 
     /**
@@ -572,6 +586,39 @@ class AkreditasiService
     public function createProject(array $data): Response
     {
         return $this->post('/projects', $data);
+    }
+
+    /**
+     * Membuat cepat project TRK 2026 ke endpoint /projects/quick-create.
+     *
+     * @param  array<string, mixed>  $data
+     */
+    public function quickCreateProject(array $data = ['id_prodi' => 101]): Response
+    {
+        return $this->post('/projects/quick-create', $data);
+    }
+
+    /**
+     * Mengambil data kesiapan submit (readiness check) project akreditasi.
+     */
+    public function getProjectReadiness(int|string $id): Response
+    {
+        return $this->get("/projects/{$id}/readiness");
+    }
+
+    /**
+     * Memperbarui status lifecycle project akreditasi.
+     *
+     * @param  array<string, mixed>  $data
+     */
+    public function updateProjectStatus(int|string $id, array $data): Response
+    {
+        $response = $this->patch("/projects/{$id}/status", $data);
+        if ($response->status() === 404 || $response->status() === 405) {
+            return $this->put("/projects/{$id}", $data);
+        }
+
+        return $response;
     }
 
     /**

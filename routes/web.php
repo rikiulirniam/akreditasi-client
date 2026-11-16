@@ -59,6 +59,11 @@ Route::get('/', function () {
         }
 
         return redirect()->route('dashboard');
+        if (str_contains($role, 'admin') || str_contains($role, 'superadmin')) {
+            return redirect('/pages/superadmin');
+        }
+
+        return redirect('/pages/superadmin');
     }
 
     return redirect()->route('login');
@@ -83,8 +88,10 @@ Route::middleware('auth.akademik')->group(function () {
         Route::get('/dashboard', [KaprodiController::class, 'dashboard'])->name('dashboard');
         Route::get('/project', [KaprodiController::class, 'project'])->name('project');
         Route::post('/project', [KaprodiController::class, 'storeProject'])->name('project.store');
+        Route::post('/project/quick-create', [KaprodiController::class, 'quickCreateProject'])->name('project.quick-create');
+        Route::get('/project/{id}/readiness', [KaprodiController::class, 'projectReadiness'])->name('project.readiness');
         Route::put('/project/{id}', [KaprodiController::class, 'updateProject'])->name('project.update');
-        Route::patch('/project/{id}/status', [KaprodiController::class, 'updateStatusProject'])->name('project.update-status');
+        Route::match(['patch', 'post'], '/project/{id}/status', [KaprodiController::class, 'updateStatusProject'])->name('project.update-status');
         Route::delete('/project/{id}', [KaprodiController::class, 'destroyProject'])->name('project.destroy');
         Route::get('/project/detail/{id?}', [KaprodiController::class, 'projectDetail'])->name('project.detail');
 
@@ -257,6 +264,7 @@ Route::prefix('pages')->name('akreditasi.superadmin.')->group(function () {
     Route::get('/superadmin/lembaga-akreditasi/{lembagaId}', [VersiInstrumenController::class, 'index'])->name('versi_instrumen');
     Route::post('/superadmin/lembaga-akreditasi/{lembagaId}/versi-instrumen', [VersiInstrumenController::class, 'store'])->name('versi_instrumen.store');
     Route::put('/superadmin/versi-instrumen/{id}', [VersiInstrumenController::class, 'update'])->name('versi_instrumen.update');
+    Route::patch('/superadmin/versi-instrumen/{id}/aktifkan', [VersiInstrumenController::class, 'activate'])->name('versi_instrumen.aktifkan');
     Route::delete('/superadmin/versi-instrumen/{id}', [VersiInstrumenController::class, 'destroy'])->name('versi_instrumen.destroy');
 
     // Standalone & backward compatibility routes for versi_instrumen

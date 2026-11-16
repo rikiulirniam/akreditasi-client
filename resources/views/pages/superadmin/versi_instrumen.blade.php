@@ -46,10 +46,10 @@
                 {{ $lembaga['keterangan'] ?? 'Lembaga akreditasi mandiri.' }}
             </p>
         </div>
-        
+
         {{-- Tombol Aksi Edit & Hapus Lembaga --}}
-        //<div class="flex items-center gap-2.5 shrink-0">
-            <button 
+        {{-- <div class="flex items-center gap-2.5 shrink-0">
+            <button
                 type="button"
                 onclick="toggleModal('modal-edit-lembaga')"
                 class="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-secondary text-primary text-xs sm:text-sm font-bold shadow-sm hover:bg-yellow-400 transition cursor-pointer"
@@ -57,7 +57,7 @@
                 <x-icon.edit class="w-4 h-4" />
                 Edit Lembaga
             </button>
-            <button 
+            <button
                 type="button"
                 data-confirm-delete
                 data-action="{{ route('akreditasi.superadmin.lembaga_akreditasi.destroy', $lembaga['id']) }}"
@@ -68,7 +68,7 @@
                 <x-icon.delete class="w-4 h-4" />
                 Hapus
             </button>
-        </div>
+        </div> --}}
     </section>
 
     {{-- Metadata Info Lembaga --}}
@@ -100,9 +100,9 @@
                 <h3 class="text-lg sm:text-xl font-bold text-gray-900 tracking-tight">Daftar Versi Instrumen</h3>
                 <p class="text-xs sm:text-sm text-gray-500">{{ count($versis ?? []) }} versi instrumen terdaftar untuk lembaga ini</p>
             </div>
-            <button 
+            <button
                 type="button"
-                onclick="toggleModal('modal-tambah-versi')" 
+                onclick="toggleModal('modal-tambah-versi')"
                 class="inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-primary text-white text-sm font-bold shadow-sm hover:bg-additional transition cursor-pointer"
             >
                 <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
@@ -115,7 +115,7 @@
         {{-- Grid Kartu Versi Instrumen --}}
         <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             @forelse ($versis ?? [] as $v)
-                <div 
+                <div
                     onclick="if (!event.target.closest('button, form, a')) { window.location.href = '{{ route('akreditasi.superadmin.instrumen', ['lembagaId' => $lembaga['id'], 'versiId' => $v['id']]) }}'; }"
                     class="group flex min-h-[175px] flex-col justify-between rounded-2xl border border-[#EAEAEA] bg-white p-6 shadow-xs transition-all duration-200 hover:border-primary/50 hover:shadow-md hover:-translate-y-0.5 cursor-pointer relative"
                 >
@@ -135,30 +135,66 @@
                                 </div>
                             </div>
 
+
                             {{-- Action Buttons --}}
                             <div class="flex items-center gap-1 shrink-0" onclick="event.stopPropagation()">
-                                <button 
-                                    type="button" 
-                                    class="text-[#F59E0B] hover:text-[#D97706] transition p-1.5 rounded-lg hover:bg-amber-50 cursor-pointer"
-                                    title="Edit Versi"
-                                    onclick="openEditVersiModal({{ json_encode($v) }})"
-                                >
-                                    <x-icon.edit class="w-5 h-5" />
-                                </button>
 
-                                <button 
-                                    type="button" 
-                                    class="text-[#DC2626] hover:text-[#B91C1C] transition p-1.5 rounded-lg hover:bg-rose-50 cursor-pointer"
-                                    title="Hapus Versi"
-                                    data-confirm-delete
-                                    data-action="{{ route('akreditasi.superadmin.versi_instrumen.destroy', $v['id']) }}"
-                                    data-title="Hapus Versi Instrumen?"
-                                    data-message="Apakah Anda yakin ingin menghapus versi {{ $v['nomor_versi'] ?? '' }}? Seluruh instrumen terkait akan ikut terhapus."
-                                >
-                                    <x-icon.delete class="w-5 h-5" />
-                                </button>
-                            </div>
+                                {{-- Tombol Aktifkan, hanya muncul jika versi belum aktif --}}
+                                @if (empty($v['status_aktif']))
+                                    <form
+                                        action="{{ route('akreditasi.superadmin.versi_instrumen.aktifkan', $v['id']) }}"
+                                        method="POST"
+                                        onsubmit="return confirm('Yakin ingin mengaktifkan versi instrumen ini?')"
+                                    >
+                                        @csrf
+                                        @method('PATCH')
+
+                                        <button
+                                            type="submit"
+                                            class="text-emerald-600 hover:text-emerald-700 transition p-1.5 rounded-lg hover:bg-emerald-50 cursor-pointer"
+                                            title="Aktifkan Versi"
+                                        >
+                                            <svg
+                                                xmlns="http://www.w3.org/2000/svg"
+                                                class="w-5 h-5"
+                                                viewBox="0 0 24 24"
+                                                fill="none"
+                                                stroke="currentColor"
+                                                stroke-width="2"
+                                                stroke-linecap="round"
+                                                stroke-linejoin="round"
+                                            >
+                                                <path d="m5 12 4 4L19 6" />
+                                            </svg>
+                                        </button>
+                                    </form>
+                                @endif
+
+                            {{-- Tombol Edit --}}
+                            <button
+                                type="button"
+                                class="text-[#F59E0B] hover:text-[#D97706] transition p-1.5 rounded-lg hover:bg-amber-50 cursor-pointer"
+                                title="Edit Versi"
+                                onclick="openEditVersiModal({{ json_encode($v) }})"
+                            >
+                                <x-icon.edit class="w-5 h-5" />
+                            </button>
+
+                            {{-- Tombol Hapus --}}
+                            <button
+                                type="button"
+                                class="text-[#DC2626] hover:text-[#B91C1C] transition p-1.5 rounded-lg hover:bg-rose-50 cursor-pointer"
+                                title="Hapus Versi"
+                                data-confirm-delete
+                                data-action="{{ route('akreditasi.superadmin.versi_instrumen.destroy', $v['id']) }}"
+                                data-title="Hapus Versi Instrumen?"
+                                data-message="Apakah Anda yakin ingin menghapus versi {{ $v['nomor_versi'] ?? '' }}? Seluruh instrumen terkait akan ikut terhapus."
+                            >
+                                <x-icon.delete class="w-5 h-5" />
+                            </button>
                         </div>
+                        </div>
+
 
                         <div class="mt-3 text-xs text-gray-500 font-medium">
                             @if (!empty($v['tanggal_berlaku']))
@@ -168,12 +204,12 @@
                             @endif
                         </div>
                     </div>
-                    
+
                     <div class="mt-5 pt-3.5 border-t border-slate-100 flex items-center justify-between">
                         <span class="text-xs font-bold text-gray-400 group-hover:text-primary transition-colors flex items-center gap-1.5">
                             Buka Daftar Instrumen
                         </span>
-                        <span 
+                        <span
                             class="flex h-9 w-9 items-center justify-center rounded-full bg-slate-100 text-slate-600 group-hover:bg-primary group-hover:text-white transition-all duration-200 group-hover:translate-x-1 shadow-xs"
                         >
                             <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
