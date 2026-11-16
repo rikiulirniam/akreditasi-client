@@ -15,6 +15,43 @@
         </p>
     </div>
 
+    {{-- Flash Notifications --}}
+    @if (session('success'))
+        <div class="p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-sm font-semibold flex items-center justify-between shadow-2xs">
+            <div class="flex items-center gap-2.5">
+                <svg class="size-5 text-emerald-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <span>{{ session('success') }}</span>
+            </div>
+            <button type="button" onclick="this.parentElement.remove()" class="text-emerald-500 hover:text-emerald-700 cursor-pointer text-lg leading-none">&times;</button>
+        </div>
+    @endif
+
+    @if (session('warning'))
+        <div class="p-4 rounded-xl bg-amber-50 border border-amber-200 text-amber-800 text-sm font-semibold flex items-center justify-between shadow-2xs">
+            <div class="flex items-center gap-2.5">
+                <svg class="size-5 text-amber-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+                </svg>
+                <span>{{ session('warning') }}</span>
+            </div>
+            <button type="button" onclick="this.parentElement.remove()" class="text-amber-500 hover:text-amber-700 cursor-pointer text-lg leading-none">&times;</button>
+        </div>
+    @endif
+
+    @if (session('error'))
+        <div class="p-4 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-sm font-semibold flex items-center justify-between shadow-2xs">
+            <div class="flex items-center gap-2.5">
+                <svg class="size-5 text-rose-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+                </svg>
+                <span>{{ session('error') }}</span>
+            </div>
+            <button type="button" onclick="this.parentElement.remove()" class="text-rose-500 hover:text-rose-700 cursor-pointer text-lg leading-none">&times;</button>
+        </div>
+    @endif
+
     {{-- 2. Project Akreditasi Selector Card --}}
     <div class="bg-white rounded-2xl border border-[#EAEAEA] p-5 sm:p-6 shadow-xs flex flex-wrap items-center justify-between gap-4">
         <div class="w-full sm:w-auto flex-1 min-w-0 max-w-3xl space-y-1.5">
@@ -208,7 +245,7 @@
                                 Deskripsi Ringkas Dokumen Evidence
                                 <span class="text-slate-400 font-normal">(opsional)</span>
                             </label>
-                            <textarea name="evidences[{{ $kat['key'] }}][deskripsi]"
+                            <textarea name="{{ $kat['field_deskripsi'] }}"
                                 id="evidence_deskripsi_{{ $kat['key'] }}"
                                 rows="3"
                                 placeholder="Tuliskan ringkasan bukti dokumen atau catatan pendukung..."
@@ -222,7 +259,7 @@
                                 <span class="text-slate-400 font-normal">(opsional)</span>
                             </label>
                             <input type="url"
-                                name="evidences[{{ $kat['key'] }}][link_dokumen]"
+                                name="{{ $kat['field_link'] }}"
                                 id="evidence_link_{{ $kat['key'] }}"
                                 value="{{ $evData['link_dokumen'] ?? '' }}"
                                 placeholder="https://drive.google.com/..."

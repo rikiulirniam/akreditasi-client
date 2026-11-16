@@ -6,6 +6,7 @@ use App\Services\AkreditasiService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Log;
 use Illuminate\View\View;
 
 class SpmiController extends Controller
@@ -78,96 +79,127 @@ class SpmiController extends Controller
                 $id = ! empty($item['id']) ? (int) $item['id'] : null;
 
                 $stored[$kategori] = [
-                    'id' => $id ?: (int) ($projectId * 100 + (abs(crc32($kategori)) % 90) + 10),
+                    'id' => $id ?: ($stored[$kategori]['id'] ?? null),
                     'deskripsi' => $deskripsi,
                     'link_dokumen' => $linkDokumen,
                     'status' => ($deskripsi !== '' || $linkDokumen !== '') ? $status : 'belum_terisi',
                     'updated_at' => date('Y-m-d H:i:s'),
                 ];
             }
-        } else {
-            // Format form langsung (flat fields)
-            $mappings = [
-                'bukti_evaluasi' => [
-                    'deskripsi' => $request->input('deskripsi_bukti_evaluasi', $request->input('deskripsi')),
-                    'link' => $request->input('link_bukti_evaluasi', $request->input('link_dokumen')),
-                ],
-                'bukti_pengendalian' => [
-                    'deskripsi' => $request->input('deskripsi_bukti_pengendalian'),
-                    'link' => $request->input('link_bukti_pengendalian'),
-                ],
-                'bukti_dampak_tridharma' => [
-                    'deskripsi' => $request->input('deskripsi_bukti_dampak', $request->input('deskripsi_bukti_dampak_tridharma')),
-                    'link' => $request->input('link_bukti_dampak', $request->input('link_bukti_dampak_tridharma')),
-                ],
-                'dokumen_implementasi' => [
-                    'deskripsi' => $request->input('deskripsi_dokumen_implementasi'),
-                    'link' => $request->input('link_dokumen_implementasi'),
-                ],
+        }
+
+        // Tangkap juga input langsung berbasis nama kolom backend jika ada
+        if ($request->hasAny([
+            'link_bukti_evaluasi',
+            'deskripsi_bukti_evaluasi',
+            'link_bukti_pengendalian',
+            'deskripsi_bukti_pengendalian',
+            'link_bukti_dampak',
+            'deskripsi_bukti_dampak',
+            'link_bukti_dampak_tridharma',
+            'deskripsi_bukti_dampak_tridharma',
+            'link_dokumen_implementasi',
+            'deskripsi_dokumen_implementasi',
+        ])) {
+            $linkEval = $request->input('link_bukti_evaluasi', $stored['bukti_evaluasi']['link_dokumen'] ?? '');
+            $deskEval = $request->input('deskripsi_bukti_evaluasi', $stored['bukti_evaluasi']['deskripsi'] ?? '');
+            $stored['bukti_evaluasi'] = [
+                'id' => $stored['bukti_evaluasi']['id'] ?? null,
+                'deskripsi' => trim((string) $deskEval),
+                'link_dokumen' => trim((string) $linkEval),
+                'status' => (trim((string) $deskEval) !== '' || trim((string) $linkEval) !== '') ? $status : 'belum_terisi',
+                'updated_at' => date('Y-m-d H:i:s'),
             ];
 
-            // Jika ada input single kategori (seperti dari test lama)
-            $singleKat = $request->input('kategori');
-            if ($singleKat && isset($stored[$singleKat])) {
-                $deskripsi = trim((string) $request->input('deskripsi', ''));
-                $link = trim((string) $request->input('link_dokumen', ''));
-                $stored[$singleKat] = [
-                    'id' => (int) ($request->input('id') ?: ($projectId * 100 + 1)),
-                    'deskripsi' => $deskripsi,
-                    'link_dokumen' => $link,
-                    'status' => ($deskripsi !== '' || $link !== '') ? $status : 'belum_terisi',
-                    'updated_at' => date('Y-m-d H:i:s'),
-                ];
-            } else {
-                foreach ($mappings as $katKey => $vals) {
-                    $deskripsi = trim((string) ($vals['deskripsi'] ?? ''));
-                    $link = trim((string) ($vals['link'] ?? ''));
+            $linkPeng = $request->input('link_bukti_pengendalian', $stored['bukti_pengendalian']['link_dokumen'] ?? '');
+            $deskPeng = $request->input('deskripsi_bukti_pengendalian', $stored['bukti_pengendalian']['deskripsi'] ?? '');
+            $stored['bukti_pengendalian'] = [
+                'id' => $stored['bukti_pengendalian']['id'] ?? null,
+                'deskripsi' => trim((string) $deskPeng),
+                'link_dokumen' => trim((string) $linkPeng),
+                'status' => (trim((string) $deskPeng) !== '' || trim((string) $linkPeng) !== '') ? $status : 'belum_terisi',
+                'updated_at' => date('Y-m-d H:i:s'),
+            ];
 
-                    // Hanya update jika field dikirimkan di request
-                    if ($request->hasAny([
-                        "deskripsi_{$katKey}",
-                        "link_{$katKey}",
-                        'link_bukti_evaluasi',
-                        'deskripsi_bukti_evaluasi',
-                    ])) {
-                        $stored[$katKey] = [
-                            'id' => $stored[$katKey]['id'] ?? (int) ($projectId * 100 + 1),
-                            'deskripsi' => $deskripsi,
-                            'link_dokumen' => $link,
-                            'status' => ($deskripsi !== '' || $link !== '') ? $status : 'belum_terisi',
-                            'updated_at' => date('Y-m-d H:i:s'),
-                        ];
-                    }
-                }
-            }
+            $linkDampak = $request->input('link_bukti_dampak', $request->input('link_bukti_dampak_tridharma', $stored['bukti_dampak_tridharma']['link_dokumen'] ?? ''));
+            $deskDampak = $request->input('deskripsi_bukti_dampak', $request->input('deskripsi_bukti_dampak_tridharma', $stored['bukti_dampak_tridharma']['deskripsi'] ?? ''));
+            $stored['bukti_dampak_tridharma'] = [
+                'id' => $stored['bukti_dampak_tridharma']['id'] ?? null,
+                'deskripsi' => trim((string) $deskDampak),
+                'link_dokumen' => trim((string) $linkDampak),
+                'status' => (trim((string) $deskDampak) !== '' || trim((string) $linkDampak) !== '') ? $status : 'belum_terisi',
+                'updated_at' => date('Y-m-d H:i:s'),
+            ];
+
+            $linkImpl = $request->input('link_dokumen_implementasi', $stored['dokumen_implementasi']['link_dokumen'] ?? '');
+            $deskImpl = $request->input('deskripsi_dokumen_implementasi', $stored['dokumen_implementasi']['deskripsi'] ?? '');
+            $stored['dokumen_implementasi'] = [
+                'id' => $stored['dokumen_implementasi']['id'] ?? null,
+                'deskripsi' => trim((string) $deskImpl),
+                'link_dokumen' => trim((string) $linkImpl),
+                'status' => (trim((string) $deskImpl) !== '' || trim((string) $linkImpl) !== '') ? $status : 'belum_terisi',
+                'updated_at' => date('Y-m-d H:i:s'),
+            ];
         }
+
+        // Dukung input single kategori (seperti dari test legacy)
+        $singleKat = $request->input('kategori');
+        if ($singleKat && isset($stored[$singleKat])) {
+            $deskripsi = trim((string) $request->input('deskripsi', ''));
+            $link = trim((string) $request->input('link_dokumen', ''));
+            $stored[$singleKat] = [
+                'id' => (int) ($request->input('id') ?: ($stored[$singleKat]['id'] ?? null)),
+                'deskripsi' => $deskripsi,
+                'link_dokumen' => $link,
+                'status' => ($deskripsi !== '' || $link !== '') ? $status : 'belum_terisi',
+                'updated_at' => date('Y-m-d H:i:s'),
+            ];
+        }
+
+        // Siapkan payload 100% presisi sesuai skema StoreEvidenceSpmiRequest backend
+        $apiPayload = [
+            'project_id' => $projectId,
+            'link_bukti_evaluasi' => ! empty($stored['bukti_evaluasi']['link_dokumen']) ? $stored['bukti_evaluasi']['link_dokumen'] : null,
+            'deskripsi_bukti_evaluasi' => ! empty($stored['bukti_evaluasi']['deskripsi']) ? $stored['bukti_evaluasi']['deskripsi'] : null,
+            'link_bukti_pengendalian' => ! empty($stored['bukti_pengendalian']['link_dokumen']) ? $stored['bukti_pengendalian']['link_dokumen'] : null,
+            'deskripsi_bukti_pengendalian' => ! empty($stored['bukti_pengendalian']['deskripsi']) ? $stored['bukti_pengendalian']['deskripsi'] : null,
+            'link_bukti_dampak' => ! empty($stored['bukti_dampak_tridharma']['link_dokumen']) ? $stored['bukti_dampak_tridharma']['link_dokumen'] : null,
+            'deskripsi_bukti_dampak' => ! empty($stored['bukti_dampak_tridharma']['deskripsi']) ? $stored['bukti_dampak_tridharma']['deskripsi'] : null,
+            'link_dokumen_implementasi' => ! empty($stored['dokumen_implementasi']['link_dokumen']) ? $stored['dokumen_implementasi']['link_dokumen'] : null,
+            'deskripsi_dokumen_implementasi' => ! empty($stored['dokumen_implementasi']['deskripsi']) ? $stored['dokumen_implementasi']['deskripsi'] : null,
+        ];
 
         // Simpan ke Cache persisten lokal
         Cache::forever("spmi_evidence_project_{$projectId}", $stored);
 
-        // Siapkan payload untuk API backend
-        $apiPayload = [
-            'project_id' => $projectId,
-            'link_bukti_evaluasi' => $stored['bukti_evaluasi']['link_dokumen'] ?? null,
-            'deskripsi_bukti_evaluasi' => $stored['bukti_evaluasi']['deskripsi'] ?? null,
-            'link_bukti_pengendalian' => $stored['bukti_pengendalian']['link_dokumen'] ?? null,
-            'deskripsi_bukti_pengendalian' => $stored['bukti_pengendalian']['deskripsi'] ?? null,
-            'link_bukti_dampak' => $stored['bukti_dampak_tridharma']['link_dokumen'] ?? null,
-            'deskripsi_bukti_dampak' => $stored['bukti_dampak_tridharma']['deskripsi'] ?? null,
-            'link_dokumen_implementasi' => $stored['dokumen_implementasi']['link_dokumen'] ?? null,
-            'deskripsi_dokumen_implementasi' => $stored['dokumen_implementasi']['deskripsi'] ?? null,
-        ];
-
         // Sinkronisasi ke backend API
+        $successMessage = 'Data Evidence SPMI berhasil disimpan.';
         try {
-            $this->akreditasiService->saveEvidenceSpmi($apiPayload);
+            $response = $this->akreditasiService->saveEvidenceSpmi($apiPayload);
+            if ($response->successful()) {
+                $saved = $response->json('data');
+                if (is_array($saved) && ! empty($saved['id'])) {
+                    $stored['id'] = $saved['id'];
+                    $stored['bukti_evaluasi']['id'] = $saved['id'];
+                    $stored['bukti_pengendalian']['id'] = $saved['id'];
+                    $stored['bukti_dampak_tridharma']['id'] = $saved['id'];
+                    $stored['dokumen_implementasi']['id'] = $saved['id'];
+                    Cache::forever("spmi_evidence_project_{$projectId}", $stored);
+                }
+                $successMessage = $response->json('message') ?? 'Data Evidence SPMI berhasil disimpan ke API.';
+            } else {
+                Log::warning('Respon API Evidence SPMI non-200', [
+                    'status' => $response->status(),
+                    'body' => $response->json(),
+                ]);
+            }
         } catch (\Throwable $e) {
-            // Abaikan kegagalan jaringan, data sudah tersimpan di persistent cache
+            Log::info('Koneksi API Evidence SPMI offline, fallback ke cache lokal: '.$e->getMessage());
         }
 
         return redirect()->route('spmi.evidence', [
             'project_id' => $projectId,
-        ])->with('success', 'Data Evidence SPMI berhasil disimpan.');
+        ])->with('success', $successMessage);
     }
 
     /**
@@ -190,14 +222,23 @@ class SpmiController extends Controller
         ];
         Cache::forever("spmi_evidence_project_{$projectId}", $stored);
 
+        // Backend menggunakan updateOrCreate pada /evidence-spmi
+        $apiPayload = [
+            'project_id' => $projectId,
+            'link_bukti_evaluasi' => ! empty($stored['bukti_evaluasi']['link_dokumen']) ? $stored['bukti_evaluasi']['link_dokumen'] : null,
+            'deskripsi_bukti_evaluasi' => ! empty($stored['bukti_evaluasi']['deskripsi']) ? $stored['bukti_evaluasi']['deskripsi'] : null,
+            'link_bukti_pengendalian' => ! empty($stored['bukti_pengendalian']['link_dokumen']) ? $stored['bukti_pengendalian']['link_dokumen'] : null,
+            'deskripsi_bukti_pengendalian' => ! empty($stored['bukti_pengendalian']['deskripsi']) ? $stored['bukti_pengendalian']['deskripsi'] : null,
+            'link_bukti_dampak' => ! empty($stored['bukti_dampak_tridharma']['link_dokumen']) ? $stored['bukti_dampak_tridharma']['link_dokumen'] : null,
+            'deskripsi_bukti_dampak' => ! empty($stored['bukti_dampak_tridharma']['deskripsi']) ? $stored['bukti_dampak_tridharma']['deskripsi'] : null,
+            'link_dokumen_implementasi' => ! empty($stored['dokumen_implementasi']['link_dokumen']) ? $stored['dokumen_implementasi']['link_dokumen'] : null,
+            'deskripsi_dokumen_implementasi' => ! empty($stored['dokumen_implementasi']['deskripsi']) ? $stored['dokumen_implementasi']['deskripsi'] : null,
+        ];
+
         try {
-            $this->akreditasiService->updateEvidenceSpmi($id, [
-                'project_id' => $projectId,
-                'deskripsi' => $deskripsi,
-                'link_dokumen' => $linkDokumen,
-            ]);
+            $this->akreditasiService->saveEvidenceSpmi($apiPayload);
         } catch (\Throwable $e) {
-            // Fallback jika API belum tersedia
+            Log::info('Koneksi API Evidence SPMI offline pada update: '.$e->getMessage());
         }
 
         return redirect()->route('spmi.evidence', [
@@ -242,49 +283,171 @@ class SpmiController extends Controller
     /**
      * Memuat data evidence untuk project tertentu (dari Cache lokal & disinkronkan dengan API).
      *
-     * @return array<string, array<string, mixed>>
+     * @return array<string, mixed>
      */
     protected function loadEvidenceForProject(int $projectId): array
     {
         $cached = Cache::get("spmi_evidence_project_{$projectId}");
+
+        try {
+            $response = $this->akreditasiService->getEvidenceSpmi(['project_id' => $projectId]);
+            if ($response->successful()) {
+                $data = $response->json('data');
+
+                // 1. Jika data null dari API (project ada di sistem, tapi belum ada isian bukti di database)
+                if ($data === null) {
+                    $empty = $this->getEmptyEvidenceStructure($projectId);
+                    Cache::forever("spmi_evidence_project_{$projectId}", $empty);
+
+                    return $empty;
+                }
+
+                // 2. Jika API mengembalikan data flat dari /evidence-spmi
+                if (is_array($data) && (isset($data['project_id']) || array_key_exists('link_bukti_evaluasi', $data))) {
+                    $p1Link = $data['link_bukti_evaluasi'] ?? '';
+                    $p1Desk = $data['deskripsi_bukti_evaluasi'] ?? '';
+                    $p2Link = $data['link_bukti_pengendalian'] ?? '';
+                    $p2Desk = $data['deskripsi_bukti_pengendalian'] ?? '';
+                    $p3Link = $data['link_bukti_dampak'] ?? ($data['link_bukti_dampak_tridharma'] ?? '');
+                    $p3Desk = $data['deskripsi_bukti_dampak'] ?? ($data['deskripsi_bukti_dampak_tridharma'] ?? '');
+                    $p4Link = $data['link_dokumen_implementasi'] ?? '';
+                    $p4Desk = $data['deskripsi_dokumen_implementasi'] ?? '';
+
+                    $synced = [
+                        'id' => $data['id'] ?? null,
+                        'project_id' => $projectId,
+                        'bukti_evaluasi' => [
+                            'id' => $data['id'] ?? null,
+                            'link_dokumen' => $p1Link,
+                            'deskripsi' => $p1Desk,
+                            'status' => (! empty($p1Link) || ! empty($p1Desk)) ? 'terverifikasi' : 'belum_terisi',
+                            'updated_at' => $data['updated_at'] ?? null,
+                        ],
+                        'bukti_pengendalian' => [
+                            'id' => $data['id'] ?? null,
+                            'link_dokumen' => $p2Link,
+                            'deskripsi' => $p2Desk,
+                            'status' => (! empty($p2Link) || ! empty($p2Desk)) ? 'terverifikasi' : 'belum_terisi',
+                            'updated_at' => $data['updated_at'] ?? null,
+                        ],
+                        'bukti_dampak_tridharma' => [
+                            'id' => $data['id'] ?? null,
+                            'link_dokumen' => $p3Link,
+                            'deskripsi' => $p3Desk,
+                            'status' => (! empty($p3Link) || ! empty($p3Desk)) ? 'terverifikasi' : 'belum_terisi',
+                            'updated_at' => $data['updated_at'] ?? null,
+                        ],
+                        'dokumen_implementasi' => [
+                            'id' => $data['id'] ?? null,
+                            'link_dokumen' => $p4Link,
+                            'deskripsi' => $p4Desk,
+                            'status' => (! empty($p4Link) || ! empty($p4Desk)) ? 'terverifikasi' : 'belum_terisi',
+                            'updated_at' => $data['updated_at'] ?? null,
+                        ],
+                    ];
+
+                    Cache::forever("spmi_evidence_project_{$projectId}", $synced);
+
+                    return $synced;
+                }
+
+                // 3. Jika API mengembalikan data bertingkat dari /projects/{id}/evidence-overview
+                $evidenceObj = $data['evidence'] ?? (isset($data['pilar_1_evaluasi']) ? $data : null);
+                if (is_array($evidenceObj)) {
+                    $p1 = $evidenceObj['pilar_1_evaluasi'] ?? [];
+                    $p2 = $evidenceObj['pilar_2_pengendalian'] ?? [];
+                    $p3 = $evidenceObj['pilar_3_dampak'] ?? [];
+                    $p4 = $evidenceObj['pilar_4_implementasi'] ?? [];
+
+                    $synced = [
+                        'id' => $evidenceObj['id'] ?? null,
+                        'project_id' => $projectId,
+                        'bukti_evaluasi' => [
+                            'id' => $evidenceObj['id'] ?? null,
+                            'link_dokumen' => $p1['link'] ?? '',
+                            'deskripsi' => $p1['deskripsi'] ?? '',
+                            'status' => (! empty($p1['link']) || ! empty($p1['deskripsi'])) ? 'terverifikasi' : 'belum_terisi',
+                            'updated_at' => $evidenceObj['updated_at'] ?? null,
+                        ],
+                        'bukti_pengendalian' => [
+                            'id' => $evidenceObj['id'] ?? null,
+                            'link_dokumen' => $p2['link'] ?? '',
+                            'deskripsi' => $p2['deskripsi'] ?? '',
+                            'status' => (! empty($p2['link']) || ! empty($p2['deskripsi'])) ? 'terverifikasi' : 'belum_terisi',
+                            'updated_at' => $evidenceObj['updated_at'] ?? null,
+                        ],
+                        'bukti_dampak_tridharma' => [
+                            'id' => $evidenceObj['id'] ?? null,
+                            'link_dokumen' => $p3['link'] ?? '',
+                            'deskripsi' => $p3['deskripsi'] ?? '',
+                            'status' => (! empty($p3['link']) || ! empty($p3['deskripsi'])) ? 'terverifikasi' : 'belum_terisi',
+                            'updated_at' => $evidenceObj['updated_at'] ?? null,
+                        ],
+                        'dokumen_implementasi' => [
+                            'id' => $evidenceObj['id'] ?? null,
+                            'link_dokumen' => $p4['link'] ?? '',
+                            'deskripsi' => $p4['deskripsi'] ?? '',
+                            'status' => (! empty($p4['link']) || ! empty($p4['deskripsi'])) ? 'terverifikasi' : 'belum_terisi',
+                            'updated_at' => $evidenceObj['updated_at'] ?? null,
+                        ],
+                    ];
+
+                    Cache::forever("spmi_evidence_project_{$projectId}", $synced);
+
+                    return $synced;
+                }
+            }
+        } catch (\Throwable $e) {
+            Log::info('Koneksi API getEvidenceSpmi gagal, gunakan cache: '.$e->getMessage());
+        }
 
         if ($cached === null) {
             $cached = $this->getDefaultEvidenceStructure($projectId);
             Cache::forever("spmi_evidence_project_{$projectId}", $cached);
         }
 
-        try {
-            $response = $this->akreditasiService->getEvidenceSpmi(['project_id' => $projectId]);
-            if ($response->successful()) {
-                $data = $response->json('data') ?? [];
-                if (is_array($data) && ! empty($data)) {
-                    // Cek jika API mengembalikan flat object per project
-                    if (isset($data['project_id']) || isset($data['link_bukti_evaluasi']) || isset($data['link_bukti_pengendalian'])) {
-                        $cached['bukti_evaluasi']['link_dokumen'] = $data['link_bukti_evaluasi'] ?? $cached['bukti_evaluasi']['link_dokumen'];
-                        $cached['bukti_evaluasi']['deskripsi'] = $data['deskripsi_bukti_evaluasi'] ?? $cached['bukti_evaluasi']['deskripsi'];
-                        $cached['bukti_evaluasi']['status'] = (! empty($cached['bukti_evaluasi']['link_dokumen']) || ! empty($cached['bukti_evaluasi']['deskripsi'])) ? 'terverifikasi' : 'belum_terisi';
-
-                        $cached['bukti_pengendalian']['link_dokumen'] = $data['link_bukti_pengendalian'] ?? $cached['bukti_pengendalian']['link_dokumen'];
-                        $cached['bukti_pengendalian']['deskripsi'] = $data['deskripsi_bukti_pengendalian'] ?? $cached['bukti_pengendalian']['deskripsi'];
-                        $cached['bukti_pengendalian']['status'] = (! empty($cached['bukti_pengendalian']['link_dokumen']) || ! empty($cached['bukti_pengendalian']['deskripsi'])) ? 'terverifikasi' : 'belum_terisi';
-
-                        $cached['bukti_dampak_tridharma']['link_dokumen'] = $data['link_bukti_dampak'] ?? ($data['link_bukti_dampak_tridharma'] ?? $cached['bukti_dampak_tridharma']['link_dokumen']);
-                        $cached['bukti_dampak_tridharma']['deskripsi'] = $data['deskripsi_bukti_dampak'] ?? ($data['deskripsi_bukti_dampak_tridharma'] ?? $cached['bukti_dampak_tridharma']['deskripsi']);
-                        $cached['bukti_dampak_tridharma']['status'] = (! empty($cached['bukti_dampak_tridharma']['link_dokumen']) || ! empty($cached['bukti_dampak_tridharma']['deskripsi'])) ? 'terverifikasi' : 'belum_terisi';
-
-                        $cached['dokumen_implementasi']['link_dokumen'] = $data['link_dokumen_implementasi'] ?? $cached['dokumen_implementasi']['link_dokumen'];
-                        $cached['dokumen_implementasi']['deskripsi'] = $data['deskripsi_dokumen_implementasi'] ?? $cached['dokumen_implementasi']['deskripsi'];
-                        $cached['dokumen_implementasi']['status'] = (! empty($cached['dokumen_implementasi']['link_dokumen']) || ! empty($cached['dokumen_implementasi']['deskripsi'])) ? 'terverifikasi' : 'belum_terisi';
-
-                        Cache::forever("spmi_evidence_project_{$projectId}", $cached);
-                    }
-                }
-            }
-        } catch (\Throwable $e) {
-            // Abaikan kesalahan koneksi
-        }
-
         return $cached;
+    }
+
+    /**
+     * Struktur kosong untuk evidence baru.
+     *
+     * @return array<string, mixed>
+     */
+    protected function getEmptyEvidenceStructure(int $projectId): array
+    {
+        return [
+            'id' => null,
+            'project_id' => $projectId,
+            'bukti_evaluasi' => [
+                'id' => null,
+                'deskripsi' => '',
+                'link_dokumen' => '',
+                'status' => 'belum_terisi',
+                'updated_at' => null,
+            ],
+            'bukti_pengendalian' => [
+                'id' => null,
+                'deskripsi' => '',
+                'link_dokumen' => '',
+                'status' => 'belum_terisi',
+                'updated_at' => null,
+            ],
+            'bukti_dampak_tridharma' => [
+                'id' => null,
+                'deskripsi' => '',
+                'link_dokumen' => '',
+                'status' => 'belum_terisi',
+                'updated_at' => null,
+            ],
+            'dokumen_implementasi' => [
+                'id' => null,
+                'deskripsi' => '',
+                'link_dokumen' => '',
+                'status' => 'belum_terisi',
+                'updated_at' => null,
+            ],
+        ];
     }
 
     /**

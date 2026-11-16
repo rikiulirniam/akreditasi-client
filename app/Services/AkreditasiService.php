@@ -818,7 +818,15 @@ class AkreditasiService
     }
 
     /**
-     * Menyimpan atau memperbarui data evidence SPMI project.
+     * Mengambil rekapitulasi evidence overview per project akreditasi (4 pilar + mapping tim + audit).
+     */
+    public function getEvidenceOverview(int|string $projectId): Response
+    {
+        return $this->get("/projects/{$projectId}/evidence-overview");
+    }
+
+    /**
+     * Menyimpan atau memperbarui data evidence SPMI project (One-to-One updateOrCreate).
      *
      * @param  array<string, mixed>  $data
      */
@@ -850,8 +858,8 @@ class AkreditasiService
     public function updateEvidenceSpmi(int|string $id, array $data): Response
     {
         $res = $this->put("/evidence-spmi/{$id}", $data);
-        if ($res->status() === 404) {
-            return $this->put("/spmi-evidence/{$id}", $data);
+        if ($res->status() === 404 || $res->status() === 405) {
+            return $this->saveEvidenceSpmi($data);
         }
 
         return $res;
