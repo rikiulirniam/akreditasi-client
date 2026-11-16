@@ -215,11 +215,12 @@
                 @php
                     $isTendikPage = request()->routeIs('tenaga-kependidikan.*') || request()->routeIs('tenaga-pendidikan.*') || (request()->routeIs('pendidikan.*') && (request()->filled('id_tendik') || !empty($selectedTendik)));
                     $isDosenPage = request()->routeIs('dosen.*') || (request()->routeIs('pendidikan.*') && !empty($isDosen)) || (request()->routeIs('pendidikan.*') && (request()->filled('id_dosen') || !empty($selectedDosen)));
-                    $isSdmActive = $isDosenPage || $isTendikPage || request()->routeIs('sertifikasi.*');
+                    $isKerjaSamaPage = request()->routeIs('kerja-sama.*');
+                    $isSdmActive = $isDosenPage || $isTendikPage || request()->routeIs('sertifikasi.*') || $isKerjaSamaPage;
                 @endphp
                 <div>
-                    <button 
-                        type="button" 
+                    <button
+                        type="button"
                         class="sidebar-link submenu-toggle-btn w-full flex items-center justify-between gap-3.5 px-3.5 py-3 rounded-2xl text-sm font-medium {{ $isSdmActive ? 'bg-white/15 text-white' : 'text-white/80 hover:bg-white/10 hover:text-white' }} transition-all duration-150 group cursor-pointer"
                         data-target="submenu-sdm"
                         title="SDM"
@@ -235,7 +236,7 @@
                         </svg>
                     </button>
 
-                    <div id="submenu-sdm" 
+                    <div id="submenu-sdm"
                         data-is-active="{{ $isSdmActive ? 'true' : 'false' }}"
                         class="submenu-container {{ $isSdmActive ? '' : 'hidden' }} pl-10 pr-2 pt-1 pb-1 space-y-1.5">
                         <a href="{{ route('dosen.index') }}" class="flex items-center gap-2.5 py-2.5 px-3.5 rounded-xl text-sm font-semibold transition-all duration-150 {{ $isDosenPage ? 'bg-white/20 text-white shadow-xs font-bold' : 'text-white/80 hover:text-white hover:bg-white/10' }}">
@@ -249,6 +250,10 @@
                         <a href="{{ route('sertifikasi.index') }}" class="flex items-center gap-2.5 py-2.5 px-3.5 rounded-xl text-sm font-semibold transition-all duration-150 {{ request()->routeIs('sertifikasi.*') ? 'bg-white/20 text-white shadow-xs font-bold' : 'text-white/80 hover:text-white hover:bg-white/10' }}">
                             <span class="w-1.5 h-1.5 rounded-full {{ request()->routeIs('sertifikasi.*') ? 'bg-secondary' : 'bg-white/40' }} shrink-0"></span>
                             <span>Sertifikasi</span>
+                        </a>
+                        <a href="{{ route('kerja-sama.index') }}" class="flex items-center gap-2.5 py-2.5 px-3.5 rounded-xl text-sm font-semibold transition-all duration-150 {{ $isKerjaSamaPage ? 'bg-white/20 text-white shadow-xs font-bold' : 'text-white/80 hover:text-white hover:bg-white/10' }}">
+                            <span class="w-1.5 h-1.5 rounded-full {{ $isKerjaSamaPage ? 'bg-secondary' : 'bg-white/40' }} shrink-0"></span>
+                            <span>Kerja Sama</span>
                         </a>
                     </div>
                 </div>
