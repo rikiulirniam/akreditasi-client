@@ -42,10 +42,10 @@
     </label>
     <input
         type="text"
-        name="isbn"
+        name="isbn_prosiding"
         id="{{ $p }}_isbn_prosiding"
         placeholder="Isi ISBN Prosiding"
-        value="{{ $d['isbn'] ?? '' }}"
+        value="{{ $d['isbn_prosiding'] ?? ($d['isbn'] ?? '') }}"
         class="w-full px-4 py-2.5 rounded-[10px] bg-white-form border-none text-sm font-medium text-gray-900 focus:ring-2 focus:ring-primary/20 focus:outline-none placeholder:text-gray-500"
     >
 </div>
@@ -71,10 +71,9 @@
         Tanggal Seminar
     </label>
     <input
-        type="text"
+        type="date"
         name="tanggal_seminar"
         id="{{ $p }}_tanggal_seminar"
-        placeholder="Isi Tanggal Seminar"
         value="{{ $d['tanggal_seminar'] ?? ($d['tanggal_terbit'] ?? '') }}"
         required
         class="w-full px-4 py-2.5 rounded-[10px] bg-white-form border-none text-sm font-medium text-gray-900 focus:ring-2 focus:ring-primary/20 focus:outline-none placeholder:text-gray-500"
@@ -104,10 +103,10 @@
     <input
         type="number"
         min="1"
-        name="total_halaman"
+        name="halaman_prosiding"
         id="{{ $p }}_total_halaman_prosiding"
         placeholder="Isi total halaman prosiding"
-        value="{{ $d['total_halaman'] ?? '' }}"
+        value="{{ $d['halaman_prosiding'] ?? ($d['total_halaman'] ?? '') }}"
         class="w-full px-4 py-2.5 rounded-[10px] bg-white-form border-none text-sm font-medium text-gray-900 focus:ring-2 focus:ring-primary/20 focus:outline-none placeholder:text-gray-500"
     >
 </div>
@@ -119,10 +118,10 @@
     </label>
     <input
         type="text"
-        name="doi"
+        name="doi_prosiding"
         id="{{ $p }}_doi_prosiding"
         placeholder="Isi No DOI Prosiding"
-        value="{{ $d['doi'] ?? '' }}"
+        value="{{ $d['doi_prosiding'] ?? ($d['doi'] ?? '') }}"
         class="w-full px-4 py-2.5 rounded-[10px] bg-white-form border-none text-sm font-medium text-gray-900 focus:ring-2 focus:ring-primary/20 focus:outline-none placeholder:text-gray-500"
     >
 </div>
@@ -133,11 +132,11 @@
         Tautan Seminar (G. Drive)
     </label>
     <input
-        type="text"
-        name="url_publikasi"
+        type="url"
+        name="tautan_seminar"
         id="{{ $p }}_url_seminar"
         placeholder="Unggah File Seminar dalam bentuk tautan G.Drive"
-        value="{{ $d['url_publikasi'] ?? ($d['url'] ?? '') }}"
+        value="{{ $d['tautan_seminar'] ?? ($d['tautan_prosiding'] ?? ($d['url_luaran'] ?? ($d['url_publikasi'] ?? ($d['url'] ?? '')))) }}"
         class="w-full px-4 py-2.5 rounded-[10px] bg-white-form border-none text-sm font-medium text-gray-900 focus:ring-2 focus:ring-primary/20 focus:outline-none placeholder:text-gray-500"
     >
 </div>

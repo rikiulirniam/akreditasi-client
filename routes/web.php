@@ -16,6 +16,7 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CplController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DosenController;
+use App\Http\Controllers\EvidenceController;
 use App\Http\Controllers\KaprodiController;
 use App\Http\Controllers\KegiatanMahasiswaController;
 use App\Http\Controllers\KelasController;
@@ -63,16 +64,44 @@ Route::middleware('auth.akademik')->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
     Route::get('/reviewer/dashboard', [ReviewerController::class, 'dashboard'])->name('reviewer.dashboard');
 
-    Route::get('/penelitian-pkm', [PenelitianPkmController::class, 'index'])->name('penelitian-pkm.index');
-    Route::get('/penelitian-pkm/{id}', [PenelitianPkmController::class, 'show'])->whereNumber('id')->name('penelitian-pkm.show');
+    // ==========================================
+    // PENELITIAN & PKM
+    // ==========================================
+    
+foreach (['penelitian', 'pkm'] as $slug) {
+    Route::get("/{$slug}", [PenelitianPkmController::class, 'index'])
+        ->name("{$slug}.index");
 
-    Route::middleware('role:administrator')->group(function () {
-        Route::get('/penelitian-pkm/create', [PenelitianPkmController::class, 'create'])->name('penelitian-pkm.create');
-        Route::post('/penelitian-pkm', [PenelitianPkmController::class, 'store'])->name('penelitian-pkm.store');
-        Route::get('/penelitian-pkm/{id}/edit', [PenelitianPkmController::class, 'edit'])->whereNumber('id')->name('penelitian-pkm.edit');
-        Route::put('/penelitian-pkm/{id}', [PenelitianPkmController::class, 'update'])->whereNumber('id')->name('penelitian-pkm.update');
-        Route::delete('/penelitian-pkm/{id}', [PenelitianPkmController::class, 'destroy'])->whereNumber('id')->name('penelitian-pkm.destroy');
-    });
+    Route::get("/{$slug}/export", [PenelitianPkmController::class, 'export'])
+        ->name("{$slug}.export");
+
+
+    Route::get("/{$slug}/{id}", [PenelitianPkmController::class, 'show'])
+        ->whereNumber('id')
+        ->name("{$slug}.show");
+
+    Route::middleware('role:administrator')->group(function () use ($slug) {
+        Route::get("/{$slug}/create", [PenelitianPkmController::class, 'create'])
+            ->name("{$slug}.create");
+
+        Route::post("/{$slug}", [PenelitianPkmController::class, 'store'])
+            ->name("{$slug}.store");
+
+        Route::get("/{$slug}/{id}/edit", [PenelitianPkmController::class, 'edit'])
+            ->whereNumber('id')
+            ->name("{$slug}.edit");
+
+        Route::put("/{$slug}/{id}", [PenelitianPkmController::class, 'update'])
+            ->whereNumber('id')
+            ->name("{$slug}.update");
+
+        Route::delete("/{$slug}/{id}", [PenelitianPkmController::class, 'destroy'])
+            ->whereNumber('id')
+            ->name("{$slug}.destroy");
+        Route::get("/{$slug}/mahasiswa", [PenelitianPkmController::class, 'cariMahasiswa'])->name("{$slug}.mahasiswa");
+    });}
+    Route::redirect('/penelitian-pkm', '/penelitian');
+    
 
     // ==========================================
     // MODUL TRI DHARMA: LUARAN (Publikasi, HKI, Buku)
@@ -176,8 +205,21 @@ Route::middleware('auth.akademik')->group(function () {
     // MODUL DOSEN & SDM
     // ==========================================
     Route::get('/dosen/template', [DosenController::class, 'template'])->name('dosen.template');
+    Route::get('/dosen/export', [DosenController::class, 'export'])->name('dosen.export');
     Route::post('/dosen/import', [DosenController::class, 'import'])->name('dosen.import');
     Route::resource('dosen', DosenController::class);
+    Route::post('/dosen/{dosenId}/pendidikan', [DosenController::class, 'storePendidikan'])->name('dosen.pendidikan.store');
+    Route::get('/dosen/{dosenId}/sertifikasi', function ($dosenId) {
+        return redirect()->route('sertifikasi.index', ['tipe_pemilik' => 'dosen', 'id_dosen' => $dosenId]);
+    })->name('dosen.sertifikasi.index');
+
+    // ==========================================
+    // MODUL TRI DHARMA: LUARAN (Publikasi, HKI, Buku)
+    // ==========================================
+    Route::get('/luaran', [LuaranController::class, 'index'])->name('luaran.index');
+    Route::post('/luaran', [LuaranController::class, 'store'])->name('luaran.store');
+    Route::put('/luaran/{id}', [LuaranController::class, 'update'])->name('luaran.update');
+    Route::delete('/luaran/{id}', [LuaranController::class, 'destroy'])->name('luaran.destroy');
 
     // Modul Sertifikasi
     Route::get('/sertifikasi', [SertifikasiController::class, 'index'])->name('sertifikasi.index');
@@ -194,6 +236,13 @@ Route::middleware('auth.akademik')->group(function () {
     Route::put('/kerja-sama/{id}', [KerjaSamaController::class, 'update'])->whereNumber('id')->name('kerja-sama.update');
     Route::delete('/kerja-sama/{id}', [KerjaSamaController::class, 'destroy'])->whereNumber('id')->name('kerja-sama.destroy');
     Route::get('/kerja-sama/{id}', [KerjaSamaController::class, 'show'])->whereNumber('id')->name('kerja-sama.show');
+
+    // Modul Evidence (Kelompok 2: SDM & Tri Dharma)
+    Route::get('/evidence', [EvidenceController::class, 'index'])->name('evidence.index');
+    Route::post('/evidence', [EvidenceController::class, 'store'])->name('evidence.store');
+    Route::get('/evidence/{id}', [EvidenceController::class, 'show'])->whereNumber('id')->name('evidence.show');
+    Route::post('/evidence/{id}/ganti-link', [EvidenceController::class, 'updateLink'])->whereNumber('id')->name('evidence.update-link');
+    Route::delete('/evidence/{id}', [EvidenceController::class, 'destroy'])->whereNumber('id')->name('evidence.destroy');
 
     // Modul Tenaga Kependidikan
     Route::resource('tenaga-kependidikan', TenagaKependidikanController::class);
@@ -233,7 +282,8 @@ Route::middleware('auth.akademik')->group(function () {
 
     Route::get('/laporan-akhir', [LaporanAkhirController::class, 'index'])->name('laporan-akhir.index');
     Route::get('/laporan-akhir/download', [LaporanAkhirController::class, 'download'])->name('laporan-akhir.download');
-});
+    });
+    
 
 // =====================================================================
 // ROUTE MODUL AKREDITASI (SUPERADMIN)

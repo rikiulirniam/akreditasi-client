@@ -19,23 +19,7 @@
     >
 </div>
 
-{{-- 2. Lembaga Penerbit --}}
-<div>
-    <label for="{{ $p }}_nama_penerbit_hki" class="block text-xs font-bold text-gray-900 mb-1.5">
-        Lembaga Penerbit
-    </label>
-    <input
-        type="text"
-        name="nama_penerbit"
-        id="{{ $p }}_nama_penerbit_hki"
-        placeholder="Misal: Direktorat Jenderal Kekayaan Intelektual"
-        value="{{ $d['nama_penerbit'] ?? 'Direktorat Jenderal Kekayaan Intelektual' }}"
-        required
-        class="w-full px-4 py-2.5 rounded-[10px] bg-white-form border-none text-sm font-medium text-gray-900 focus:ring-2 focus:ring-primary/20 focus:outline-none placeholder:text-gray-500"
-    >
-</div>
-
-{{-- 3. Jenis HKI --}}
+{{-- 2. Jenis HKI --}}
 <div>
     <label for="{{ $p }}_jenis_hki" class="block text-xs font-bold text-gray-900 mb-1.5">
         Jenis HKI
@@ -47,7 +31,7 @@
             class="w-full appearance-none px-4 py-2.5 pr-10 rounded-[10px] bg-white-form border-none text-sm font-medium text-gray-700 focus:ring-2 focus:ring-primary/20 focus:outline-none cursor-pointer"
         >
             <option value="" disabled {{ empty($d['jenis_hki']) ? 'selected' : '' }}>Pilih Jenis HKI</option>
-            @foreach(['Hak Cipta', 'Paten', 'Paten Sederhana', 'Merek', 'Desain Industri', 'DTLST', 'Rahasia Dagang'] as $opt)
+            @foreach(['Hak Cipta', 'Paten', 'Paten Sederhana', 'Desain Industri', 'Rahasia Dagang', 'Merek/DTLST'] as $opt)
                 <option value="{{ $opt }}" {{ ($d['jenis_hki'] ?? '') === $opt ? 'selected' : '' }}>{{ $opt }}</option>
             @endforeach
         </select>
@@ -59,10 +43,10 @@
     </div>
 </div>
 
-{{-- 4. Nomor Pendaftaran --}}
+{{-- 3. Nomor Pendaftaran --}}
 <div>
     <label for="{{ $p }}_nomor_pendaftaran_hki" class="block text-xs font-bold text-gray-900 mb-1.5">
-        Nomor Pendaftaran / Sertifikat
+        Nomor Pendaftaran
     </label>
     <input
         type="text"
@@ -74,7 +58,65 @@
     >
 </div>
 
-{{-- 5. Status HKI --}}
+{{-- 4. Nomor Sertifikat --}}
+<div>
+    <label for="{{ $p }}_nomor_sertifikat_hki" class="block text-xs font-bold text-gray-900 mb-1.5">
+        Nomor Sertifikat
+    </label>
+    <input
+        type="text"
+        name="nomor_sertifikat_hki"
+        id="{{ $p }}_nomor_sertifikat_hki"
+        placeholder="Isi nomor sertifikat HKI"
+        value="{{ $d['nomor_sertifikat_hki'] ?? '' }}"
+        class="w-full px-4 py-2.5 rounded-[10px] bg-white-form border-none text-sm font-medium text-gray-900 focus:ring-2 focus:ring-primary/20 focus:outline-none placeholder:text-gray-500"
+    >
+</div>
+
+{{-- 5. Tanggal Pendaftaran --}}
+<div>
+    <label for="{{ $p }}_tanggal_pendaftaran_hki" class="block text-xs font-bold text-gray-900 mb-1.5">
+        Tanggal Pendaftaran
+    </label>
+    <input
+        type="date"
+        name="tanggal_pendaftaran_hki"
+        id="{{ $p }}_tanggal_pendaftaran_hki"
+        value="{{ $d['tanggal_pendaftaran_hki'] ?? '' }}"
+        class="w-full px-4 py-2.5 rounded-[10px] bg-white-form border-none text-sm font-medium text-gray-900 focus:ring-2 focus:ring-primary/20 focus:outline-none"
+    >
+</div>
+
+{{-- 6. Tanggal Terbit Sertifikat --}}
+<div>
+    <label for="{{ $p }}_tanggal_terbit_sertifikat_hki" class="block text-xs font-bold text-gray-900 mb-1.5">
+        Tanggal Terbit
+    </label>
+    <input
+        type="date"
+        name="tanggal_terbit_sertifikat_hki"
+        id="{{ $p }}_tanggal_terbit_sertifikat_hki"
+        value="{{ $d['tanggal_terbit_sertifikat_hki'] ?? '' }}"
+        class="w-full px-4 py-2.5 rounded-[10px] bg-white-form border-none text-sm font-medium text-gray-900 focus:ring-2 focus:ring-primary/20 focus:outline-none"
+    >
+</div>
+
+{{-- 7. Pemegang Hak --}}
+<div>
+    <label for="{{ $p }}_pemegang_hki" class="block text-xs font-bold text-gray-900 mb-1.5">
+        Pemegang Hak
+    </label>
+    <input
+        type="text"
+        name="pemegang_hki"
+        id="{{ $p }}_pemegang_hki"
+        placeholder="Nama pemegang hak"
+        value="{{ $d['pemegang_hki'] ?? '' }}"
+        class="w-full px-4 py-2.5 rounded-[10px] bg-white-form border-none text-sm font-medium text-gray-900 focus:ring-2 focus:ring-primary/20 focus:outline-none placeholder:text-gray-500"
+    >
+</div>
+
+{{-- 8. Status HKI --}}
 <div>
     <label for="{{ $p }}_status_hki" class="block text-xs font-bold text-gray-900 mb-1.5">
         Status HKI
@@ -85,9 +127,10 @@
             id="{{ $p }}_status_hki"
             class="w-full appearance-none px-4 py-2.5 pr-10 rounded-[10px] bg-white-form border-none text-sm font-medium text-gray-700 focus:ring-2 focus:ring-primary/20 focus:outline-none cursor-pointer"
         >
-            <option value="Terdaftar" {{ ($d['status_hki'] ?? '') === 'Terdaftar' ? 'selected' : '' }}>Terdaftar</option>
-            <option value="Granted / Bersertifikat" {{ ($d['status_hki'] ?? '') === 'Granted / Bersertifikat' ? 'selected' : '' }}>Granted / Bersertifikat</option>
-            <option value="Dalam Proses" {{ ($d['status_hki'] ?? '') === 'Dalam Proses' ? 'selected' : '' }}>Dalam Proses</option>
+            <option value="" disabled {{ empty($d['status_hki']) ? 'selected' : '' }}>Pilih Status HKI</option>
+            @foreach(['Draft', 'Terdaftar/Dalam Proses', 'Sertifikat Terbit/Granted', 'Ditolak'] as $opt)
+                <option value="{{ $opt }}" {{ ($d['status_hki'] ?? '') === $opt ? 'selected' : '' }}>{{ $opt }}</option>
+            @endforeach
         </select>
         <span class="absolute inset-y-0 right-0 flex items-center pr-3.5 pointer-events-none text-primary">
             <svg class="w-5 h-5 stroke-[2.5]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -97,33 +140,17 @@
     </div>
 </div>
 
-{{-- 6. Tanggal Terbit / Permohonan --}}
-<div>
-    <label for="{{ $p }}_tanggal_terbit_hki" class="block text-xs font-bold text-gray-900 mb-1.5">
-        Tanggal Terbit / Permohonan
-    </label>
-    <input
-        type="text"
-        name="tanggal_terbit"
-        id="{{ $p }}_tanggal_terbit_hki"
-        placeholder="Isi tanggal terbit HKI"
-        value="{{ $d['tanggal_terbit'] ?? '' }}"
-        required
-        class="w-full px-4 py-2.5 rounded-[10px] bg-white-form border-none text-sm font-medium text-gray-900 focus:ring-2 focus:ring-primary/20 focus:outline-none placeholder:text-gray-500"
-    >
-</div>
-
-{{-- 7. Tautan Dokumen HKI --}}
+{{-- 9. Tautan HKI --}}
 <div>
     <label for="{{ $p }}_url_hki" class="block text-xs font-bold text-gray-900 mb-1.5">
-        Tautan Dokumen HKI
+        Tautan HKI G.Drive
     </label>
     <input
-        type="text"
-        name="url_hki"
+        type="url"
+        name="url_luaran"
         id="{{ $p }}_url_hki"
         placeholder="Unggah Dokumen HKI dalam bentuk tautan G.Drive"
-        value="{{ $d['url_hki'] ?? ($d['url'] ?? '') }}"
+        value="{{ $d['tautan_hki'] ?? ($d['url_hki'] ?? ($d['url_luaran'] ?? ($d['url'] ?? ''))) }}"
         class="w-full px-4 py-2.5 rounded-[10px] bg-white-form border-none text-sm font-medium text-gray-900 focus:ring-2 focus:ring-primary/20 focus:outline-none placeholder:text-gray-500"
     >
 </div>

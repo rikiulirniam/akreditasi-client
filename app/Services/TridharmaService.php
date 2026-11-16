@@ -1090,7 +1090,6 @@ class TridharmaService
     {
         return $this->get('jenis-kegiatan', $query, $token);
     }
-
     /*
     |==========================================================================
     | MODUL: PUBLIKASI (/api/publikasi/*)
@@ -1225,5 +1224,255 @@ class TridharmaService
     public function deleteLuaran(int|string $id, ?string $token = null): Response
     {
         return $this->delete("luaran/{$id}", [], $token);
+    }
+
+    /*============================================================================
+    | MODUL: DOSEN PENDIDIKAN (Riwayat Pendidikan per Dosen)
+    |==========================================================================*/
+
+    /**
+     * Get riwayat pendidikan list for a specific dosen.
+     * Combines API data, local cache, and custom entries.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    public function getDosenPendidikanList(int|string $dosenId, ?array $dosenApiRecord = null): array
+    {
+        $dosenId = (int) $dosenId;
+        if ($dosenApiRecord === null) {
+            try {
+                $resp = $this->getDosenById($dosenId);
+                if ($resp->successful()) {
+                    $dosenApiRecord = $resp->json('data', []);
+                }
+            } catch (\Throwable) {
+            }
+        }
+        $record = is_array($dosenApiRecord) ? $dosenApiRecord : [];
+
+        $cacheKey = "dosen_kualifikasi_{$dosenId}";
+        $customKey = "dosen_custom_pendidikan_{$dosenId}";
+        $deletedKey = "dosen_deleted_pendidikan_{$dosenId}";
+
+        $cachedIds = Cache::get($cacheKey, []);
+        if (! is_array($cachedIds)) {
+            $cachedIds = [];
+        }
+        $cachedIds = array_map('intval', array_filter($cachedIds));
+
+        $customItems = Cache::get($customKey, []);
+        if (! is_array($customItems)) {
+            $customItems = [];
+        }
+
+        $deletedItems = Cache::get($deletedKey, []);
+        if (! is_array($deletedItems)) {
+            $deletedItems = [];
+        }
+
+        // Extract from API record
+        $apiItems = [];
+        $rawPendidikan = $record['pendidikan'] ?? null;
+        if (is_array($rawPendidikan) && ! empty($rawPendidikan)) {
+            $apiItems = array_is_list($rawPendidikan) ? $rawPendidikan : [$rawPendidikan];
+        }
+
+        // Build combined list
+        $result = [];
+
+        // 1. Custom cached items (user-created via UI)
+        foreach ($customItems as $id => $item) {
+            if (in_array((int) $id, $deletedItems, true)) {
+                continue;
+            }
+            $result[] = array_merge(
+                ['id' => (int) $id, 'id_pendidikan' => (int) $id],
+                $item
+            );
+        }
+
+        // 2. API items (from BackEnd Pendidikan relationship)
+        foreach ($apiItems as $item) {
+            if (! is_array($item)) {
+                continue;
+            }
+            $id = (int) ($item['id_pendidikan'] ?? $item['id'] ?? 0);
+            if ($id <= 0 || in_array($id, $deletedItems, true)) {
+                continue;
+            }
+            $result[] = [
+                'id' => $id,
+                'id_pendidikan' => $id,
+                'gelar' => $item['gelar'] ?? '',
+                'jenjang' => $item['jenjang'] ?? ($item['tingkat'] ?? ''),
+                'universitas' => $item['universitas'] ?? ($item['institusi'] ?? ''),
+                'program_studi' => $item['program_studi'] ?? ($item['jurusan'] ?? ''),
+                'tahun_lulus' => $item['tahun_lulus'] ?? ($item['tahun'] ?? ''),
+            ];
+        }
+
+        // 3. Cached IDs that aren't in custom or API
+        foreach ($cachedIds as $cachedId) {
+            if (in_array((int) $cachedId, $deletedItems, true)) {
+                continue;
+            }
+            $alreadyInResult = false;
+            foreach ($result as $existing) {
+                if ((int) ($existing['id'] ?? 0) === (int) $cachedId) {
+                    $alreadyInResult = true;
+                    break;
+                }
+            }
+            if (! $alreadyInResult) {
+                $result[] = [
+                    'id' => (int) $cachedId,
+                    'id_pendidikan' => (int) $cachedId,
+                    'gelar' => '',
+                    'jenjang' => '',
+                    'universitas' => '',
+                    'program_studi' => '',
+                    'tahun_lulus' => '',
+                ];
+            }
+        }
+
+        // Sort by jenjang priority (S3 > S2 > D4/S1 > D3 > SMA/SMK) then by tahun_lulus desc
+        usort($result, function (array $a, array $b): int {
+            $order = ['S3' => 5, 'S2' => 4, 'D4/S1' => 3, 'D3' => 2, 'SMA/SMK' => 1];
+            $jenjangA = strtoupper(trim((string) ($a['jenjang'] ?? '')));
+            $jenjangB = strtoupper(trim((string) ($b['jenjang'] ?? '')));
+            $priorityA = $order[$jenjangA] ?? 0;
+            $priorityB = $order[$jenjangB] ?? 0;
+            if ($priorityA !== $priorityB) {
+                return $priorityB <=> $priorityA;
+            }
+            $tahunA = (int) ($a['tahun_lulus'] ?? 0);
+            $tahunB = (int) ($b['tahun_lulus'] ?? 0);
+
+            return $tahunB <=> $tahunA;
+        });
+
+        return $result;
+    }
+
+    /**
+     * Store new pendidikan for a dosen.
+     * Creates Pendidikan record via API if needed, caches locally.
+     *
+     * @return array{id: int, id_pendidikan: int, gelar: string, jenjang: string, universitas: string, program_studi: string, tahun_lulus: string}
+     */
+    public function storeDosenPendidikan(int|string $dosenId, array $data): array
+    {
+        $dosenId = (int) $dosenId;
+        $this->getDosenPendidikanList($dosenId);
+
+        $jenjang = trim((string) ($data['jenjang'] ?? ''));
+        $univ = trim((string) ($data['universitas'] ?? ($data['institusi'] ?? '')));
+        $prodi = trim((string) ($data['program_studi'] ?? ''));
+        $tahun = trim((string) ($data['tahun_lulus'] ?? ''));
+        $gelar = trim((string) ($data['gelar'] ?? ''));
+
+        $newId = (int) ($data['id_pendidikan'] ?? ($data['id'] ?? 0));
+        if ($newId <= 0) {
+            $payload = array_filter([
+                'universitas' => $univ,
+                'institusi' => $univ,
+                'program_studi' => $prodi,
+                'jenjang' => $jenjang,
+                'tahun_lulus' => $tahun !== '' ? (int) $tahun : null,
+                'gelar' => $gelar !== '' ? $gelar : null,
+            ], fn ($v) => $v !== null && $v !== '');
+
+            try {
+                $resp = $this->createPendidikan($payload);
+                if ($resp->successful()) {
+                    $newId = (int) ($resp->json('data.id_pendidikan') ?? ($resp->json('data.id') ?? 0));
+                }
+            } catch (\Throwable) {
+            }
+
+            if ($newId <= 0) {
+                $newId = time() + random_int(100, 999);
+            }
+        }
+
+        $customKey = "dosen_custom_pendidikan_{$dosenId}";
+        $customItems = Cache::get($customKey, []);
+        if (! is_array($customItems)) {
+            $customItems = [];
+        }
+
+        $customItems[$newId] = [
+            'id' => $newId,
+            'id_pendidikan' => $newId,
+            'gelar' => $gelar,
+            'jenjang' => $jenjang,
+            'universitas' => $univ,
+            'program_studi' => $prodi,
+            'jurusan' => $prodi,
+            'tahun_lulus' => $tahun,
+        ];
+
+        Cache::put($customKey, $customItems, now()->addYears(5));
+
+        $cacheKey = "dosen_kualifikasi_{$dosenId}";
+        $cachedIds = Cache::get($cacheKey, []);
+        if (! is_array($cachedIds)) {
+            $cachedIds = [];
+        }
+        if (! in_array($newId, $cachedIds, true)) {
+            $cachedIds[] = $newId;
+            Cache::put($cacheKey, $cachedIds, now()->addYears(5));
+        }
+
+        // Update dosen's id_pendidikan to the new one
+        try {
+            $this->updateDosen($dosenId, ['id_pendidikan' => $newId]);
+        } catch (\Throwable) {
+        }
+
+        return [
+            'id' => $newId,
+            'id_pendidikan' => $newId,
+            'gelar' => $gelar,
+            'jenjang' => $jenjang,
+            'universitas' => $univ,
+            'program_studi' => $prodi,
+            'tahun_lulus' => $tahun,
+        ];
+    }
+
+    /*
+    |==========================================================================
+    | MODUL: EVIDENCE (/api/evidence/*)
+    |==========================================================================
+    */
+
+    /** @param array<string, mixed> $query */
+    public function getEvidenceList(array $query = [], ?string $token = null): Response
+    {
+        return $this->http($token)->get($this->url('evidence'), $query);
+    }
+
+    public function getEvidenceById(int|string $id, ?string $token = null): Response
+    {
+        return $this->http($token)->get($this->url("evidence/{$id}"));
+    }
+
+    /** @param array{nama_file: string, jenis_dokumen: string, status_validasi: string} $payload */
+    public function createEvidence(array $payload, ?string $token = null): Response
+    {
+        return $this->post('evidence', $payload, $token);
+    }
+
+    public function deleteEvidence(int|string $id, ?string $token = null): Response
+    {
+        return $this->delete("evidence/{$id}", [], $token);
+    }
+
+    /** @param array{url_drive_baru: string, alasan_perubahan?: string} $payload */
+    public function changeEvidenceLink(int|string $id, array $payload, ?string $token = null): Response
+    {
+        return $this->post("evidence/{$id}/ganti-link", $payload, $token);
     }
 }

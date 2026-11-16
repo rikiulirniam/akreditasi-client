@@ -51,6 +51,30 @@ class SertifikasiController extends Controller
             }
         }
 
+        $idDosen = ! empty($filters['id_dosen']) ? (int) $filters['id_dosen'] : null;
+        $selectedDosen = null;
+
+        if ($idDosen !== null) {
+            try {
+                $dosenResp = $this->tridharmaService->getDosenById($idDosen);
+                if ($dosenResp->successful()) {
+                    $dosenRecord = $dosenResp->json('data', []);
+                    $selectedDosen = [
+                        'id' => (int) ($dosenRecord['id_dosen'] ?? $dosenRecord['id'] ?? $idDosen),
+                        'nama' => (string) ($dosenRecord['nama_dosen'] ?? $dosenRecord['nama'] ?? 'Dosen #'.$idDosen),
+                    ];
+                }
+            } catch (\Throwable) {
+            }
+
+            if ($selectedDosen === null) {
+                $selectedDosen = [
+                    'id' => $idDosen,
+                    'nama' => 'Dosen #'.$idDosen,
+                ];
+            }
+        }
+
         try {
             $response = $this->tridharmaService->getSertifikasiList(array_filter($filters, static fn ($value) => $value !== null && $value !== ''));
         } catch (ConnectionException) {
@@ -59,6 +83,7 @@ class SertifikasiController extends Controller
                 'pagination' => ['total' => 0, 'per_page' => 10, 'current_page' => 1, 'last_page' => 1],
                 'filters' => $filters,
                 'selectedTendik' => $selectedTendik,
+                'selectedDosen' => $selectedDosen,
                 'apiError' => 'Tidak dapat terhubung ke server Tridharma. Silakan coba lagi nanti.',
             ]);
         }
@@ -73,6 +98,7 @@ class SertifikasiController extends Controller
                 'pagination' => ['total' => 0, 'per_page' => 10, 'current_page' => 1, 'last_page' => 1],
                 'filters' => $filters,
                 'selectedTendik' => $selectedTendik,
+                'selectedDosen' => $selectedDosen,
                 'apiError' => $this->responseMessage($response, 'Gagal memuat data sertifikasi.'),
             ]);
         }
@@ -82,6 +108,24 @@ class SertifikasiController extends Controller
 
         if ($idTendik !== null) {
             $certifications = $this->tridharmaService->mergeTendikSertifikasi($idTendik, $certifications);
+        }
+
+        if ($idDosen !== null) {
+            $certifications = array_values(array_filter($certifications, function ($cert) use ($idDosen) {
+                if (! is_array($cert)) {
+                    return false;
+                }
+                $certDosenId = $cert['id_dosen'] ?? ($cert['dosen']['id_dosen'] ?? ($cert['dosen']['id'] ?? null));
+                if ($certDosenId !== null) {
+                    return (int) $certDosenId === $idDosen;
+                }
+                $certTendikId = $cert['id_tendik'] ?? ($cert['tendik']['id_tendik'] ?? ($cert['tendik']['id'] ?? null));
+                if ($certTendikId !== null) {
+                    return false;
+                }
+
+                return true;
+            }));
         }
 
         $pagination = [
@@ -98,6 +142,7 @@ class SertifikasiController extends Controller
             'pagination' => $pagination,
             'filters' => $filters,
             'selectedTendik' => $selectedTendik,
+            'selectedDosen' => $selectedDosen,
             'apiError' => null,
         ]);
     }
@@ -472,17 +517,14 @@ class SertifikasiController extends Controller
         // Fallback: cari ID dosen berdasarkan email user login
         $email = is_array($user) ? ($user['email'] ?? null) : null;
         if ($email) {
-            try {
-                $resp = $this->tridharmaService->getDosenList(['search' => $email, 'per_page' => 1]);
-                if ($resp->successful()) {
-                    $dosenData = $resp->json('data.data', $resp->json('data', []));
-                    if (! empty($dosenData) && isset($dosenData[0]['id_dosen'])) {
-                        session(['user.id_dosen' => (int) $dosenData[0]['id_dosen']]);
+            $response = $this->tridharmaService->getDosenList(['search' => $email, 'per_page' => 1]);
+            if ($response->successful()) {
+                $dosenData = $response->json('data.data', $response->json('data', []));
+                if (! empty($dosenData) && isset($dosenData[0]['id_dosen'])) {
+                    session(['user.id_dosen' => (int) $dosenData[0]['id_dosen']]);
 
-                        return (int) $dosenData[0]['id_dosen'];
-                    }
+                    return (int) $dosenData[0]['id_dosen'];
                 }
-            } catch (\Throwable) {
             }
         }
 
