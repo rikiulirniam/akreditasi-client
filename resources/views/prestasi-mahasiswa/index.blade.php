@@ -5,7 +5,8 @@
 @section('content')
 @php
     $programStudiOptions = collect($assignmentOptions)->unique('prodi_id')->sortBy('prodi')->values();
-    $jenisOptions = count($jenisOptions) > 0 ? $jenisOptions : ['Akademik', 'Non-Akademik'];
+    // Diperbaiki: Dipaksa mutlak hanya 2 opsi ini saja untuk dropdown
+    $jenisOptions = ['Akademik', 'Non-Akademik'];
 @endphp
 
 <div class="space-y-6">
