@@ -5,7 +5,8 @@
     $userRole = strtolower((string) (($sidebarUser['role'] ?? null) ?: ($sidebarUser['role_name'] ?? '')));
     $isReviewerRole = str_contains($userRole, 'reviewer');
     $isKaprodiRole  = str_contains($userRole, 'kaprodi');
-    $isAdminRole = ! $isKaprodiRole && ! $isReviewerRole;
+    $isDosenRole    = str_contains($userRole, 'dosen');
+    $isAdminRole = ! $isKaprodiRole && ! $isReviewerRole && ! $isDosenRole;
 @endphp
 
 {{-- Backdrop untuk sidebar mobile --}}
@@ -69,6 +70,27 @@
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 6.75h12m-12 5.25h12m-12 5.25h12M3.75 6.75h.008v.008H3.75V6.75zm0 5.25h.008v.008H3.75V12zm0 5.25h.008v.008H3.75v-.008z" />
                             </svg>
                             <span class="sidebar-text truncate">Penilaian</span>
+                        </a>
+                    </div>
+
+                @elseif ($isDosenRole)
+                    {{-- ============================================================== --}}
+                    {{-- MENU DOSEN TIM AKREDITASI --}}
+                    {{-- ============================================================== --}}
+
+                    <div class="sidebar-section-header pt-1 pb-1 px-3.5">
+                        <p class="sidebar-text text-[11px] font-bold uppercase tracking-wider text-white/50">Portal Dosen Tim</p>
+                    </div>
+
+                    {{-- Tugas Saya --}}
+                    <div>
+                        <a href="{{ route('dosen.my-assignments') }}"
+                            class="sidebar-link w-full flex items-center gap-3.5 px-3.5 py-3 rounded-2xl text-sm font-semibold transition-all duration-150 group {{ request()->routeIs('dosen.my-assignments*') ? 'bg-white/20 text-white shadow-xs font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}"
+                            title="Tugas Saya">
+                            <svg class="w-6 h-6 shrink-0 text-white/90 group-hover:text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                            </svg>
+                            <span class="sidebar-text truncate">Tugas Saya</span>
                         </a>
                     </div>
 
@@ -160,7 +182,28 @@
                         </div>
                         @endif
 
-                    @else
+                    @elseif ($isDosenRole)
+                    {{-- ============================================================== --}}
+                    {{-- MENU DOSEN TIM AKREDITASI --}}
+                    {{-- ============================================================== --}}
+
+                    <div class="sidebar-section-header pt-1 pb-1 px-3.5">
+                        <p class="sidebar-text text-[11px] font-bold uppercase tracking-wider text-white/50">Portal Dosen Tim</p>
+                    </div>
+
+                    {{-- Tugas Saya --}}
+                    <div>
+                        <a href="{{ route('dosen.my-assignments') }}"
+                            class="sidebar-link w-full flex items-center gap-3.5 px-3.5 py-3 rounded-2xl text-sm font-semibold transition-all duration-150 group {{ request()->routeIs('dosen.my-assignments*') ? 'bg-white/20 text-white shadow-xs font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}"
+                            title="Tugas Saya">
+                            <svg class="w-6 h-6 shrink-0 text-white/90 group-hover:text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                            </svg>
+                            <span class="sidebar-text truncate">Tugas Saya</span>
+                        </a>
+                    </div>
+
+                @else
                         {{-- Urutan Role Kaprodi:
                              1. Project Akreditasi
                              2. Plotting Tim Akreditasi
