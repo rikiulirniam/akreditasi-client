@@ -83,6 +83,7 @@
                     <x-table.th class="{{ $th }}"> Judul {{ $halaman }}</x-table.th>
                     <x-table.th class="{{ $th }}">Dosen</x-table.th>
                     <x-table.th class="{{ $th }}">Jenis {{ $halaman }}</x-table.th>
+                    <x-table.th class="{{ $th }}">Afiliasi</x-table.th>
                     <x-table.th class="{{ $th }}">Status</x-table.th>
                     <x-table.th class="{{ $th }}">Tahun Kegiatan</x-table.th>
                     <x-table.th class="{{ $th }} !text-center">Action</x-table.th>
@@ -93,7 +94,8 @@
                         <x-table.cell class="{{ $td }} text-center">{{ $startNumber + $index }}.</x-table.cell>
                         <x-table.cell class="{{ $td }} font-medium leading-[1.2]">{{ $item['judul_kegiatan'] ?? '-' }}</x-table.cell>
                         <x-table.cell class="{{ $td }}">{{ $item['ketua'] }}</x-table.cell>
-                        <x-table.cell class="{{ $td }}">{{ filled($item['jenis_skim'] ?? null) ? $item['jenis_skim'] : ($item['jenis_kegiatan']['nama_jenis_kegiatan'] ?? '-') }}</x-table.cell>
+                        <x-table.cell class="{{ $td }}">{{ filled($item['jenis_skim'] ?? null) ? $item['jenis_skim'] : '-' }}</x-table.cell>
+                        <x-table.cell class="{{ $td }}">{{ filled($item['afiliasi'] ?? null) ? $item['afiliasi'] : '-' }}</x-table.cell>
                         <x-table.cell class="{{ $td }}">{{ $item['status_kegiatan'] ?? '-' }}</x-table.cell>
                         <x-table.cell class="{{ $td }}">{{ $item['tahun_kegiatan'] ?? '-' }}</x-table.cell>
                         <x-table.cell class="{{ $td }}">

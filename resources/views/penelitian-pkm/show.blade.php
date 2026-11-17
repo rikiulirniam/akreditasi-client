@@ -77,6 +77,8 @@
                     @php
                         $idDosen = empty($item['id_mahasiswa']) ? ($item['id_dosen'] ?? null) : null;
                         $nama = $item['dosen']['nama_dosen'] ?? $item['mahasiswa']['nama_mahasiswa'] ?? $item['nama_mahasiswa'] ?? $item['nama'] ?? '-';
+                        $peran = str_contains(strtolower($item['peran'] ?? ''), 'ketua') ? 'Ketua'
+                            : (! empty($item['id_mahasiswa']) ? 'Anggota Mahasiswa' : (! empty($item['id_dosen']) ? 'Anggota Dosen' : ($item['peran'] ?? '-')));
                     @endphp
                     <li class="flex items-center gap-3 py-3">
                         <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border-2 border-[#002B49] text-[#002B49]">
@@ -88,7 +90,7 @@
                             @else
                                 <p class="font-medium">{{ $nama }}</p>
                             @endif
-                            <p class="text-xs text-gray-600">{{ $item['peran'] ?? '-' }}</p>
+                            <p class="text-xs text-gray-600">{{ $peran }}</p>
                         </div>
                     </li>
                 @empty

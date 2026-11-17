@@ -139,7 +139,7 @@ class PenelitianPkmController extends Controller
         }
 
         $dipertahankan = Arr::only($existing, [
-            'id_jenis_kegiatan', 'afiliasi', 'litabmas_sebelumnya', 'jenis_skim',
+            'id_jenis_kegiatan', 'litabmas_sebelumnya', 
             'tahun_pelaksanaan_ke', 'nomor_sk_penugasan', 'tanggal_sk_penugasan', 'in_kind',
         ]);
         $payload = $this->dataKegiatan($validated)
@@ -248,6 +248,8 @@ class PenelitianPkmController extends Controller
             'tahun_pelaksanaan' => ['required', 'integer', 'digits:4'],
             'lokasi_kegiatan' => ['nullable', 'string', 'max:255'],
             'lama_kegiatan' => ['nullable', 'string', 'max:50'],
+            'jenis_skim' => ['nullable', 'string', 'max:255'],
+            'afiliasi' => ['nullable', 'string', 'max:255'],
             'ketua' => ['required', 'integer', 'min:1'],
             'anggota_dosen' => ['nullable', 'array'],
             'anggota_dosen.*' => ['nullable', 'integer', 'min:1'],
@@ -277,13 +279,13 @@ class PenelitianPkmController extends Controller
         $dosenLain = array_diff(array_unique(array_map('intval', $validated['anggota_dosen'] ?? [])), [$ketua, 0]);
 
         foreach ($dosenLain as $idDosen) {
-            $anggota[] = ['jenis_anggota' => 'Dosen', 'id_dosen' => $idDosen, 'peran' => 'Anggota'];
+            $anggota[] = ['jenis_anggota' => 'Dosen', 'id_dosen' => $idDosen, 'peran' => 'Anggota Dosen'];
         }
 
         $mahasiswa = array_unique(array_filter(array_map('intval', array_keys($validated['anggota_mahasiswa'] ?? []))));
 
         foreach ($mahasiswa as $idMahasiswa) {
-            $anggota[] = ['jenis_anggota' => 'Mahasiswa', 'id_mahasiswa' => $idMahasiswa, 'peran' => 'Anggota'];
+            $anggota[] = ['jenis_anggota' => 'Mahasiswa', 'id_mahasiswa' => $idMahasiswa, 'peran' => 'Anggota Mahasiswa'];
         }
 
         $lain = json_decode($validated['anggota_lain'] ?? '[]', true);

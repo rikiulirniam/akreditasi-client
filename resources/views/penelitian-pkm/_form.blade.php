@@ -62,7 +62,23 @@
             </div>
         </div>
 
-        <div>
+                <div class="grid gap-5 md:grid-cols-2">
+            <div>
+                <label for="jenis_skim" class="{{ $label }}">Skim</label>
+                <input id="jenis_skim" type="text" name="jenis_skim" list="daftar-skim" value="{{ $nilai('jenis_skim') }}" placeholder="Pilih atau ketik skim" class="{{ $input }}">
+                <datalist id="daftar-skim">
+                    @foreach(['Pratama', 'Unggulan Prodi', 'Unggulan Doktor', 'Kompetitif', 'Bima', 'Penelitian Kompetitif Nasional', 'Program Hilirisasi Riset Prioritas'] as $skim)
+                        <option value="{{ $skim }}"></option>
+                    @endforeach
+                </datalist>
+            </div>
+            <div>
+                <label for="afiliasi" class="{{ $label }}">Afiliasi</label>
+                <input id="afiliasi" type="text" name="afiliasi" value="{{ old('afiliasi', $kegiatan['afiliasi'] ?? (empty($kegiatan) ? 'Politeknik Negeri Semarang' : '')) }}" placeholder="Contoh: Politeknik Negeri Semarang" class="{{ $input }}">
+            </div>
+        </div>
+
+        <div>   
             <label for="lokasi_kegiatan" class="{{ $label }}">Lokasi Kegiatan</label>
             <input id="lokasi_kegiatan" type="text" name="lokasi_kegiatan" value="{{ $nilai('lokasi_kegiatan') }}" placeholder="Contoh: Semarang, Jawa Tengah" class="{{ $input }}">
         </div>
