@@ -187,15 +187,7 @@ class LuaranController extends Controller
             return $idDosen;
         }
 
-        $idJenisLuaran = $this->resolveJenisLuaranId($jenis, $request->input('indeksasi'));
-        if ($idJenisLuaran === null) {
-            $errorMsg = 'Master jenis luaran tidak dapat dimuat atau tidak memiliki jenis yang sesuai.';
-            if ($request->expectsJson() || $request->ajax()) {
-                return response()->json(['success' => false, 'message' => $errorMsg], 502);
-            }
-
-            return back()->withInput()->with('toast', ['type' => 'error', 'title' => 'Gagal', 'message' => $errorMsg]);
-        }
+        $idJenisLuaran = $this->getJenisLuaranId($jenis);
 
         // Validasi dan rakit payload spesifik
         $payload = match ($jenis) {
@@ -292,15 +284,7 @@ class LuaranController extends Controller
             return $idDosen;
         }
 
-        $idJenisLuaran = $this->resolveJenisLuaranId($jenis, $request->input('indeksasi'));
-        if ($idJenisLuaran === null) {
-            $errorMsg = 'Master jenis luaran tidak dapat dimuat atau tidak memiliki jenis yang sesuai.';
-            if ($request->expectsJson() || $request->ajax()) {
-                return response()->json(['success' => false, 'message' => $errorMsg], 502);
-            }
-
-            return back()->withInput()->with('toast', ['type' => 'error', 'title' => 'Gagal', 'message' => $errorMsg]);
-        }
+        $idJenisLuaran = $this->getJenisLuaranId($jenis);
 
         $payload = match ($jenis) {
             'Buku' => $this->validateAndBuildBukuPayload($request),
@@ -415,6 +399,7 @@ class LuaranController extends Controller
     private function validateAndBuildBukuPayload(Request $request): array
     {
         $val = $request->validate([
+            'id_dosen' => ['required', 'integer', 'min:1'],
             'judul_buku' => ['required', 'string', 'max:500'],
             'isbn' => ['nullable', 'string', 'max:100'],
             'penerbit_buku' => ['required', 'string', 'max:255'],
@@ -445,6 +430,7 @@ class LuaranController extends Controller
     private function validateAndBuildJurnalPayload(Request $request): array
     {
         $val = $request->validate([
+            'id_dosen' => ['required', 'integer', 'min:1'],
             'nama_jurnal' => ['required', 'string', 'max:500'],
             'issn' => ['nullable', 'string', 'max:100'],
             'volume' => ['nullable', 'string', 'max:100'],
@@ -475,6 +461,7 @@ class LuaranController extends Controller
     private function validateAndBuildSeminarPayload(Request $request): array
     {
         $val = $request->validate([
+            'id_dosen' => ['required', 'integer', 'min:1'],
             'nama_seminar' => ['required', 'string', 'max:500'],
             'nama_prosiding' => ['required', 'string', 'max:500'],
             'isbn_prosiding' => ['nullable', 'string', 'max:100'],
@@ -506,6 +493,7 @@ class LuaranController extends Controller
     private function validateAndBuildHkiPayload(Request $request): array
     {
         $val = $request->validate([
+            'id_dosen' => ['required', 'integer', 'min:1'],
             'judul_hak_cipta' => ['required', 'string', 'max:500'],
             'jenis_hki' => ['nullable', 'in:Hak Cipta,Paten,Paten Sederhana,Desain Industri,Rahasia Dagang,Merek/DTLST'],
             'nomor_pendaftaran_hki' => ['nullable', 'string', 'max:100'],
@@ -535,6 +523,7 @@ class LuaranController extends Controller
     private function validateAndBuildProdukPayload(Request $request): array
     {
         $val = $request->validate([
+            'id_dosen' => ['required', 'integer', 'min:1'],
             'nama_produk' => ['required', 'string', 'max:500'],
             'jenis_produk' => ['required', 'in:Software/Web,Mobile,Hardware,Embedded system'],
             'status_pengembangan' => ['required', 'in:Desain,Prototipe,Uji coba,Produksi,Komersialisasi'],
@@ -609,74 +598,24 @@ class LuaranController extends Controller
         return is_numeric($idDosen) ? (int) $idDosen : null;
     }
 
-    private function resolveJenisLuaranId(string $jenis, mixed $index): ?int
+    private function getJenisLuaranId(string $jenis): int
     {
-        $response = $this->tridharmaService->get('jenis-luaran');
-
-        if (! $response->successful()) {
-            Log::warning('LuaranController: gagal mengambil master jenis luaran', [
-                'status' => $response->status(),
-            ]);
-
-            return null;
-        }
-
-        $data = $response->json('data', []);
-        if (is_array($data) && is_array($data['data'] ?? null)) {
-            $data = $data['data'];
-        }
-
-        if (! is_array($data)) {
-            return null;
-        }
-
-        $families = match ($jenis) {
-            'Buku' => ['buku', 'monograf'],
-            'Jurnal' => ['jurnal'],
-            'Seminar' => ['prosiding', 'seminar'],
-            'HKI' => ['hki'],
-            'Produk' => ['produk'],
-            default => [],
+        return match (strtolower($jenis)) {
+            'buku' => 1,
+            'jurnal' => 2,
+            'seminar', 'prosiding' => 3,
+            'hki', 'hak cipta' => 4,
+            'produk' => 5,
+            default => 1,
         };
-        $candidates = array_values(array_filter($data, static function (mixed $item) use ($families): bool {
-            if (! is_array($item)) {
-                return false;
-            }
-
-            $name = strtolower((string) ($item['nama_jenis_luaran'] ?? ''));
-
-            foreach ($families as $family) {
-                if (str_contains($name, $family)) {
-                    return true;
-                }
-            }
-
-            return false;
-        }));
-
-        if ($candidates === []) {
-            return null;
-        }
-
-        $selectedIndex = strtolower(trim(is_scalar($index) ? (string) $index : ''));
-        if ($selectedIndex !== '') {
-            foreach ($candidates as $candidate) {
-                if (strtolower(trim((string) ($candidate['indeks'] ?? ''))) === $selectedIndex) {
-                    $candidates = [$candidate];
-                    break;
-                }
-            }
-        }
-
-        $id = $candidates[0]['id_jenis_luaran'] ?? ($candidates[0]['id'] ?? null);
-
-        return is_numeric($id) ? (int) $id : null;
     }
 
     private function fetchList(string $endpoint, array $query): array
     {
         try {
-            $response = $this->tridharmaService->get($endpoint, $query);
+            $response = $endpoint === 'dosen'
+                ? $this->tridharmaService->getDosenList($query)
+                : $this->tridharmaService->get($endpoint, $query);
 
             if ($response->status() === 401) {
                 return ['items' => [], '_status' => 401];

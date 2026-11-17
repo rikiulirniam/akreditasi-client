@@ -12,16 +12,12 @@
     $ownerTypeValue = old('owner_type', $ownerType);
     $yearValue = old('tahun_sertifikasi', $certification['tahun_sertifikasi'] ?? '');
 
-    if (preg_match('/^\d{4}$/', (string) $yearValue)) {
-        $yearValue .= '-01-01';
-    } elseif ($yearValue !== '') {
-        $yearValue = substr((string) $yearValue, 0, 10);
-    }
+    $yearValue = (string) $yearValue;
 
     $inputClass = 'w-full border bg-white px-4 py-2.5 text-sm focus:outline-none focus:ring-2';
     $inputBorderClass = static fn (string $field): string => $errors->has($field)
         ? 'border-rose-500 focus:border-rose-500 focus:ring-rose-200'
-        : 'border-gray-300 focus:border-primary focus:ring-primary/20';
+        : 'border-gray-300 focus:border-primary-500 focus:ring-primary-200';
 @endphp
 
 <div class="space-y-5 pb-8">
@@ -187,8 +183,7 @@
                 </div>
                 <div>
                     <label for="tahun_sertifikasi" class="mb-1.5 block text-xs font-bold text-gray-900">Tahun Sertifikasi</label>
-                    <input id="tahun_sertifikasi" type="date" name="tahun_sertifikasi" value="{{ $yearValue }}" required class="{{ $inputClass }} {{ $inputBorderClass('tahun_sertifikasi') }}">
-                    @error('tahun_sertifikasi')<p class="mt-1 text-xs font-semibold text-rose-600">{{ $message }}</p>@enderror
+                    <input id="tahun_sertifikasi" type="text" name="tahun_sertifikasi" value="{{ $yearValue }}" placeholder="Contoh: 2025 atau 2025-01-15" pattern="[0-9]{4}(-[0-9]{2}-[0-9]{2})?" maxlength="10" minlength="4" inputmode="numeric" title="Masukkan tahun (2025) atau tanggal lengkap (2025-01-15)" required class="{{ $inputClass }} {{ $inputBorderClass('tahun_sertifikasi') }}">
                 </div>
                 <div>
                     <label for="tanggal_kedaluwarsa" class="mb-1.5 block text-xs font-bold text-gray-900">Tanggal Kedaluwarsa</label>
