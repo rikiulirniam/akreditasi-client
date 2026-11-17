@@ -71,11 +71,11 @@
                     @php
                         $rawJenjang = !empty($qualification['jenjang']) ? $qualification['jenjang'] : '';
                         $rawGelar   = !empty($qualification['gelar']) ? $qualification['gelar'] : '';
-                        $isJenjangCode = in_array(strtoupper($rawGelar), ['D3', 'D4', 'S1', 'D4/S1', 'S2', 'S3', 'PROFESI']);
-                        $jenjang   = $rawJenjang !== '' ? $rawJenjang : ($isJenjangCode ? $rawGelar : 'S1');
+                        $isJenjangCode = in_array(strtoupper($rawGelar), ['SMA', 'SMK', 'SMA/SMK', 'SLTA', 'D1', 'D2', 'D3', 'D4', 'S1', 'D4/S1', 'S2', 'S3', 'PROFESI']);
+                        $jenjang   = $rawJenjang !== '' ? $rawJenjang : ($isJenjangCode ? $rawGelar : 'SMA/SMK');
                         $gelar     = ($rawGelar !== '' && ! $isJenjangCode) ? $rawGelar : ($jenjang === 'S3' ? 'Dr' : ($jenjang === 'S2' ? 'M.Kom' : ($jenjang === 'D4/S1' || $jenjang === 'S1' ? 'S.Kom' : '')));
                         $institusi = !empty($qualification['institusi']) ? $qualification['institusi'] : (!empty($qualification['universitas']) ? $qualification['universitas'] : '');
-                        $prodi     = !empty($qualification['program_studi']) ? $qualification['program_studi'] : '';
+                        $prodi     = (!empty($qualification['program_studi']) && trim((string) $qualification['program_studi']) !== '-') ? $qualification['program_studi'] : '';
                         $tahun     = !empty($qualification['tahun_lulus']) ? $qualification['tahun_lulus'] : '';
                     @endphp
                     <article class="flex items-center gap-3.5 py-3.5">
@@ -245,6 +245,8 @@
                 <select name="jenjang" id="pendidikan_jenjang" required
                     class="w-full h-[38px] rounded-[6px] border border-gray-300 bg-white px-3 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#002B49]/30 transition">
                     <option value="" disabled selected>Isi Pendidikan Terakhir</option>
+                    <option value="SMA/SMK">SMA/SMK</option>
+                    <option value="D3">D3</option>
                     <option value="D4/S1">D4/S1</option>
                     <option value="S2">S2</option>
                     <option value="S3">S3</option>

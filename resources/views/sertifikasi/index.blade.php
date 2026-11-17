@@ -27,11 +27,7 @@
 @endsection
 
 @section('subtitle')
-    @if($selectedTendik ?? null)
-        {{ $selectedTendik['nama'] }} &bull; {{ number_format((int) ($pagination['total'] ?? count($certifications)), 0, ',', '.') }} Data ditemukan
-    @elseif($selectedDosen ?? null)
-        {{ $selectedDosen['nama'] }} &bull; {{ number_format((int) ($pagination['total'] ?? count($certifications)), 0, ',', '.') }} Data ditemukan
-    @elseif(!$apiError)
+    @if(!$apiError)
         {{ number_format((int) ($pagination['total'] ?? count($certifications)), 0, ',', '.') }} Data ditemukan
     @endif
 @endsection
@@ -79,7 +75,7 @@
                         type="text"
                         name="search"
                         value="{{ $filters['search'] ?? '' }}"
-                        placeholder="{{ ($selectedTendik ?? null) ? 'Cari nama' : 'Cari sertifikasi' }}"
+                        placeholder="{{ (($selectedTendik ?? null) || ($selectedDosen ?? null)) ? 'Cari nama' : 'Cari sertifikasi' }}"
                         class="min-w-0 flex-1 border-0 bg-transparent px-3 py-1 text-xs text-gray-900 placeholder:text-gray-600 focus:outline-none focus:ring-0"
                     >
                     <button type="submit" class="inline-flex h-full w-[34px] shrink-0 items-center justify-center rounded-[5px] text-black transition {{ filled($filters['search'] ?? null) ? 'border border-primary bg-[#ffc800]' : 'border border-transparent bg-transparent' }}" data-search-button aria-label="Cari">

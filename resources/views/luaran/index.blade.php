@@ -453,6 +453,29 @@
             {{-- Hidden input yang selalu mengirim jenis_luaran --}}
             <input type="hidden" name="jenis_luaran" id="hiddenInputJenisLuaran" value="Buku">
 
+            <div>
+                <label for="createLuaranDosen" class="block text-xs font-bold text-gray-900 mb-1.5">
+                    Dosen Penanggung Jawab <span class="text-red-500">*</span>
+                </label>
+                <select
+                    name="id_dosen"
+                    id="createLuaranDosen"
+                    required
+                    {{ empty($dosenOptions) ? 'disabled' : '' }}
+                    class="w-full px-4 py-2.5 rounded-[10px] bg-white-form border-none text-sm font-medium text-gray-700 focus:ring-2 focus:ring-primary/20 focus:outline-none"
+                >
+                    <option value="">Pilih Dosen</option>
+                    @foreach($dosenOptions as $dosen)
+                        <option value="{{ $dosen['id'] }}" {{ (int) $selectedDosenId === $dosen['id'] ? 'selected' : '' }}>
+                            {{ $dosen['name'] }}
+                        </option>
+                    @endforeach
+                </select>
+                @if($dosenLoadError)
+                    <p class="mt-1 text-xs text-red-600">Daftar dosen gagal dimuat atau belum tersedia. Muat ulang halaman sebelum mengirim luaran.</p>
+                @endif
+            </div>
+
             {{-- 1. SUBFORM BUKU (Gambar 2) --}}
             <div id="subform_Buku" class="step2-subform space-y-4 hidden">
                 @include('luaran._form_buku', ['prefix' => 'create_buku', 'data' => []])
@@ -504,6 +527,27 @@
             @csrf
             @method('PUT')
             <input type="hidden" name="jenis_luaran" id="editHiddenJenisLuaran" value="Jurnal">
+
+            <div>
+                <label for="editLuaranDosen" class="block text-xs font-bold text-gray-900 mb-1.5">
+                    Dosen Penanggung Jawab <span class="text-red-500">*</span>
+                </label>
+                <select
+                    name="id_dosen"
+                    id="editLuaranDosen"
+                    required
+                    {{ empty($dosenOptions) ? 'disabled' : '' }}
+                    class="w-full px-4 py-2.5 rounded-[10px] bg-white-form border-none text-sm font-medium text-gray-700 focus:ring-2 focus:ring-primary/20 focus:outline-none"
+                >
+                    <option value="">Pilih Dosen</option>
+                    @foreach($dosenOptions as $dosen)
+                        <option value="{{ $dosen['id'] }}">{{ $dosen['name'] }}</option>
+                    @endforeach
+                </select>
+                @if($dosenLoadError)
+                    <p class="mt-1 text-xs text-red-600">Daftar dosen gagal dimuat atau belum tersedia. Muat ulang halaman sebelum mengirim perubahan.</p>
+                @endif
+            </div>
 
             <div id="editSubform_Buku" class="edit-subform space-y-4 hidden">
                 @include('luaran._form_buku', ['prefix' => 'edit_buku', 'data' => []])
@@ -826,6 +870,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const formEditAjax = document.getElementById('formEditLuaranAjax');
     const editSubforms = document.querySelectorAll('.edit-subform');
     const editHiddenJenis = document.getElementById('editHiddenJenisLuaran');
+    const editLuaranDosen = document.getElementById('editLuaranDosen');
     const closeEditModalBtn = document.getElementById('closeEditModalBtn');
 
     activateSubform(editSubforms, null);
@@ -853,6 +898,10 @@ document.addEventListener('DOMContentLoaded', function () {
                 if (editHiddenJenis) {
                     editHiddenJenis.value = kategori;
                 }
+                if (editLuaranDosen) {
+                    editLuaranDosen.value = String(extra.id_dosen ?? '');
+                }
+
                 const activeEditSub = document.getElementById(`editSubform_${kategori}`);
                 activateSubform(editSubforms, activeEditSub);
                 clearValidationErrors(formEditAjax);
@@ -870,8 +919,6 @@ document.addEventListener('DOMContentLoaded', function () {
                 el.value = el.type === 'date' ? String(value).slice(0, 10) : value;
             }
         }
-
-        val('id_dosen', data.id_dosen ?? '');
 
         if (kategori === 'Buku') {
             val('judul_buku', data.judul_buku ?? data.judul ?? '');

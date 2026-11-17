@@ -3,8 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Services\TridharmaService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Log;
 use Illuminate\View\View;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
@@ -19,6 +21,9 @@ class DosenController extends Controller
     {
         $page = (int) $request->query('page', 1);
         $search = $request->query('search');
+        $jabatanFilter = trim((string) $request->query('jabatan', ''));
+        $serdosFilter = strtolower(trim((string) $request->query('serdos', '')));
+        $hasAcademicFilters = $jabatanFilter !== '' || in_array($serdosFilter, ['tersertifikasi', 'belum'], true);
 
         // API hanya mengenal DTPS/DTT/NONAKTIF, jadi label UI dipetakan ke kode tersebut.
         $statusLabels = [
@@ -33,8 +38,8 @@ class DosenController extends Controller
         }
 
         $params = [
-            'page' => $page,
-            'per_page' => 10,
+            'page' => $hasAcademicFilters ? 1 : $page,
+            'per_page' => $hasAcademicFilters ? 100 : 10,
         ];
 
         if (! empty($search)) {
@@ -107,6 +112,57 @@ class DosenController extends Controller
             ];
         }
 
+        if ($hasAcademicFilters) {
+            $allDosen = $dosenList;
+            $apiLastPage = (int) ($pagination['last_page'] ?? 1);
+
+            for ($apiPage = 2; $apiPage <= $apiLastPage; $apiPage++) {
+                $pageResponse = $this->tridharmaService->getDosenList(array_merge($params, ['page' => $apiPage]));
+
+                if ($pageResponse->status() === 401) {
+                    return redirect()->route('login')->with('toast', [
+                        'type' => 'warning',
+                        'title' => 'Sesi Berakhir',
+                        'message' => 'Sesi Anda telah kedaluwarsa. Silakan login kembali.',
+                    ]);
+                }
+
+                $pageData = $pageResponse->json('data', []);
+                $pageItems = is_array($pageData['data'] ?? null) ? $pageData['data'] : (is_array($pageData) ? $pageData : []);
+                $allDosen = array_merge($allDosen, $pageItems);
+            }
+
+            $dosenList = array_values(array_filter($allDosen, function (array $dosen) use ($jabatanFilter, $serdosFilter): bool {
+                $jabatan = $dosen['jabatan_akademik'] ?? ($dosen['jabatan'] ?? []);
+                $jabatanId = $dosen['id_jabatan'] ?? (is_array($jabatan) ? ($jabatan['id_jabatan'] ?? ($jabatan['id'] ?? '')) : '');
+                $sertifikasi = strtolower(trim((string) ($dosen['sertifikasi_dosen'] ?? ($dosen['sertifikasi'] ?? ''))));
+                $hasSerdos = $sertifikasi !== ''
+                    && ! str_contains($sertifikasi, 'belum')
+                    && (
+                        str_contains($sertifikasi, 'tersertifikasi')
+                        || str_contains($sertifikasi, 'serdos')
+                        || str_contains($sertifikasi, 'sertifikat pendidik')
+                    );
+
+                return ($jabatanFilter === '' || (string) $jabatanId === $jabatanFilter)
+                    && ($serdosFilter === ''
+                        || ($serdosFilter === 'tersertifikasi' && $hasSerdos)
+                        || ($serdosFilter === 'belum' && ! $hasSerdos));
+            }));
+
+            $filteredTotal = count($dosenList);
+            $perPage = 10;
+            $lastPage = max(1, (int) ceil($filteredTotal / $perPage));
+            $currentPage = max(1, min($page, $lastPage));
+            $dosenList = array_slice($dosenList, ($currentPage - 1) * $perPage, $perPage);
+            $pagination = [
+                'total' => $filteredTotal,
+                'per_page' => $perPage,
+                'current_page' => $currentPage,
+                'last_page' => $lastPage,
+            ];
+        }
+
         // Fetch master data for dropdowns/selects (extract .data if paginated)
         $jabatanResponse = $this->tridharmaService->getJabatanAkademikList(['per_page' => 100]);
         $rawJabatan = $jabatanResponse->json('data') ?? [];
@@ -120,15 +176,26 @@ class DosenController extends Controller
         $rawBidang = $bidangKeahlianResponse->json('data') ?? [];
         $bidangKeahlianList = isset($rawBidang['data']) && is_array($rawBidang['data']) ? $rawBidang['data'] : (is_array($rawBidang) ? $rawBidang : []);
 
+        $user = session('user', []);
+        $roles = is_array($user) && is_array($user['roles'] ?? null) ? $user['roles'] : [];
+        $primaryRole = is_array($roles[0] ?? null)
+            ? ($roles[0]['name'] ?? '')
+            : ($roles[0] ?? '');
+        $role = is_array($user) ? ($user['role'] ?? $user['role_name'] ?? $primaryRole) : '';
+        $canManageJabatan = strtolower((string) $role) !== 'dosen';
+
         return view('dosen.index', [
             'dosenList' => $dosenList,
             'pagination' => $pagination,
             'jabatanList' => $jabatanList,
             'pendidikanList' => $pendidikanList,
             'bidangKeahlianList' => $bidangKeahlianList,
+            'canManageJabatan' => $canManageJabatan,
             'search' => $search ?? '',
             'selectedStatus' => $status,
             'selectedStatusLabel' => $statusLabels[$status] ?? 'Status',
+            'jabatanFilter' => $jabatanFilter,
+            'serdosFilter' => $serdosFilter,
         ]);
     }
 
@@ -137,14 +204,42 @@ class DosenController extends Controller
         return redirect()->route('dosen.index');
     }
 
-    public function store(Request $request): RedirectResponse
+    public function export(): Response|RedirectResponse|JsonResponse
+    {
+        $response = $this->tridharmaService->get('dosen/export');
+
+        if ($response->status() === 401) {
+            return redirect()->route('login')->with('toast', [
+                'type' => 'warning',
+                'title' => 'Sesi Berakhir',
+                'message' => 'Sesi Anda telah kedaluwarsa. Silakan login kembali.',
+            ]);
+        }
+
+        if (! $response->successful()) {
+            $body = $response->json();
+
+            return response()->json([
+                'success' => false,
+                'message' => $body['message'] ?? 'Gagal mengunduh data dosen.',
+            ], $response->status() >= 400 ? $response->status() : 502);
+        }
+
+        return response($response->body(), 200, [
+            'Content-Type' => $response->header('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'),
+            'Content-Disposition' => $response->header('Content-Disposition', 'attachment; filename="dosen.xlsx"'),
+        ]);
+    }
+
+    public function store(Request $request): JsonResponse|RedirectResponse
     {
         $validated = $request->validate([
             'nama_dosen' => ['required', 'string', 'max:255'],
             'nidn' => ['required', 'string', 'max:50'],
+            'nuptk' => ['nullable', 'string', 'max:50'],
             'status_dosen' => ['required', 'string', 'max:50'],
             'email' => ['required', 'email', 'max:255'],
-            'sertifikasi' => ['nullable', 'string', 'max:500'],
+            'sertifikasi_dosen' => ['nullable', 'string', 'max:255'],
             'id_jabatan' => ['nullable', 'integer'],
             'id_pendidikan' => ['nullable', 'integer'],
         ], [
@@ -158,9 +253,10 @@ class DosenController extends Controller
         $payload = [
             'nama_dosen' => trim($validated['nama_dosen']),
             'nidn' => trim($validated['nidn']),
+            'nuptk' => isset($validated['nuptk']) ? trim($validated['nuptk']) : null,
             'status_dosen' => trim($validated['status_dosen']),
             'email' => strtolower(trim($validated['email'])),
-            'sertifikasi' => ! empty($validated['sertifikasi']) ? trim($validated['sertifikasi']) : null,
+            'sertifikasi_dosen' => $validated['sertifikasi_dosen'] ?? null,
             'id_jabatan' => isset($validated['id_jabatan']) && $validated['id_jabatan'] !== null ? (int) $validated['id_jabatan'] : null,
             'id_pendidikan' => isset($validated['id_pendidikan']) && $validated['id_pendidikan'] !== null ? (int) $validated['id_pendidikan'] : null,
         ];
@@ -169,6 +265,14 @@ class DosenController extends Controller
         $body = $response->json();
 
         if ($response->successful() && ($body['success'] ?? true)) {
+            if ($request->expectsJson() || $request->ajax()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => $body['message'] ?? 'Data dosen berhasil ditambahkan.',
+                    'data' => $body['data'] ?? [],
+                ], $response->status() === 201 ? 201 : 200);
+            }
+
             return redirect()->route('dosen.index')->with('toast', [
                 'type' => 'success',
                 'title' => 'Berhasil',
@@ -182,6 +286,14 @@ class DosenController extends Controller
             if ($firstError) {
                 $errorMessage = $firstError;
             }
+        }
+
+        if ($request->expectsJson() || $request->ajax()) {
+            return response()->json([
+                'success' => false,
+                'message' => $errorMessage,
+                'errors' => $body['errors'] ?? [],
+            ], $response->status() >= 400 ? $response->status() : 422);
         }
 
         return back()->withInput()->with('toast', [
@@ -213,25 +325,13 @@ class DosenController extends Controller
         $rawSertifikasi = $dosenData['sertifikasi'] ?? null;
         $rawNama = $dosenData['nama_dosen'] ?? ($dosenData['nama'] ?? ($dosenData['name'] ?? null));
 
-        $valJurusan = ! empty($rawJurusan) ? $this->extractString($rawJurusan, 'Teknik Elektro') : 'Teknik Elektro';
-        if ($valJurusan === '-' || trim($valJurusan) === '') {
-            $valJurusan = 'Teknik Elektro';
-        }
-
-        $valProdi = ! empty($rawProdi) ? $this->extractString($rawProdi, 'Teknologi Rekayasa Komputer') : 'Teknologi Rekayasa Komputer';
-        if ($valProdi === '-' || trim($valProdi) === '') {
-            $valProdi = 'Teknologi Rekayasa Komputer';
-        }
-
-        $dosenId = is_scalar($dosenData['id_dosen'] ?? ($dosenData['id'] ?? null)) ? ($dosenData['id_dosen'] ?? $dosenData['id']) : $id;
-
         $dosen = [
-            'id' => $dosenId,
+            'id' => is_scalar($dosenData['id_dosen'] ?? ($dosenData['id'] ?? null)) ? ($dosenData['id_dosen'] ?? $dosenData['id']) : $id,
             'nama_dosen' => $this->extractString($rawNama, '-'),
             'nidn' => $this->extractString($dosenData['nidn'] ?? null, '-'),
             'jabatan' => $this->extractString($rawJabatan, '-'),
-            'jurusan' => $valJurusan,
-            'prodi' => $valProdi,
+            'jurusan' => ! empty($rawJurusan) ? $this->extractString($rawJurusan, '-') : '-',
+            'prodi' => $this->extractString($rawProdi, '-'),
             'email' => $this->extractString($dosenData['email'] ?? null, '-'),
             'status_dosen' => $this->extractString($dosenData['status_dosen'] ?? ($dosenData['status'] ?? null), '-'),
             'sertifikasi' => is_string($rawSertifikasi) && trim($rawSertifikasi) !== '' ? trim($rawSertifikasi) : (is_array($rawSertifikasi) ? $this->extractString($rawSertifikasi, '') : null),
@@ -274,23 +374,26 @@ class DosenController extends Controller
             ];
         }, $rawPkm);
 
-        // Riwayat Pendidikan (Histori S1 -> S2 -> S3)
-        $dosenEducationRecords = $this->tridharmaService->getDosenPendidikanList($dosenId, $dosenData);
+        // Riwayat Pendidikan — API returns a single object under key: pendidikan
+        $rawPendidikan = $dosenData['pendidikan'] ?? null;
+        $pendidikanItems = [];
+        if (is_array($rawPendidikan) && ! empty($rawPendidikan)) {
+            $pendidikanItems = array_is_list($rawPendidikan) ? $rawPendidikan : [$rawPendidikan];
+        }
 
         $riwayatPendidikan = array_map(function ($item) {
-            $jenjang = $this->extractString($item['jenjang'] ?? ($item['tingkat'] ?? null), '-');
-            $rawGelar = $this->extractString($item['gelar'] ?? null, '');
-            $gelar = ($rawGelar !== '' && $rawGelar !== '-') ? $rawGelar : '';
+            if (! is_array($item)) {
+                return ['gelar' => '-', 'jenjang' => '-', 'instansi' => (string) $item, 'jurusan' => '-', 'tahun_lulus' => '-'];
+            }
 
             return [
-                'id' => $item['id'] ?? ($item['id_pendidikan'] ?? null),
-                'gelar' => $gelar,
-                'jenjang' => $jenjang,
+                'gelar' => $this->extractString($item['gelar'] ?? null, '-'),
+                'jenjang' => $this->extractString($item['jenjang'] ?? ($item['tingkat'] ?? null), '-'),
                 'instansi' => $this->extractString($item['instansi'] ?? ($item['universitas'] ?? ($item['kampus'] ?? null)), '-'),
                 'jurusan' => $this->extractString($item['jurusan'] ?? ($item['program_studi'] ?? ($item['prodi'] ?? null)), '-'),
                 'tahun_lulus' => $this->extractString($item['tahun_lulus'] ?? ($item['tahun'] ?? null), '-'),
             ];
-        }, $dosenEducationRecords);
+        }, $pendidikanItems);
 
         // Luaran — combines hki, luaran, buku from API
         $hkiItems = is_array($dosenData['hki'] ?? null) ? $dosenData['hki'] : [];
@@ -396,14 +499,15 @@ class DosenController extends Controller
         return redirect()->route('dosen.index');
     }
 
-    public function update(Request $request, int|string $id): RedirectResponse
+    public function update(Request $request, int|string $id): JsonResponse|RedirectResponse
     {
         $validated = $request->validate([
             'nama_dosen' => ['required', 'string', 'max:255'],
             'nidn' => ['required', 'string', 'max:50'],
+            'nuptk' => ['nullable', 'string', 'max:50'],
             'status_dosen' => ['required', 'string', 'max:50'],
             'email' => ['required', 'email', 'max:255'],
-            'sertifikasi' => ['nullable', 'string', 'max:500'],
+            'sertifikasi_dosen' => ['nullable', 'string', 'max:255'],
             'id_jabatan' => ['nullable', 'integer'],
             'id_pendidikan' => ['nullable', 'integer'],
         ], [
@@ -417,9 +521,10 @@ class DosenController extends Controller
         $payload = [
             'nama_dosen' => trim($validated['nama_dosen']),
             'nidn' => trim($validated['nidn']),
+            'nuptk' => isset($validated['nuptk']) ? trim($validated['nuptk']) : null,
             'status_dosen' => trim($validated['status_dosen']),
             'email' => strtolower(trim($validated['email'])),
-            'sertifikasi' => ! empty($validated['sertifikasi']) ? trim($validated['sertifikasi']) : null,
+            'sertifikasi_dosen' => $validated['sertifikasi_dosen'] ?? null,
             'id_jabatan' => isset($validated['id_jabatan']) && $validated['id_jabatan'] !== null ? (int) $validated['id_jabatan'] : null,
             'id_pendidikan' => isset($validated['id_pendidikan']) && $validated['id_pendidikan'] !== null ? (int) $validated['id_pendidikan'] : null,
         ];
@@ -438,6 +543,14 @@ class DosenController extends Controller
         ]);
 
         if ($response->successful() && ($body['success'] ?? true)) {
+            if ($request->expectsJson() || $request->ajax()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => $body['message'] ?? 'Data dosen berhasil diperbarui.',
+                    'data' => $body['data'] ?? [],
+                ]);
+            }
+
             return redirect()->route('dosen.index')->with('toast', [
                 'type' => 'success',
                 'title' => 'Berhasil',
@@ -451,6 +564,14 @@ class DosenController extends Controller
             if ($firstError) {
                 $errorMessage = $firstError;
             }
+        }
+
+        if ($request->expectsJson() || $request->ajax()) {
+            return response()->json([
+                'success' => false,
+                'message' => $errorMessage,
+                'errors' => $body['errors'] ?? [],
+            ], $response->status() >= 400 ? $response->status() : 422);
         }
 
         return back()->withInput()->with('toast', [
@@ -517,6 +638,9 @@ class DosenController extends Controller
         );
     }
 
+    /**
+     * Store riwayat pendidikan for a dosen.
+     */
     public function storePendidikan(Request $request, int|string $dosenId): RedirectResponse
     {
         $validated = $request->validate([

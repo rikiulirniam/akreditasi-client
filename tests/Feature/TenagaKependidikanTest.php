@@ -71,6 +71,32 @@ class TenagaKependidikanTest extends TestCase
             ->assertSee('value="2"', false)
             ->assertSee('value="3"', false);
         $response->assertDontSee('value="9"', false);
+        $response->assertDontSee('value="1">SMA/SMK', false);
+    }
+
+    public function test_index_uses_the_api_id_for_the_sma_option(): void
+    {
+        Http::fake([
+            'https://tridharma.fayra.my.id/api/tendik*' => Http::response([
+                'success' => true,
+                'code' => 200,
+                'data' => [],
+            ], 200),
+            'https://tridharma.fayra.my.id/api/pendidikan' => Http::response([
+                'success' => true,
+                'code' => 200,
+                'data' => [
+                    ['id_pendidikan' => 17, 'jenjang' => 'SMK'],
+                    ['id_pendidikan' => 4, 'jenjang' => 'D4/S1'],
+                ],
+            ], 200),
+        ]);
+
+        $response = $this->get(route('tenaga-kependidikan.index'));
+
+        $response->assertOk()
+            ->assertSee('value="17">SMA/SMK', false)
+            ->assertDontSee('value="22">SMA/SMK', false);
     }
 
     public function test_index_passes_search_to_api_and_applies_supported_jabatan_filter_to_returned_records(): void

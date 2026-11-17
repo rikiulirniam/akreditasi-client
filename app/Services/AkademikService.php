@@ -895,14 +895,39 @@ class AkademikService
         return $this->get("enrollment-mata-kuliah/{$id}", [], $token);
     }
 
+    public function createEnrollmentMataKuliah(array $data, ?string $token = null): Response
+    {
+        return $this->post('enrollment-mata-kuliah', $data, $token);
+    }
+
     public function updateEnrollmentMataKuliah(int|string $id, array $data, ?string $token = null): Response
     {
         return $this->put("enrollment-mata-kuliah/{$id}", $data, $token);
     }
 
+    public function deleteEnrollmentMataKuliah(int|string $id, ?string $token = null): Response
+    {
+        return $this->delete("enrollment-mata-kuliah/{$id}", [], $token);
+    }
+
     public function getMataKuliahAngkatanKelasList(array $query = [], ?string $token = null): Response
     {
         return $this->get('mata-kuliah-angkatan-kelas', $query, $token);
+    }
+
+    public function createMataKuliahAngkatanKelas(array $data, ?string $token = null): Response
+    {
+        return $this->post('mata-kuliah-angkatan-kelas', $data, $token);
+    }
+
+    public function deleteMataKuliahAngkatanKelas(int|string $id, ?string $token = null): Response
+    {
+        return $this->delete("mata-kuliah-angkatan-kelas/{$id}", [], $token);
+    }
+
+    public function getDosenList(array $query = [], ?string $token = null): Response
+    {
+        return $this->get('dosen', $query, $token);
     }
 
     /*

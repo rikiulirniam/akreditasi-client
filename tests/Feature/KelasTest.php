@@ -220,4 +220,138 @@ class KelasTest extends TestCase
         $response->assertSee('432-191-701');
         $response->assertDontSee('Mata Kuliah Lama Semester 1');
     }
+
+    public function test_kelas_store_mata_kuliah_and_dosen_successfully(): void
+    {
+        Http::fake([
+            '*/api/kelas/12*' => Http::response([
+                'success' => true,
+                'data' => [
+                    'id' => 12,
+                    'kelas' => 'TI-4C',
+                    'tahun_akademik_id' => 9,
+                    'angkatan_kelas_id' => 97,
+                ],
+            ], 200),
+            '*/api/enrollment-mata-kuliah' => Http::response([
+                'success' => true,
+                'message' => 'Enrollment berhasil dibuat',
+                'data' => [
+                    'id' => 501,
+                    'tahun_akademik_id' => 9,
+                    'mata_kuliah_id' => 5,
+                    'dosen_id' => 7,
+                ],
+            ], 201),
+            '*/api/mata-kuliah-angkatan-kelas' => Http::response([
+                'success' => true,
+                'message' => 'Mata kuliah kelas berhasil dihubungkan',
+                'data' => [
+                    'id' => 801,
+                    'enrollment_mata_kuliah_id' => 501,
+                    'angkatan_kelas_id' => 97,
+                ],
+            ], 201),
+            '*/api/mata-kuliah/5*' => Http::response([
+                'success' => true,
+                'data' => [
+                    'id' => 5,
+                    'kode_mata_kuliah' => '432-191-501',
+                    'nama_mata_kuliah' => 'Kecerdasan Buatan',
+                    'sks' => 3,
+                ],
+            ], 200),
+            '*/api/users/7*' => Http::response([
+                'success' => true,
+                'data' => [
+                    'id' => 7,
+                    'name' => 'Dr. Amin Suharjono, S.T., M.T.',
+                    'email' => 'dosen@polines.ac.id',
+                ],
+            ], 200),
+        ]);
+
+        $response = $this->withSession([
+            'access_token' => $this->getFakeToken(),
+            'user' => [
+                'id' => 1,
+                'nama' => 'Administrator',
+                'role' => 'ADMINISTRATOR',
+            ],
+        ])->post(route('kelas.mata-kuliah.store', 12), [
+            'mata_kuliah_id' => 5,
+            'dosen_id' => 7,
+        ]);
+
+        $response->assertRedirect(route('kelas.show', 12));
+        $response->assertSessionHas('toast', function ($toast) {
+            return ($toast['type'] ?? '') === 'success';
+        });
+    }
+
+    public function test_kelas_update_dosen_pengampu_successfully(): void
+    {
+        Http::fake([
+            '*/api/enrollment-mata-kuliah/501' => Http::response([
+                'success' => true,
+                'message' => 'Enrollment berhasil diperbarui',
+                'data' => [
+                    'id' => 501,
+                    'tahun_akademik_id' => 9,
+                    'mata_kuliah_id' => 5,
+                    'dosen_id' => 8,
+                ],
+            ], 200),
+            '*/api/users/8*' => Http::response([
+                'success' => true,
+                'data' => [
+                    'id' => 8,
+                    'name' => 'Dr. Eni Dwi Wardihani, S.T., M.T.',
+                    'email' => 'dosen2@polines.ac.id',
+                ],
+            ], 200),
+        ]);
+
+        $response = $this->withSession([
+            'access_token' => $this->getFakeToken(),
+            'user' => [
+                'id' => 1,
+                'nama' => 'Administrator',
+                'role' => 'ADMINISTRATOR',
+            ],
+        ])->put(route('kelas.mata-kuliah.update', [12, 501]), [
+            'mata_kuliah_id' => 5,
+            'tahun_akademik_id' => 9,
+            'dosen_id' => 8,
+        ]);
+
+        $response->assertRedirect(route('kelas.show', 12));
+        $response->assertSessionHas('toast', function ($toast) {
+            return ($toast['type'] ?? '') === 'success';
+        });
+    }
+
+    public function test_kelas_destroy_mata_kuliah_successfully(): void
+    {
+        Http::fake([
+            '*/api/mata-kuliah-angkatan-kelas/801' => Http::response([
+                'success' => true,
+                'message' => 'Mata kuliah angkatan kelas berhasil dihapus',
+            ], 200),
+        ]);
+
+        $response = $this->withSession([
+            'access_token' => $this->getFakeToken(),
+            'user' => [
+                'id' => 1,
+                'nama' => 'Administrator',
+                'role' => 'ADMINISTRATOR',
+            ],
+        ])->delete(route('kelas.mata-kuliah.destroy', [12, 801]));
+
+        $response->assertRedirect(route('kelas.show', 12));
+        $response->assertSessionHas('toast', function ($toast) {
+            return ($toast['type'] ?? '') === 'success';
+        });
+    }
 }

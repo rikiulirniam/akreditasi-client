@@ -3,27 +3,6 @@
     $p = $prefix ?? 'create';
 @endphp
 
-<div>
-    <label for="{{ $p }}_id_dosen" class="block text-xs font-bold text-gray-900 mb-1.5">
-        Dosen Penanggung Jawab <span class="text-red-500">*</span>
-    </label>
-    <select
-        name="id_dosen"
-        id="{{ $p }}_id_dosen"
-        required
-        {{ empty($dosenOptions) ? 'disabled' : '' }}
-        class="w-full px-4 py-2.5 rounded-[10px] bg-white-form border-none text-sm font-medium text-gray-700 focus:ring-2 focus:ring-primary/20 focus:outline-none"
-    >
-        <option value="">Pilih Dosen</option>
-        @foreach($dosenOptions as $dosen)
-            <option value="{{ $dosen['id'] }}" {{ (string) ($d['id_dosen'] ?? $selectedDosenId ?? '') === (string) $dosen['id'] ? 'selected' : '' }}>{{ $dosen['name'] }}</option>
-        @endforeach
-    </select>
-    @if($dosenLoadError)
-        <p class="mt-1 text-xs text-red-600">Daftar dosen gagal dimuat atau belum tersedia. Muat ulang halaman sebelum mengirim.</p>
-    @endif
-</div>
-
 {{-- 1. Judul Buku --}}
 <div>
     <label for="{{ $p }}_judul_buku" class="block text-xs font-bold text-gray-900 mb-1.5">

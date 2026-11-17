@@ -29,9 +29,6 @@ class SertifikasiController extends Controller
 
         $idTendik = ! empty($filters['id_tendik']) ? (int) $filters['id_tendik'] : null;
         $selectedTendik = null;
-        $idDosen = ! empty($filters['id_dosen']) ? (int) $filters['id_dosen'] : null;
-        $selectedDosen = null;
-        $dosenRecord = null;
 
         if ($idTendik !== null) {
             try {
@@ -53,6 +50,9 @@ class SertifikasiController extends Controller
                 ];
             }
         }
+
+        $idDosen = ! empty($filters['id_dosen']) ? (int) $filters['id_dosen'] : null;
+        $selectedDosen = null;
 
         if ($idDosen !== null) {
             try {
@@ -110,24 +110,22 @@ class SertifikasiController extends Controller
             $certifications = $this->tridharmaService->mergeTendikSertifikasi($idTendik, $certifications);
         }
 
-        if ($idDosen !== null && empty($certifications) && ! empty($dosenRecord['sertifikasi'])) {
-            $sertifikasiUrl = is_string($dosenRecord['sertifikasi']) ? $dosenRecord['sertifikasi'] : ($dosenRecord['sertifikasi']['url'] ?? '');
-            if ($sertifikasiUrl !== '') {
-                $certifications = [
-                    [
-                        'id' => 1,
-                        'id_sertifikasi' => 1,
-                        'id_dosen' => $idDosen,
-                        'jenis_sertifikasi' => 'Sertifikasi Dosen',
-                        'tahun_sertifikasi' => (int) date('Y'),
-                        'nomor_sertifikat' => '-',
-                        'url_sertifikasi' => $sertifikasiUrl,
-                        'status_sertifikasi' => 'Tersertifikasi',
-                        'nama' => $selectedDosen['nama'],
-                        'nama_dosen' => $selectedDosen['nama'],
-                    ],
-                ];
-            }
+        if ($idDosen !== null) {
+            $certifications = array_values(array_filter($certifications, function ($cert) use ($idDosen) {
+                if (! is_array($cert)) {
+                    return false;
+                }
+                $certDosenId = $cert['id_dosen'] ?? ($cert['dosen']['id_dosen'] ?? ($cert['dosen']['id'] ?? null));
+                if ($certDosenId !== null) {
+                    return (int) $certDosenId === $idDosen;
+                }
+                $certTendikId = $cert['id_tendik'] ?? ($cert['tendik']['id_tendik'] ?? ($cert['tendik']['id'] ?? null));
+                if ($certTendikId !== null) {
+                    return false;
+                }
+
+                return true;
+            }));
         }
 
         $pagination = [
@@ -525,7 +523,25 @@ class SertifikasiController extends Controller
         $user = session('user', []);
         $ownerId = is_array($user) ? ($user['id_dosen'] ?? $user['id'] ?? null) : null;
 
-        return is_numeric($ownerId) && (int) $ownerId > 0 ? (int) $ownerId : null;
+        if (is_numeric($ownerId) && (int) $ownerId > 0) {
+            return (int) $ownerId;
+        }
+
+        // Fallback: cari ID dosen berdasarkan email user login
+        $email = is_array($user) ? ($user['email'] ?? null) : null;
+        if ($email) {
+            $response = $this->tridharmaService->getDosenList(['search' => $email, 'per_page' => 1]);
+            if ($response->successful()) {
+                $dosenData = $response->json('data.data', $response->json('data', []));
+                if (! empty($dosenData) && isset($dosenData[0]['id_dosen'])) {
+                    session(['user.id_dosen' => (int) $dosenData[0]['id_dosen']]);
+
+                    return (int) $dosenData[0]['id_dosen'];
+                }
+            }
+        }
+
+        return null;
     }
 
     private function successfulResponse(Response $response): bool

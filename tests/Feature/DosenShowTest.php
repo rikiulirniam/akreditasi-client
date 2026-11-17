@@ -71,6 +71,7 @@ class DosenShowTest extends TestCase
         $response->assertSee('Budisantoso@gmail.com');
         $response->assertSee('Aktif');
         $response->assertSee('Lihat sertifikasi');
+        $response->assertSee(e(route('sertifikasi.index', ['tipe_pemilik' => 'dosen', 'id_dosen' => 1])), false);
         $response->assertSee('Penelitian');
         $response->assertSee('HaKI');
         $response->assertSee('Riwayat Pendidikan');
@@ -190,7 +191,7 @@ class DosenShowTest extends TestCase
         $response->assertSee('0015088501');
     }
 
-    public function test_dosen_index_deduplicates_education_options_in_create_modal(): void
+    public function test_dosen_create_and_edit_forms_offer_unique_higher_education_options(): void
     {
         Http::fake([
             '*/dosen*' => Http::response([
@@ -228,10 +229,10 @@ class DosenShowTest extends TestCase
         $html = $response->getContent();
 
         $this->assertSame(1, substr_count($html, 'id="createPendidikanSelect"'));
-        $this->assertSame(1, substr_count($html, '>S2</option>'));
-        $this->assertSame(1, substr_count($html, '>S3</option>'));
-        $this->assertStringNotContainsString('>S1</option>', $html);
-        $this->assertStringNotContainsString('editPendidikanSelect', $html);
+        $this->assertSame(2, substr_count($html, '>S2</option>'));
+        $this->assertSame(2, substr_count($html, '>S3</option>'));
+        $this->assertSame(2, substr_count($html, '>S1</option>'));
+        $this->assertStringContainsString('id="editPendidikanSelect"', $html);
     }
 
     public function test_dosen_index_shows_empty_state_inside_the_table_and_keeps_page_actions_available(): void
@@ -263,8 +264,8 @@ class DosenShowTest extends TestCase
 
         $response->assertOk()
             ->assertSee('Belum ada data dosen')
-            ->assertSee('id="dosen-table" class="w-full table-fixed text-left border-collapse"', false)
-            ->assertSee('mt-7 min-w-0 overflow-x-hidden', false)
+            ->assertSee('id="dosen-table" class="w-full min-w-[1050px] table-fixed text-left border-collapse"', false)
+            ->assertSee('mt-7 min-w-0 overflow-x-auto', false)
             ->assertSee('openImportModalBtnTable')
             ->assertSee('openCreateModalBtnTable')
             ->assertSee('Download Template Excel');
@@ -310,7 +311,7 @@ class DosenShowTest extends TestCase
         });
     }
 
-    public function test_jabatan_controls_are_only_visible_to_admin_and_reviewer(): void
+    public function test_jabatan_and_education_controls_are_available_in_create_and_edit_forms(): void
     {
         Http::fake([
             '*/dosen*' => Http::response([
@@ -338,7 +339,7 @@ class DosenShowTest extends TestCase
             '*/bidang-keahlian*' => Http::response(['data' => []]),
         ]);
 
-        foreach (['Admin', 'Administrator', 'reviewer'] as $role) {
+        foreach (['Admin', 'Administrator', 'reviewer', 'Kaprodi'] as $role) {
             $response = $this->withSession([
                 'access_token' => 'dummy-token',
                 'user' => ['nama' => 'Pengguna', 'role' => $role],
@@ -351,15 +352,17 @@ class DosenShowTest extends TestCase
                 ->assertSee('Lektor');
         }
 
-        $response = $this->withSession([
+        $dosenResponse = $this->withSession([
             'access_token' => 'dummy-token',
-            'user' => ['nama' => 'Kaprodi', 'role' => 'Kaprodi'],
+            'user' => ['nama' => 'Dosen', 'role' => 'Dosen'],
         ])->get(route('dosen.index'));
 
-        $response->assertOk()
+        $dosenResponse->assertOk()
             ->assertDontSee('id="createJabatanSelect"', false)
-            ->assertDontSee('id="editJabatanSelect"', false)
-            ->assertSee('id="editJabatanPreserved"', false)
+            ->assertDontSee('id="editJabatanSelect"', false);
+
+        $response->assertSee('id="createPendidikanSelect"', false)
+            ->assertSee('id="editPendidikanSelect"', false)
             ->assertSee('data-id-jabatan="4"', false)
             ->assertSee('data-id-pendidikan="6"', false);
     }
@@ -381,7 +384,6 @@ class DosenShowTest extends TestCase
             'nidn' => '0029088401',
             'status_dosen' => 'DTPS',
             'email' => 'hendra@example.com',
-            'sertifikasi' => 'https://drive.google.com/cert',
             'id_jabatan' => 4,
             'id_pendidikan' => 3,
         ]);
@@ -396,6 +398,7 @@ class DosenShowTest extends TestCase
 
             return ($data['id_jabatan'] ?? null) === 4
                 && ($data['id_pendidikan'] ?? null) === 3
+                && ! array_key_exists('sertifikasi', $data)
                 && ($data['nama_dosen'] ?? null) === 'Dr. Hendra Gunawan';
         });
     }
@@ -634,106 +637,147 @@ class DosenShowTest extends TestCase
         $this->assertSame('PK', substr($response->streamedContent(), 0, 2));
     }
 
-    public function test_dosen_detail_displays_default_jurusan_prodi_history_and_sertifikasi_links(): void
+    public function test_dosen_export_proxies_authenticated_xlsx_response(): void
     {
         Http::fake([
-            '*/dosen/5*' => Http::response([
+            '*/dosen/export' => Http::response('xlsx-bytes', 200, [
+                'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                'Content-Disposition' => 'attachment; filename=dosen.xlsx',
+            ]),
+        ]);
+
+        $response = $this->withSession([
+            'access_token' => 'test-export-token',
+            'user' => ['nama' => 'Kuwat', 'role' => 'Kaprodi'],
+        ])->get(route('dosen.export'));
+
+        $response->assertOk()
+            ->assertHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+            ->assertHeader('Content-Disposition', 'attachment; filename=dosen.xlsx')
+            ->assertContent('xlsx-bytes');
+
+        Http::assertSent(fn ($request): bool => str_ends_with($request->url(), '/dosen/export')
+            && $request->hasHeader('Authorization', 'Bearer test-export-token'));
+    }
+
+    public function test_dosen_ajax_store_returns_success_and_sends_relation_ids_and_manual_fields(): void
+    {
+        Http::fake([
+            '*/dosen' => Http::response([
+                'success' => true,
+                'message' => 'Data dosen berhasil ditambahkan.',
+                'data' => ['id_dosen' => 10],
+            ], 201),
+        ]);
+
+        $response = $this->withSession([
+            'access_token' => 'dummy-token',
+            'user' => ['nama' => 'Kuwat', 'role' => 'Kaprodi'],
+        ])->postJson(route('dosen.store'), [
+            'nama_dosen' => 'Dr. Hendra Gunawan',
+            'nidn' => '0029088401',
+            'nuptk' => '9912345678000001',
+            'status_dosen' => 'DTT',
+            'email' => 'hendra@example.com',
+            'sertifikasi_dosen' => 'Tersertifikasi',
+            'id_jabatan' => '4',
+            'id_pendidikan' => '3',
+        ]);
+
+        $response->assertCreated()
+            ->assertJsonPath('success', true);
+
+        Http::assertSent(fn ($request): bool => $request->method() === 'POST'
+            && str_ends_with(parse_url($request->url(), PHP_URL_PATH), '/dosen')
+            && $request->data()['nuptk'] === '9912345678000001'
+            && $request->data()['id_jabatan'] === 4
+            && $request->data()['id_pendidikan'] === 3
+            && $request->data()['sertifikasi_dosen'] === 'Tersertifikasi');
+    }
+
+    public function test_dosen_ajax_update_returns_backend_field_validation_errors(): void
+    {
+        Http::fake([
+            '*/dosen/10' => Http::response([
+                'success' => false,
+                'message' => 'Validasi gagal.',
+                'errors' => ['id_pendidikan' => ['Pendidikan terakhir tidak valid.']],
+            ], 422),
+        ]);
+
+        $response = $this->withSession([
+            'access_token' => 'dummy-token',
+            'user' => ['nama' => 'Kuwat', 'role' => 'Kaprodi'],
+        ])->putJson(route('dosen.update', 10), [
+            'nama_dosen' => 'Dr. Hendra Gunawan',
+            'nidn' => '0029088401',
+            'nuptk' => '',
+            'status_dosen' => 'DTPS',
+            'email' => 'hendra@example.com',
+            'sertifikasi_dosen' => 'Belum Tersertifikasi',
+            'id_jabatan' => '4',
+            'id_pendidikan' => '999',
+        ]);
+
+        $response->assertUnprocessable()
+            ->assertJsonPath('errors.id_pendidikan.0', 'Pendidikan terakhir tidak valid.');
+    }
+
+    public function test_dosen_sertifikasi_route_redirects_and_filters_certifications_by_id_dosen(): void
+    {
+        $redirectResponse = $this->withSession([
+            'access_token' => 'dummy-token',
+            'user' => ['nama' => 'Kuwat', 'role' => 'Kaprodi'],
+        ])->get(route('dosen.sertifikasi.index', 1));
+
+        $redirectResponse->assertRedirect(route('sertifikasi.index', ['tipe_pemilik' => 'dosen', 'id_dosen' => 1]));
+
+        Http::fake([
+            'https://tridharma.fayra.my.id/api/dosen/1*' => Http::response([
                 'success' => true,
                 'data' => [
-                    'id_dosen' => 5,
-                    'nama_dosen' => 'Dr. Rian Hidayat, M.Kom.',
-                    'nidn' => '0098765432',
-                    'status_dosen' => 'Aktif',
-                    'email' => 'rian@polines.ac.id',
-                    // Empty or missing jurusan and prodi to test default fallbacks
-                    'jurusan' => '-',
-                    'prodi' => '-',
-                    'sertifikasi' => 'https://drive.google.com/cert-rian',
-                    'pendidikan' => [
-                        'id_pendidikan' => 52,
-                        'universitas' => 'Institut Teknologi Bandung',
-                        'program_studi' => 'Teknik Elektro',
-                        'jenjang' => 'S2',
-                        'tahun_lulus' => 2021,
-                    ],
+                    'id_dosen' => 1,
+                    'nama_dosen' => 'Dr. Budi Santoso',
                 ],
             ], 200),
-            '*/dosen*' => Http::response([
+            'https://tridharma.fayra.my.id/api/sertifikasi*' => Http::response([
                 'success' => true,
                 'data' => [
                     'data' => [
                         [
-                            'id_dosen' => 5,
-                            'nama_dosen' => 'Dr. Rian Hidayat, M.Kom.',
-                            'nidn' => '0098765432',
-                            'status_dosen' => 'DTPS',
-                            'email' => 'rian@polines.ac.id',
-                            'sertifikasi' => 'https://drive.google.com/cert-rian',
+                            'id' => 10,
+                            'id_dosen' => 1,
+                            'jenis_sertifikasi' => 'Sertifikasi Pendidik Dosen 1',
+                            'nomor_sertifikat' => 'CERT-DOSEN-1',
+                            'status_sertifikasi' => 'Aktif',
+                            'tahun_sertifikasi' => '2024',
+                        ],
+                        [
+                            'id' => 20,
+                            'id_dosen' => 2,
+                            'jenis_sertifikasi' => 'Sertifikasi Dosen Lain',
+                            'nomor_sertifikat' => 'CERT-DOSEN-2',
+                            'status_sertifikasi' => 'Aktif',
+                            'tahun_sertifikasi' => '2024',
                         ],
                     ],
-                    'total' => 1,
-                    'per_page' => 10,
                     'current_page' => 1,
                     'last_page' => 1,
+                    'per_page' => 10,
+                    'total' => 2,
                 ],
             ], 200),
-            '*/jabatan-akademik*' => Http::response(['data' => []], 200),
-            '*/pendidikan*' => Http::response(['data' => []], 200),
-            '*/bidang-keahlian*' => Http::response(['data' => []], 200),
         ]);
 
-        // 1. Verify detail page displays default Teknik Elektro and Teknologi Rekayasa Komputer
-        $responseShow = $this->withSession([
+        $response = $this->withSession([
             'access_token' => 'dummy-token',
             'user' => ['nama' => 'Kuwat', 'role' => 'Kaprodi'],
-        ])->get(route('dosen.show', 5));
+        ])->get(route('sertifikasi.index', ['tipe_pemilik' => 'dosen', 'id_dosen' => 1]));
 
-        $responseShow->assertOk();
-        // Point 3: Top icon shows Teknik Elektro and bottom icon shows Teknologi Rekayasa Komputer
-        $responseShow->assertSee('Teknik Elektro');
-        $responseShow->assertSee('Teknologi Rekayasa Komputer');
-
-        // Point 1: Education history includes S1 and S2
-        $responseShow->assertSee('D4/S1');
-        $responseShow->assertSee('S2');
-        $responseShow->assertSee('Institut Teknologi Bandung');
-
-        // Point 2: Detail page "Lihat sertifikasi" links to internal sertifikasi route
-        $responseShow->assertSee(e(route('sertifikasi.index', ['tipe_pemilik' => 'dosen', 'id_dosen' => 5])), false);
-
-        // Point 3: Table list page (CRUD dosen) has NO detail/link button on Sertifikasi column
-        $responseIndex = $this->withSession([
-            'access_token' => 'dummy-token',
-            'user' => ['nama' => 'Kuwat', 'role' => 'Kaprodi'],
-        ])->get(route('dosen.index'));
-
-        $responseIndex->assertOk();
-        $responseIndex->assertSee('Tersertifikasi');
-        $responseIndex->assertDontSee(e(route('sertifikasi.index', ['tipe_pemilik' => 'dosen', 'id_dosen' => 5])), false);
-
-        // Test Tambah Pendidikan directly on detail dosen without gelar
-        $responseStore = $this->withSession([
-            'access_token' => 'dummy-token',
-            'user' => ['nama' => 'Kuwat', 'role' => 'Kaprodi'],
-        ])->post(route('dosen.pendidikan.store', 5), [
-            'jenjang' => 'S2',
-            'universitas' => 'Universitas Diponegoro',
-            'program_studi' => 'Teknik Informatika',
-            'tahun_lulus' => '2026',
-        ]);
-
-        $responseStore->assertRedirect(route('dosen.show', 5));
-        $responseStore->assertSessionHas('toast');
-
-        // Check that detail dosen displays Universitas Diponegoro S2 without any dummy gelar
-        $responseShowUpdated = $this->withSession([
-            'access_token' => 'dummy-token',
-            'user' => ['nama' => 'Kuwat', 'role' => 'Kaprodi'],
-        ])->get(route('dosen.show', 5));
-
-        $responseShowUpdated->assertOk();
-        $responseShowUpdated->assertSee('Universitas Diponegoro');
-        $responseShowUpdated->assertSee('Teknik Informatika');
-        $responseShowUpdated->assertSee('2026');
+        $response->assertOk();
+        $response->assertSee('Sertifikasi Pendidik');
+        $response->assertSee('CERT-DOSEN-1');
+        $response->assertDontSee('CERT-DOSEN-2');
+        $response->assertSee(route('dosen.show', 1));
     }
 }

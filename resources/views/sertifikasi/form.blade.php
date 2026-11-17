@@ -187,8 +187,7 @@
                 </div>
                 <div>
                     <label for="tahun_sertifikasi" class="mb-1.5 block text-xs font-bold text-gray-900">Tahun Sertifikasi</label>
-                    <input id="tahun_sertifikasi" type="date" name="tahun_sertifikasi" value="{{ $yearValue }}" required class="{{ $inputClass }} {{ $inputBorderClass('tahun_sertifikasi') }}">
-                    @error('tahun_sertifikasi')<p class="mt-1 text-xs font-semibold text-rose-600">{{ $message }}</p>@enderror
+                    <input id="tahun_sertifikasi" type="text" name="tahun_sertifikasi" value="{{ $yearValue }}" placeholder="Contoh: 2025" pattern="[0-9]{4}" maxlength="4" minlength="4" inputmode="numeric" title="Masukkan tahun sertifikasi dengan 4 digit, contoh: 2025" required class="{{ $inputClass }} {{ $inputBorderClass('tahun_sertifikasi') }}">                    @error('tahun_sertifikasi')<p class="mt-1 text-xs font-semibold text-rose-600">{{ $message }}</p>@enderror
                 </div>
                 <div>
                     <label for="tanggal_kedaluwarsa" class="mb-1.5 block text-xs font-bold text-gray-900">Tanggal Kedaluwarsa</label>
