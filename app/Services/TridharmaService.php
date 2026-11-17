@@ -1071,6 +1071,12 @@ class TridharmaService
         return $this->get("kegiatan/{$id}", [], $token);
     }
 
+    /** @param array<string, mixed> $query */
+    public function exportKegiatan(array $query = [], ?string $token = null): Response
+    {
+        return $this->get('kegiatan/export', $query, $token);
+    }
+
     public function createKegiatan(array $data, ?string $token = null): Response
     {
         return $this->post('kegiatan', $data, $token);

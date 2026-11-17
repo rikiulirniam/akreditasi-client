@@ -101,15 +101,33 @@ foreach (['penelitian', 'pkm'] as $slug) {
         Route::get("/{$slug}/mahasiswa", [PenelitianPkmController::class, 'cariMahasiswa'])->name("{$slug}.mahasiswa");
     });}
     Route::redirect('/penelitian-pkm', '/penelitian');
-    
 
-    // ==========================================
-    // MODUL TRI DHARMA: LUARAN (Publikasi, HKI, Buku)
-    // ==========================================
-    Route::get('/luaran', [LuaranController::class, 'index'])->name('luaran.index');
-    Route::post('/luaran', [LuaranController::class, 'store'])->name('luaran.store');
-    Route::put('/luaran/{id}', [LuaranController::class, 'update'])->name('luaran.update');
-    Route::delete('/luaran/{id}', [LuaranController::class, 'destroy'])->name('luaran.destroy');
+    // Luaran per jenis kegiatan dan kategori.
+    Route::get('/{jenis}/luaran/create', [LuaranController::class, 'create'])
+        ->where('jenis', 'penelitian|pkm')
+        ->name('luaran.create');
+    Route::post('/{jenis}/luaran', [LuaranController::class, 'store'])
+        ->where('jenis', 'penelitian|pkm')
+        ->name('luaran.tridharma.store');
+    Route::get('/{jenis}/luaran/{kategori}/{id}', [LuaranController::class, 'show'])
+        ->where([
+            'jenis' => 'penelitian|pkm',
+            'kategori' => 'artikel|buku|hki|seminar',
+            'id' => '[0-9]+',
+        ])
+        ->name('luaran.tridharma.show');
+    Route::get('/{jenis}/luaran/{kategori}/export', [LuaranController::class, 'export'])
+        ->where([
+            'jenis' => 'penelitian|pkm',
+            'kategori' => 'artikel|buku|hki|seminar',
+        ])
+        ->name('luaran.tridharma.export');
+    Route::get('/{jenis}/luaran/{kategori?}', [LuaranController::class, 'index'])
+        ->where([
+            'jenis' => 'penelitian|pkm',
+            'kategori' => 'artikel|buku|hki|seminar',
+        ])
+        ->name('luaran.tridharma.index');
 
     Route::get('/reviewer/penilaian', [ReviewerController::class, 'assessments'])->name('reviewer.assessments');
     Route::get('/reviewer/penilaian/{projectId}', [ReviewerController::class, 'assessmentDetail'])->name('reviewer.assessment-detail');
@@ -216,7 +234,10 @@ foreach (['penelitian', 'pkm'] as $slug) {
     // ==========================================
     // MODUL TRI DHARMA: LUARAN (Publikasi, HKI, Buku)
     // ==========================================
-    Route::get('/luaran', [LuaranController::class, 'index'])->name('luaran.index');
+    Route::get('/luaran', [LuaranController::class, 'legacyIndex'])->name('luaran.index');
+    Route::get('/luaran/{kategori}/export', [LuaranController::class, 'legacyExport'])
+        ->where('kategori', 'artikel|buku|hki|seminar')
+        ->name('luaran.export');
     Route::post('/luaran', [LuaranController::class, 'store'])->name('luaran.store');
     Route::put('/luaran/{id}', [LuaranController::class, 'update'])->name('luaran.update');
     Route::delete('/luaran/{id}', [LuaranController::class, 'destroy'])->name('luaran.destroy');

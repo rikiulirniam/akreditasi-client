@@ -24,7 +24,7 @@
     $defaultGroup = in_array($kategori, ['artikel', 'buku', 'hki', 'seminar'], true) ? $kategori : 'artikel';
 @endphp
 <div class="w-full max-w-3xl space-y-5 pb-8">
-    <form method="POST" action="{{ route('luaran.store', ['jenis' => $jenis]) }}" class="w-full space-y-5 rounded-xl bg-white p-4 shadow-sm sm:p-6">
+    <form method="POST" action="{{ route('luaran.tridharma.store', ['jenis' => $jenis]) }}" class="w-full space-y-5 rounded-xl bg-white p-4 shadow-sm sm:p-6">
         @csrf
         <input type="hidden" name="kategori" value="{{ $kategori }}">
 

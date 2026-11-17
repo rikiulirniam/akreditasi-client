@@ -25,6 +25,8 @@
         'Tahun Pelaksanaan' => $nilai('tahun_pelaksanaan'),
     ];
     $anggota = $kegiatan['anggota'] ?? [];
+    $pendanaan = $kegiatan['pendanaan'] ?? [];
+    $luaran = $kegiatan['luaran'] ?? [];
     $kartu = 'overflow-hidden rounded-[8px] bg-[#EEF3F7]';
     $judulKartu = 'flex h-[47px] items-center bg-[#002B49] px-5 text-base font-semibold text-[#FFC400] underline';
 @endphp
@@ -97,5 +99,33 @@
             </ul>
         </section>
     </div>
+
+    @if($pendanaan !== [])
+        <section class="{{ $kartu }}">
+            <h3 class="{{ $judulKartu }}">Pendanaan</h3>
+            <div class="divide-y divide-[#BAC7D5]">
+                @foreach($pendanaan as $dana)
+                    <div class="flex flex-wrap justify-between gap-2 px-5 py-3 text-sm">
+                        <span>{{ $dana['sumber_dana'] ?? '-' }}</span>
+                        <span class="font-semibold">Rp {{ number_format((float) ($dana['jumlah_dana'] ?? 0), 0, ',', '.') }}</span>
+                    </div>
+                @endforeach
+            </div>
+        </section>
+    @endif
+
+    @if($luaran !== [])
+        <section class="{{ $kartu }}">
+            <h3 class="{{ $judulKartu }}">Luaran</h3>
+            <div class="divide-y divide-[#BAC7D5]">
+                @foreach($luaran as $item)
+                    <div class="px-5 py-3 text-sm">
+                        <p class="font-semibold">{{ $item['nama_jurnal'] ?? $item['judul_buku'] ?? $item['nama_seminar'] ?? $item['nama_prosiding'] ?? $item['judul_hak_cipta'] ?? '-' }}</p>
+                        <p class="text-xs text-gray-600">{{ $item['jenis_luaran']['nama_jenis_luaran'] ?? '-' }}</p>
+                    </div>
+                @endforeach
+            </div>
+        </section>
+    @endif
 </div>
 @endsection

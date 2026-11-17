@@ -223,7 +223,7 @@ class LuaranController extends Controller
 
     public function legacyIndex(Request $request, string $kategori = 'artikel'): View|RedirectResponse
     {
-        return $this->index($request, 'penelitian', $kategori);
+        return $this->index($request, 'penelitian', (string) $request->query('kategori', $kategori));
     }
 
     public function legacyExport(Request $request, string $kategori): Response|RedirectResponse
