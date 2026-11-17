@@ -1,1087 +1,136 @@
 @extends('layouts.app')
 
-@section('title', 'Luaran')
+@section('browser-title', 'Luaran')
 
-@php
-    $totalData = $pagination['total'] ?? count($luaranList);
-@endphp
-
-@if($totalData > 0)
-    @section('subtitle', $totalData . ' Data ditemukan')
-@endif
-
-@section('content')
-
-<div id="luaran-loading-state" class="hidden mb-4 items-center gap-2 text-sm font-medium text-primary" role="status" aria-live="polite">
-    <svg class="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24" aria-hidden="true">
-        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
-    </svg>
-    <span>Memuat data luaran...</span>
-</div>
-
-{{-- Container Utama Halaman Luaran (Bisa di-refresh via AJAX tanpa reload utuh) --}}
-<div id="luaran-main-wrapper">
-    @if($luaranLoadError ?? false)
-        <div class="mb-5 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700" role="alert">
-            Data luaran gagal dimuat dari server. Silakan coba muat ulang halaman.
-        </div>
-    @endif
-
-    @if(empty($luaranList) && empty($search) && empty($selectedJenis))
-
-        {{-- ══════════════════════════════════════════════════════════════════════
-             TAMPILAN KOSONG (Empty State — Sesuai Figma Screen 2)
-        ══════════════════════════════════════════════════════════════════════ --}}
-        <div class="flex flex-col items-center justify-center py-28 px-6 text-center select-none">
-            <h2 class="text-3xl sm:text-4xl font-black text-black tracking-tight mb-2">
-                Belum Ada Luaran
-            </h2>
-            <p class="text-sm sm:text-base text-gray-700 font-medium mb-8">
-                Tekan tombol di bawah untuk menambah data
-            </p>
-
-            {{-- Tombol Buka Modal Step 1 --}}
-            <button
-                type="button"
-                class="open-step1-btn inline-flex items-center gap-2.5 px-7 py-3 rounded-[10px] bg-[#01568D] hover:bg-primary text-white font-bold text-sm shadow-md transition cursor-pointer"
-            >
-                <svg class="w-5 h-5 stroke-[2.5] shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                    <circle cx="12" cy="12" r="9" stroke-width="2"/>
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 8.5v7m3.5-3.5h-7"/>
-                </svg>
-                <span>Tambah Luaran</span>
-            </button>
-        </div>
-
-    @else
-
-        {{-- ══════════════════════════════════════════════════════════════════════
-             TAMPILAN DAFTAR (List State — Sesuai Figma Screen 1)
-        ══════════════════════════════════════════════════════════════════════ --}}
-        <div class="space-y-5">
-
-            {{-- Toolbar: Search + Filter Jenis Luaran (Kiri) & Tombol Tambah Luaran (Kanan) --}}
-            <div class="flex flex-wrap items-center justify-between gap-3 mb-2">
-
-                {{-- Form Filter Kiri --}}
-                <form method="GET" action="{{ route('luaran.index') }}" id="luaranFilterForm" class="flex items-center gap-3">
-
-                    {{-- 1. Search Input --}}
-                    <div class="relative w-64 sm:w-80 shrink-0">
-                        <input
-                            type="text"
-                            name="search"
-                            id="searchLuaranInput"
-                            value="{{ $search }}"
-                            placeholder="Cari nama"
-                            class="w-full h-[36px] pl-4 pr-10 rounded-[10px] bg-[#D9D9D9] border-2 border-primary text-black text-sm font-medium placeholder:text-gray-600 focus:outline-none focus:ring-2 focus:ring-primary/20 transition"
-                        />
-                        <button type="submit" class="absolute inset-y-0 right-0 flex items-center pr-3.5 text-primary hover:scale-110 transition cursor-pointer" aria-label="Cari">
-                            <svg class="w-4 h-4 stroke-[2.5]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z"/>
-                            </svg>
-                        </button>
-                    </div>
-
-                    {{-- 2. Dropdown Filter 5 Jenis Luaran --}}
-                    <div class="relative w-40 sm:w-44 shrink-0" id="filterJenisDropdown">
-                        <button
-                            type="button"
-                            id="filterJenisBtn"
-                            class="w-full h-[36px] pl-3.5 pr-1 bg-[#D9D9D9] border-2 border-primary rounded-[10px] flex items-center justify-between cursor-pointer select-none transition focus:outline-none focus:ring-2 focus:ring-primary/20"
-                            aria-expanded="false"
-                            aria-haspopup="true"
-                        >
-                            <span id="filterJenisLabel" class="text-sm font-semibold text-gray-900 truncate pr-2">
-                                {{ $selectedJenis !== '' ? $selectedJenis : 'Jenis Luaran' }}
-                            </span>
-                            <div class="w-7 h-7 rounded-[6px] bg-secondary border border-primary flex items-center justify-center shrink-0 shadow-2xs">
-                                <svg id="filterJenisChevron" class="w-4 h-4 text-primary transition-transform duration-200" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none" viewBox="0 0 24 24">
-                                    <path d="m6 9 6 6 6-6"/>
-                                </svg>
-                            </div>
-                        </button>
-
-                        <input type="hidden" name="jenis" id="filterJenisSelect" value="{{ $selectedJenis }}">
-
-                        <div
-                            id="filterJenisMenu"
-                            class="hidden absolute left-0 top-full mt-1.5 w-full bg-white border border-primary rounded-[10px] shadow-lg py-1.5 z-40 overflow-hidden"
-                            role="menu"
-                        >
-                            @foreach($jenisOptions as $opt)
-                                <button
-                                    type="button"
-                                    class="jenis-option-btn w-full text-left px-4 py-1.5 text-xs sm:text-sm font-medium text-gray-900 hover:bg-black/5 hover:text-primary transition cursor-pointer select-none {{ $selectedJenis === $opt['value'] ? 'text-primary font-bold' : '' }}"
-                                    data-value="{{ $opt['value'] }}"
-                                    data-label="{{ $opt['label'] }}"
-                                >
-                                    {{ $opt['label'] }}
-                                </button>
-                            @endforeach
-                        </div>
-                    </div>
-
-                </form>
-
-                {{-- Kanan: Tombol Tambah Luaran --}}
-                <div class="flex items-center gap-3 shrink-0">
-                    <button
-                        type="button"
-                        class="open-step1-btn h-[35px] inline-flex items-center gap-2 px-3.5 rounded-[8px] bg-[#01568D] hover:bg-primary text-white text-xs sm:text-[13px] font-bold shadow-xs transition cursor-pointer whitespace-nowrap shrink-0"
-                    >
-                        <svg class="w-4 h-4 stroke-[2.5] shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                            <circle cx="12" cy="12" r="9" stroke-width="2"/>
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 8.5v7m3.5-3.5h-7"/>
-                        </svg>
-                        <span>Tambah Luaran</span>
-                    </button>
-                </div>
-
-            </div>
-
-            {{-- Tabel Data Luaran --}}
-            <div id="luaran-table-container" class="mt-7 min-w-0 overflow-x-auto">
-                <table id="luaran-table" class="w-full text-left border-collapse" style="table-layout: fixed;">
-                    <colgroup>
-                        <col style="width: 3.5rem;">
-                        <col>
-                        <col style="width: 12rem;">
-                        <col style="width: 12rem;">
-                        <col style="width: 14rem;">
-                        <col style="width: 9rem;">
-                        <col style="width: 7rem;">
-                    </colgroup>
-                    <thead>
-                        <tr class="border-y border-gray-200 text-gray-900 font-semibold text-sm">
-                            <th class="text-center py-3.5 px-2 sm:px-3">No</th>
-                            <th class="py-3.5 px-2 sm:px-3">Judul Luaran</th>
-                            <th class="py-3.5 px-2 sm:px-3">Jenis Luaran</th>
-                            <th class="py-3.5 px-2 sm:px-3">Penulis / Dosen</th>
-                            <th class="py-3.5 px-2 sm:px-3">Nama Penerbit</th>
-                            <th class="py-3.5 px-2 sm:px-3">Tanggal terbit</th>
-                            <th class="text-center py-3.5 px-2 sm:px-3">Action</th>
-                        </tr>
-                    </thead>
-                    <tbody class="text-gray-800">
-                        @forelse($luaranList as $item)
-                            @php
-                                $pageCurrent = (int) ($pagination['current_page'] ?? 1);
-                                $pageLimit   = (int) ($pagination['per_page'] ?? 10);
-                                $rowNumber   = $loop->iteration + (($pageCurrent - 1) * $pageLimit);
-                                $itemId      = $item['id'] ?? $loop->index;
-                                $kategori    = $item['kategori'] ?? 'jurnal';
-                                $judul       = $item['judul'] ?? '-';
-                                $jenis       = $item['jenis'] ?? '-';
-                                $namaDosen   = $item['nama_dosen'] ?? '-';
-                                $penerbit    = $item['nama_penerbit'] ?? '-';
-                                $url         = $item['url'] ?? null;
-                                $extra       = $item['extra'] ?? [];
-
-                                // Format tanggal DD/MM/YYYY
-                                $rawDate = $item['tanggal_terbit'] ?? null;
-                                $tanggal = '-';
-                                if ($rawDate) {
-                                    try {
-                                        $ts = strtotime((string) $rawDate);
-                                        $tanggal = $ts ? date('d/m/Y', $ts) : (string) $rawDate;
-                                    } catch (\Throwable) {
-                                        $tanggal = (string) $rawDate;
-                                    }
-                                }
-
-                                $extraDataJson = json_encode($extra, JSON_HEX_APOS | JSON_HEX_QUOT);
-                            @endphp
-                            <tr class="luaran-row border-b border-gray-200 hover:bg-gray-50/60 transition-colors duration-150 group">
-                                <td class="text-center text-gray-900 py-4 px-2 sm:px-3 text-sm">{{ $rowNumber }}.</td>
-                                <td class="text-sm font-medium text-gray-900 py-4 px-2 sm:px-3 break-words leading-snug">
-                                    {{ $judul }}
-                                </td>
-                                <td class="py-4 px-2 sm:px-3 text-sm text-gray-800">
-                                    {{ $jenis }}
-                                </td>
-                                <td class="text-sm text-gray-800 py-4 px-2 sm:px-3 break-words">{{ $namaDosen }}</td>
-                                <td class="text-sm text-gray-800 py-4 px-2 sm:px-3 break-words">{{ $penerbit }}</td>
-                                <td class="text-sm text-gray-800 py-4 px-2 sm:px-3 whitespace-nowrap">{{ $tanggal }}</td>
-                                <td class="py-4 px-2 sm:px-3">
-                                    <div class="flex items-center justify-center gap-2 sm:gap-3">
-                                        {{-- Edit --}}
-                                        <button
-                                            type="button"
-                                            class="edit-luaran-btn text-[#F59E0B] hover:text-[#D97706] transition p-1 cursor-pointer"
-                                            title="Edit Luaran"
-                                            data-id="{{ $itemId }}"
-                                            data-kategori="{{ strtolower($jenis) }}"
-                                            data-extra="{{ $extraDataJson }}"
-                                        >
-                                            <x-icon.edit class="w-5 h-5"/>
-                                        </button>
-
-                                        {{-- Hapus --}}
-                                        <button
-                                            type="button"
-                                            class="text-[#DC2626] hover:text-[#B91C1C] transition p-1 cursor-pointer"
-                                            title="Hapus Luaran"
-                                            data-confirm-delete
-                                            data-action="{{ route('luaran.destroy', $itemId) }}"
-                                            data-method="DELETE"
-                                            data-fields='{"jenis":"{{ strtolower($kategori) }}"}'
-                                            data-title="Hapus Data Luaran?"
-                                            data-message="Apakah Anda yakin ingin menghapus &quot;{{ addslashes($judul) }}&quot;? Data tidak dapat dikembalikan."
-                                        >
-                                            <x-icon.delete class="w-5 h-5"/>
-                                        </button>
-
-                                        {{-- Lihat Dokumen --}}
-                                        @if($url)
-                                            <a
-                                                href="{{ $url }}"
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                class="text-primary hover:text-additional transition p-1 cursor-pointer"
-                                                title="Buka Dokumen"
-                                            >
-                                                <x-icon.eye class="w-5 h-5"/>
-                                            </a>
-                                        @else
-                                            <span class="text-gray-300 p-1 cursor-not-allowed" title="Tidak ada tautan">
-                                                <x-icon.eye class="w-5 h-5"/>
-                                            </span>
-                                        @endif
-                                    </div>
-                                </td>
-                            </tr>
-                        @empty
-                            <tr>
-                                <td colspan="7" class="py-14 px-6 border-b border-gray-200 text-center">
-                                    <p class="text-sm font-semibold text-gray-600">Tidak ada data luaran yang sesuai</p>
-                                    <p class="text-xs text-gray-400 mt-1">Coba ubah kata kunci pencarian atau filter jenis luaran.</p>
-                                </td>
-                            </tr>
-                        @endforelse
-                    </tbody>
-                </table>
-            </div>
-
-            {{-- Pagination Container --}}
-            <div id="luaran-pagination-container">
-                <x-pagination :paginator="$pagination"/>
-            </div>
-
-        </div>
-
-    @endif
-
-</div>
-
-{{-- ══════════════════════════════════════════════════════════════════════
-     STEP 1: MODAL POP-UP PILIH JENIS LUARAN (CARD / RADIO SELECTOR)
-     Opsi HANYA 5: Buku, Jurnal, Seminar, HKI, Produk
-══════════════════════════════════════════════════════════════════════ --}}
-<div
-    id="modalStep1PilihJenis"
-    class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/45 backdrop-blur-[1px] opacity-0 pointer-events-none transition-all duration-200 select-none"
-    role="dialog"
-    aria-modal="true"
-    aria-labelledby="modalStep1Title"
->
-    <div class="luaran-modal-card relative bg-white rounded-[20px] p-6 sm:p-7 max-w-[460px] w-full shadow-2xl transform scale-95 transition-all duration-200 overflow-hidden">
-        
-        {{-- Header Modal Step 1 --}}
-        <div class="text-center mb-5">
-            <h3 id="modalStep1Title" class="text-xl font-bold text-gray-900 tracking-tight">
-                Jenis Luaran
-            </h3>
-            <p class="text-xs text-gray-500 mt-1">
-                Langkah 1 dari 2: Pilih jenis data luaran yang ingin ditambahkan
-            </p>
-        </div>
-
-        {{-- Radio / Card Selector (Hanya 5 Jenis Pas) --}}
-        <div class="space-y-2.5 my-5" id="cardSelectorJenisLuaran">
-
-            {{-- 1. BUKU --}}
-            <label class="jenis-radio-card group relative flex items-center justify-between p-3.5 rounded-xl border-2 border-gray-200 hover:border-[#01568D] hover:bg-blue-50/30 transition-all cursor-pointer select-none">
-                <div class="flex items-center gap-3.5">
-                    <div class="w-10 h-10 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center shrink-0 border border-amber-200 group-hover:scale-105 transition-transform">
-                        <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.042A8.967 8.967 0 0 0 6 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 0 1 6 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 0 1 6-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0 0 18 18a8.967 8.967 0 0 0-6 2.292m0-14.25v14.25" />
-                        </svg>
-                    </div>
-                    <div>
-                        <span class="block text-sm font-bold text-gray-900 group-hover:text-primary transition-colors">Buku</span>
-                        <span class="block text-xs text-gray-500">Buku Ajar, Referensi, Monograf, Jurnal</span>
-                    </div>
-                </div>
-                <input type="radio" name="radio_jenis_luaran" value="Buku" class="sr-only">
-                <div class="radio-indicator w-5 h-5 rounded-full border-2 border-gray-300 flex items-center justify-center shrink-0 transition-all">
-                    <div class="radio-dot w-2.5 h-2.5 rounded-full bg-primary opacity-0 transition-opacity"></div>
-                </div>
-            </label>
-
-            {{-- 2. JURNAL --}}
-            <label class="jenis-radio-card group relative flex items-center justify-between p-3.5 rounded-xl border-2 border-gray-200 hover:border-[#01568D] hover:bg-blue-50/30 transition-all cursor-pointer select-none">
-                <div class="flex items-center gap-3.5">
-                    <div class="w-10 h-10 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center shrink-0 border border-blue-200 group-hover:scale-105 transition-transform">
-                        <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" />
-                        </svg>
-                    </div>
-                    <div>
-                        <span class="block text-sm font-bold text-gray-900 group-hover:text-primary transition-colors">Jurnal</span>
-                        <span class="block text-xs text-gray-500">Artikel Terindeks Scopus, Sinta, dll.</span>
-                    </div>
-                </div>
-                <input type="radio" name="radio_jenis_luaran" value="Jurnal" class="sr-only">
-                <div class="radio-indicator w-5 h-5 rounded-full border-2 border-gray-300 flex items-center justify-center shrink-0 transition-all">
-                    <div class="radio-dot w-2.5 h-2.5 rounded-full bg-primary opacity-0 transition-opacity"></div>
-                </div>
-            </label>
-
-            {{-- 3. SEMINAR --}}
-            <label class="jenis-radio-card group relative flex items-center justify-between p-3.5 rounded-xl border-2 border-gray-200 hover:border-[#01568D] hover:bg-blue-50/30 transition-all cursor-pointer select-none">
-                <div class="flex items-center gap-3.5">
-                    <div class="w-10 h-10 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0 border border-emerald-200 group-hover:scale-105 transition-transform">
-                        <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 18.75a6 6 0 0 0 6-6v-1.5m-6 7.5a6 6 0 0 1-6-6v-1.5m6 7.5v3.75m-3.75 0h7.5M12 15.75a3 3 0 0 1-3-3V4.5a3 3 0 1 1 6 0v8.25a3 3 0 0 1-3 3Z" />
-                        </svg>
-                    </div>
-                    <div>
-                        <span class="block text-sm font-bold text-gray-900 group-hover:text-primary transition-colors">Seminar</span>
-                        <span class="block text-xs text-gray-500">Prosiding Seminar & Konferensi Ilmiah</span>
-                    </div>
-                </div>
-                <input type="radio" name="radio_jenis_luaran" value="Seminar" class="sr-only">
-                <div class="radio-indicator w-5 h-5 rounded-full border-2 border-gray-300 flex items-center justify-center shrink-0 transition-all">
-                    <div class="radio-dot w-2.5 h-2.5 rounded-full bg-primary opacity-0 transition-opacity"></div>
-                </div>
-            </label>
-
-            {{-- 4. HKI --}}
-            <label class="jenis-radio-card group relative flex items-center justify-between p-3.5 rounded-xl border-2 border-gray-200 hover:border-[#01568D] hover:bg-blue-50/30 transition-all cursor-pointer select-none">
-                <div class="flex items-center gap-3.5">
-                    <div class="w-10 h-10 rounded-lg bg-purple-50 text-purple-600 flex items-center justify-center shrink-0 border border-purple-200 group-hover:scale-105 transition-transform">
-                        <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75m-3-7.036A11.959 11.959 0 0 1 3.598 6 11.99 11.99 0 0 0 3 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285Z" />
-                        </svg>
-                    </div>
-                    <div>
-                        <span class="block text-sm font-bold text-gray-900 group-hover:text-primary transition-colors">HKI</span>
-                        <span class="block text-xs text-gray-500">Hak Cipta, Paten, Merek, Desain Industri</span>
-                    </div>
-                </div>
-                <input type="radio" name="radio_jenis_luaran" value="HKI" class="sr-only">
-                <div class="radio-indicator w-5 h-5 rounded-full border-2 border-gray-300 flex items-center justify-center shrink-0 transition-all">
-                    <div class="radio-dot w-2.5 h-2.5 rounded-full bg-primary opacity-0 transition-opacity"></div>
-                </div>
-            </label>
-
-            {{-- 5. PRODUK --}}
-            <label class="jenis-radio-card group relative flex items-center justify-between p-3.5 rounded-xl border-2 border-gray-200 hover:border-[#01568D] hover:bg-blue-50/30 transition-all cursor-pointer select-none">
-                <div class="flex items-center gap-3.5">
-                    <div class="w-10 h-10 rounded-lg bg-rose-50 text-rose-600 flex items-center justify-center shrink-0 border border-rose-200 group-hover:scale-105 transition-transform">
-                        <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="m21 7.5-9-5.25L3 7.5m18 0-9 5.25m9-5.25v9l-9 5.25M3 7.5l9 5.25M3 7.5v9l9 5.25m0-9v9" />
-                        </svg>
-                    </div>
-                    <div>
-                        <span class="block text-sm font-bold text-gray-900 group-hover:text-primary transition-colors">Produk</span>
-                        <span class="block text-xs text-gray-500">Produk Terapan, Prototipe, Perangkat Lunak</span>
-                    </div>
-                </div>
-                <input type="radio" name="radio_jenis_luaran" value="Produk" class="sr-only">
-                <div class="radio-indicator w-5 h-5 rounded-full border-2 border-gray-300 flex items-center justify-center shrink-0 transition-all">
-                    <div class="radio-dot w-2.5 h-2.5 rounded-full bg-primary opacity-0 transition-opacity"></div>
-                </div>
-            </label>
-
-        </div>
-
-        {{-- Action Buttons: Batal & Lanjut (Simpan Pilihan) --}}
-        <div class="grid grid-cols-2 gap-4 pt-2">
-            <button
-                type="button"
-                id="btnBatalStep1"
-                class="w-full py-2.5 px-6 rounded-[8px] bg-white-form hover:bg-gray-300 text-gray-900 font-bold text-sm transition cursor-pointer text-center"
-            >
-                Batal
-            </button>
-            <button
-                type="button"
-                id="btnLanjutStep2"
-                class="w-full py-2.5 px-6 rounded-[8px] bg-[#01568D] hover:bg-primary text-white font-bold text-sm shadow-xs transition cursor-pointer text-center flex items-center justify-center gap-2"
-            >
-                <span>Lanjut</span>
-                <svg class="w-4 h-4 stroke-[2.5]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3"/>
-                </svg>
-            </button>
-        </div>
-
-    </div>
-</div>
-
-{{-- ══════════════════════════════════════════════════════════════════════
-     STEP 2: MODAL POP-UP FORM INPUT SPESIFIK (AJAX SUBMIT KE POST /api/luaran)
-══════════════════════════════════════════════════════════════════════ --}}
-<div
-    id="modalStep2Form"
-    class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/45 backdrop-blur-[1px] opacity-0 pointer-events-none transition-all duration-200 select-none"
-    role="dialog"
-    aria-modal="true"
-    aria-labelledby="modalStep2Title"
->
-    <div class="luaran-modal-card relative bg-white rounded-[20px] p-7 sm:p-8 max-w-[500px] w-full shadow-2xl transform scale-95 transition-all duration-200 overflow-hidden max-h-[90vh] overflow-y-auto">
-        
-        {{-- Header Form Step 2 dengan Badge Kategori --}}
-        <div class="flex items-center justify-between border-b border-gray-100 pb-4 mb-5">
-            <div>
-                <span class="text-[11px] font-bold uppercase tracking-wider text-primary/70">Langkah 2 dari 2</span>
-                <h3 id="modalStep2Title" class="text-xl font-bold text-gray-900 tracking-tight">
-                    Tambah Luaran
-                </h3>
-            </div>
-            <span id="badgeJenisLuaran" class="px-3 py-1 rounded-full text-xs font-bold bg-[#01568D]/10 text-[#01568D] border border-[#01568D]/20">
-                Buku
-            </span>
-        </div>
-
-        {{-- Form Container --}}
-        <form id="formCreateLuaranAjax" action="{{ route('luaran.store') }}" method="POST" class="space-y-4">
-            @csrf
-            {{-- Hidden input yang selalu mengirim jenis_luaran --}}
-            <input type="hidden" name="jenis_luaran" id="hiddenInputJenisLuaran" value="Buku">
-
-            <div>
-                <label for="createLuaranDosen" class="block text-xs font-bold text-gray-900 mb-1.5">
-                    Dosen Penanggung Jawab <span class="text-red-500">*</span>
-                </label>
-                <select
-                    name="id_dosen"
-                    id="createLuaranDosen"
-                    required
-                    {{ empty($dosenOptions) ? 'disabled' : '' }}
-                    class="w-full px-4 py-2.5 rounded-[10px] bg-white-form border-none text-sm font-medium text-gray-700 focus:ring-2 focus:ring-primary/20 focus:outline-none"
-                >
-                    <option value="">Pilih Dosen</option>
-                    @foreach($dosenOptions as $dosen)
-                        <option value="{{ $dosen['id'] }}" {{ (int) $selectedDosenId === $dosen['id'] ? 'selected' : '' }}>
-                            {{ $dosen['name'] }}
-                        </option>
-                    @endforeach
-                </select>
-                @if($dosenLoadError)
-                    <p class="mt-1 text-xs text-red-600">Daftar dosen gagal dimuat atau belum tersedia. Muat ulang halaman sebelum mengirim luaran.</p>
-                @endif
-            </div>
-
-            {{-- 1. SUBFORM BUKU (Gambar 2) --}}
-            <div id="subform_Buku" class="step2-subform space-y-4 hidden">
-                @include('luaran._form_buku', ['prefix' => 'create_buku', 'data' => []])
-            </div>
-
-            {{-- 2. SUBFORM JURNAL (Gambar 3) --}}
-            <div id="subform_Jurnal" class="step2-subform space-y-4 hidden">
-                @include('luaran._form_jurnal', ['prefix' => 'create_jurnal', 'data' => []])
-            </div>
-
-            {{-- 3. SUBFORM SEMINAR (Gambar 4) --}}
-            <div id="subform_Seminar" class="step2-subform space-y-4 hidden">
-                @include('luaran._form_seminar', ['prefix' => 'create_seminar', 'data' => []])
-            </div>
-
-            {{-- 4. SUBFORM HKI (Starter / Skeleton) --}}
-            <div id="subform_HKI" class="step2-subform space-y-4 hidden">
-                @include('luaran._form_hki', ['prefix' => 'create_hki', 'data' => []])
-            </div>
-
-            {{-- 5. SUBFORM PRODUK (Starter / Skeleton) --}}
-            <div id="subform_Produk" class="step2-subform space-y-4 hidden">
-                @include('luaran._form_produk', ['prefix' => 'create_produk', 'data' => []])
-            </div>
-
-            {{-- Action Buttons: Kembali ke Step 1 & Simpan Data --}}
-            @include('luaran._form_actions', ['backId' => 'btnKembaliKeStep1', 'submitText' => 'Simpan'])
-        </form>
-
-    </div>
-</div>
-
-{{-- ══════════════════════════════════════════════════════════════════════
-     MODAL EDIT (Untuk memperbarui data yang sudah ada)
-══════════════════════════════════════════════════════════════════════ --}}
-<div
-    id="modalEditLuaran"
-    class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/45 backdrop-blur-[1px] opacity-0 pointer-events-none transition-all duration-200 select-none"
-    role="dialog"
-    aria-modal="true"
-    aria-labelledby="modalEditTitle"
->
-    <div class="luaran-modal-card relative bg-white rounded-[20px] p-7 sm:p-8 max-w-[500px] w-full shadow-2xl transform scale-95 transition-all duration-200 overflow-hidden max-h-[90vh] overflow-y-auto">
-        <h3 id="modalEditTitle" class="text-xl font-bold text-gray-900 tracking-tight text-center mb-6">
-            Edit Luaran
-        </h3>
-
-        <form id="formEditLuaranAjax" action="#" method="POST" class="space-y-4">
-            @csrf
-            @method('PUT')
-            <input type="hidden" name="jenis_luaran" id="editHiddenJenisLuaran" value="Jurnal">
-
-            <div>
-                <label for="editLuaranDosen" class="block text-xs font-bold text-gray-900 mb-1.5">
-                    Dosen Penanggung Jawab <span class="text-red-500">*</span>
-                </label>
-                <select
-                    name="id_dosen"
-                    id="editLuaranDosen"
-                    required
-                    {{ empty($dosenOptions) ? 'disabled' : '' }}
-                    class="w-full px-4 py-2.5 rounded-[10px] bg-white-form border-none text-sm font-medium text-gray-700 focus:ring-2 focus:ring-primary/20 focus:outline-none"
-                >
-                    <option value="">Pilih Dosen</option>
-                    @foreach($dosenOptions as $dosen)
-                        <option value="{{ $dosen['id'] }}">{{ $dosen['name'] }}</option>
-                    @endforeach
-                </select>
-                @if($dosenLoadError)
-                    <p class="mt-1 text-xs text-red-600">Daftar dosen gagal dimuat atau belum tersedia. Muat ulang halaman sebelum mengirim perubahan.</p>
-                @endif
-            </div>
-
-            <div id="editSubform_Buku" class="edit-subform space-y-4 hidden">
-                @include('luaran._form_buku', ['prefix' => 'edit_buku', 'data' => []])
-            </div>
-            <div id="editSubform_Jurnal" class="edit-subform space-y-4 hidden">
-                @include('luaran._form_jurnal', ['prefix' => 'edit_jurnal', 'data' => []])
-            </div>
-            <div id="editSubform_Seminar" class="edit-subform space-y-4 hidden">
-                @include('luaran._form_seminar', ['prefix' => 'edit_seminar', 'data' => []])
-            </div>
-            <div id="editSubform_HKI" class="edit-subform space-y-4 hidden">
-                @include('luaran._form_hki', ['prefix' => 'edit_hki', 'data' => []])
-            </div>
-            <div id="editSubform_Produk" class="edit-subform space-y-4 hidden">
-                @include('luaran._form_produk', ['prefix' => 'edit_produk', 'data' => []])
-            </div>
-
-            @include('luaran._form_actions', ['closeId' => 'closeEditModalBtn', 'cancelText' => 'Batal', 'submitText' => 'Perbarui'])
-        </form>
-    </div>
-</div>
-
-{{-- Global Confirm Delete Component --}}
-<x-confirm-delete/>
-
+@section('title')
+    <span class="inline-flex items-center gap-2.5 sm:gap-3.5 flex-wrap">
+        <span>Luaran</span>
+        <svg class="h-5 w-5 shrink-0 stroke-[3] text-black sm:h-7 sm:w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" />
+        </svg>
+        <span>{{ $kategoriLabel }}</span>
+    </span>
 @endsection
 
-@push('scripts')
-<script>
-document.addEventListener('DOMContentLoaded', function () {
-
-    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
-
-    function clearValidationErrors(form) {
-        form.querySelectorAll('[data-validation-error]').forEach(error => error.remove());
-        form.querySelectorAll('[aria-invalid="true"]').forEach(field => field.removeAttribute('aria-invalid'));
-    }
-
-    function showValidationErrors(form, errors) {
-        if (!errors || typeof errors !== 'object') return;
-
-        Object.entries(errors).forEach(([name, messages]) => {
-            const field = Array.from(form.elements).find(element => element.name === name);
-            if (!field) return;
-
-            const container = field.closest('div');
-            const message = Array.isArray(messages) ? messages[0] : messages;
-            if (!container || typeof message !== 'string') return;
-
-            field.setAttribute('aria-invalid', 'true');
-            const errorElement = document.createElement('p');
-            errorElement.dataset.validationError = '';
-            errorElement.className = 'mt-1 text-xs text-red-600';
-            errorElement.textContent = message;
-            container.append(errorElement);
-        });
-    }
-
-    function showErrorNotification(message) {
-        if (typeof window.showToast === 'function') {
-            window.showToast(message, 'error', 'Gagal');
-        } else {
-            alert(message);
-        }
-    }
-
-    // ── Helper Animasi Modal ───────────────────────────────────────────────
-    function showModal(modalEl) {
-        if (!modalEl) return;
-        const card = modalEl.querySelector('.luaran-modal-card');
-        modalEl.classList.remove('opacity-0', 'pointer-events-none');
-        modalEl.classList.add('opacity-100');
-        if (card) {
-            card.classList.remove('scale-95');
-            card.classList.add('scale-100');
-        }
-        document.body.classList.add('overflow-hidden');
-    }
-
-    function hideModal(modalEl) {
-        if (!modalEl) return;
-        const card = modalEl.querySelector('.luaran-modal-card');
-        modalEl.classList.remove('opacity-100');
-        modalEl.classList.add('opacity-0', 'pointer-events-none');
-        if (card) {
-            card.classList.remove('scale-100');
-            card.classList.add('scale-95');
-        }
-        document.body.classList.remove('overflow-hidden');
-    }
-
-    // ── STEP 1: Modal Pilih Jenis Luaran ────────────────────────────────────
-    const modalStep1 = document.getElementById('modalStep1PilihJenis');
-    const modalStep2 = document.getElementById('modalStep2Form');
-    const btnBatalStep1 = document.getElementById('btnBatalStep1');
-    const btnLanjutStep2 = document.getElementById('btnLanjutStep2');
-    const btnKembaliKeStep1 = document.getElementById('btnKembaliKeStep1');
-
-    const radioCards = document.querySelectorAll('.jenis-radio-card');
-    let selectedJenisLuaran = '';
-
-    // Reset dan aktifkan state radio card saat diklik
-    radioCards.forEach(card => {
-        card.addEventListener('click', function () {
-            radioCards.forEach(c => {
-                c.classList.remove('border-primary', 'bg-primary/5', 'shadow-xs');
-                c.classList.add('border-gray-200');
-                const dot = c.querySelector('.radio-dot');
-                const ind = c.querySelector('.radio-indicator');
-                if (dot) dot.classList.add('opacity-0');
-                if (ind) ind.classList.remove('border-primary');
-            });
-
-            this.classList.remove('border-gray-200');
-            this.classList.add('border-primary', 'bg-primary/5', 'shadow-xs');
-
-            const radio = this.querySelector('input[type="radio"]');
-            if (radio) {
-                radio.checked = true;
-                selectedJenisLuaran = radio.value;
-            }
-
-            const activeDot = this.querySelector('.radio-dot');
-            const activeInd = this.querySelector('.radio-indicator');
-            if (activeDot) activeDot.classList.remove('opacity-0');
-            if (activeInd) activeInd.classList.add('border-primary');
-        });
-    });
-
-    // Buka Modal Step 1 saat tombol Tambah Luaran diklik
-    document.querySelectorAll('.open-step1-btn').forEach(btn => {
-        btn.addEventListener('click', function () {
-            // Default pilih Buku jika belum ada pilihan
-            if (!selectedJenisLuaran && radioCards[0]) {
-                radioCards[0].click();
-            }
-            showModal(modalStep1);
-        });
-    });
-
-    // Tutup Step 1
-    btnBatalStep1?.addEventListener('click', () => hideModal(modalStep1));
-
-    // Lanjut ke Step 2 (Transisi antar modal)
-    btnLanjutStep2?.addEventListener('click', function () {
-        if (!selectedJenisLuaran) {
-            if (typeof window.showToast === 'function') {
-                window.showToast('Silakan pilih salah satu jenis luaran terlebih dahulu.', 'warning', 'Peringatan');
-            } else {
-                alert('Silakan pilih salah satu jenis luaran terlebih dahulu.');
-            }
-            return;
-        }
-
-        hideModal(modalStep1);
-
-        setTimeout(() => {
-            bukaModalStep2(selectedJenisLuaran);
-        }, 150);
-    });
-
-    // Kembali dari Step 2 ke Step 1
-    btnKembaliKeStep1?.addEventListener('click', function () {
-        hideModal(modalStep2);
-        setTimeout(() => {
-            showModal(modalStep1);
-        }, 150);
-    });
-
-    // ── STEP 2: Render Form Sesuai Jenis Luaran ─────────────────────────────
-    const titleStep2 = document.getElementById('modalStep2Title');
-    const badgeJenis = document.getElementById('badgeJenisLuaran');
-    const hiddenJenis = document.getElementById('hiddenInputJenisLuaran');
-    const step2Subforms = document.querySelectorAll('.step2-subform');
-
-    function activateSubform(subforms, activeSubform) {
-        subforms.forEach(subform => {
-            const isActive = subform === activeSubform;
-            subform.classList.toggle('hidden', !isActive);
-            subform.querySelectorAll('input, select, textarea').forEach(field => {
-                field.disabled = !isActive;
-            });
-        });
-    }
-
-    activateSubform(step2Subforms, null);
-
-    function bukaModalStep2(jenis) {
-        if (titleStep2) titleStep2.textContent = `Tambah ${jenis}`;
-        if (badgeJenis) badgeJenis.textContent = jenis;
-        if (hiddenJenis) hiddenJenis.value = jenis;
-
-        const targetSubform = document.getElementById(`subform_${jenis}`);
-        activateSubform(step2Subforms, targetSubform);
-        clearValidationErrors(formCreateAjax);
-
-        showModal(modalStep2);
-    }
-
-    // ── AJAX SUBMIT KE POST /api/luaran (Via Controller Proxy) ──────────────
-    const formCreateAjax = document.getElementById('formCreateLuaranAjax');
-
-    formCreateAjax?.addEventListener('submit', async function (e) {
-        e.preventDefault();
-
-        const submitBtn = this.querySelector('.btn-submit-luaran');
-        const btnText = submitBtn?.querySelector('.btn-text');
-        const btnSpinner = submitBtn?.querySelector('.btn-spinner');
-
-        clearValidationErrors(this);
-
-        // State loading
-        if (submitBtn) submitBtn.disabled = true;
-        if (btnText) btnText.textContent = 'Menyimpan...';
-        if (btnSpinner) btnSpinner.classList.remove('hidden');
-
-        try {
-            const formData = new FormData(this);
-            const payload = {};
-            formData.forEach((val, key) => {
-                if (key !== '_token' && val !== '') {
-                    payload[key] = val;
-                }
-            });
-
-            // Pastikan atribut jenis_luaran selalu terkirim
-            payload['jenis_luaran'] = selectedJenisLuaran || hiddenJenis?.value || 'Jurnal';
-            ['id_dosen', 'id_kegiatan'].forEach(key => {
-                if (payload[key] !== undefined) payload[key] = Number(payload[key]);
-            });
-
-            const response = await fetch("{{ route('luaran.store') }}", {
-                method: 'POST',
-                headers: {
-                    'X-CSRF-TOKEN': csrfToken,
-                    'Accept': 'application/json',
-                    'Content-Type': 'application/json',
-                    'X-Requested-With': 'XMLHttpRequest'
-                },
-                body: JSON.stringify(payload)
-            });
-
-            const result = await response.json().catch(() => ({}));
-
-            if (!response.ok || result.success === false) {
-                const error = new Error(result.message || 'Terjadi kesalahan saat menyimpan data luaran.');
-                error.validationErrors = result.errors || {};
-                throw error;
-            }
-
-            // Notifikasi sukses via komponen Toast
-            if (typeof window.showToast === 'function') {
-                window.showToast(result.message || `Data ${payload['jenis_luaran']} berhasil ditambahkan.`, 'success', 'Berhasil');
-            } else {
-                alert(result.message || 'Data luaran berhasil disimpan!');
-            }
-
-            // Tutup modal Step 2 & Reset form
-            hideModal(modalStep2);
-            formCreateAjax.reset();
-            clearValidationErrors(formCreateAjax);
-
-            // Refresh tabel secara dinamis tanpa reload halaman
-            await refreshTableData(true);
-
-        } catch (error) {
-            showValidationErrors(this, error.validationErrors);
-            showErrorNotification(error.message || 'Terjadi kesalahan saat menyimpan data luaran.');
-        } finally {
-            if (submitBtn) submitBtn.disabled = false;
-            if (btnText) btnText.textContent = 'Simpan';
-            if (btnSpinner) btnSpinner.classList.add('hidden');
-        }
-    });
-
-    // ── FUNGSI REFRESH DATA TABEL OTOMATIS (SPA-Like Update) ────────────────
-    async function refreshTableData(resetFilters = false) {
-        const loadingState = document.getElementById('luaran-loading-state');
-        const tableContainer = document.getElementById('luaran-main-wrapper');
-        if (loadingState) {
-            loadingState.classList.remove('hidden');
-            loadingState.classList.add('flex');
-        }
-        tableContainer?.setAttribute('aria-busy', 'true');
-
-        try {
-            const url = resetFilters ? @json(route('luaran.index')) : window.location.href;
-            const res = await fetch(url, {
-                headers: { 'X-Requested-With': 'XMLHttpRequest' }
-            });
-            if (!res.ok) throw new Error('Data luaran gagal dimuat ulang.');
-
-            const html = await res.text();
-            const parser = new DOMParser();
-            const doc = parser.parseFromString(html, 'text/html');
-
-            const newContent = doc.getElementById('luaran-main-wrapper');
-            const currentContent = document.getElementById('luaran-main-wrapper');
-
-            if (newContent && currentContent) {
-                currentContent.innerHTML = newContent.innerHTML;
-                attachTableRowListeners();
-            } else {
-                throw new Error('Tampilan tabel luaran tidak ditemukan pada respons server.');
-            }
-        } catch (error) {
-            console.error('Gagal memperbarui tabel:', error);
-            showErrorNotification(error.message || 'Data luaran gagal dimuat ulang.');
-        } finally {
-            if (loadingState) {
-                loadingState.classList.add('hidden');
-                loadingState.classList.remove('flex');
-            }
-            tableContainer?.removeAttribute('aria-busy');
-        }
-    }
-
-    // ── EDIT FLOW ──────────────────────────────────────────────────────────
-    const modalEdit = document.getElementById('modalEditLuaran');
-    const formEditAjax = document.getElementById('formEditLuaranAjax');
-    const editSubforms = document.querySelectorAll('.edit-subform');
-    const editHiddenJenis = document.getElementById('editHiddenJenisLuaran');
-    const editLuaranDosen = document.getElementById('editLuaranDosen');
-    const closeEditModalBtn = document.getElementById('closeEditModalBtn');
-
-    activateSubform(editSubforms, null);
-
-    closeEditModalBtn?.addEventListener('click', () => hideModal(modalEdit));
-
-    function attachTableRowListeners() {
-        document.querySelectorAll('.edit-luaran-btn').forEach(btn => {
-            btn.addEventListener('click', function () {
-                const id = this.dataset.id;
-                let rawKat = (this.dataset.kategori || 'jurnal').toLowerCase();
-                let kategori = 'Jurnal';
-
-                if (rawKat.includes('buku')) kategori = 'Buku';
-                else if (rawKat.includes('seminar') || rawKat.includes('prosiding')) kategori = 'Seminar';
-                else if (rawKat.includes('hki') || rawKat.includes('hak cipta') || rawKat.includes('paten')) kategori = 'HKI';
-                else if (rawKat.includes('produk')) kategori = 'Produk';
-
-                let extra = {};
-                try { extra = JSON.parse(this.dataset.extra || '{}'); } catch(e) {}
-
-                if (formEditAjax) {
-                    formEditAjax.action = @json(route('luaran.update', ['id' => '__ID__'])).replace('__ID__', encodeURIComponent(id));
-                }
-                if (editHiddenJenis) {
-                    editHiddenJenis.value = kategori;
-                }
-                if (editLuaranDosen) {
-                    editLuaranDosen.value = String(extra.id_dosen ?? '');
-                }
-
-                const activeEditSub = document.getElementById(`editSubform_${kategori}`);
-                activateSubform(editSubforms, activeEditSub);
-                clearValidationErrors(formEditAjax);
-                if (activeEditSub) populateEditFields(activeEditSub, kategori, extra);
-
-                showModal(modalEdit);
-            });
-        });
-    }
-
-    function populateEditFields(container, kategori, data) {
-        function val(name, value) {
-            const el = container.querySelector(`[name="${name}"]`);
-            if (el && value !== undefined && value !== null) {
-                el.value = el.type === 'date' ? String(value).slice(0, 10) : value;
-            }
-        }
-
-        if (kategori === 'Buku') {
-            val('judul_buku', data.judul_buku ?? data.judul ?? '');
-            val('isbn', data.isbn ?? '');
-            val('penerbit_buku', data.penerbit_buku ?? data.nama_penerbit ?? data.penerbit ?? '');
-            val('tahun_terbit', data.tahun_terbit ?? data.tahun ?? '');
-            val('jenis_buku', data.jenis_buku ?? '');
-            val('bidang_ilmu', data.bidang_ilmu ?? '');
-            val('halaman_buku', data.halaman_buku ?? data.total_halaman ?? '');
-            val('url_luaran', data.url_luaran ?? data.tautan_buku ?? data.url_buku ?? data.url ?? '');
-        } else if (kategori === 'Seminar') {
-            val('nama_seminar', data.nama_seminar ?? data.judul_publikasi ?? data.judul ?? '');
-            val('nama_prosiding', data.nama_prosiding ?? data.nama_penerbit ?? '');
-            val('isbn_prosiding', data.isbn_prosiding ?? data.isbn ?? '');
-            val('penyelenggara', data.penyelenggara ?? '');
-            val('tanggal_seminar', data.tanggal_seminar ?? data.tanggal_terbit ?? '');
-            val('lokasi_seminar', data.lokasi_seminar ?? '');
-            val('halaman_prosiding', data.halaman_prosiding ?? data.total_halaman ?? '');
-            val('doi_prosiding', data.doi_prosiding ?? data.doi ?? '');
-            val('tautan_seminar', data.tautan_seminar ?? data.tautan_prosiding ?? data.url_luaran ?? data.url_publikasi ?? data.url ?? '');
-        } else if (kategori === 'HKI') {
-            val('judul_hak_cipta', data.judul_hak_cipta ?? data.judul ?? '');
-            val('jenis_hki', data.jenis_hki ?? '');
-            val('nomor_pendaftaran_hki', data.nomor_pendaftaran_hki ?? '');
-            val('nomor_sertifikat_hki', data.nomor_sertifikat_hki ?? '');
-            val('tanggal_pendaftaran_hki', data.tanggal_pendaftaran_hki ?? '');
-            val('tanggal_terbit_sertifikat_hki', data.tanggal_terbit_sertifikat_hki ?? '');
-            val('pemegang_hki', data.pemegang_hki ?? '');
-            val('status_hki', data.status_hki ?? '');
-            val('url_luaran', data.url_luaran ?? data.tautan_hki ?? data.url_hki ?? data.url ?? '');
-        } else if (kategori === 'Produk') {
-            val('nama_produk', data.nama_produk ?? data.judul ?? '');
-            val('jenis_produk', data.jenis_produk ?? '');
-            val('status_pengembangan', data.status_pengembangan ?? '');
-            val('tingkat_kesiapanterapan', data.tingkat_kesiapanterapan ?? '');
-            val('deskripsi_produk', data.deskripsi_produk ?? data.deskripsi ?? '');
-            val('tanggal_pembuatan', data.tanggal_pembuatan ?? '');
-            val('url_luaran', data.url_luaran ?? data.tautan_produk ?? data.url_produk ?? data.url ?? '');
-        } else {
-            val('nama_jurnal', data.nama_jurnal ?? data.judul_publikasi ?? data.judul ?? '');
-            val('issn', data.issn ?? '');
-            val('volume', data.volume ?? '');
-            val('tanggal_terbit', data.tanggal_terbit ?? '');
-            val('doi', data.doi ?? '');
-            val('nomor_edisi', data.nomor_edisi ?? '');
-            val('halaman_jurnal', data.halaman_jurnal ?? data.total_halaman ?? '');
-            val('indeksasi', data.indeksasi ?? '');
-            val('url_luaran', data.url_luaran ?? data.tautan_jurnal ?? data.url_publikasi ?? data.url ?? '');
-        }
-    }
-
-    formEditAjax?.addEventListener('submit', async function (e) {
-        e.preventDefault();
-
-        const submitBtn = this.querySelector('.btn-submit-luaran');
-        const btnText = submitBtn?.querySelector('.btn-text');
-        const btnSpinner = submitBtn?.querySelector('.btn-spinner');
-
-        clearValidationErrors(this);
-
-        if (submitBtn) submitBtn.disabled = true;
-        if (btnText) btnText.textContent = 'Menyimpan...';
-        if (btnSpinner) btnSpinner.classList.remove('hidden');
-
-        try {
-            const formData = new FormData(this);
-            const payload = {};
-            formData.forEach((val, key) => {
-                if (key !== '_token' && key !== '_method' && val !== '') {
-                    payload[key] = val;
-                }
-            });
-            ['id_dosen', 'id_kegiatan'].forEach(key => {
-                if (payload[key] !== undefined) payload[key] = Number(payload[key]);
-            });
-
-            const actionUrl = this.action;
-            const response = await fetch(actionUrl, {
-                method: 'PUT',
-                headers: {
-                    'X-CSRF-TOKEN': csrfToken,
-                    'Accept': 'application/json',
-                    'Content-Type': 'application/json',
-                    'X-Requested-With': 'XMLHttpRequest'
-                },
-                body: JSON.stringify(payload)
-            });
-
-            const result = await response.json().catch(() => ({}));
-            if (!response.ok || result.success === false) {
-                const error = new Error(result.message || 'Gagal memperbarui data.');
-                error.validationErrors = result.errors || {};
-                throw error;
-            }
-
-            if (typeof window.showToast === 'function') {
-                window.showToast(result.message || 'Data berhasil diperbarui.', 'success', 'Berhasil');
-            }
-
-            hideModal(modalEdit);
-            await refreshTableData();
-
-        } catch (error) {
-            showValidationErrors(this, error.validationErrors);
-            showErrorNotification(error.message || 'Gagal memperbarui data.');
-        } finally {
-            if (submitBtn) submitBtn.disabled = false;
-            if (btnText) btnText.textContent = 'Perbarui';
-            if (btnSpinner) btnSpinner.classList.add('hidden');
-        }
-    });
-
-    // Pasang listeners awal
-    attachTableRowListeners();
-
-    // ── FILTER TOOLBAR DROPDOWN ────────────────────────────────────────────
-    const filterJenisBtn = document.getElementById('filterJenisBtn');
-    const filterJenisMenu = document.getElementById('filterJenisMenu');
-    const filterJenisChev = document.getElementById('filterJenisChevron');
-    const filterJenisHidden = document.getElementById('filterJenisSelect');
-    const filterJenisLabel = document.getElementById('filterJenisLabel');
-
-    filterJenisBtn?.addEventListener('click', function (e) {
-        e.stopPropagation();
-        const isOpen = filterJenisMenu.classList.toggle('hidden');
-        filterJenisChev?.classList.toggle('rotate-180', !isOpen);
-        filterJenisBtn.setAttribute('aria-expanded', String(!isOpen));
-    });
-
-    document.querySelectorAll('.jenis-option-btn').forEach(btn => {
-        btn.addEventListener('click', function () {
-            const val = this.dataset.value;
-            const label = this.dataset.label;
-            if (filterJenisHidden) filterJenisHidden.value = val;
-            if (filterJenisLabel) filterJenisLabel.textContent = label;
-            filterJenisMenu?.classList.add('hidden');
-            filterJenisChev?.classList.remove('rotate-180');
-            document.getElementById('luaranFilterForm')?.submit();
-        });
-    });
-
-    document.addEventListener('click', function (e) {
-        if (!document.getElementById('filterJenisDropdown')?.contains(e.target)) {
-            filterJenisMenu?.classList.add('hidden');
-            filterJenisChev?.classList.remove('rotate-180');
-        }
-    });
-
-    // Close on backdrop / escape
-    [modalStep1, modalStep2, modalEdit].forEach(modal => {
-        modal?.addEventListener('click', function (e) {
-            if (e.target === modal) hideModal(modal);
-        });
-    });
-
-    document.addEventListener('keydown', function (e) {
-        if (e.key === 'Escape') {
-            hideModal(modalStep1);
-            hideModal(modalStep2);
-            hideModal(modalEdit);
-        }
-    });
-
-});
-</script>
-@endpush
+@section('subtitle')
+    @if(!$apiError)
+        {{ number_format((int) ($pagination['total'] ?? count($rows)), 0, ',', '.') }} Data ditemukan
+    @endif
+@endsection
+
+@section('content')
+@php
+    $startNumber = (int) ($pagination['from'] ?? (((int) ($pagination['current_page'] ?? 1) - 1) * (int) ($pagination['per_page'] ?? 10) + 1));
+    $hasActiveFilters = array_filter([
+        $filters['search'] ?? null,
+        $filters['tahun'] ?? null,
+        $filters['id_kegiatan'] ?? null,
+    ], static fn ($value) => $value !== null && $value !== '') !== [];
+    $yearOptions = range((int) date('Y') + 1, 2000);
+    $selectedYear = (string) ($filters['tahun'] ?? '');
+    $selectClass = 'h-[34px] rounded-md border border-primary bg-white-form px-2 text-[11px] text-gray-900 focus:outline-none focus:ring-0';
+    $exportQuery = array_filter(\Illuminate\Support\Arr::except($filters, ['page']), static fn ($value) => $value !== null && $value !== '');
+    $luaranRoute = request()->routeIs('luaran.tridharma.index') ? 'luaran.tridharma.index' : 'luaran.index';
+    $exportRoute = request()->routeIs('luaran.tridharma.index') ? 'luaran.tridharma.export' : 'luaran.export';
+@endphp
+
+<div class="space-y-5 pb-8">
+    @if($apiError)
+        <div class="rounded-xl border border-rose-200 bg-rose-50 px-5 py-4 text-sm font-semibold text-rose-700" role="alert">
+            {{ $apiError }}
+        </div>
+    @else
+        <form method="GET" action="{{ route($luaranRoute, request()->routeIs('luaran.tridharma.index') ? ['jenis' => $jenis, 'kategori' => $kategori] : ['kategori' => $kategori]) }}" class="flex flex-wrap items-center gap-2" id="luaran-filter-form">
+            <div class="flex h-[34px] w-[248px] max-w-full shrink-0 overflow-hidden rounded-md border border-primary bg-white-form p-[2px]">
+                <label class="sr-only" for="luaran-search">Cari {{ $kategoriLabel }}</label>
+                <input
+                    id="luaran-search"
+                    type="text"
+                    name="search"
+                    value="{{ $filters['search'] ?? '' }}"
+                    placeholder="Cari judul"
+                    class="min-w-0 flex-1 border-0 bg-transparent px-3 py-1 text-xs text-gray-900 placeholder:text-gray-600 focus:outline-none focus:ring-0"
+                >
+                <button type="submit" class="inline-flex h-full w-[34px] shrink-0 items-center justify-center rounded-[5px] border border-transparent text-black" aria-label="Cari">
+                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
+                    </svg>
+                </button>
+            </div>
+
+            <label class="sr-only" for="luaran-kategori">Kategori luaran</label>
+            <select
+                id="luaran-kategori"
+                class="{{ $selectClass }} w-[140px]"
+                onchange="this.form.action = this.value; this.form.requestSubmit()"
+            >
+                @foreach($tabs as $slug => $label)
+                    <option
+                        value="{{ route($luaranRoute, request()->routeIs('luaran.tridharma.index') ? ['jenis' => $jenis, 'kategori' => $slug] : ['kategori' => $slug]) }}"
+                        @selected($slug === $kategori)
+                    >{{ $label }}</option>
+                @endforeach
+            </select>
+
+            <label class="sr-only" for="luaran-tahun">Tahun</label>
+            <select id="luaran-tahun" name="tahun" class="{{ $selectClass }} w-[120px]" onchange="this.form.requestSubmit()">
+                <option value="">Semua Tahun</option>
+                @foreach($yearOptions as $year)
+                    <option value="{{ $year }}" @selected($selectedYear === (string) $year)>{{ $year }}</option>
+                @endforeach
+            </select>
+
+            @if($hasActiveFilters)
+                <a href="{{ route($luaranRoute, request()->routeIs('luaran.tridharma.index') ? ['jenis' => $jenis, 'kategori' => $kategori] : ['kategori' => $kategori]) }}" class="text-xs font-semibold text-gray-600 underline hover:text-additional">Reset</a>
+            @endif
+
+            <a href="{{ route('luaran.create', ['jenis' => $jenis, 'kategori' => $kategori, 'id_kegiatan' => $filters['id_kegiatan'] ?? null]) }}" class="ml-auto inline-flex h-[34px] items-center rounded-md bg-primary px-4 text-xs font-bold text-white transition hover:bg-additional">Tambah Luaran</a>
+
+            <a href="{{ route($exportRoute, (request()->routeIs('luaran.tridharma.index') ? ['jenis' => $jenis, 'kategori' => $kategori] : ['kategori' => $kategori]) + $exportQuery) }}" class="inline-flex h-[34px] shrink-0 items-center justify-center gap-1.5 rounded-md bg-additional px-3 text-xs font-bold text-white transition hover:bg-primary" data-export-excel>
+                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3" />
+                </svg>
+                Download Excel
+            </a>
+        </form>
+
+
+        @if(count($rows) > 0)
+            <x-table id="luaran-table" class="!border-collapse !border-spacing-0 text-left text-[13px]">
+                <x-slot:header>
+                    <x-table.th class="!rounded-none !bg-white !px-3 !py-2.5 !text-center !text-[13px] !font-bold border-y border-gray-300">No</x-table.th>
+                    @foreach($headers as $header)
+                        <x-table.th class="!rounded-none !bg-white !px-4 !py-2.5 !text-[13px] !font-bold border-y border-gray-300">{{ $header }}</x-table.th>
+                    @endforeach
+                    <x-table.th class="!rounded-none !bg-white !px-4 !py-2.5 !text-center !text-[13px] !font-bold border-y border-gray-300">Detail</x-table.th>
+                </x-slot:header>
+
+                @foreach($rows as $index => $row)
+                    <x-table.row class="bg-white transition-colors hover:bg-gray-50/40">
+                        <x-table.cell class="!rounded-none !border-x-0 border-y border-gray-300 !px-3 !py-3.5 text-center text-sm text-gray-900">{{ $startNumber + $index }}.</x-table.cell>
+                        @foreach($row['cells'] as $cellIndex => $cell)
+                            <x-table.cell class="!rounded-none !border-x-0 border-y border-gray-300 !px-4 !py-3.5 !text-sm text-gray-900 {{ $cellIndex === 1 ? 'font-medium' : '' }}">{{ $cell }}</x-table.cell>
+                        @endforeach
+                        <x-table.cell class="!rounded-none !border-x-0 border-y border-gray-300 !px-4 !py-3.5 text-center">
+                            @if($row['id'])
+                                <a href="{{ route('luaran.tridharma.show', ['jenis' => $jenis, 'kategori' => $kategori, 'id' => $row['id']]) }}" class="text-primary transition hover:text-additional" title="Lihat detail" aria-label="Lihat detail">
+                                    <svg class="mx-auto h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12s3.5-7.5 9.75-7.5 9.75 7.5 9.75 7.5-3.5 7.5-9.75 7.5S2.25 12 2.25 12Z" />
+                                        <circle cx="12" cy="12" r="3" />
+                                    </svg>
+                                </a>
+                            @endif
+                        </x-table.cell>
+                    </x-table.row>
+                @endforeach
+            </x-table>
+
+            <x-pagination :paginator="$pagination" />
+        @else
+            <div class="rounded-2xl border border-gray-100 bg-white px-5 py-12 text-center text-sm text-gray-600">
+                {{ $hasActiveFilters ? 'Tidak ada data '.$kategoriLabel.' yang cocok dengan filter.' : 'Belum ada data '.$kategoriLabel.'.' }}
+            </div>
+        @endif
+    @endif
+</div>
+@endsection

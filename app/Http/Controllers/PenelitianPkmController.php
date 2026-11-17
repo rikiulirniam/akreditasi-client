@@ -15,7 +15,7 @@ class PenelitianPkmController extends Controller
 
     private const JENIS = [
         'penelitian' => ['id' => 1, 'nama' => 'Penelitian'],
-        'pkm' => ['id' => 2, 'nama' => 'PKM'],
+        'pkm' => ['id' => 2, 'nama' => 'PkM'],
     ];
 
     public function __construct(
@@ -28,8 +28,13 @@ class PenelitianPkmController extends Controller
         $filters = $request->validate([
             'search' => ['nullable', 'string', 'max:255'],
             'status_kegiatan' => ['nullable', 'string', 'max:50'],
+            'tahun' => ['nullable', 'integer', 'digits:4'],
             'page' => ['nullable', 'integer', 'min:1'],
         ]);
+        if (isset($filters['tahun'])) {
+            $filters['tahun_kegiatan'] = $filters['tahun'];
+            unset($filters['tahun']);
+        }
 
         $kegiatan = [];
         $apiError = null;
@@ -37,7 +42,10 @@ class PenelitianPkmController extends Controller
 
         try {
             $response = $this->tridharmaService->getKegiatanList(
-                array_filter($filters) + ['id_jenis_kegiatan' => self::JENIS[$this->rute()]['id']]
+                array_filter($filters) + [
+                    'jenis' => $this->rute(),
+                    'id_jenis_kegiatan' => self::JENIS[$this->rute()]['id'],
+                ]
             );
 
             if ($response->status() === 401) {
@@ -173,15 +181,31 @@ class PenelitianPkmController extends Controller
         $filters = $request->validate([
             'search' => ['nullable', 'string', 'max:255'],
             'status_kegiatan' => ['nullable', 'string', 'max:50'],
+            'tahun' => ['nullable', 'integer', 'digits:4'],
         ]);
         $jenis = self::JENIS[$this->rute()];
+
+        try {
+            $response = $this->tridharmaService->exportKegiatan(
+                array_filter($filters) + ['jenis' => $this->rute(), 'id_jenis_kegiatan' => $jenis['id']]
+            );
+            if ($response->successful()) {
+                return response($response->body(), 200, [
+                    'Content-Type' => $response->header('Content-Type', 'text/csv'),
+                    'Content-Disposition' => 'attachment; filename="'.strtolower($jenis['nama']).'_'.now()->format('Ymd_His').'.csv"',
+                ]);
+            }
+        } catch (ConnectionException) {
+            return back()->with('error', self::KONEKSI_GAGAL);
+        }
+
         $rows = [];
         $page = 1;
 
         try {
             do {
                 $response = $this->tridharmaService->getKegiatanList(
-                    array_filter($filters) + ['id_jenis_kegiatan' => $jenis['id'], 'per_page' => 100, 'page' => $page]
+                    array_filter($filters) + ['jenis' => $this->rute(), 'id_jenis_kegiatan' => $jenis['id'], 'per_page' => 100, 'page' => $page]
                 );
 
                 if ($response->status() === 401) {
@@ -520,6 +544,10 @@ class PenelitianPkmController extends Controller
     private function halamanBenar($kegiatan, $aksi, $id)
     {
         $slug = collect(self::JENIS)->search(fn ($jenis) => $jenis['id'] === ($kegiatan['id_jenis_kegiatan'] ?? null));
+        if (! $slug) {
+            $namaJenis = strtolower((string) ($kegiatan['jenis_kegiatan']['nama_jenis_kegiatan'] ?? ''));
+            $slug = str_contains($namaJenis, 'pkm') || str_contains($namaJenis, 'pengabdian') ? 'pkm' : (str_contains($namaJenis, 'penelitian') ? 'penelitian' : null);
+        }
 
         return $slug && $slug !== $this->rute() ? redirect()->route("{$slug}.{$aksi}", $id) : null;
     }
