@@ -26,8 +26,6 @@ class KerjaSamaController extends Controller
     {
         $validated = $request->validate($this->rules());
         $payload = $this->apiPayload($validated);
-        $payload['jenis_dokumen'] = $validated['jenis_dokumen'];
-        $payload['bukti_dokumen'] = $validated['bukti_dokumen'] ?? null;
 
         try {
             $response = $this->tridharmaService->createKerjaSama($payload);
@@ -296,6 +294,8 @@ class KerjaSamaController extends Controller
             return $types;
         }
 
+        $types['options'] = $this->preferExpandedDocumentTypes($types['options']);
+
         return [
             'options' => [
                 'partners' => $partners['options'],
@@ -304,6 +304,45 @@ class KerjaSamaController extends Controller
             ],
             'error' => $types['error'],
         ];
+    }
+
+    /**
+     * @param  list<array{id: int, name: string}>  $types
+     * @return list<array{id: int, name: string}>
+     */
+    private function preferExpandedDocumentTypes(array $types): array
+    {
+        $expandedByAbbreviation = [];
+        $shortByAbbreviation = [];
+
+        foreach ($types as $type) {
+            $name = trim($type['name']);
+            if (preg_match('/^(.+?)\s*\(.+\)$/u', $name, $matches) === 1) {
+                $expandedByAbbreviation[strtolower(trim($matches[1]))] ??= $type;
+            } else {
+                $shortByAbbreviation[strtolower($name)] ??= $type;
+            }
+        }
+
+        $preferredTypes = [];
+        $seenAbbreviations = [];
+
+        foreach ($types as $type) {
+            $name = trim($type['name']);
+            $abbreviation = preg_match('/^(.+?)\s*\(.+\)$/u', $name, $matches) === 1
+                ? strtolower(trim($matches[1]))
+                : strtolower($name);
+
+            if (isset($seenAbbreviations[$abbreviation])) {
+                continue;
+            }
+
+            $seenAbbreviations[$abbreviation] = true;
+            $preferredTypes[] = $expandedByAbbreviation[$abbreviation]
+                ?? $shortByAbbreviation[$abbreviation];
+        }
+
+        return $preferredTypes;
     }
 
     /**
@@ -380,6 +419,8 @@ class KerjaSamaController extends Controller
             'bentuk_kegiatan' => $validated['bentuk_kegiatan'] ?? null,
             'tanggal_mulai' => $validated['tanggal_mulai'],
             'tanggal_selesai' => $validated['tanggal_selesai'],
+            'jenis_dokumen' => $validated['jenis_dokumen'],
+            'bukti_dokumen' => $validated['bukti_dokumen'] ?? null,
             'nomor_dokumen' => $validated['nomor_dokumen'] ?? null,
             'status' => $validated['status'],
         ];

@@ -49,6 +49,9 @@ class KerjaSamaTest extends TestCase
             ->assertSee('2025–2027')
             ->assertSee('Aktif')
             ->assertSee('id="kerja-sama-table"', false)
+            ->assertSee('href="'.route('kerja-sama.edit', 5).'"', false)
+            ->assertSee('action="'.route('kerja-sama.destroy', 5).'"', false)
+            ->assertSee('href="'.route('kerja-sama.show', 5).'"', false)
             ->assertSee('h-[34px] w-[248px]', false)
             ->assertSee('bg-[#ffc800]', false)
             ->assertSee('id="kerja-sama-status-menu"', false)
@@ -119,7 +122,12 @@ class KerjaSamaTest extends TestCase
             'https://tridharma.fayra.my.id/api/jenis-kerja-sama*' => Http::response([
                 'success' => true,
                 'data' => [
+                    ['id_jenis_kerjasama' => 1, 'nama_jenis_kerjasama' => 'MoU (Memorandum of Understanding)'],
+                    ['id_jenis_kerjasama' => 2, 'nama_jenis_kerjasama' => 'MoA (Memorandum of Agreement)'],
+                    ['id_jenis_kerjasama' => 3, 'nama_jenis_kerjasama' => 'IA (Implementation Arrangement)'],
                     ['id_jenis_kerjasama' => 4, 'nama_jenis_kerjasama' => 'MoU'],
+                    ['id_jenis_kerjasama' => 5, 'nama_jenis_kerjasama' => 'MoA'],
+                    ['id_jenis_kerjasama' => 6, 'nama_jenis_kerjasama' => 'IA'],
                 ],
             ]),
         ]);
@@ -131,10 +139,62 @@ class KerjaSamaTest extends TestCase
             ->assertSee('Tambahkan Kerja Sama')
             ->assertSee('PT Mitra Nusantara')
             ->assertSee('Dr. Siti Dosen')
-            ->assertSee('MoU')
+            ->assertSee('MoU (Memorandum of Understanding)')
+            ->assertSee('MoA (Memorandum of Agreement)')
+            ->assertSee('IA (Implementation Arrangement)')
+            ->assertDontSee('>MoU</option>', false)
+            ->assertDontSee('>MoA</option>', false)
+            ->assertDontSee('>IA</option>', false)
             ->assertSee('Tanggal mulai')
             ->assertSee('Tanggal selesai')
             ->assertSee('Status Kerja Sama');
+    }
+
+    public function test_edit_form_uses_the_api_primary_key_and_relationship_shape(): void
+    {
+        Http::fake([
+            'https://tridharma.fayra.my.id/api/kerja-sama/5' => Http::response([
+                'success' => true,
+                'data' => [
+                    'id_kerja_sama' => 5,
+                    'judul_kerja_sama' => 'Kerja Sama Penelitian IoT',
+                    'id_mitra' => 3,
+                    'id_jenis_kerjasama' => 4,
+                    'id_dosen' => 12,
+                    'jenis_kerja_sama' => ['id_jenis_kerjasama' => 4, 'nama_jenis_kerjasama' => 'MoU'],
+                    'jenis_dokumen' => 'MoU',
+                    'bukti_dokumen' => 'https://example.test/mou.pdf',
+                    'tanggal_mulai' => '2025-01-01',
+                    'tanggal_selesai' => '2027-12-31',
+                    'status' => 'Aktif',
+                ],
+            ]),
+            'https://tridharma.fayra.my.id/api/kerja-sama?*' => Http::response([
+                'success' => true,
+                'data' => ['data' => [], 'total' => 0, 'last_page' => 1, 'per_page' => 10],
+            ]),
+            'https://tridharma.fayra.my.id/api/mitra*' => Http::response([
+                'success' => true,
+                'data' => ['data' => [['id_mitra' => 3, 'nama_instansi' => 'PT Mitra Nusantara']], 'last_page' => 1],
+            ]),
+            'https://tridharma.fayra.my.id/api/dosen*' => Http::response([
+                'success' => true,
+                'data' => ['data' => [['id_dosen' => 12, 'nama_dosen' => 'Dr. Siti Dosen']], 'last_page' => 1],
+            ]),
+            'https://tridharma.fayra.my.id/api/jenis-kerja-sama*' => Http::response([
+                'success' => true,
+                'data' => [['id_jenis_kerjasama' => 4, 'nama_jenis_kerjasama' => 'MoU']],
+            ]),
+        ]);
+
+        $response = $this->withSession(['access_token' => 'test-token'])
+            ->get(route('kerja-sama.edit', 5));
+
+        $response->assertOk()
+            ->assertSee('Perbarui Kerja Sama')
+            ->assertSee('action="'.route('kerja-sama.update', 5).'"', false)
+            ->assertSee('data-document-type="MoU" selected', false)
+            ->assertSee('value="https://example.test/mou.pdf"', false);
     }
 
     public function test_store_sends_the_documented_payload_to_the_api(): void
@@ -205,8 +265,8 @@ class KerjaSamaTest extends TestCase
         Http::assertSent(fn (ClientRequest $request): bool => $request->method() === 'PUT'
             && $request->url() === 'https://tridharma.fayra.my.id/api/kerja-sama/5'
             && $request['judul_kerja_sama'] === 'Kerja Sama IoT Diperbarui'
-            && ! array_key_exists('jenis_dokumen', $request->data())
-            && ! array_key_exists('bukti_dokumen', $request->data()));
+            && $request['jenis_dokumen'] === 'MoU'
+            && $request['bukti_dokumen'] === 'https://example.test/mou.pdf');
     }
 
     public function test_detail_displays_partnership_information_and_document_link(): void
@@ -215,11 +275,11 @@ class KerjaSamaTest extends TestCase
             'https://tridharma.fayra.my.id/api/kerja-sama/5' => Http::response([
                 'success' => true,
                 'data' => [
-                    'id_kerja_sama' => 5,
+                    'id_kerjasama' => 5,
                     'judul_kerja_sama' => 'Kerja Sama Penelitian IoT',
                     'mitra' => ['nama_instansi' => 'PT Teknologi Indonesia'],
                     'dosen' => ['nama_dosen' => 'Dr. Siti Dosen'],
-                    'jenis_kerjasama' => ['nama_jenis_kerjasama' => 'MoU'],
+                    'jenis_kerja_sama' => ['nama_jenis_kerjasama' => 'MoU'],
                     'tingkat' => 'Nasional',
                     'tanggal_mulai' => '2025-01-01',
                     'tanggal_selesai' => '2027-12-31',
@@ -243,6 +303,31 @@ class KerjaSamaTest extends TestCase
             ->assertSee('KS/001/2025')
             ->assertSee('Mou_Kerja_Sama.pdf')
             ->assertSee('href="https://example.test/Mou_Kerja_Sama.pdf"', false);
+
+        $response->assertSee('Pratinjau Dokumen Kerja Sama')
+            ->assertSee('src="https://example.test/Mou_Kerja_Sama.pdf"', false)
+            ->assertSee('title="Pratinjau dokumen kerja sama"', false);
+    }
+
+    public function test_detail_previews_google_drive_cooperation_documents(): void
+    {
+        Http::fake([
+            'https://tridharma.fayra.my.id/api/kerja-sama/6' => Http::response([
+                'success' => true,
+                'data' => [
+                    'id_kerja_sama' => 6,
+                    'judul_kerja_sama' => 'Kerja Sama Dokumen Drive',
+                    'bukti_dokumen' => 'https://drive.google.com/file/d/abc-123_X/view?usp=sharing',
+                ],
+            ]),
+        ]);
+
+        $response = $this->withSession(['access_token' => 'test-token'])
+            ->get(route('kerja-sama.show', 6));
+
+        $response->assertOk()
+            ->assertSee('src="https://drive.google.com/file/d/abc-123_X/preview"', false)
+            ->assertSee('href="https://drive.google.com/file/d/abc-123_X/view?usp=sharing"', false);
     }
 
     public function test_delete_calls_the_api_and_returns_to_the_list(): void

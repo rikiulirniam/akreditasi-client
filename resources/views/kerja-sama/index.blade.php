@@ -19,8 +19,8 @@
     $selectedLevel = (string) ($filters['tingkat'] ?? '');
     $startNumber = (int) ($pagination['from'] ?? (((int) ($pagination['current_page'] ?? 1) - 1) * (int) ($pagination['per_page'] ?? 10) + 1));
     $isEditing = $editing !== [];
-    $formId = $editing['id'] ?? $editing['id_kerja_sama'] ?? null;
-    $selectedTypeId = old('id_jenis_kerjasama', $editing['id_jenis_kerjasama'] ?? $editing['jenis_kerjasama']['id_jenis_kerjasama'] ?? '');
+    $formId = $editing['id'] ?? $editing['id_kerjasama'] ?? $editing['id_kerja_sama'] ?? null;
+    $selectedTypeId = old('id_jenis_kerjasama', $editing['id_jenis_kerjasama'] ?? $editing['jenis_kerjasama']['id_jenis_kerjasama'] ?? $editing['jenis_kerja_sama']['id_jenis_kerjasama'] ?? '');
     $selectedDocumentType = old('jenis_dokumen', $editing['jenis_dokumen'] ?? '');
     $inputClass = 'w-full rounded-md border bg-white-form px-3.5 py-2.5 text-sm text-gray-900 focus:outline-none focus:ring-2';
     $fieldClass = static fn (string $field): string => $errors->has($field)
@@ -190,7 +190,7 @@
 
                     @foreach($cooperations as $index => $cooperation)
                         @php
-                            $cooperationId = $cooperation['id'] ?? $cooperation['id_kerja_sama'] ?? null;
+                            $cooperationId = $cooperation['id'] ?? $cooperation['id_kerjasama'] ?? $cooperation['id_kerja_sama'] ?? null;
                             $title = trim((string) ($cooperation['judul_kerja_sama'] ?? '-'));
                             $titleLines = array_chunk(preg_split('/\s+/', $title) ?: [], 2);
                             $partnerName = $cooperation['nama_mitra']
@@ -201,6 +201,7 @@
                             $documentType = $cooperation['jenis_dokumen']
                                 ?? $cooperation['nama_jenis_kerjasama']
                                 ?? $cooperation['jenis_kerjasama']['nama_jenis_kerjasama']
+                                ?? $cooperation['jenis_kerja_sama']['nama_jenis_kerjasama']
                                 ?? '-';
                             $startYear = substr((string) ($cooperation['tanggal_mulai'] ?? ''), 0, 4);
                             $endYear = substr((string) ($cooperation['tanggal_selesai'] ?? ''), 0, 4);
@@ -406,15 +407,11 @@
                     @error('bentuk_kegiatan')<p class="mt-1 text-xs font-semibold text-rose-600">{{ $message }}</p>@enderror
                 </div>
 
-                @if(!$isEditing)
-                    <div>
-                        <label for="bukti_dokumen" class="mb-1 block text-xs font-bold text-gray-900">Bukti Dokumen (tautan)</label>
-                        <input id="bukti_dokumen" name="bukti_dokumen" type="url" maxlength="2048" value="{{ old('bukti_dokumen') }}" placeholder="https://..." class="{{ $inputClass }} {{ $fieldClass('bukti_dokumen') }}">
-                        @error('bukti_dokumen')<p class="mt-1 text-xs font-semibold text-rose-600">{{ $message }}</p>@enderror
-                    </div>
-                @elseif(!empty($editing['bukti_dokumen']))
-                    <p class="text-xs text-gray-600">Bukti dokumen yang sudah terunggah akan tetap tersimpan saat memperbarui data.</p>
-                @endif
+                <div>
+                    <label for="bukti_dokumen" class="mb-1 block text-xs font-bold text-gray-900">Bukti Dokumen (tautan)</label>
+                    <input id="bukti_dokumen" name="bukti_dokumen" type="url" maxlength="2048" value="{{ old('bukti_dokumen', $editing['bukti_dokumen'] ?? '') }}" placeholder="https://..." class="{{ $inputClass }} {{ $fieldClass('bukti_dokumen') }}">
+                    @error('bukti_dokumen')<p class="mt-1 text-xs font-semibold text-rose-600">{{ $message }}</p>@enderror
+                </div>
 
                 <div class="grid grid-cols-2 gap-3 pt-3">
                     <a href="{{ $closeModalUrl }}" class="inline-flex items-center justify-center rounded-md bg-white-form px-4 py-2.5 text-sm font-semibold text-gray-900 transition hover:bg-gray-300">Batal</a>
