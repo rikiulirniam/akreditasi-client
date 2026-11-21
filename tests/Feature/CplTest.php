@@ -135,25 +135,41 @@ class CplTest extends TestCase
 
     public function test_cpl_store_successfully_creates_cpl(): void
     {
-        Http::fake([
-            '*/api/cpl' => Http::response([
-                'success' => true,
-                'message' => 'CPL berhasil ditambahkan',
-                'data' => [
-                    'id' => 99,
-                    'id_kurikulum' => 10,
-                    'kode_cpl' => 'CPL-05',
-                    'deskripsi_cpl' => 'Mampu merancang aplikasi enterprise modern.',
-                    'kategori' => 'Keterampilan Khusus',
-                ],
-            ], 201),
-            '*/api/kurikulum*' => Http::response([
-                'success' => true,
-                'data' => [
-                    ['id' => 10, 'nama_kurikulum' => 'Kurikulum 2024 TI'],
-                ],
-            ], 200),
-        ]);
+        Http::fake(function ($request) {
+            if ($request->url() === 'https://akademik.fayra.my.id/api/cpl' && $request->method() === 'GET') {
+                return Http::response([
+                    'success' => true,
+                    'data' => [
+                        ['id' => 98, 'id_kurikulum' => 20, 'kode_cpl' => 'CPL-05'],
+                    ],
+                ], 200);
+            }
+
+            if ($request->url() === 'https://akademik.fayra.my.id/api/cpl' && $request->method() === 'POST') {
+                return Http::response([
+                    'success' => true,
+                    'message' => 'CPL berhasil ditambahkan',
+                    'data' => [
+                        'id' => 99,
+                        'id_kurikulum' => 10,
+                        'kode_cpl' => 'CPL-05',
+                        'deskripsi_cpl' => 'Mampu merancang aplikasi enterprise modern.',
+                        'kategori' => 'Keterampilan Khusus',
+                    ],
+                ], 201);
+            }
+
+            if (str_ends_with($request->url(), '/api/kurikulum')) {
+                return Http::response([
+                    'success' => true,
+                    'data' => [
+                        ['id' => 10, 'nama_kurikulum' => 'Kurikulum 2024 TI'],
+                    ],
+                ], 200);
+            }
+
+            return Http::response([], 404);
+        });
 
         $response = $this->withSession([
             'access_token' => $this->getFakeToken(),
@@ -175,6 +191,92 @@ class CplTest extends TestCase
         });
     }
 
+    public function test_cpl_store_rejects_duplicate_code_only_in_the_same_curriculum(): void
+    {
+        Http::fake(function ($request) {
+            if ($request->url() === 'https://akademik.fayra.my.id/api/cpl' && $request->method() === 'GET') {
+                return Http::response([
+                    'success' => true,
+                    'data' => [
+                        ['id' => 1, 'id_kurikulum' => 10, 'kode_cpl' => 'cpl-01'],
+                        ['id' => 2, 'id_kurikulum' => 20, 'kode_cpl' => 'CPL-02'],
+                    ],
+                ], 200);
+            }
+
+            return Http::response([], 404);
+        });
+
+        $response = $this->withSession([
+            'access_token' => $this->getFakeToken(),
+            'user' => [
+                'id' => 1,
+                'nama' => 'Administrator',
+                'role' => 'ADMINISTRATOR',
+            ],
+        ])->post(route('cpl.store'), [
+            'id_kurikulum' => 10,
+            'kode_cpl' => 'CPL-01',
+            'deskripsi_cpl' => 'Rumusan CPL duplikat.',
+            'kategori' => 'Sikap',
+            'cpl_form' => 'create',
+        ]);
+
+        $response->assertRedirect();
+        $response->assertSessionHasErrors([
+            'kode_cpl' => 'Kode CPL sudah digunakan pada kurikulum yang dipilih.',
+        ]);
+        $response->assertSessionHas('cpl_form', 'create');
+        Http::assertNotSent(fn ($request) => $request->method() === 'POST' && str_ends_with($request->url(), '/api/cpl'));
+    }
+
+    public function test_cpl_store_surfaces_duplicate_validation_from_api_in_the_form(): void
+    {
+        Http::fake(function ($request) {
+            if ($request->url() === 'https://akademik.fayra.my.id/api/cpl' && $request->method() === 'GET') {
+                return Http::response(['success' => true, 'data' => []], 200);
+            }
+
+            if ($request->url() === 'https://akademik.fayra.my.id/api/cpl' && $request->method() === 'POST') {
+                return Http::response([
+                    'success' => false,
+                    'message' => 'The given data was invalid.',
+                    'errors' => ['kode_cpl' => ['Kode CPL telah digunakan pada kurikulum ini.']],
+                ], 422);
+            }
+
+            return Http::response([], 404);
+        });
+
+        $response = $this->withSession([
+            'access_token' => $this->getFakeToken(),
+            'user' => [
+                'id' => 1,
+                'nama' => 'Administrator',
+                'role' => 'ADMINISTRATOR',
+            ],
+        ])->post(route('cpl.store'), [
+            'id_kurikulum' => 10,
+            'kode_cpl' => 'CPL-01',
+            'deskripsi_cpl' => 'Rumusan CPL.',
+            'kategori' => 'Sikap',
+            'cpl_form' => 'create',
+        ]);
+
+        $response->assertRedirect();
+        $response->assertSessionHasErrors([
+            'kode_cpl' => 'Kode CPL telah digunakan pada kurikulum ini.',
+        ]);
+        $response->assertSessionHas('cpl_form', 'create');
+        $response->assertSessionHas('_old_input.kode_cpl', 'CPL-01');
+
+        $page = $this->get(route('cpl.index'));
+        $page->assertStatus(200);
+        $page->assertSee('Kode CPL telah digunakan pada kurikulum ini.');
+        $page->assertSee('if (createModal && true)', false);
+        $page->assertSee('value="CPL-01"', false);
+    }
+
     public function test_cpl_store_validates_required_fields(): void
     {
         $response = $this->withSession([
@@ -191,25 +293,41 @@ class CplTest extends TestCase
 
     public function test_cpl_update_successfully_updates_cpl(): void
     {
-        Http::fake([
-            '*/api/cpl/1' => Http::response([
-                'success' => true,
-                'message' => 'CPL berhasil diperbarui',
-                'data' => [
-                    'id' => 1,
-                    'id_kurikulum' => 10,
-                    'kode_cpl' => 'CPL-01-REV',
-                    'deskripsi_cpl' => 'Mampu menerapkan etika dan integritas akademik.',
-                    'kategori' => 'Sikap',
-                ],
-            ], 200),
-            '*/api/kurikulum*' => Http::response([
-                'success' => true,
-                'data' => [
-                    ['id' => 10, 'nama_kurikulum' => 'Kurikulum 2024 TI'],
-                ],
-            ], 200),
-        ]);
+        Http::fake(function ($request) {
+            if ($request->url() === 'https://akademik.fayra.my.id/api/cpl' && $request->method() === 'GET') {
+                return Http::response([
+                    'success' => true,
+                    'data' => [
+                        ['id' => 1, 'id_kurikulum' => 10, 'kode_cpl' => 'CPL-01'],
+                    ],
+                ], 200);
+            }
+
+            if ($request->url() === 'https://akademik.fayra.my.id/api/cpl/1' && $request->method() === 'PUT') {
+                return Http::response([
+                    'success' => true,
+                    'message' => 'CPL berhasil diperbarui',
+                    'data' => [
+                        'id' => 1,
+                        'id_kurikulum' => 10,
+                        'kode_cpl' => 'CPL-01-REV',
+                        'deskripsi_cpl' => 'Mampu menerapkan etika dan integritas akademik.',
+                        'kategori' => 'Sikap',
+                    ],
+                ], 200);
+            }
+
+            if (str_ends_with($request->url(), '/api/kurikulum')) {
+                return Http::response([
+                    'success' => true,
+                    'data' => [
+                        ['id' => 10, 'nama_kurikulum' => 'Kurikulum 2024 TI'],
+                    ],
+                ], 200);
+            }
+
+            return Http::response([], 404);
+        });
 
         $response = $this->withSession([
             'access_token' => $this->getFakeToken(),
@@ -228,6 +346,65 @@ class CplTest extends TestCase
         $response->assertRedirect(route('cpl.index'));
         $response->assertSessionHas('toast', function ($toast) {
             return ($toast['type'] ?? '') === 'success';
+        });
+    }
+
+    public function test_cpl_evaluation_uses_academic_assessment_api(): void
+    {
+        Http::fake(function ($request) {
+            if (str_ends_with($request->url(), '/api/kurikulum')) {
+                return Http::response([
+                    'success' => true,
+                    'data' => [['id' => 10, 'nama_kurikulum' => 'Kurikulum 2024 TI']],
+                ], 200);
+            }
+
+            if (str_ends_with($request->url(), '/api/angkatan')) {
+                return Http::response([
+                    'success' => true,
+                    'data' => [['angkatan' => 2024]],
+                ], 200);
+            }
+
+            if (str_contains($request->url(), '/api/assessment/cpl')) {
+                return Http::response([
+                    'success' => true,
+                    'data' => [
+                        'items' => [[
+                            'kode_cpl' => 'CPL-01',
+                            'kategori' => 'Sikap',
+                            'deskripsi_cpl' => 'Menunjukkan sikap profesional.',
+                            'skor_aktual' => 85,
+                            'target' => 70,
+                        ]],
+                    ],
+                ], 200);
+            }
+
+            return Http::response([], 404);
+        });
+
+        $response = $this->withSession([
+            'access_token' => $this->getFakeToken(),
+            'user' => [
+                'id' => 1,
+                'nama' => 'Administrator',
+                'role' => 'ADMINISTRATOR',
+            ],
+        ])->get(route('cpl.evaluasi'));
+
+        $response->assertStatus(200);
+        $response->assertSee('CPL-01');
+        $response->assertSee('85,0%');
+        $response->assertSee('Tercapai');
+        Http::assertSent(function ($request) {
+            if (! str_contains($request->url(), '/api/assessment/cpl')) {
+                return false;
+            }
+
+            parse_str((string) parse_url($request->url(), PHP_URL_QUERY), $query);
+
+            return ($query['id_kurikulum'] ?? null) === '10' && ($query['angkatan'] ?? null) === '2024';
         });
     }
 

@@ -75,10 +75,9 @@
                             class="w-full appearance-none px-3.5 py-2.5 pr-9 rounded-[8px] bg-white-form border border-white-bone text-gray-900 font-medium text-xs focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary cursor-pointer transition"
                         >
                             <option value="">Semua Kategori</option>
-                            <option value="Sikap" {{ $selectedKategori === 'Sikap' ? 'selected' : '' }}>Sikap</option>
-                            <option value="Pengetahuan" {{ $selectedKategori === 'Pengetahuan' ? 'selected' : '' }}>Pengetahuan</option>
-                            <option value="Keterampilan Umum" {{ $selectedKategori === 'Keterampilan Umum' ? 'selected' : '' }}>Keterampilan Umum</option>
-                            <option value="Keterampilan Khusus" {{ $selectedKategori === 'Keterampilan Khusus' ? 'selected' : '' }}>Keterampilan Khusus</option>
+                            @foreach($kategoriOptions as $kategoriOption)
+                                <option value="{{ $kategoriOption }}" {{ $selectedKategori === $kategoriOption ? 'selected' : '' }}>{{ $kategoriOption }}</option>
+                            @endforeach
                         </select>
                         <span class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-primary">
                             <svg class="w-4 h-4 stroke-[2.5]" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
@@ -275,6 +274,7 @@
 
         <form action="{{ route('cpl.store') }}" method="POST" class="space-y-4">
             @csrf
+            <input type="hidden" name="cpl_form" value="create">
 
             <!-- Field 1: Kurikulum -->
             <div>
@@ -286,9 +286,9 @@
                         name="id_kurikulum" 
                         id="createKurikulumCplSelect" 
                         required 
-                        class="w-full px-4 py-2.5 pr-10 rounded-[10px] bg-white-form border-none text-sm font-medium text-gray-900 focus:ring-2 focus:ring-additional/30 focus:outline-none appearance-none cursor-pointer"
+                        class="w-full px-4 py-2.5 pr-10 rounded-[10px] bg-white-form border @error('id_kurikulum') border-rose-500 @else border-transparent @enderror text-sm font-medium text-gray-900 focus:ring-2 focus:ring-additional/30 focus:outline-none appearance-none cursor-pointer"
                     >
-                        <option value="" disabled selected>Pilih Kurikulum</option>
+                        <option value="" disabled {{ old('cpl_form') !== 'create' || old('id_kurikulum') === null ? 'selected' : '' }}>Pilih Kurikulum</option>
                         @foreach($kurikulumList as $k)
                             @php
                                 $kid = $k['id'] ?? '';
@@ -305,6 +305,9 @@
                         </svg>
                     </div>
                 </div>
+                @error('id_kurikulum')
+                    <p class="mt-1.5 text-xs font-semibold text-rose-600">{{ $message }}</p>
+                @enderror
             </div>
 
             <!-- Field 2: Kode CPL -->
@@ -316,12 +319,15 @@
                     type="text" 
                     name="kode_cpl" 
                     id="createKodeCplInput" 
-                    value="{{ old('kode_cpl') }}"
+                    value="{{ old('cpl_form') === 'create' ? old('kode_cpl') : '' }}"
                     placeholder="Contoh: CPL-01" 
                     maxlength="50" 
                     required 
-                    class="w-full px-4 py-2.5 rounded-[10px] bg-white-form border-none text-sm font-medium text-gray-900 focus:ring-2 focus:ring-additional/30 focus:outline-none placeholder:text-gray-500 uppercase"
+                    class="w-full px-4 py-2.5 rounded-[10px] bg-white-form border @error('kode_cpl') border-rose-500 @else border-transparent @enderror text-sm font-medium text-gray-900 focus:ring-2 focus:ring-additional/30 focus:outline-none placeholder:text-gray-500 uppercase"
                 >
+                @error('kode_cpl')
+                    <p class="mt-1.5 text-xs font-semibold text-rose-600">{{ $message }}</p>
+                @enderror
             </div>
 
             <!-- Field 3: Kategori -->
@@ -334,13 +340,12 @@
                         name="kategori" 
                         id="createKategoriCplSelect" 
                         required 
-                        class="w-full px-4 py-2.5 pr-10 rounded-[10px] bg-white-form border-none text-sm font-medium text-gray-900 focus:ring-2 focus:ring-additional/30 focus:outline-none appearance-none cursor-pointer"
+                        class="w-full px-4 py-2.5 pr-10 rounded-[10px] bg-white-form border @error('kategori') border-rose-500 @else border-transparent @enderror text-sm font-medium text-gray-900 focus:ring-2 focus:ring-additional/30 focus:outline-none appearance-none cursor-pointer"
                     >
-                        <option value="" disabled selected>Pilih Kategori</option>
-                        <option value="Sikap" {{ old('kategori') === 'Sikap' ? 'selected' : '' }}>Sikap</option>
-                        <option value="Pengetahuan" {{ old('kategori') === 'Pengetahuan' ? 'selected' : '' }}>Pengetahuan</option>
-                        <option value="Keterampilan Umum" {{ old('kategori') === 'Keterampilan Umum' ? 'selected' : '' }}>Keterampilan Umum</option>
-                        <option value="Keterampilan Khusus" {{ old('kategori') === 'Keterampilan Khusus' ? 'selected' : '' }}>Keterampilan Khusus</option>
+                        <option value="" disabled {{ old('cpl_form') !== 'create' || old('kategori') === null ? 'selected' : '' }}>Pilih Kategori</option>
+                        @foreach($kategoriOptions as $kategoriOption)
+                            <option value="{{ $kategoriOption }}" {{ old('cpl_form') === 'create' && old('kategori') === $kategoriOption ? 'selected' : '' }}>{{ $kategoriOption }}</option>
+                        @endforeach
                     </select>
                     <div class="absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none text-gray-500">
                         <svg class="w-4 h-4 stroke-[2.5]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -348,6 +353,9 @@
                         </svg>
                     </div>
                 </div>
+                @error('kategori')
+                    <p class="mt-1.5 text-xs font-semibold text-rose-600">{{ $message }}</p>
+                @enderror
             </div>
 
             <!-- Field 4: Deskripsi CPL -->
@@ -361,8 +369,11 @@
                     rows="4"
                     placeholder="Tuliskan rumusan capaian pembelajaran lulusan..." 
                     required 
-                    class="w-full px-4 py-2.5 rounded-[10px] bg-white-form border-none text-sm font-medium text-gray-900 focus:ring-2 focus:ring-additional/30 focus:outline-none placeholder:text-gray-500 resize-none"
-                >{{ old('deskripsi_cpl') }}</textarea>
+                    class="w-full px-4 py-2.5 rounded-[10px] bg-white-form border @error('deskripsi_cpl') border-rose-500 @else border-transparent @enderror text-sm font-medium text-gray-900 focus:ring-2 focus:ring-additional/30 focus:outline-none placeholder:text-gray-500 resize-none"
+                >{{ old('cpl_form') === 'create' ? old('deskripsi_cpl') : '' }}</textarea>
+                @error('deskripsi_cpl')
+                    <p class="mt-1.5 text-xs font-semibold text-rose-600">{{ $message }}</p>
+                @enderror
             </div>
 
             <!-- Modal Action Buttons (Batal & Simpan) -->
@@ -399,9 +410,11 @@
             Edit CPL
         </h3>
 
-        <form id="editCplForm" action="#" method="POST" class="space-y-4">
+        <form id="editCplForm" action="#" method="POST" class="space-y-4" data-restore-action="{{ old('cpl_form') === 'edit' && old('cpl_id') ? route('cpl.update', old('cpl_id')) : '' }}">
             @csrf
             @method('PUT')
+            <input type="hidden" name="cpl_form" value="edit">
+            <input type="hidden" name="cpl_id" id="editCplIdInput" value="{{ old('cpl_form') === 'edit' ? old('cpl_id') : '' }}">
 
             <!-- Field 1: Kurikulum -->
             <div>
@@ -413,15 +426,15 @@
                         name="id_kurikulum" 
                         id="editKurikulumCplSelect" 
                         required 
-                        class="w-full px-4 py-2.5 pr-10 rounded-[10px] bg-white-form border-none text-sm font-medium text-gray-900 focus:ring-2 focus:ring-additional/30 focus:outline-none appearance-none cursor-pointer"
+                        class="w-full px-4 py-2.5 pr-10 rounded-[10px] bg-white-form border @error('id_kurikulum') border-rose-500 @else border-transparent @enderror text-sm font-medium text-gray-900 focus:ring-2 focus:ring-additional/30 focus:outline-none appearance-none cursor-pointer"
                     >
-                        <option value="" disabled>Pilih Kurikulum</option>
+                        <option value="" disabled {{ old('cpl_form') !== 'edit' || old('id_kurikulum') === null ? 'selected' : '' }}>Pilih Kurikulum</option>
                         @foreach($kurikulumList as $k)
                             @php
                                 $kid = $k['id'] ?? '';
                                 $knama = $k['nama_kurikulum'] ?? $k['nama'] ?? 'Kurikulum #'.$kid;
                             @endphp
-                            <option value="{{ $kid }}">{{ $knama }}</option>
+                            <option value="{{ $kid }}" {{ old('cpl_form') === 'edit' && (string) old('id_kurikulum') === (string) $kid ? 'selected' : '' }}>{{ $knama }}</option>
                         @endforeach
                     </select>
                     <div class="absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none text-gray-500">
@@ -430,6 +443,9 @@
                         </svg>
                     </div>
                 </div>
+                @error('id_kurikulum')
+                    <p class="mt-1.5 text-xs font-semibold text-rose-600">{{ $message }}</p>
+                @enderror
             </div>
 
             <!-- Field 2: Kode CPL -->
@@ -441,11 +457,15 @@
                     type="text" 
                     name="kode_cpl" 
                     id="editKodeCplInput" 
+                    value="{{ old('cpl_form') === 'edit' ? old('kode_cpl') : '' }}"
                     placeholder="Contoh: CPL-01" 
                     maxlength="50" 
                     required 
-                    class="w-full px-4 py-2.5 rounded-[10px] bg-white-form border-none text-sm font-medium text-gray-900 focus:ring-2 focus:ring-additional/30 focus:outline-none placeholder:text-gray-500 uppercase"
+                    class="w-full px-4 py-2.5 rounded-[10px] bg-white-form border @error('kode_cpl') border-rose-500 @else border-transparent @enderror text-sm font-medium text-gray-900 focus:ring-2 focus:ring-additional/30 focus:outline-none placeholder:text-gray-500 uppercase"
                 >
+                @error('kode_cpl')
+                    <p class="mt-1.5 text-xs font-semibold text-rose-600">{{ $message }}</p>
+                @enderror
             </div>
 
             <!-- Field 3: Kategori -->
@@ -458,13 +478,12 @@
                         name="kategori" 
                         id="editKategoriCplSelect" 
                         required 
-                        class="w-full px-4 py-2.5 pr-10 rounded-[10px] bg-white-form border-none text-sm font-medium text-gray-900 focus:ring-2 focus:ring-additional/30 focus:outline-none appearance-none cursor-pointer"
+                        class="w-full px-4 py-2.5 pr-10 rounded-[10px] bg-white-form border @error('kategori') border-rose-500 @else border-transparent @enderror text-sm font-medium text-gray-900 focus:ring-2 focus:ring-additional/30 focus:outline-none appearance-none cursor-pointer"
                     >
-                        <option value="" disabled>Pilih Kategori</option>
-                        <option value="Sikap">Sikap</option>
-                        <option value="Pengetahuan">Pengetahuan</option>
-                        <option value="Keterampilan Umum">Keterampilan Umum</option>
-                        <option value="Keterampilan Khusus">Keterampilan Khusus</option>
+                        <option value="" disabled {{ old('cpl_form') !== 'edit' || old('kategori') === null ? 'selected' : '' }}>Pilih Kategori</option>
+                        @foreach($kategoriOptions as $kategoriOption)
+                            <option value="{{ $kategoriOption }}" {{ old('cpl_form') === 'edit' && old('kategori') === $kategoriOption ? 'selected' : '' }}>{{ $kategoriOption }}</option>
+                        @endforeach
                     </select>
                     <div class="absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none text-gray-500">
                         <svg class="w-4 h-4 stroke-[2.5]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -472,6 +491,9 @@
                         </svg>
                     </div>
                 </div>
+                @error('kategori')
+                    <p class="mt-1.5 text-xs font-semibold text-rose-600">{{ $message }}</p>
+                @enderror
             </div>
 
             <!-- Field 4: Deskripsi CPL -->
@@ -485,8 +507,11 @@
                     rows="4"
                     placeholder="Tuliskan rumusan capaian pembelajaran lulusan..." 
                     required 
-                    class="w-full px-4 py-2.5 rounded-[10px] bg-white-form border-none text-sm font-medium text-gray-900 focus:ring-2 focus:ring-additional/30 focus:outline-none placeholder:text-gray-500 resize-none"
-                ></textarea>
+                    class="w-full px-4 py-2.5 rounded-[10px] bg-white-form border @error('deskripsi_cpl') border-rose-500 @else border-transparent @enderror text-sm font-medium text-gray-900 focus:ring-2 focus:ring-additional/30 focus:outline-none placeholder:text-gray-500 resize-none"
+                >{{ old('cpl_form') === 'edit' ? old('deskripsi_cpl') : '' }}</textarea>
+                @error('deskripsi_cpl')
+                    <p class="mt-1.5 text-xs font-semibold text-rose-600">{{ $message }}</p>
+                @enderror
             </div>
 
             <!-- Modal Action Buttons (Batal & Perbarui) -->
@@ -547,6 +572,7 @@
 
         // Open Edit Modal
         const editForm = document.getElementById('editCplForm');
+        const editIdInput = document.getElementById('editCplIdInput');
         const editKurikulumSelect = document.getElementById('editKurikulumCplSelect');
         const editKodeInput = document.getElementById('editKodeCplInput');
         const editKategoriSelect = document.getElementById('editKategoriCplSelect');
@@ -562,6 +588,9 @@
 
                 if (editForm && action) {
                     editForm.action = action;
+                }
+                if (editIdInput) {
+                    editIdInput.value = this.dataset.id || '';
                 }
                 if (editKurikulumSelect && kurikulumId) {
                     editKurikulumSelect.value = kurikulumId;
@@ -606,6 +635,15 @@
                 hideModal(editModal);
             }
         });
+
+        if (createModal && @json(old('cpl_form') === 'create')) {
+            showModal(createModal);
+        }
+
+        if (editModal && editForm && editForm.dataset.restoreAction) {
+            editForm.action = editForm.dataset.restoreAction;
+            showModal(editModal);
+        }
     });
 </script>
 @endsection
