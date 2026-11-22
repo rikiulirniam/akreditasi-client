@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Akreditasi\Superadmin;
 
 use App\Http\Controllers\Controller;
 use App\Services\AkreditasiService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -173,43 +174,97 @@ class VersiInstrumenController extends Controller
     /**
      * Mengaktifkan versi instrumen.
      */
-    public function activate(Request $request, int|string $id): RedirectResponse
+    public function activate(Request $request, int|string $id): JsonResponse|RedirectResponse
     {
-        $idJenjang = $request->input('id_jenjang', 2);
+        $validated = $request->validate([
+            'id_jenjang' => ['required', 'integer'],
+        ]);
 
         try {
-            $response = $this->akreditasiService->activateVersiInstrumen($id, [
-                'id_jenjang' => (int) $idJenjang,
-            ]);
+            $response = $this->akreditasiService->activateVersiInstrumen(
+                $id,
+                $validated['id_jenjang']
+            );
+
+            $message = $response->json('message');
+
+            if ($request->wantsJson() || $request->ajax()) {
+                return response()->json([
+                    'success' => $response->successful(),
+                    'message' => $message ?? ($response->successful()
+                        ? 'Versi instrumen berhasil diaktifkan untuk jenjang tersebut.'
+                        : 'Gagal mengaktifkan versi instrumen.'),
+                ], $response->status() ?: ($response->successful() ? 200 : 422));
+            }
 
             if ($response->successful()) {
-                $message = (string) ($response->json('message') ?? 'Versi instrumen berhasil diaktifkan!');
-
-                return back()->with('success', $message);
+                return back()->with(
+                    'success',
+                    (string) (
+                        $message
+                        ?? 'Versi instrumen berhasil diaktifkan untuk jenjang tersebut.'
+                    )
+                );
             }
 
             return back()->with(
                 'error',
-                (string) ($response->json('message') ?? 'Gagal mengaktifkan versi instrumen.')
+                (string) (
+                    $message
+                    ?? 'Gagal mengaktifkan versi instrumen.'
+                )
             );
         } catch (\Throwable $e) {
-            return back()->with('error', 'Terjadi kesalahan: '.$e->getMessage());
+            if ($request->wantsJson() || $request->ajax()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Terjadi kesalahan: '.$e->getMessage(),
+                ], 500);
+            }
+
+            return back()->with(
+                'error',
+                'Terjadi kesalahan saat mengaktifkan versi instrumen.'
+            );
         }
     }
 
     /**
      * Menghapus data versi instrumen.
      */
-    public function destroy(int|string $id): RedirectResponse
+    public function destroy(Request $request, int|string $id): JsonResponse|RedirectResponse
     {
         try {
             $response = $this->akreditasiService->deleteVersiInstrumen($id);
+            $message = $response->json('message');
+
+            if ($request->wantsJson() || $request->ajax()) {
+                if ($response->successful()) {
+                    return response()->json([
+                        'success' => true,
+                        'message' => $message ?? 'Versi instrumen berhasil dihapus!',
+                    ]);
+                }
+
+                return response()->json([
+                    'success' => false,
+                    'message' => $message ?? 'Gagal menghapus versi instrumen.',
+                ], $response->status() ?: 422);
+            }
+
             if ($response->successful()) {
                 return back()->with('success', 'Versi instrumen berhasil dihapus!');
             }
 
-            return back()->with('error', (string) ($response->json('message') ?? 'Gagal menghapus versi instrumen.'));
+            return back()->with('error', (string) ($message ?? 'Gagal menghapus versi instrumen.'));
         } catch (\Throwable $e) {
+            if ($request->wantsJson() || $request->ajax()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Terjadi kesalahan: '.$e->getMessage(),
+                ], 500);
+            }
+
             return back()->with('error', 'Terjadi kesalahan: '.$e->getMessage());
         }
     }

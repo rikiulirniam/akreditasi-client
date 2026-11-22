@@ -171,10 +171,26 @@ class IndikatorController extends Controller
         }
     }
 
-    public function destroy(int|string $lembagaId, int|string $instrumenId, int|string $kriteriaId, int|string $subkriteriaId, int|string $indikatorId): JsonResponse|RedirectResponse
+    public function destroy(Request $request, int|string $lembagaId, int|string $instrumenId, int|string $kriteriaId, int|string $subkriteriaId, int|string $indikatorId): JsonResponse|RedirectResponse
     {
         try {
             $response = $this->akreditasiService->deleteIndikator($indikatorId);
+            $message = $response->json('message');
+
+            if ($request->wantsJson() || $request->ajax()) {
+                if ($response->successful()) {
+                    return response()->json([
+                        'success' => true,
+                        'message' => $message ?? 'Indikator berhasil dihapus.',
+                    ]);
+                }
+
+                return response()->json([
+                    'success' => false,
+                    'message' => $message ?? 'Gagal menghapus indikator.',
+                ], $response->status() ?: 422);
+            }
+
             if ($response->successful()) {
                 if (request()->expectsJson()) {
                     return response()->json([
@@ -191,16 +207,16 @@ class IndikatorController extends Controller
                 ? 'Data tidak dapat dihapus karena telah digunakan pada instrumen atau penilaian aktif.'
                 : (string) ($response->json('message') ?? 'Gagal menghapus indikator.');
 
-            if (request()->expectsJson()) {
+            if ($request->wantsJson() || $request->ajax() || request()->expectsJson()) {
                 return response()->json([
                     'success' => false,
                     'message' => $message,
-                ], $response->status() === 422 ? 422 : 500);
+                ], $response->status() === 422 ? 422 : ($response->status() ?: 500));
             }
 
             return back()->with('error', $message);
         } catch (\Throwable $e) {
-            if (request()->expectsJson()) {
+            if ($request->wantsJson() || $request->ajax() || request()->expectsJson()) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Terjadi kesalahan saat menghapus indikator.',
