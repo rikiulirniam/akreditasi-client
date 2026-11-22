@@ -1,15 +1,79 @@
 @extends('layouts.app')
 
-@section('title', 'Anggota UPPS')
+@section('title', 'Anggota UPPS - ' . ($upps['nama_upps'] ?? ($upps['nama'] ?? 'Detail UPPS')))
 
 @section('content')
 <div class="space-y-6">
     <div class="space-y-4">
-        <!-- Header Title / Sub-title -->
+        <!-- Top Navigation & Header Title -->
         <div class="flex items-center justify-between">
-            <h2 class="text-xl font-bold text-gray-900 tracking-tight">
-                Anggota UPPS - {{ $upps['nama'] ?? 'Detail UPPS' }}
-            </h2>
+            <div class="flex items-center gap-3.5">
+                <a 
+                    href="{{ route('upps.index') }}" 
+                    class="inline-flex items-center justify-center w-10 h-10 rounded-2xl bg-white border border-gray-200 text-gray-600 hover:text-primary hover:border-primary hover:shadow-sm transition"
+                    title="Kembali ke Master UPPS"
+                >
+                    <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" />
+                    </svg>
+                </a>
+                <div>
+                    <h2 class="text-xl font-bold text-gray-900 tracking-tight">
+                        Anggota UPPS — {{ $upps['nama_upps'] ?? ($upps['nama'] ?? 'Detail UPPS') }}
+                    </h2>
+                    <p class="text-xs text-gray-500 font-medium">
+                        Struktur Organisasi & Hirarki Kepengurusan Unit Pengelola Program Studi
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Info Card: Ringkasan UPPS & Panduan Hirarki Jabatan -->
+        <div class="bg-gradient-to-r from-primary/5 via-primary/10 to-transparent p-5 rounded-3xl border border-primary/20 space-y-3">
+            <div class="flex flex-wrap items-center justify-between gap-4">
+                <div class="space-y-1">
+                    <div class="flex items-center gap-2">
+                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold bg-primary text-white font-mono">
+                            {{ $upps['kode_upps'] ?? 'UPPS-'.$id }}
+                        </span>
+                        <span class="text-xs font-bold text-gray-500 uppercase tracking-wider">
+                            {{ $upps['jenis'] ?? 'Jurusan' }}
+                        </span>
+                    </div>
+                    <h3 class="text-lg font-extrabold text-gray-900 tracking-tight">
+                        {{ $upps['nama_upps'] ?? ($upps['nama'] ?? 'Unit Pengelola') }}
+                    </h3>
+                    <p class="text-xs text-gray-700 font-medium">
+                        Pimpinan Utama: <span class="font-bold text-gray-900">{{ $upps['pimpinan_upps'] ?? ($upps['pimpinan'] ?? '-') }}</span>
+                    </p>
+                </div>
+                <div class="flex flex-wrap items-center gap-2">
+                    <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white text-xs font-bold text-gray-800 border border-gray-200 shadow-xs">
+                        <span class="w-2 h-2 rounded-full bg-primary"></span>
+                        Total {{ count($anggotaList) }} Anggota Terdaftar
+                    </span>
+                </div>
+            </div>
+
+            <!-- Baris Indikator Tingkatan Hirarki Jabatan -->
+            <div class="pt-2 border-t border-primary/10 flex flex-wrap items-center gap-2 text-xs">
+                <span class="text-gray-500 font-semibold text-[11px]">Hirarki Jabatan:</span>
+                <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-200">
+                    Level 1: Pimpinan UPPS
+                </span>
+                <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-bold bg-blue-50 text-blue-700 border border-blue-200">
+                    Level 2: Sekretaris UPPS
+                </span>
+                <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                    Level 3: Koordinator / Kaprodi
+                </span>
+                <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-bold bg-amber-50 text-amber-700 border border-amber-200">
+                    Level 4: Kepala Lab / Bengkel
+                </span>
+                <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-bold bg-gray-100 text-gray-700 border border-gray-200">
+                    Level 5: Staf / Anggota
+                </span>
+            </div>
         </div>
 
         <!-- Top Action Bar: Search Input & Tambah Anggota Button -->
@@ -23,7 +87,7 @@
                 <x-input 
                     type="text" 
                     id="searchAnggotaUppsInput"
-                    placeholder="Cari..." 
+                    placeholder="Cari nama atau jabatan anggota..." 
                     class="pl-10 text-xs"
                 />
             </div>
@@ -41,21 +105,25 @@
             </div>
         </div>
 
-        <!-- Table: Data Anggota UPPS -->
+        <!-- Table: Data Anggota UPPS (Berhirarki) -->
         <x-table>
             <x-slot:header>
                 <x-table.th class="w-16">No</x-table.th>
-                <x-table.th>Nama Anggota</x-table.th>
-                <x-table.th>Jabatan</x-table.th>
+                <x-table.th class="w-64">Nama Anggota</x-table.th>
+                <x-table.th class="w-48">Hirarki Jabatan</x-table.th>
+                <x-table.th>Jabatan Spesifik</x-table.th>
                 <x-table.th class="w-28 text-right">Action</x-table.th>
             </x-slot:header>
 
             @forelse($anggotaList as $index => $item)
                 @php
-                    $id = $item['id'] ?? 0;
-                    $uppsId = $upps['id'] ?? $id_upps ?? 3;
+                    $aId = $item['id'] ?? 0;
+                    $uppsId = $upps['id'] ?? $id;
                     $nama = $item['nama'] ?? $item['nama_anggota'] ?? '-';
                     $jabatan = $item['jabatan'] ?? '-';
+                    $level = $item['level_jabatan'] ?? 5;
+                    $levelLabel = $item['level_label'] ?? 'Staf / Anggota';
+                    $badgeClass = $item['badge_class'] ?? 'bg-gray-100 text-gray-700 border-gray-200';
                 @endphp
                 <x-table.row class="anggota-upps-row">
                     <!-- No -->
@@ -64,15 +132,25 @@
                     </x-table.cell>
 
                     <!-- Nama Anggota -->
-                    <x-table.cell>
-                        <span class="font-extrabold text-sm text-gray-900 tracking-tight nama-text">
+                    <x-table.cell class="w-64">
+                        <span class="font-extrabold text-sm text-gray-900 tracking-tight nama-text block">
                             {{ $nama }}
                         </span>
                     </x-table.cell>
 
-                    <!-- Jabatan -->
-                    <x-table.cell class="text-gray-700 font-medium jabatan-text">
-                        {{ $jabatan }}
+                    <!-- Hirarki Jabatan (Badge Tingkatan) -->
+                    <x-table.cell class="w-48">
+                        <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border {{ $badgeClass }} hirarki-badge">
+                            <span class="w-1.5 h-1.5 rounded-full bg-current"></span>
+                            {{ $levelLabel }}
+                        </span>
+                    </x-table.cell>
+
+                    <!-- Jabatan Spesifik -->
+                    <x-table.cell>
+                        <span class="text-sm font-semibold text-gray-800 jabatan-text block">
+                            {{ $jabatan }}
+                        </span>
                     </x-table.cell>
 
                     <!-- Action (Edit, Delete, Detail) -->
@@ -83,10 +161,11 @@
                                 type="button" 
                                 class="open-edit-anggota-btn text-[#F59E0B] hover:text-[#D97706] transition p-1 cursor-pointer"
                                 title="Edit Anggota UPPS"
-                                data-id="{{ $id }}"
+                                data-id="{{ $aId }}"
                                 data-nama="{{ $nama }}"
                                 data-jabatan="{{ $jabatan }}"
-                                data-action="{{ route('upps.anggota.update', ['id' => $uppsId, 'anggotaId' => $id]) }}"
+                                data-level="{{ $level }}"
+                                data-action="{{ route('upps.anggota.update', ['id' => $uppsId, 'anggotaId' => $aId]) }}"
                             >
                                 <x-icon.edit class="w-5 h-5" />
                             </button>
@@ -97,7 +176,7 @@
                                 class="text-[#DC2626] hover:text-[#B91C1C] transition p-1 cursor-pointer"
                                 title="Hapus Anggota UPPS"
                                 data-confirm-delete
-                                data-action="{{ route('upps.anggota.destroy', ['id' => $uppsId, 'anggotaId' => $id]) }}"
+                                data-action="{{ route('upps.anggota.destroy', ['id' => $uppsId, 'anggotaId' => $aId]) }}"
                                 data-title="Hapus Anggota UPPS?"
                                 data-message="Apakah Anda yakin ingin menghapus data anggota '{{ $nama }}'? Tindakan ini bersifat permanen."
                             >
@@ -111,6 +190,8 @@
                                 title="Lihat Detail Anggota"
                                 data-nama="{{ $nama }}"
                                 data-jabatan="{{ $jabatan }}"
+                                data-level-label="{{ $levelLabel }}"
+                                data-level="{{ $level }}"
                             >
                                 <x-icon.eye class="w-5 h-5" />
                             </button>
@@ -118,14 +199,14 @@
                     </x-table.cell>
                 </x-table.row>
             @empty
-                <x-table.empty colspan="4" message="Belum ada data anggota UPPS" submessage="Silakan klik tombol Tambah Anggota untuk membuat data baru." />
+                <x-table.empty colspan="5" message="Belum ada data anggota UPPS" submessage="Silakan klik tombol Tambah Anggota untuk membuat data struktur organisasi baru." />
             @endforelse
         </x-table>
     </div>
 </div>
 
 <!-- ========================================== -->
-<!-- MODAL: Tambahkan Anggota UPPS              -->
+<!-- MODAL: Tambahkan Anggota UPPS (Berhirarki) -->
 <!-- ========================================== -->
 <div 
     id="createAnggotaModal" 
@@ -134,12 +215,12 @@
     aria-modal="true"
     aria-labelledby="createAnggotaModalTitle"
 >
-    <div class="anggota-modal-card relative bg-white rounded-[28px] p-8 max-w-[460px] w-full shadow-2xl text-left transform scale-95 transition-all duration-200 max-h-[92vh] overflow-y-auto">
+    <div class="anggota-modal-card relative bg-white rounded-[28px] p-8 max-w-[480px] w-full shadow-2xl text-left transform scale-95 transition-all duration-200 max-h-[92vh] overflow-y-auto">
         <h3 id="createAnggotaModalTitle" class="text-xl font-bold text-gray-900 tracking-tight text-center mb-6">
             Tambahkan Anggota UPPS
         </h3>
 
-        <form action="{{ route('upps.anggota.store', ['id' => $upps['id'] ?? $id_upps ?? 3]) }}" method="POST" class="space-y-4">
+        <form action="{{ route('upps.anggota.store', ['id' => $upps['id'] ?? $id]) }}" method="POST" class="space-y-4">
             @csrf
 
             <!-- Field 1: Nama Anggota -->
@@ -157,16 +238,42 @@
                 >
             </div>
 
-            <!-- Field 2: Jabatan -->
+            <!-- Field 2: Tingkatan Hirarki Jabatan -->
+            <div>
+                <label for="createLevelJabatan" class="block text-xs font-bold text-gray-900 mb-1.5">
+                    Tingkatan Hirarki Jabatan
+                </label>
+                <div class="relative">
+                    <select 
+                        name="level_jabatan" 
+                        id="createLevelJabatan" 
+                        required 
+                        class="w-full px-4 py-2.5 pr-10 rounded-[10px] bg-white-form border-none text-sm font-medium text-gray-900 focus:ring-2 focus:ring-additional/30 focus:outline-none appearance-none cursor-pointer"
+                    >
+                        <option value="1">Level 1: Pimpinan UPPS (Ketua Jurusan / Dekan / Direktur)</option>
+                        <option value="2">Level 2: Sekretaris UPPS (Sekretaris Jurusan / Wakil Dekan)</option>
+                        <option value="3" selected>Level 3: Koordinator Unit / Kaprodi</option>
+                        <option value="4">Level 4: Kepala Laboratorium / Bengkel / Studio</option>
+                        <option value="5">Level 5: Staf Administrasi / Anggota Pengelola</option>
+                    </select>
+                    <span class="absolute inset-y-0 right-0 flex items-center pr-3.5 pointer-events-none text-gray-800">
+                        <svg class="w-4 h-4 stroke-[2.5]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
+                        </svg>
+                    </span>
+                </div>
+            </div>
+
+            <!-- Field 3: Jabatan Spesifik -->
             <div>
                 <label for="createJabatanInput" class="block text-xs font-bold text-gray-900 mb-1.5">
-                    Jabatan
+                    Jabatan Spesifik
                 </label>
                 <input 
                     type="text" 
                     name="jabatan" 
                     id="createJabatanInput" 
-                    placeholder="Contoh: Ketua Jurusan Teknik Elektro" 
+                    placeholder="Contoh: Koordinator Program Studi D3 Teknik Listrik" 
                     required 
                     class="w-full px-4 py-2.5 rounded-[10px] bg-white-form border-none text-sm font-medium text-gray-900 focus:ring-2 focus:ring-additional/30 focus:outline-none placeholder:text-gray-500"
                 >
@@ -192,7 +299,7 @@
 </div>
 
 <!-- ========================================== -->
-<!-- MODAL: Perbarui Anggota UPPS               -->
+<!-- MODAL: Perbarui Anggota UPPS (Berhirarki)  -->
 <!-- ========================================== -->
 <div 
     id="editAnggotaModal" 
@@ -201,7 +308,7 @@
     aria-modal="true"
     aria-labelledby="editAnggotaModalTitle"
 >
-    <div class="anggota-modal-card relative bg-white rounded-[28px] p-8 max-w-[460px] w-full shadow-2xl text-left transform scale-95 transition-all duration-200 max-h-[92vh] overflow-y-auto">
+    <div class="anggota-modal-card relative bg-white rounded-[28px] p-8 max-w-[480px] w-full shadow-2xl text-left transform scale-95 transition-all duration-200 max-h-[92vh] overflow-y-auto">
         <h3 id="editAnggotaModalTitle" class="text-xl font-bold text-gray-900 tracking-tight text-center mb-6">
             Perbarui Anggota UPPS
         </h3>
@@ -219,22 +326,46 @@
                     type="text" 
                     name="nama" 
                     id="editNamaInput" 
-                    placeholder="Contoh: Dr. Amin Suharjono, S.T., M.T." 
                     required 
                     class="w-full px-4 py-2.5 rounded-[10px] bg-white-form border-none text-sm font-medium text-gray-900 focus:ring-2 focus:ring-additional/30 focus:outline-none placeholder:text-gray-500"
                 >
             </div>
 
-            <!-- Field 2: Jabatan -->
+            <!-- Field 2: Tingkatan Hirarki Jabatan -->
+            <div>
+                <label for="editLevelJabatan" class="block text-xs font-bold text-gray-900 mb-1.5">
+                    Tingkatan Hirarki Jabatan
+                </label>
+                <div class="relative">
+                    <select 
+                        name="level_jabatan" 
+                        id="editLevelJabatan" 
+                        required 
+                        class="w-full px-4 py-2.5 pr-10 rounded-[10px] bg-white-form border-none text-sm font-medium text-gray-900 focus:ring-2 focus:ring-additional/30 focus:outline-none appearance-none cursor-pointer"
+                    >
+                        <option value="1">Level 1: Pimpinan UPPS (Ketua Jurusan / Dekan / Direktur)</option>
+                        <option value="2">Level 2: Sekretaris UPPS (Sekretaris Jurusan / Wakil Dekan)</option>
+                        <option value="3">Level 3: Koordinator Unit / Kaprodi</option>
+                        <option value="4">Level 4: Kepala Laboratorium / Bengkel / Studio</option>
+                        <option value="5">Level 5: Staf Administrasi / Anggota Pengelola</option>
+                    </select>
+                    <span class="absolute inset-y-0 right-0 flex items-center pr-3.5 pointer-events-none text-gray-800">
+                        <svg class="w-4 h-4 stroke-[2.5]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
+                        </svg>
+                    </span>
+                </div>
+            </div>
+
+            <!-- Field 3: Jabatan Spesifik -->
             <div>
                 <label for="editJabatanInput" class="block text-xs font-bold text-gray-900 mb-1.5">
-                    Jabatan
+                    Jabatan Spesifik
                 </label>
                 <input 
                     type="text" 
                     name="jabatan" 
                     id="editJabatanInput" 
-                    placeholder="Contoh: Ketua Jurusan Teknik Elektro" 
                     required 
                     class="w-full px-4 py-2.5 rounded-[10px] bg-white-form border-none text-sm font-medium text-gray-900 focus:ring-2 focus:ring-additional/30 focus:outline-none placeholder:text-gray-500"
                 >
@@ -260,7 +391,7 @@
 </div>
 
 <!-- ========================================== -->
-<!-- MODAL: Detail Anggota UPPS                 -->
+<!-- MODAL: Detail Anggota UPPS (Berhirarki)    -->
 <!-- ========================================== -->
 <div 
     id="detailAnggotaModal" 
@@ -281,9 +412,17 @@
                 <span id="detailNamaText" class="text-sm font-extrabold text-gray-900 block">-</span>
             </div>
 
-            <!-- Jabatan -->
+            <!-- Hirarki Jabatan -->
             <div class="bg-white-form p-3.5 rounded-[12px]">
-                <span class="block text-xs font-bold text-gray-500 mb-1">Jabatan</span>
+                <span class="block text-xs font-bold text-gray-500 mb-1">Tingkatan Hirarki</span>
+                <span id="detailLevelBadge" class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-primary/10 text-primary">
+                    -
+                </span>
+            </div>
+
+            <!-- Jabatan Spesifik -->
+            <div class="bg-white-form p-3.5 rounded-[12px]">
+                <span class="block text-xs font-bold text-gray-500 mb-1">Jabatan Spesifik</span>
                 <span id="detailJabatanText" class="text-sm font-medium text-gray-800 block">-</span>
             </div>
 
@@ -312,38 +451,40 @@
                 rows.forEach(row => {
                     const nama = row.querySelector('.nama-text')?.textContent.toLowerCase() || '';
                     const jabatan = row.querySelector('.jabatan-text')?.textContent.toLowerCase() || '';
+                    const hirarki = row.querySelector('.hirarki-badge')?.textContent.toLowerCase() || '';
 
-                    const match = !keyword || nama.includes(keyword) || jabatan.includes(keyword);
+                    const match = !keyword || nama.includes(keyword) || jabatan.includes(keyword) || hirarki.includes(keyword);
                     row.style.display = match ? '' : 'none';
                 });
             });
         }
 
         // Modal Helpers
-        function showModal(modalEl) {
-            if (!modalEl) return;
-            const card = modalEl.querySelector('.anggota-modal-card');
-            modalEl.classList.remove('opacity-0', 'pointer-events-none');
-            modalEl.classList.add('opacity-100');
+        function showModal(modal) {
+            if (!modal) return;
+            modal.classList.remove('opacity-0', 'pointer-events-none');
+            const card = modal.querySelector('.anggota-modal-card');
             if (card) {
                 card.classList.remove('scale-95');
                 card.classList.add('scale-100');
             }
         }
 
-        function hideModal(modalEl) {
-            if (!modalEl) return;
-            const card = modalEl.querySelector('.anggota-modal-card');
-            modalEl.classList.remove('opacity-100');
-            modalEl.classList.add('opacity-0', 'pointer-events-none');
+        function hideModal(modal) {
+            if (!modal) return;
+            modal.classList.add('opacity-0', 'pointer-events-none');
+            const card = modal.querySelector('.anggota-modal-card');
             if (card) {
                 card.classList.remove('scale-100');
                 card.classList.add('scale-95');
             }
         }
 
-        // Create Modal
         const createModal = document.getElementById('createAnggotaModal');
+        const editModal = document.getElementById('editAnggotaModal');
+        const detailModal = document.getElementById('detailAnggotaModal');
+
+        // Open Create Modal
         const openCreateBtn = document.getElementById('openCreateAnggotaModalBtn');
         const createNamaInput = document.getElementById('createNamaInput');
         const createJabatanInput = document.getElementById('createJabatanInput');
@@ -353,79 +494,74 @@
                 if (createNamaInput) createNamaInput.value = '';
                 if (createJabatanInput) createJabatanInput.value = '';
                 showModal(createModal);
-                setTimeout(() => createNamaInput?.focus(), 100);
             });
         }
 
-        // Edit Modal (Event Delegation)
-        const editModal = document.getElementById('editAnggotaModal');
+        // Open Edit Modal
         const editForm = document.getElementById('editAnggotaForm');
         const editNamaInput = document.getElementById('editNamaInput');
         const editJabatanInput = document.getElementById('editJabatanInput');
+        const editLevelSelect = document.getElementById('editLevelJabatan');
 
-        document.addEventListener('click', function (e) {
-            const editBtn = e.target.closest('.open-edit-anggota-btn');
-            if (!editBtn) return;
+        document.querySelectorAll('.open-edit-anggota-btn').forEach(editBtn => {
+            editBtn.addEventListener('click', function () {
+                const actionUrl = this.getAttribute('data-action');
+                const nama = this.getAttribute('data-nama') || '';
+                const jabatan = this.getAttribute('data-jabatan') || '';
+                const level = this.getAttribute('data-level') || '3';
 
-            e.preventDefault();
-            e.stopPropagation();
+                if (editForm) editForm.action = actionUrl;
+                if (editNamaInput) editNamaInput.value = nama;
+                if (editJabatanInput) editJabatanInput.value = jabatan;
+                if (editLevelSelect) editLevelSelect.value = String(level);
 
-            const actionUrl = editBtn.getAttribute('data-action') || editBtn.dataset.action;
-            const nama = editBtn.getAttribute('data-nama') || editBtn.dataset.nama;
-            const jabatan = editBtn.getAttribute('data-jabatan') || editBtn.dataset.jabatan;
-
-            if (editForm && actionUrl) {
-                editForm.action = actionUrl;
-                editForm.setAttribute('action', actionUrl);
-            }
-
-            if (editNamaInput) editNamaInput.value = nama || '';
-            if (editJabatanInput) editJabatanInput.value = jabatan || '';
-
-            showModal(editModal);
-            setTimeout(() => editNamaInput?.focus(), 100);
+                showModal(editModal);
+            });
         });
 
-        // Detail Modal (Event Delegation)
-        const detailModal = document.getElementById('detailAnggotaModal');
+        // Open Detail Modal
         const detailNamaText = document.getElementById('detailNamaText');
         const detailJabatanText = document.getElementById('detailJabatanText');
+        const detailLevelBadge = document.getElementById('detailLevelBadge');
 
-        document.addEventListener('click', function (e) {
-            const detailBtn = e.target.closest('.open-detail-anggota-btn');
-            if (!detailBtn) return;
+        document.querySelectorAll('.open-detail-anggota-btn').forEach(detailBtn => {
+            detailBtn.addEventListener('click', function () {
+                const nama = this.getAttribute('data-nama') || '-';
+                const jabatan = this.getAttribute('data-jabatan') || '-';
+                const levelLabel = this.getAttribute('data-level-label') || '-';
 
-            e.preventDefault();
+                if (detailNamaText) detailNamaText.textContent = nama;
+                if (detailJabatanText) detailJabatanText.textContent = jabatan;
+                if (detailLevelBadge) detailLevelBadge.textContent = levelLabel;
 
-            const nama = detailBtn.getAttribute('data-nama') || detailBtn.dataset.nama;
-            const jabatan = detailBtn.getAttribute('data-jabatan') || detailBtn.dataset.jabatan;
-
-            if (detailNamaText) detailNamaText.textContent = nama || '-';
-            if (detailJabatanText) detailJabatanText.textContent = jabatan || '-';
-
-            showModal(detailModal);
+                showModal(detailModal);
+            });
         });
 
-        // Close Buttons
+        // Close Modal Handlers
         document.querySelectorAll('.close-anggota-modal').forEach(btn => {
             btn.addEventListener('click', function () {
                 hideModal(this.closest('[role="dialog"]'));
             });
         });
 
-        // Close on Backdrop Click
-        [createModal, editModal, detailModal].forEach(m => {
-            m?.addEventListener('click', function (e) {
-                if (e.target === m) hideModal(m);
-            });
+        // Click outside backdrop
+        [createModal, editModal, detailModal].forEach(modal => {
+            if (modal) {
+                modal.addEventListener('click', function (e) {
+                    if (e.target === modal) hideModal(modal);
+                });
+            }
         });
 
-        // Close on Escape Key
+        // Escape key to close
         document.addEventListener('keydown', function (e) {
             if (e.key === 'Escape') {
-                hideModal(createModal);
-                hideModal(editModal);
-                hideModal(detailModal);
+                [createModal, editModal, detailModal].forEach(modal => {
+                    if (modal && !modal.classList.contains('pointer-events-none')) {
+                        hideModal(modal);
+                    }
+                });
             }
         });
     });
