@@ -119,8 +119,12 @@
                         </span>
                     </x-table.cell>
                     <x-table.cell class="text-center whitespace-nowrap">
-                        @if(!empty($item['link_dokumen']))
-                            <a href="{{ $item['link_dokumen'] }}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1 text-xs font-bold text-primary hover:underline">
+                        @php
+                            $dokumenLink = $item['link_dokumen'] ?? ($item['dokumen_url'] ?? null);
+                            $dokumenHref = $dokumenLink ? (str_starts_with($dokumenLink, 'http://') || str_starts_with($dokumenLink, 'https://') ? $dokumenLink : url($dokumenLink)) : null;
+                        @endphp
+                        @if(!empty($dokumenHref))
+                            <a href="{{ $dokumenHref }}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1 text-xs font-bold text-primary hover:underline">
                                 Lihat ↗
                             </a>
                         @else

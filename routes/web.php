@@ -119,6 +119,7 @@ Route::middleware('auth.akademik')->group(function () {
     Route::put('/mahasiswa/{mahasiswa}/status/{statusId}', [MahasiswaController::class, 'updateStatus'])->name('mahasiswa.status.update');
     Route::delete('/mahasiswa/{mahasiswa}/status/{statusId}', [MahasiswaController::class, 'destroyStatus'])->name('mahasiswa.status.destroy');
     Route::resource('kegiatan-mahasiswa', KegiatanMahasiswaController::class);
+    Route::get('/lulusan/dashboard', [LulusanController::class, 'dashboard'])->name('lulusan.dashboard');
     Route::get('/lulusan', [LulusanController::class, 'index'])->name('lulusan.index');
 
     Route::get('/kemahasiswaan/jenis-prestasi', [MahasiswaController::class, 'jenisPrestasi'])->name('kemahasiswaan.jenis-prestasi.index');
@@ -144,7 +145,7 @@ Route::middleware('auth.akademik')->group(function () {
 
     Route::middleware('permission:kurikulum')->resource('kurikulum', KurikulumController::class);
     Route::middleware('permission:kurikulum.update')->put('kurikulum/{kurikulum}/cpl-mata-kuliah', [KurikulumController::class, 'updateMataKuliahCpl'])->name('kurikulum.update-mk-cpl');
-    Route::middleware('permission:cpl.read')->get('/cpl/evaluasi', [CplController::class, 'evaluasi'])->name('cpl.evaluasi');
+    Route::middleware('permission:cpl')->get('/cpl/evaluasi', [CplController::class, 'evaluasi'])->name('cpl.evaluasi');
     Route::middleware('permission:cpl')->resource('cpl', CplController::class);
 
     // ==========================================

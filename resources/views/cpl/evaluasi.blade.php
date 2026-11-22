@@ -71,7 +71,7 @@
             Kategori
             <select name="kategori" class="mt-1.5 w-full rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-sm font-medium text-gray-900">
                 <option value="">Semua kategori</option>
-                @foreach(['Sikap', 'Pengetahuan', 'Keterampilan Umum', 'Keterampilan Khusus'] as $kategori)
+                @foreach($kategoriOptions as $kategori)
                     <option value="{{ $kategori }}" {{ $selectedKategori === $kategori ? 'selected' : '' }}>{{ $kategori }}</option>
                 @endforeach
             </select>

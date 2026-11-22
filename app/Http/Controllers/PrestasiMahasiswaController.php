@@ -55,8 +55,11 @@ class PrestasiMahasiswaController extends Controller
         $mahasiswaMap = collect($mahasiswaList)->keyBy(fn (array $item) => (string) ($item['id'] ?? ''));
         $evidenceByPrestasi = collect($this->responseList($evidenceResponse))
             ->groupBy(fn (array $item) => (string) ($item['id_prestasi_mahasiswa'] ?? ''));
-        $jenisByPrestasi = collect($this->responseList($jenisResponse))
-            ->groupBy(fn (array $item) => (string) ($item['id_prestasi_mahasiswa'] ?? ''));
+        
+        // Perbaikan: Mapping master jenis prestasi berdasarkan ID (arsitektur master baru)
+        $jenisMasterMap = collect($this->responseList($jenisResponse))
+            ->keyBy(fn (array $item) => (string) ($item['id'] ?? ''));
+
         $errorMessages = [];
         foreach ($responses as $name => $response) {
             if (! $response->successful()) {
@@ -73,7 +76,12 @@ class PrestasiMahasiswaController extends Controller
             $prestasi['nim'] = is_array($mahasiswa)
                 ? ($mahasiswa['nim_display'] ?? $mahasiswa['nim'] ?? '-')
                 : '-';
-            $prestasi['jenis'] = $jenisByPrestasi->get($prestasiId, collect())->first()['jenis'] ?? '-';
+
+            // Perbaikan: Ambil nama jenis prestasi berdasarkan relasi id_jenis_prestasi ke master
+            $idJenis = $prestasi['id_jenis_prestasi'] ?? null;
+            $jenisMaster = $idJenis ? $jenisMasterMap->get((string) $idJenis) : null;
+            $prestasi['jenis'] = $jenisMaster['nama'] ?? $jenisMaster['jenis'] ?? '-';
+
             $prestasi['evidence'] = $evidenceByPrestasi->get($prestasiId, collect())->first()['evidence'] ?? '';
         }
         unset($prestasi);
@@ -156,12 +164,21 @@ class PrestasiMahasiswaController extends Controller
         }
 
         $jenisOptions = collect($this->responseList($jenisResponse))
-            ->pluck('jenis')
+            ->pluck('nama')
             ->filter(fn ($jenis) => is_string($jenis) && trim($jenis) !== '')
             ->map(fn (string $jenis) => trim($jenis))
             ->unique()
             ->values()
             ->all();
+        if (empty($jenisOptions)) {
+            $jenisOptions = collect($this->responseList($jenisResponse))
+                ->pluck('jenis')
+                ->filter(fn ($jenis) => is_string($jenis) && trim($jenis) !== '')
+                ->map(fn (string $jenis) => trim($jenis))
+                ->unique()
+                ->values()
+                ->all();
+        }
         $jenisOptions = array_values(array_unique(array_merge(['Akademik', 'Non-Akademik'], $jenisOptions)));
 
         $formDataReady = collect([
@@ -231,10 +248,12 @@ class PrestasiMahasiswaController extends Controller
             $this->responseList($evidenceResponse),
             fn (array $item) => (string) ($item['id_prestasi_mahasiswa'] ?? '') === (string) $id
         ));
-        $jenisList = array_values(array_filter(
-            $this->responseList($jenisResponse),
-            fn (array $item) => (string) ($item['id_prestasi_mahasiswa'] ?? '') === (string) $id
-        ));
+        
+        $jenisMasterMap = collect($this->responseList($jenisResponse))
+            ->keyBy(fn (array $item) => (string) ($item['id'] ?? ''));
+        $idJenis = $prestasi['id_jenis_prestasi'] ?? null;
+        $jenisMaster = $idJenis ? $jenisMasterMap->get((string) $idJenis) : null;
+        $jenisPrestasiName = $jenisMaster['nama'] ?? $jenisMaster['jenis'] ?? '-';
 
         $relatedErrors = [];
         foreach ([
@@ -253,8 +272,8 @@ class PrestasiMahasiswaController extends Controller
             'mahasiswa' => is_array($mahasiswa) ? $mahasiswa : [],
             'mahasiswaList' => $mahasiswaList,
             'evidenceList' => $evidenceList,
-            'jenisList' => $jenisList,
-            'jenisPrestasi' => $jenisList[0]['jenis'] ?? '-',
+            'jenisList' => [],
+            'jenisPrestasi' => $jenisPrestasiName,
             'relatedErrors' => $relatedErrors,
         ]);
     }

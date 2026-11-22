@@ -66,86 +66,75 @@
         <hr class="border-gray-200 my-5">
 
         <!-- Card Body: 2 Columns Info -->
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 text-xs">
-            <!-- Kolom Kiri -->
-            <div class="space-y-4">
-                <!-- SK Kurikulum -->
-                <div class="flex items-center gap-3">
-                    <span class="text-gray-500 shrink-0">
-                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                        </svg>
-                    </span>
-                    <p class="text-gray-700">
-                        <span class="font-bold text-gray-900">SK Kurikulum:</span> {{ $kurikulum['sk_kurikulum'] ?? '-' }}
-                    </p>
-                </div>
-
-                <!-- Program Studi -->
-                <div class="flex items-center gap-3">
-                    <span class="text-gray-500 shrink-0">
-                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
-                        </svg>
-                    </span>
-                    <p class="text-gray-700">
-                        <span class="font-bold text-gray-900">Program Studi:</span> {{ $kurikulum['nama_prodi'] ?? ($prodiDetail['nama_prodi'] ?? '-') }}
-                    </p>
-                </div>
-
-                <!-- Tahun Mulai -->
-                <div class="flex items-center gap-3">
-                    <span class="text-gray-500 shrink-0">
-                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                    </span>
-                    <p class="text-gray-700">
-                        <span class="font-bold text-gray-900">Tahun Mulai:</span> {{ $kurikulum['tahun_mulai'] ?? '-' }}
-                    </p>
-                </div>
-
-                <!-- Berlaku Hingga -->
-                <div class="flex items-center gap-3">
-                    <span class="text-gray-500 shrink-0">
-                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                        </svg>
-                    </span>
-                    <p class="text-gray-700">
-                        <span class="font-bold text-gray-900">Berlaku Hingga:</span> {{ $kurikulum['berlaku_sampai'] ?? '-' }}
-                    </p>
-                </div>
-
-                <!-- Link Dokumen Kurikulum -->
-                <div class="flex items-center gap-3">
-                    <span class="text-gray-500 shrink-0">
-                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M13.19 8.688a4.5 4.5 0 011.242 7.244l-4.5 4.5a4.5 4.5 0 01-6.364-6.364l1.757-1.757m13.35-.622l1.757-1.757a4.5 4.5 0 00-6.364-6.364l-4.5 4.5a4.5 4.5 0 001.242 7.244" />
-                        </svg>
-                    </span>
-                    <p class="text-gray-700">
-                        <span class="font-bold text-gray-900">Dokumen Kurikulum:</span>
-                        @if(!empty($kurikulum['link_dokumen']))
-                            <a href="{{ $kurikulum['link_dokumen'] }}" target="_blank" rel="noopener noreferrer" class="text-primary hover:underline font-semibold">
-                                Buka Dokumen ↗
-                            </a>
-                        @else
-                            <span class="text-gray-400">-</span>
-                        @endif
-                    </p>
-                </div>
-            </div>
-
-            <!-- Kolom Kanan: CPL -->
-            <div class="flex items-start gap-3">
-                <span class="text-gray-500 shrink-0 mt-0.5">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4 text-xs">
+            <!-- SK Kurikulum -->
+            <div class="flex items-center gap-3">
+                <span class="text-gray-500 shrink-0">
                     <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                     </svg>
                 </span>
-                <p class="text-gray-700 leading-relaxed">
-                    <span class="font-bold text-gray-900">CPL:</span> {{ $kurikulum['cpl_deskripsi'] ?? 'Menjadi perguruan tinggi terapan berstandar nasional dan internasional yang mampu bersaing, akuntabel, berkarakter, dan beretika dalam bidang teknologi dan bisnis.' }}
+                <p class="text-gray-700">
+                    <span class="font-bold text-gray-900">SK Kurikulum:</span> {{ $kurikulum['sk_kurikulum'] ?? '-' }}
+                </p>
+            </div>
+
+            <!-- Tahun Mulai -->
+            <div class="flex items-center gap-3">
+                <span class="text-gray-500 shrink-0">
+                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                </span>
+                <p class="text-gray-700">
+                    <span class="font-bold text-gray-900">Tahun Mulai:</span> {{ $kurikulum['tahun_mulai'] ?? '-' }}
+                </p>
+            </div>
+
+            <!-- Program Studi -->
+            <div class="flex items-center gap-3">
+                <span class="text-gray-500 shrink-0">
+                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
+                    </svg>
+                </span>
+                <p class="text-gray-700">
+                    <span class="font-bold text-gray-900">Program Studi:</span> {{ $kurikulum['nama_prodi'] ?? ($prodiDetail['nama_prodi'] ?? '-') }}
+                </p>
+            </div>
+
+            <!-- Berlaku Hingga -->
+            <div class="flex items-center gap-3">
+                <span class="text-gray-500 shrink-0">
+                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                </span>
+                <p class="text-gray-700">
+                    <span class="font-bold text-gray-900">Berlaku Hingga:</span> {{ $kurikulum['berlaku_sampai'] ?? '-' }}
+                </p>
+            </div>
+
+            <!-- Link Dokumen Kurikulum -->
+            <div class="flex items-center gap-3 md:col-span-2">
+                <span class="text-gray-500 shrink-0">
+                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M13.19 8.688a4.5 4.5 0 011.242 7.244l-4.5 4.5a4.5 4.5 0 01-6.364-6.364l1.757-1.757m13.35-.622l1.757-1.757a4.5 4.5 0 00-6.364-6.364l-4.5 4.5a4.5 4.5 0 001.242 7.244" />
+                    </svg>
+                </span>
+                <p class="text-gray-700">
+                    <span class="font-bold text-gray-900">Dokumen Kurikulum:</span>
+                    @php
+                        $dokumenLink = $kurikulum['link_dokumen'] ?? ($kurikulum['dokumen_url'] ?? null);
+                        $dokumenHref = $dokumenLink ? (str_starts_with($dokumenLink, 'http://') || str_starts_with($dokumenLink, 'https://') ? $dokumenLink : url($dokumenLink)) : null;
+                    @endphp
+                    @if(!empty($dokumenHref))
+                        <a href="{{ $dokumenHref }}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1 font-semibold text-primary hover:underline">
+                            Lihat ↗
+                        </a>
+                    @else
+                        <span class="text-gray-400">-</span>
+                    @endif
                 </p>
             </div>
         </div>
