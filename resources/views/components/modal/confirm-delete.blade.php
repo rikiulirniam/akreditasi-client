@@ -89,12 +89,16 @@
         }
 
         if (cancelBtn) {
-            cancelBtn.addEventListener('click', closeModal);
+            cancelBtn.addEventListener('click', function () {
+                activeDeleteRow = null;
+                closeModal();
+            });
         }
 
         // Close on backdrop click
         modal.addEventListener('click', function (e) {
             if (e.target === modal) {
+                activeDeleteRow = null;
                 closeModal();
             }
         });
@@ -102,6 +106,7 @@
         // Close on Escape key
         document.addEventListener('keydown', function (e) {
             if (e.key === 'Escape' && !modal.classList.contains('pointer-events-none')) {
+                activeDeleteRow = null;
                 closeModal();
             }
         });
@@ -147,15 +152,20 @@
                 targetRow.style.opacity = '0.35';
                 targetRow.style.pointerEvents = 'none';
 
+                const deleteParams = new URLSearchParams({ _method: 'DELETE' });
+                if (csrfToken) {
+                    deleteParams.append('_token', csrfToken);
+                }
+
                 fetch(actionUrl, {
                     method: 'POST',
                     headers: {
                         'X-CSRF-TOKEN': csrfToken,
                         'Accept': 'application/json',
-                        'Content-Type': 'application/json',
+                        'Content-Type': 'application/x-www-form-urlencoded',
                         'X-Requested-With': 'XMLHttpRequest'
                     },
-                    body: JSON.stringify({ _method: 'DELETE' })
+                    body: deleteParams
                 })
                 .then(async response => {
                     let data = {};

@@ -141,18 +141,25 @@
 
                                 {{-- Tombol Aktifkan, hanya muncul jika versi belum aktif --}}
                                 @if (empty($v['status_aktif']))
+                                    @php
+                                        $sarjanaTerapan = collect($v['jenjangs'] ?? [])->first(function ($j) {
+                                            return str_contains(strtolower($j['nama_jenjang'] ?? ''), 'sarjana terapan') || ($j['id'] ?? null) == 2;
+                                        });
+                                        $jenjangIdForActivation = $sarjanaTerapan['id'] ?? (collect($v['jenjangs'] ?? [])->first()['id'] ?? 2);
+                                    @endphp
                                     <form
                                         action="{{ route('akreditasi.superadmin.versi_instrumen.aktifkan', $v['id']) }}"
                                         method="POST"
-                                        onsubmit="return confirm('Yakin ingin mengaktifkan versi instrumen ini?')"
+                                        onsubmit="return confirm('Yakin ingin mengaktifkan versi instrumen ini untuk jenjang Sarjana Terapan?')"
                                     >
                                         @csrf
                                         @method('PATCH')
+                                        <input type="hidden" name="id_jenjang" value="{{ $jenjangIdForActivation }}">
 
                                         <button
                                             type="submit"
                                             class="text-emerald-600 hover:text-emerald-700 transition p-1.5 rounded-lg hover:bg-emerald-50 cursor-pointer"
-                                            title="Aktifkan Versi"
+                                            title="Aktifkan Versi (Sarjana Terapan)"
                                         >
                                             <svg
                                                 xmlns="http://www.w3.org/2000/svg"
