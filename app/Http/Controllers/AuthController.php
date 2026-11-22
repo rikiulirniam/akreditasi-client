@@ -44,7 +44,9 @@ class AuthController extends Controller
 
         try {
             // Arahkan request autentikasi ke POST https://akademik.fayra.my.id/api/auth/login
-            $apiUrl = 'https://akademik.fayra.my.id/api/auth/login';
+            $baseApi = rtrim((string) config('services.akademik.base_url', 'https://akademik.fayra.my.id/api'), '/');
+            $apiUrl = str_ends_with($baseApi, '/auth/login') ? $baseApi : "{$baseApi}/auth/login";
+
             $response = Http::asJson()
                 ->acceptJson()
                 ->withoutVerifying()
@@ -76,6 +78,7 @@ class AuthController extends Controller
                     'nama' => (string) ($userData['nama'] ?? $userData['name'] ?? ''),
                     'email' => (string) ($userData['email'] ?? $credentials['email']),
                     'role' => (string) ($userData['role'] ?? $userData['role_name'] ?? ($userData['roles'][0]['name'] ?? '')),
+                    'id_prodi' => $userData['id_prodi'] ?? null,
                 ];
 
                 // Jika request adalah JSON / Axios / AJAX
@@ -106,6 +109,7 @@ class AuthController extends Controller
                 $encodedRole = json_encode($userProfile['role']);
                 $encodedName = json_encode($userProfile['nama']);
                 $encodedEmail = json_encode($userProfile['email']);
+                $encodedIdProdi = json_encode($userProfile['id_prodi']);
                 $encodedRedirect = json_encode($redirectUrl);
 
                 $html = <<<HTML
@@ -128,6 +132,9 @@ class AuthController extends Controller
                 localStorage.setItem('role', {$encodedRole});
                 localStorage.setItem('nama', {$encodedName});
                 localStorage.setItem('email', {$encodedEmail});
+                if ({$encodedIdProdi} !== null) {
+                    localStorage.setItem('id_prodi', {$encodedIdProdi});
+                }
             }
             if (window.axios && token) {
                 window.axios.defaults.headers.common['Authorization'] = 'Bearer ' + token;
@@ -388,13 +395,17 @@ HTML;
         $role = strtolower((string) ($user['role'] ?? $user['role_name'] ?? ($user['roles'][0]['name'] ?? ($user['roles'][0] ?? ''))));
 
         if (str_contains($role, 'kaprodi')) {
-            return url('/kaprodi/dashboard');
+            return url('/kaprodi/project');
+        }
+
+        if (str_contains($role, 'dosen')) {
+            return url('/dosen/my-assignments');
         }
 
         if (str_contains($role, 'admin') || str_contains($role, 'superadmin')) {
             return url('/pages/superadmin');
         }
 
-        return url('/pages/superadmin');
+        return url('/superadmin');
     }
 }

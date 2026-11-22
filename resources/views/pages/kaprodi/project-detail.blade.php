@@ -263,29 +263,38 @@
         <div class="md:col-span-1 bg-white rounded-2xl border border-[#EAEAEA] p-6 flex flex-col justify-center shadow-xs">
             <div class="text-gray-400 text-xs font-bold mb-1 uppercase tracking-wider">Status Project</div>
             <div class="flex items-center gap-2 mb-2">
-                <span class="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl text-sm font-extrabold {{ $isInProgress ? 'bg-amber-100 text-amber-800 border border-amber-300' : 'bg-slate-100 text-slate-700 border border-slate-300' }}">
-                    <span class="w-2.5 h-2.5 rounded-full {{ $isInProgress ? 'bg-amber-500 animate-pulse' : 'bg-slate-400' }}"></span>
+                <span class="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl text-sm font-extrabold border {{ $currentStatusCfg['badge'] }}">
+                    <span class="w-2.5 h-2.5 rounded-full {{ $currentStatusCfg['dot'] }}"></span>
                     {{ $statusLabel }}
                 </span>
             </div>
 
             @if ($isKaprodi && $id)
-                <form action="{{ route('kaprodi.project.update-status', $id) }}" method="POST" class="mt-2">
-                    @csrf
-                    @method('PATCH')
-                    <input type="hidden" name="status_project" value="{{ $isInProgress ? 'draft' : 'in_progress' }}">
-                    <button type="submit" class="w-full inline-flex items-center justify-center gap-2 px-3 py-2 rounded-xl text-xs font-bold transition-all shadow-xs cursor-pointer {{ $isInProgress ? 'bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300' : 'bg-amber-500 hover:bg-amber-600 text-white' }}">
-                        @if ($isInProgress)
-                            <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                            </svg>
-                            Kembalikan ke Draft
-                        @else
-                            
-                            Mulai Pengerjaan (In Progress)
-                        @endif
-                    </button>
-                </form>
+                <div class="mt-2">
+                    <form action="{{ route('kaprodi.project.update-status', $id) }}" method="POST" @if($isSelesai) onsubmit="return false;" @endif>
+                        @csrf
+                        @method('PATCH')
+                        <input type="hidden" name="status_project" value="{{ $isInProgress ? 'Draft' : 'On Progress' }}">
+                        <button 
+                            type="{{ $isSelesai ? 'button' : 'submit' }}" 
+                            @if($isSelesai) disabled @endif
+                            class="w-full inline-flex items-center justify-center gap-2 px-3 py-2 rounded-xl text-xs font-bold transition-all shadow-xs {{ $isSelesai ? 'opacity-50 cursor-not-allowed pointer-events-none bg-slate-200 text-slate-500 border border-slate-300' : ($isInProgress ? 'bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 cursor-pointer' : 'bg-amber-500 hover:bg-amber-600 text-white cursor-pointer') }}"
+                        >
+                            @if ($isInProgress)
+                                <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                                </svg>
+                                Kembalikan ke Draft
+                            @else
+                                <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                                Mulai Pengerjaan (On Progress)
+                            @endif
+                        </button>
+                    </form>
+                </div>
             @endif
 
             <p class="text-[11px] text-gray-400 mt-2">
@@ -321,8 +330,11 @@
         </div>
         <div class="bg-white border border-[#EAEAEA] p-5 rounded-2xl shadow-xs">
             <div class="text-gray-400 text-[10px] font-bold uppercase tracking-wider mb-2">Status</div>
-            <div class="text-primary text-sm font-extrabold leading-none uppercase {{ $isInProgress ? 'text-amber-600' : 'text-slate-600' }}">
-                {{ $statusLabel }}
+            <div class="mt-1">
+                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold border {{ $currentStatusCfg['badge'] }}">
+                    <span class="w-2 h-2 rounded-full {{ $currentStatusCfg['dot'] }}"></span>
+                    {{ $statusLabel }}
+                </span>
             </div>
         </div>
     </div>
@@ -714,18 +726,18 @@
                         <label class="block text-xs font-bold text-gray-800 mb-1.5">Status Project</label>
                         @if ($isKaprodi)
                             <div class="flex flex-wrap gap-2 pt-1">
-                                <label class="cursor-pointer">
-                                    <input type="radio" name="status_project" value="draft" id="editStatusDraft" class="peer sr-only">
-                                    <div class="bg-slate-100 text-gray-600 text-xs font-semibold px-4 py-2 rounded-xl peer-checked:bg-primary peer-checked:text-white hover:bg-slate-200 transition-colors">Draft</div>
-                                </label>
-                                <label class="cursor-pointer">
-                                    <input type="radio" name="status_project" value="in_progress" id="editStatusInProgress" class="peer sr-only">
-                                    <div class="bg-slate-100 text-gray-600 text-xs font-semibold px-4 py-2 rounded-xl peer-checked:bg-primary peer-checked:text-white hover:bg-slate-200 transition-colors">In Progress</div>
-                                </label>
+                                @foreach(['Draft', 'On Progress', 'Pending', 'Cancel', 'Selesai'] as $stOpt)
+                                    <label class="cursor-pointer">
+                                        <input type="radio" name="status_project" value="{{ $stOpt }}" class="peer sr-only edit-status-radio" data-status="{{ strtolower(str_replace(' ', '_', $stOpt)) }}">
+                                        <div class="bg-slate-100 text-gray-600 text-xs font-semibold px-3 py-2 rounded-xl peer-checked:bg-primary peer-checked:text-white hover:bg-slate-200 transition-colors">
+                                            {{ $stOpt }}
+                                        </div>
+                                    </label>
+                                @endforeach
                             </div>
                         @else
                             <div class="p-3 bg-gray-50 rounded-xl text-xs text-gray-500 font-medium border border-gray-200">
-                                Status project dikelola oleh Kaprodi (<span id="editStatusReadonly" class="font-bold text-primary">Draft</span>).
+                                Status project: <span id="editStatusReadonly" class="font-bold text-primary">{{ $statusLabel }}</span>.
                             </div>
                         @endif
                     </div>
@@ -821,20 +833,27 @@
             syncInstrumenData(select, 'edit');
         }
 
-        const status = (item.status_project || 'draft').toLowerCase();
-        const isProg = status === 'in_progress' || status === 'pengisian' || status.includes('progress');
-        const draftRadio = document.getElementById('editStatusDraft');
-        const inProgRadio = document.getElementById('editStatusInProgress');
-        if (draftRadio && inProgRadio) {
-            if (isProg) {
-                inProgRadio.checked = true;
+        const statusRaw = (item.status_project || 'draft').toLowerCase();
+        const statusNormalized = statusRaw.replace(/\s+/g, '_');
+        const radioEls = document.querySelectorAll('.edit-status-radio');
+        let matchedRadio = false;
+        radioEls.forEach(r => {
+            const val = (r.value || '').toLowerCase();
+            const dataSt = (r.dataset.status || '').toLowerCase();
+            if (val === statusRaw || dataSt === statusNormalized || (statusNormalized.includes('progress') && dataSt.includes('progress'))) {
+                r.checked = true;
+                matchedRadio = true;
             } else {
-                draftRadio.checked = true;
+                r.checked = false;
             }
+        });
+        if (!matchedRadio && radioEls.length > 0) {
+            radioEls[0].checked = true;
         }
+
         const statusReadonly = document.getElementById('editStatusReadonly');
         if (statusReadonly) {
-            statusReadonly.innerText = isProg ? 'In Progress' : 'Draft';
+            statusReadonly.innerText = item.status_project || 'Draft';
         }
 
         modal.classList.remove('hidden');
@@ -952,4 +971,6 @@
         loadNarrativeTemplate();
     }
 </script>
+
+<x-modal-status-project />
 @endsection

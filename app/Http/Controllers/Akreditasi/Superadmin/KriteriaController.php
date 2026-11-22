@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Akreditasi\Superadmin;
 
 use App\Http\Controllers\Controller;
 use App\Services\AkreditasiService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -125,17 +126,58 @@ class KriteriaController extends Controller
         }
     }
 
-    public function destroy(int|string $lembagaId, int|string $instrumenId, int|string $kriteriaId): RedirectResponse
+    public function destroy(Request $request, int|string $lembagaId, int|string $instrumenId, int|string $kriteriaId): JsonResponse|RedirectResponse
     {
         try {
             $response = $this->akreditasiService->deleteKriteria($kriteriaId);
+            $message = $response->json('message');
+
+            if ($request->wantsJson() || $request->ajax()) {
+                if ($response->successful()) {
+                    return response()->json([
+                        'success' => true,
+                        'message' => $message ?? 'Kriteria berhasil dihapus.',
+                    ]);
+                }
+
+                return response()->json([
+                    'success' => false,
+                    'message' => $message ?? 'Gagal menghapus kriteria.',
+                ], $response->status() ?: 422);
+            }
+
             if ($response->successful()) {
+                if (request()->expectsJson()) {
+                    return response()->json([
+                        'success' => true,
+                        'message' => 'Kriteria berhasil dihapus.',
+                    ]);
+                }
+
                 return redirect()->route('akreditasi.superadmin.kriteria', [$lembagaId, $instrumenId])
                     ->with('success', 'Kriteria berhasil dihapus.');
             }
 
-            return back()->with('error', (string) ($response->json('message') ?? 'Gagal menghapus kriteria.'));
+            $message = $response->status() === 422
+                ? 'Data tidak dapat dihapus karena telah digunakan pada instrumen atau penilaian aktif.'
+                : (string) ($response->json('message') ?? 'Gagal menghapus kriteria.');
+
+            if ($request->wantsJson() || $request->ajax() || request()->expectsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => $message,
+                ], $response->status() === 422 ? 422 : ($response->status() ?: 500));
+            }
+
+            return back()->with('error', $message);
         } catch (\Throwable $e) {
+            if ($request->wantsJson() || $request->ajax() || request()->expectsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Terjadi kesalahan saat menghapus kriteria.',
+                ], 500);
+            }
+
             return back()->with('error', 'Terjadi kesalahan: '.$e->getMessage());
         }
     }

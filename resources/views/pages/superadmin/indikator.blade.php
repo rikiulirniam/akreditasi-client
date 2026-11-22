@@ -103,6 +103,7 @@
                 <x-slot:header>
                     <x-table.th class="w-36">Kode Indikator</x-table.th>
                     <x-table.th>Deskripsi Indikator</x-table.th>
+                    <x-table.th class="w-28 text-center">Bobot</x-table.th>
                     <x-table.th class="w-40">Rubrik</x-table.th>
                     <x-table.th class="w-32 text-right">Aksi</x-table.th>
                 </x-slot:header>
@@ -120,6 +121,11 @@
                         <x-table.cell>
                             <span class="font-semibold text-sm text-gray-900 group-hover:text-primary transition-colors leading-relaxed line-clamp-2">
                                 {{ $item['deskripsi_indikator'] ?? ($item['deskripsi'] ?? '-') }}
+                            </span>
+                        </x-table.cell>
+                        <x-table.cell class="text-center">
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-sky-50 text-sky-700 border border-sky-200">
+                                {{ isset($item['bobot']) ? (is_numeric($item['bobot']) ? (float) $item['bobot'] : $item['bobot']) : 1 }}
                             </span>
                         </x-table.cell>
                         <x-table.cell>
@@ -167,7 +173,7 @@
                     </x-table.row>
                 @empty
                     <x-table.row>
-                        <x-table.cell colspan="4" class="py-8 text-center text-sm font-medium text-gray-500">
+                        <x-table.cell colspan="5" class="py-8 text-center text-sm font-medium text-gray-500">
                             Belum ada indikator yang terdaftar untuk subkriteria ini. Klik tombol di atas untuk menambahkan.
                         </x-table.cell>
                     </x-table.row>
@@ -307,7 +313,7 @@
             if (kodeInput) kodeInput.value = item.kode_indikator || item.kode || '';
             if (deskripsiInput) deskripsiInput.value = item.deskripsi_indikator || item.deskripsi || '';
             if (paramInput) paramInput.value = item.parameter_penilaian || item.parameter || '';
-            if (bobotInput) bobotInput.value = item.bobot ?? 1;
+            if (bobotInput) bobotInput.value = item.bobot !== undefined && item.bobot !== null ? item.bobot : 1;
             toggleModal('modal-edit-indikator');
         }
     }

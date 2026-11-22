@@ -1,3 +1,4 @@
+
 @extends('layouts.app')
 
 @section('title', 'Detail Lembaga Akreditasi - Versi Instrumen')
@@ -12,6 +13,7 @@
             {{ session('success') }}
         </div>
     @endif
+
     @if (session('error'))
         <div class="rounded-2xl bg-rose-50 border border-rose-200 p-4 text-sm font-semibold text-rose-800">
             {{ session('error') }}
@@ -22,18 +24,20 @@
     <nav class="flex text-xs sm:text-sm font-medium text-gray-500 py-1" aria-label="Breadcrumb">
         <ol class="inline-flex flex-wrap items-center gap-y-1">
             <li class="inline-flex items-center">
-                <a href="{{ route('akreditasi.superadmin.lembaga_akreditasi') }}" class="hover:text-primary transition font-medium">Master Data Akreditasi</a>
+                <a href="{{ route('akreditasi.superadmin.lembaga_akreditasi') }}" class="hover:text-primary transition font-medium">
+                    Master Data Akreditasi
+                </a>
             </li>
             <li class="inline-flex items-center" aria-current="page">
                 <span class="mx-1 text-gray-400">/</span>
-                <span class="font-bold text-gray-800">{{ $lembaga['nama_lembaga'] ?? 'Detail Lembaga' }}</span>
+                <span class="font-bold text-gray-800">
+                    {{ $lembaga['nama_lembaga'] ?? 'Detail Lembaga' }}
+                </span>
             </li>
         </ol>
     </nav>
 
-    {{-- ========================================== --}}
     {{-- BANNER DETAIL LEMBAGA AKREDITASI --}}
-    {{-- ========================================== --}}
     <section class="flex flex-col justify-between gap-5 rounded-2xl bg-primary p-6 sm:p-7 shadow-xs sm:flex-row sm:items-center text-white">
         <div class="min-w-0">
             <p class="text-xs sm:text-sm font-bold uppercase tracking-wider text-secondary">
@@ -46,41 +50,24 @@
                 {{ $lembaga['keterangan'] ?? 'Lembaga akreditasi mandiri.' }}
             </p>
         </div>
-
-        {{-- Tombol Aksi Edit & Hapus Lembaga --}}
-        {{-- <div class="flex items-center gap-2.5 shrink-0">
-            <button
-                type="button"
-                onclick="toggleModal('modal-edit-lembaga')"
-                class="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-secondary text-primary text-xs sm:text-sm font-bold shadow-sm hover:bg-yellow-400 transition cursor-pointer"
-            >
-                <x-icon.edit class="w-4 h-4" />
-                Edit Lembaga
-            </button>
-            <button
-                type="button"
-                data-confirm-delete
-                data-action="{{ route('akreditasi.superadmin.lembaga_akreditasi.destroy', $lembaga['id']) }}"
-                data-title="Hapus Lembaga Akreditasi?"
-                data-message="Apakah Anda yakin ingin menghapus lembaga '{{ $lembaga['nama_lembaga'] ?? '' }}'? Seluruh data versi dan instrumen terkait akan ikut terhapus."
-                class="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-rose-600 text-white text-xs sm:text-sm font-bold shadow-sm hover:bg-rose-700 transition cursor-pointer"
-            >
-                <x-icon.delete class="w-4 h-4" />
-                Hapus
-            </button>
-        </div> --}}
     </section>
 
     {{-- Metadata Info Lembaga --}}
     <section class="grid grid-cols-1 sm:grid-cols-3 gap-4 rounded-2xl border border-[#EAEAEA] bg-white p-5 sm:p-6 shadow-xs">
         <div>
             <p class="text-xs font-bold uppercase tracking-wider text-gray-500">LEMBAGA</p>
-            <p class="mt-1.5 text-base font-semibold text-gray-900">{{ $lembaga['nama_lembaga'] ?? '-' }}</p>
+            <p class="mt-1.5 text-base font-semibold text-gray-900">
+                {{ $lembaga['nama_lembaga'] ?? '-' }}
+            </p>
         </div>
+
         <div>
             <p class="text-xs font-bold uppercase tracking-wider text-gray-500">KETERANGAN</p>
-            <p class="mt-1.5 text-base font-semibold text-gray-900">{{ $lembaga['keterangan'] ?? '-' }}</p>
+            <p class="mt-1.5 text-base font-semibold text-gray-900">
+                {{ $lembaga['keterangan'] ?? '-' }}
+            </p>
         </div>
+
         <div>
             <p class="text-xs font-bold uppercase tracking-wider text-gray-500">TOTAL VERSI INSTRUMEN</p>
             <p class="mt-1.5">
@@ -91,30 +78,54 @@
         </div>
     </section>
 
-    {{-- ========================================== --}}
     {{-- BAGIAN DAFTAR VERSI INSTRUMEN --}}
-    {{-- ========================================== --}}
     <section class="space-y-4">
         <div class="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
             <div>
-                <h3 class="text-lg sm:text-xl font-bold text-gray-900 tracking-tight">Daftar Versi Instrumen</h3>
-                <p class="text-xs sm:text-sm text-gray-500">{{ count($versis ?? []) }} versi instrumen terdaftar untuk lembaga ini</p>
+                <h3 class="text-lg sm:text-xl font-bold text-gray-900 tracking-tight">
+                    Daftar Versi Instrumen
+                </h3>
+                <p class="text-xs sm:text-sm text-gray-500">
+                    {{ count($versis ?? []) }} versi instrumen terdaftar untuk lembaga ini
+                </p>
             </div>
-            <button
-                type="button"
-                onclick="toggleModal('modal-tambah-versi')"
-                class="inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-primary text-white text-sm font-bold shadow-sm hover:bg-additional transition cursor-pointer"
-            >
-                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-                </svg>
-                Tambah Versi Instrumen
-            </button>
+
+            <div class="flex items-center gap-3 flex-wrap">
+                @if (Route::has('akreditasi.superadmin.instrumen_aktif'))
+                    <a
+                        href="{{ route('akreditasi.superadmin.instrumen_aktif') }}"
+                        class="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl border border-primary/20 bg-primary/5 text-primary text-xs sm:text-sm font-bold shadow-xs hover:bg-primary hover:text-white transition cursor-pointer"
+                        title="Buka Hierarki Instrumen Aktif LAM-INFOKOM 2.1 TRK"
+                    >
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25z" />
+                        </svg>
+                        Hierarki Aktif (TRK)
+                    </a>
+                @endif
+
+                <button
+                    type="button"
+                    onclick="toggleModal('modal-tambah-versi')"
+                    class="inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-primary text-white text-sm font-bold shadow-sm hover:bg-additional transition cursor-pointer"
+                >
+                    <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                    </svg>
+                    Tambah Versi Instrumen
+                </button>
+            </div>
         </div>
 
         {{-- Grid Kartu Versi Instrumen --}}
         <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             @forelse ($versis ?? [] as $v)
+
+                @php
+                    // Relasi jenjang beserta status aktif dari tabel pivot.
+                    $jenjangsVersi = $v['jenjangs'] ?? [];
+                @endphp
+
                 <div
                     onclick="if (!event.target.closest('button, form, a')) { window.location.href = '{{ route('akreditasi.superadmin.instrumen', ['lembagaId' => $lembaga['id'], 'versiId' => $v['id']]) }}'; }"
                     class="group flex min-h-[175px] flex-col justify-between rounded-2xl border border-[#EAEAEA] bg-white p-6 shadow-xs transition-all duration-200 hover:border-primary/50 hover:shadow-md hover:-translate-y-0.5 cursor-pointer relative"
@@ -125,82 +136,110 @@
                                 <h4 class="text-base sm:text-lg font-extrabold text-primary tracking-tight group-hover:text-additional transition-colors line-clamp-1">
                                     Versi {{ $v['nomor_versi'] ?? '-' }}
                                 </h4>
+
+                                {{-- STATUS PER JENJANG --}}
                                 <div class="flex items-center gap-1.5 flex-wrap mt-1">
-                                    <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider {{ !empty($v['status_aktif']) ? 'bg-emerald-50 text-emerald-700 border border-emerald-200/60' : 'bg-slate-100 text-slate-600' }}">
-                                        {{ !empty($v['status_aktif']) ? 'Aktif' : 'Non-Aktif' }}
-                                    </span>
+                                    @forelse ($jenjangsVersi as $jenjang)
+                                        @php
+                                            $aktif = !empty($jenjang['pivot']['status_aktif']);
+                                        @endphp
+
+                                        <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider {{ $aktif ? 'bg-emerald-50 text-emerald-700 border border-emerald-200/60' : 'bg-slate-100 text-slate-600' }}">
+                                            {{ $jenjang['nama_jenjang'] ?? 'Jenjang tidak diketahui' }}:
+                                            {{ $aktif ? 'Aktif' : 'Non-Aktif' }}
+                                        </span>
+                                    @empty
+                                        <span class="text-xs text-gray-400">
+                                            Belum terhubung dengan jenjang
+                                        </span>
+                                    @endforelse
+
                                     <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider bg-sky-50 text-sky-700 border border-sky-200/60">
                                         {{ $v['instrumen_count'] ?? 0 }} Instrumen
                                     </span>
                                 </div>
                             </div>
 
+                            {{-- ACTION BUTTONS --}}
+                            <div class="flex items-center gap-1 shrink-0 flex-wrap" onclick="event.stopPropagation()">
 
-                            {{-- Action Buttons --}}
-                            <div class="flex items-center gap-1 shrink-0" onclick="event.stopPropagation()">
+                                {{-- TOMBOL AKTIFKAN PER JENJANG --}}
+                                @foreach ($jenjangsVersi as $jenjang)
+                                    @if (empty($jenjang['pivot']['status_aktif']))
+                                        @php
+                                            $namaJenjang = $jenjang['nama_jenjang'] ?? 'jenjang ini';
+                                        @endphp
 
-                                {{-- Tombol Aktifkan, hanya muncul jika versi belum aktif --}}
-                                @if (empty($v['status_aktif']))
-                                    <form
-                                        action="{{ route('akreditasi.superadmin.versi_instrumen.aktifkan', $v['id']) }}"
-                                        method="POST"
-                                        onsubmit="return confirm('Yakin ingin mengaktifkan versi instrumen ini?')"
-                                    >
-                                        @csrf
-                                        @method('PATCH')
-
-                                        <button
-                                            type="submit"
-                                            class="text-emerald-600 hover:text-emerald-700 transition p-1.5 rounded-lg hover:bg-emerald-50 cursor-pointer"
-                                            title="Aktifkan Versi"
+                                        <form
+                                            action="{{ route('akreditasi.superadmin.versi_instrumen.aktifkan', $v['id']) }}"
+                                            method="POST"
+                                            onsubmit="return confirm(@js('Yakin ingin mengaktifkan versi instrumen ini untuk jenjang ' . $namaJenjang . '?'))"
                                         >
-                                            <svg
-                                                xmlns="http://www.w3.org/2000/svg"
-                                                class="w-5 h-5"
-                                                viewBox="0 0 24 24"
-                                                fill="none"
-                                                stroke="currentColor"
-                                                stroke-width="2"
-                                                stroke-linecap="round"
-                                                stroke-linejoin="round"
+                                            @csrf
+                                            @method('PATCH')
+
+                                            <input
+                                                type="hidden"
+                                                name="id_jenjang"
+                                                value="{{ $jenjang['id'] }}"
                                             >
-                                                <path d="m5 12 4 4L19 6" />
-                                            </svg>
-                                        </button>
-                                    </form>
-                                @endif
 
-                            {{-- Tombol Edit --}}
-                            <button
-                                type="button"
-                                class="text-[#F59E0B] hover:text-[#D97706] transition p-1.5 rounded-lg hover:bg-amber-50 cursor-pointer"
-                                title="Edit Versi"
-                                onclick="openEditVersiModal({{ json_encode($v) }})"
-                            >
-                                <x-icon.edit class="w-5 h-5" />
-                            </button>
+                                            <button
+                                                type="submit"
+                                                class="text-emerald-600 hover:text-emerald-700 transition p-1.5 rounded-lg hover:bg-emerald-50 cursor-pointer"
+                                                title="Aktifkan untuk {{ $namaJenjang }}"
+                                            >
+                                                <svg
+                                                    xmlns="http://www.w3.org/2000/svg"
+                                                    class="w-5 h-5"
+                                                    viewBox="0 0 24 24"
+                                                    fill="none"
+                                                    stroke="currentColor"
+                                                    stroke-width="2"
+                                                    stroke-linecap="round"
+                                                    stroke-linejoin="round"
+                                                >
+                                                    <path d="m5 12 4 4L19 6" />
+                                                </svg>
+                                            </button>
+                                        </form>
+                                    @endif
+                                @endforeach
 
-                            {{-- Tombol Hapus --}}
-                            <button
-                                type="button"
-                                class="text-[#DC2626] hover:text-[#B91C1C] transition p-1.5 rounded-lg hover:bg-rose-50 cursor-pointer"
-                                title="Hapus Versi"
-                                data-confirm-delete
-                                data-action="{{ route('akreditasi.superadmin.versi_instrumen.destroy', $v['id']) }}"
-                                data-title="Hapus Versi Instrumen?"
-                                data-message="Apakah Anda yakin ingin menghapus versi {{ $v['nomor_versi'] ?? '' }}? Seluruh instrumen terkait akan ikut terhapus."
-                            >
-                                <x-icon.delete class="w-5 h-5" />
-                            </button>
+                                {{-- TOMBOL EDIT --}}
+                                <button
+                                    type="button"
+                                    class="text-[#F59E0B] hover:text-[#D97706] transition p-1.5 rounded-lg hover:bg-amber-50 cursor-pointer"
+                                    title="Edit Versi"
+                                    onclick="openEditVersiModal({{ json_encode($v) }})"
+                                >
+                                    <x-icon.edit class="w-5 h-5" />
+                                </button>
+
+                                {{-- TOMBOL HAPUS --}}
+                                <button
+                                    type="button"
+                                    class="text-[#DC2626] hover:text-[#B91C1C] transition p-1.5 rounded-lg hover:bg-rose-50 cursor-pointer"
+                                    title="Hapus Versi"
+                                    data-confirm-delete
+                                    data-action="{{ route('akreditasi.superadmin.versi_instrumen.destroy', $v['id']) }}"
+                                    data-title="Hapus Versi Instrumen?"
+                                    data-message="Apakah Anda yakin ingin menghapus versi {{ $v['nomor_versi'] ?? '' }}? Seluruh instrumen terkait akan ikut terhapus."
+                                >
+                                    <x-icon.delete class="w-5 h-5" />
+                                </button>
+                            </div>
                         </div>
-                        </div>
-
 
                         <div class="mt-3 text-xs text-gray-500 font-medium">
                             @if (!empty($v['tanggal_berlaku']))
-                                <span>Berlaku sejak: {{ date('d M Y', strtotime($v['tanggal_berlaku'])) }}</span>
+                                <span>
+                                    Berlaku sejak: {{ date('d M Y', strtotime($v['tanggal_berlaku'])) }}
+                                </span>
                             @else
-                                <span class="text-gray-400">Tanggal berlaku tidak ditentukan</span>
+                                <span class="text-gray-400">
+                                    Tanggal berlaku tidak ditentukan
+                                </span>
                             @endif
                         </div>
                     </div>
@@ -209,15 +248,15 @@
                         <span class="text-xs font-bold text-gray-400 group-hover:text-primary transition-colors flex items-center gap-1.5">
                             Buka Daftar Instrumen
                         </span>
-                        <span
-                            class="flex h-9 w-9 items-center justify-center rounded-full bg-slate-100 text-slate-600 group-hover:bg-primary group-hover:text-white transition-all duration-200 group-hover:translate-x-1 shadow-xs"
-                        >
+
+                        <span class="flex h-9 w-9 items-center justify-center rounded-full bg-slate-100 text-slate-600 group-hover:bg-primary group-hover:text-white transition-all duration-200 group-hover:translate-x-1 shadow-xs">
                             <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"></path>
                             </svg>
                         </span>
                     </div>
                 </div>
+
             @empty
                 <div class="col-span-full rounded-2xl border border-dashed border-gray-300 bg-white p-12 text-center text-sm font-medium text-gray-500">
                     Belum ada versi instrumen yang terdaftar pada lembaga ini. Klik tombol "+ Tambah Versi Instrumen" di atas untuk menambahkan versi baru.
@@ -228,38 +267,60 @@
 
 </div>
 
-{{-- ========================================== --}}
 {{-- KUMPULAN MODAL --}}
-{{-- ========================================== --}}
 
 {{-- 1. Modal Edit Lembaga --}}
 <div id="modal-edit-lembaga" tabindex="-1" class="hidden fixed inset-0 z-50 items-center justify-center bg-gray-900/50 p-4">
     <div class="relative w-full max-w-lg">
         <div class="relative rounded-2xl bg-white shadow-xl overflow-hidden">
             <div class="flex items-center justify-between border-b border-gray-200 p-5 sm:p-6">
-                <h3 class="text-lg sm:text-xl font-bold text-gray-900 tracking-tight">Edit Lembaga Akreditasi</h3>
+                <h3 class="text-lg sm:text-xl font-bold text-gray-900 tracking-tight">
+                    Edit Lembaga Akreditasi
+                </h3>
                 <button type="button" onclick="toggleModal('modal-edit-lembaga')" class="text-gray-400 hover:bg-gray-100 hover:text-gray-700 rounded-xl p-2 transition cursor-pointer">
                     <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
                     </svg>
                 </button>
             </div>
+
             <form action="{{ route('akreditasi.superadmin.lembaga_akreditasi.update', $lembaga['id']) }}" method="POST">
                 @csrf
                 @method('PUT')
+
                 <div class="p-5 sm:p-6 space-y-4">
                     <div>
-                        <label class="mb-2 block text-xs sm:text-sm font-bold text-gray-700">Nama Lembaga <span class="text-red-500">*</span></label>
-                        <input type="text" name="nama_lembaga" required value="{{ $lembaga['nama_lembaga'] ?? '' }}" class="block w-full rounded-xl border border-gray-200 bg-gray-50 p-3 text-sm text-gray-900 focus:border-primary focus:bg-white focus:outline-none focus:ring-1 focus:ring-primary">
+                        <label class="mb-2 block text-xs sm:text-sm font-bold text-gray-700">
+                            Nama Lembaga <span class="text-red-500">*</span>
+                        </label>
+                        <input
+                            type="text"
+                            name="nama_lembaga"
+                            required
+                            value="{{ $lembaga['nama_lembaga'] ?? '' }}"
+                            class="block w-full rounded-xl border border-gray-200 bg-gray-50 p-3 text-sm text-gray-900 focus:border-primary focus:bg-white focus:outline-none focus:ring-1 focus:ring-primary"
+                        >
                     </div>
+
                     <div>
-                        <label class="mb-2 block text-xs sm:text-sm font-bold text-gray-700">Keterangan</label>
-                        <textarea name="keterangan" rows="3" class="block w-full rounded-xl border border-gray-200 bg-gray-50 p-3 text-sm text-gray-900 focus:border-primary focus:bg-white focus:outline-none focus:ring-1 focus:ring-primary">{{ $lembaga['keterangan'] ?? '' }}</textarea>
+                        <label class="mb-2 block text-xs sm:text-sm font-bold text-gray-700">
+                            Keterangan
+                        </label>
+                        <textarea
+                            name="keterangan"
+                            rows="3"
+                            class="block w-full rounded-xl border border-gray-200 bg-gray-50 p-3 text-sm text-gray-900 focus:border-primary focus:bg-white focus:outline-none focus:ring-1 focus:ring-primary"
+                        >{{ $lembaga['keterangan'] ?? '' }}</textarea>
                     </div>
                 </div>
+
                 <div class="flex items-center justify-end gap-3 border-t border-gray-200 p-5 sm:p-6 bg-gray-50">
-                    <button type="button" onclick="toggleModal('modal-edit-lembaga')" class="rounded-xl bg-white border border-gray-300 px-5 py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-100 transition cursor-pointer">Batal</button>
-                    <button type="submit" class="rounded-2xl bg-primary px-6 py-2.5 text-sm font-bold text-white hover:bg-additional transition cursor-pointer shadow-sm">Simpan Perubahan</button>
+                    <button type="button" onclick="toggleModal('modal-edit-lembaga')" class="rounded-xl bg-white border border-gray-300 px-5 py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-100 transition cursor-pointer">
+                        Batal
+                    </button>
+                    <button type="submit" class="rounded-2xl bg-primary px-6 py-2.5 text-sm font-bold text-white hover:bg-additional transition cursor-pointer shadow-sm">
+                        Simpan Perubahan
+                    </button>
                 </div>
             </form>
         </div>
@@ -271,36 +332,66 @@
     <div class="relative w-full max-w-lg">
         <div class="relative rounded-2xl bg-white shadow-xl overflow-hidden">
             <div class="flex items-center justify-between border-b border-gray-200 p-5 sm:p-6">
-                <h3 class="text-lg sm:text-xl font-bold text-gray-900 tracking-tight">Tambah Versi Instrumen</h3>
+                <h3 class="text-lg sm:text-xl font-bold text-gray-900 tracking-tight">
+                    Tambah Versi Instrumen
+                </h3>
                 <button type="button" onclick="toggleModal('modal-tambah-versi')" class="text-gray-400 hover:bg-gray-100 hover:text-gray-700 rounded-xl p-2 transition cursor-pointer">
                     <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
                     </svg>
                 </button>
             </div>
+
             <form action="{{ route('akreditasi.superadmin.versi_instrumen.store', $lembaga['id']) }}" method="POST">
                 @csrf
                 <input type="hidden" name="id_lembaga" value="{{ $lembaga['id'] }}">
+
                 <div class="p-5 sm:p-6 space-y-4">
                     <div>
-                        <label class="mb-2 block text-xs sm:text-sm font-bold text-gray-700">Nomor Versi <span class="text-red-500">*</span></label>
-                        <input type="text" name="nomor_versi" required placeholder="Contoh: 3.0" class="block w-full rounded-xl border border-gray-200 bg-gray-50 p-3 text-sm text-gray-900 focus:border-primary focus:bg-white focus:outline-none focus:ring-1 focus:ring-primary">
+                        <label class="mb-2 block text-xs sm:text-sm font-bold text-gray-700">
+                            Nomor Versi <span class="text-red-500">*</span>
+                        </label>
+                        <input
+                            type="text"
+                            name="nomor_versi"
+                            required
+                            placeholder="Contoh: 3.0"
+                            class="block w-full rounded-xl border border-gray-200 bg-gray-50 p-3 text-sm text-gray-900 focus:border-primary focus:bg-white focus:outline-none focus:ring-1 focus:ring-primary"
+                        >
                     </div>
+
                     <div>
-                        <label class="mb-2 block text-xs sm:text-sm font-bold text-gray-700">Tanggal Berlaku</label>
-                        <input type="date" name="tanggal_berlaku" class="block w-full rounded-xl border border-gray-200 bg-gray-50 p-3 text-sm text-gray-900 focus:border-primary focus:bg-white focus:outline-none focus:ring-1 focus:ring-primary">
+                        <label class="mb-2 block text-xs sm:text-sm font-bold text-gray-700">
+                            Tanggal Berlaku
+                        </label>
+                        <input
+                            type="date"
+                            name="tanggal_berlaku"
+                            class="block w-full rounded-xl border border-gray-200 bg-gray-50 p-3 text-sm text-gray-900 focus:border-primary focus:bg-white focus:outline-none focus:ring-1 focus:ring-primary"
+                        >
                     </div>
+
                     <div>
-                        <label class="mb-2 block text-xs sm:text-sm font-bold text-gray-700">Status <span class="text-red-500">*</span></label>
-                        <select name="status_aktif" class="block w-full rounded-xl border border-gray-200 bg-gray-50 p-3 text-sm text-gray-900 focus:border-primary focus:bg-white focus:outline-none focus:ring-1 focus:ring-primary">
+                        <label class="mb-2 block text-xs sm:text-sm font-bold text-gray-700">
+                            Status <span class="text-red-500">*</span>
+                        </label>
+                        <select
+                            name="status_aktif"
+                            class="block w-full rounded-xl border border-gray-200 bg-gray-50 p-3 text-sm text-gray-900 focus:border-primary focus:bg-white focus:outline-none focus:ring-1 focus:ring-primary"
+                        >
                             <option value="1">Aktif</option>
                             <option value="0">Tidak Aktif</option>
                         </select>
                     </div>
                 </div>
+
                 <div class="flex items-center justify-end gap-3 border-t border-gray-200 p-5 sm:p-6 bg-gray-50">
-                    <button type="button" onclick="toggleModal('modal-tambah-versi')" class="rounded-xl bg-white border border-gray-300 px-5 py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-100 transition cursor-pointer">Batal</button>
-                    <button type="submit" class="rounded-2xl bg-primary px-6 py-2.5 text-sm font-bold text-white hover:bg-additional transition cursor-pointer shadow-sm">Simpan</button>
+                    <button type="button" onclick="toggleModal('modal-tambah-versi')" class="rounded-xl bg-white border border-gray-300 px-5 py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-100 transition cursor-pointer">
+                        Batal
+                    </button>
+                    <button type="submit" class="rounded-2xl bg-primary px-6 py-2.5 text-sm font-bold text-white hover:bg-additional transition cursor-pointer shadow-sm">
+                        Simpan
+                    </button>
                 </div>
             </form>
         </div>
@@ -312,37 +403,69 @@
     <div class="relative w-full max-w-lg">
         <div class="relative rounded-2xl bg-white shadow-xl overflow-hidden">
             <div class="flex items-center justify-between border-b border-gray-200 p-5 sm:p-6">
-                <h3 class="text-lg sm:text-xl font-bold text-gray-900 tracking-tight">Edit Versi Instrumen</h3>
+                <h3 class="text-lg sm:text-xl font-bold text-gray-900 tracking-tight">
+                    Edit Versi Instrumen
+                </h3>
                 <button type="button" onclick="toggleModal('modal-edit-versi')" class="text-gray-400 hover:bg-gray-100 hover:text-gray-700 rounded-xl p-2 transition cursor-pointer">
                     <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
                     </svg>
                 </button>
             </div>
+
             <form id="form-edit-versi" action="#" method="POST">
                 @csrf
                 @method('PUT')
                 <input type="hidden" name="id_lembaga" value="{{ $lembaga['id'] }}">
+
                 <div class="p-5 sm:p-6 space-y-4">
                     <div>
-                        <label class="mb-2 block text-xs sm:text-sm font-bold text-gray-700">Nomor Versi <span class="text-red-500">*</span></label>
-                        <input type="text" id="edit-nomor-versi" name="nomor_versi" required class="block w-full rounded-xl border border-gray-200 bg-gray-50 p-3 text-sm text-gray-900 focus:border-primary focus:bg-white focus:outline-none focus:ring-1 focus:ring-primary">
+                        <label class="mb-2 block text-xs sm:text-sm font-bold text-gray-700">
+                            Nomor Versi <span class="text-red-500">*</span>
+                        </label>
+                        <input
+                            type="text"
+                            id="edit-nomor-versi"
+                            name="nomor_versi"
+                            required
+                            class="block w-full rounded-xl border border-gray-200 bg-gray-50 p-3 text-sm text-gray-900 focus:border-primary focus:bg-white focus:outline-none focus:ring-1 focus:ring-primary"
+                        >
                     </div>
+
                     <div>
-                        <label class="mb-2 block text-xs sm:text-sm font-bold text-gray-700">Tanggal Berlaku</label>
-                        <input type="date" id="edit-tanggal-berlaku" name="tanggal_berlaku" class="block w-full rounded-xl border border-gray-200 bg-gray-50 p-3 text-sm text-gray-900 focus:border-primary focus:bg-white focus:outline-none focus:ring-1 focus:ring-primary">
+                        <label class="mb-2 block text-xs sm:text-sm font-bold text-gray-700">
+                            Tanggal Berlaku
+                        </label>
+                        <input
+                            type="date"
+                            id="edit-tanggal-berlaku"
+                            name="tanggal_berlaku"
+                            class="block w-full rounded-xl border border-gray-200 bg-gray-50 p-3 text-sm text-gray-900 focus:border-primary focus:bg-white focus:outline-none focus:ring-1 focus:ring-primary"
+                        >
                     </div>
+
                     <div>
-                        <label class="mb-2 block text-xs sm:text-sm font-bold text-gray-700">Status <span class="text-red-500">*</span></label>
-                        <select id="edit-status-aktif" name="status_aktif" class="block w-full rounded-xl border border-gray-200 bg-gray-50 p-3 text-sm text-gray-900 focus:border-primary focus:bg-white focus:outline-none focus:ring-1 focus:ring-primary">
+                        <label class="mb-2 block text-xs sm:text-sm font-bold text-gray-700">
+                            Status <span class="text-red-500">*</span>
+                        </label>
+                        <select
+                            id="edit-status-aktif"
+                            name="status_aktif"
+                            class="block w-full rounded-xl border border-gray-200 bg-gray-50 p-3 text-sm text-gray-900 focus:border-primary focus:bg-white focus:outline-none focus:ring-1 focus:ring-primary"
+                        >
                             <option value="1">Aktif</option>
                             <option value="0">Tidak Aktif</option>
                         </select>
                     </div>
                 </div>
+
                 <div class="flex items-center justify-end gap-3 border-t border-gray-200 p-5 sm:p-6 bg-gray-50">
-                    <button type="button" onclick="toggleModal('modal-edit-versi')" class="rounded-xl bg-white border border-gray-300 px-5 py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-100 transition cursor-pointer">Batal</button>
-                    <button type="submit" class="rounded-2xl bg-primary px-6 py-2.5 text-sm font-bold text-white hover:bg-additional transition cursor-pointer shadow-sm">Simpan Perubahan</button>
+                    <button type="button" onclick="toggleModal('modal-edit-versi')" class="rounded-xl bg-white border border-gray-300 px-5 py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-100 transition cursor-pointer">
+                        Batal
+                    </button>
+                    <button type="submit" class="rounded-2xl bg-primary px-6 py-2.5 text-sm font-bold text-white hover:bg-additional transition cursor-pointer shadow-sm">
+                        Simpan Perubahan
+                    </button>
                 </div>
             </form>
         </div>
@@ -354,6 +477,7 @@
 <script>
     function toggleModal(modalId) {
         const modal = document.getElementById(modalId);
+
         if (modal) {
             modal.classList.toggle('hidden');
             modal.classList.toggle('flex');
@@ -368,7 +492,11 @@
 
         if (form && versi) {
             form.action = "{{ route('akreditasi.superadmin.versi_instrumen.update', ':id') }}".replace(':id', versi.id);
-            if (nomorInput) nomorInput.value = versi.nomor_versi || '';
+
+            if (nomorInput) {
+                nomorInput.value = versi.nomor_versi || '';
+            }
+
             if (tanggalInput) {
                 if (versi.tanggal_berlaku) {
                     tanggalInput.value = versi.tanggal_berlaku.split('T')[0];
@@ -376,9 +504,11 @@
                     tanggalInput.value = '';
                 }
             }
+
             if (statusSelect) {
                 statusSelect.value = (versi.status_aktif == 1 || versi.status_aktif === true) ? '1' : '0';
             }
+
             toggleModal('modal-edit-versi');
         }
     }

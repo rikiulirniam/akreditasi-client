@@ -3,10 +3,10 @@
 use App\Http\Controllers\Akreditasi\Superadmin\BuktiDokumenController;
 use App\Http\Controllers\Akreditasi\Superadmin\DashboardController as SuperadminDashboard;
 use App\Http\Controllers\Akreditasi\Superadmin\IndikatorController;
+use App\Http\Controllers\Akreditasi\Superadmin\InstrumenAktifController;
 use App\Http\Controllers\Akreditasi\Superadmin\InstrumenController;
 use App\Http\Controllers\Akreditasi\Superadmin\KriteriaController;
 use App\Http\Controllers\Akreditasi\Superadmin\LembagaAkreditasiController;
-use App\Http\Controllers\Akreditasi\Superadmin\LembarKerjaController;
 use App\Http\Controllers\Akreditasi\Superadmin\RubrikController;
 use App\Http\Controllers\Akreditasi\Superadmin\SubkriteriaController;
 use App\Http\Controllers\Akreditasi\Superadmin\VersiInstrumenController;
@@ -47,19 +47,22 @@ Route::get('/', function () {
         $role = strtolower((string) ($user['role'] ?? $user['role_name'] ?? ($user['roles'][0]['name'] ?? '')));
 
         if (str_contains($role, 'kaprodi')) {
-            return redirect()->route('kaprodi.dashboard');
+            return redirect()->to('/kaprodi/project');
         }
 
         if (str_contains($role, 'dosen')) {
-            return redirect()->route('dosen.my-assignments');
+            return redirect()->to('/dosen/my-assignments');
         }
 
-        return redirect()->route('dashboard');
-        if (str_contains($role, 'admin') || str_contains($role, 'superadmin')) {
-            return redirect('/pages/superadmin');
+        if (str_contains($role, 'reviewer')) {
+            return redirect()->route('reviewer.dashboard');
         }
 
-        return redirect('/pages/superadmin');
+        if (str_contains($role, 'admin') || str_contains($role, 'superadmin') || str_contains($role, 'administrator')) {
+            return redirect('/superadmin');
+        }
+
+        return redirect('/superadmin');
     }
 
     return redirect()->route('login');
@@ -68,6 +71,9 @@ Route::get('/', function () {
 Route::get('/login', [AuthController::class, 'showLoginForm'])->name('login');
 Route::post('/login', [AuthController::class, 'login']);
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
+
+// Public Read-Only Access untuk Asesor Eksternal (Token Link)
+Route::get('/public/evidence/{token}', [SpmiController::class, 'publicEvidenceOverview'])->name('spmi.public-overview');
 
 Route::get('/auth/google', [AuthController::class, 'redirectToGoogle'])->name('auth.google');
 Route::get('/auth/google/callback', [AuthController::class, 'handleGoogleCallback'])->name('auth.google.callback');
@@ -86,6 +92,7 @@ Route::middleware('auth.akademik')->group(function () {
         Route::post('/project', [KaprodiController::class, 'storeProject'])->name('project.store');
         Route::post('/project/quick-create', [KaprodiController::class, 'quickCreateProject'])->name('project.quick-create');
         Route::get('/project/{id}/readiness', [KaprodiController::class, 'projectReadiness'])->name('project.readiness');
+        Route::get('/project/{id}/scoring-simulation', [KaprodiController::class, 'scoringSimulation'])->name('project.scoring-simulation');
         Route::put('/project/{id}', [KaprodiController::class, 'updateProject'])->name('project.update');
         Route::match(['patch', 'post'], '/project/{id}/status', [KaprodiController::class, 'updateStatusProject'])->name('project.update-status');
         Route::delete('/project/{id}', [KaprodiController::class, 'destroyProject'])->name('project.destroy');
@@ -243,6 +250,7 @@ Route::middleware('auth.akademik')->group(function () {
     Route::get('/spmi/evidence', [SpmiController::class, 'evidenceSpmi'])->name('spmi.evidence');
     Route::post('/spmi/evidence', [SpmiController::class, 'storeEvidence'])->name('spmi.evidence.store');
     Route::put('/spmi/evidence/{id}', [SpmiController::class, 'updateEvidence'])->name('spmi.evidence.update');
+    Route::get('/spmi/overview/{id?}', [SpmiController::class, 'evidenceOverview'])->name('spmi.overview');
 
     Route::get('/laporan-akhir', [LaporanAkhirController::class, 'index'])->name('laporan-akhir.index');
     Route::get('/laporan-akhir/download', [LaporanAkhirController::class, 'download'])->name('laporan-akhir.download');
@@ -255,6 +263,8 @@ Route::middleware('auth.akademik')->group(function () {
 Route::prefix('pages')->name('akreditasi.superadmin.')->group(function () {
     Route::get('/superadmin', [SuperadminDashboard::class, 'index'])->name('dashboard');
     Route::get('/superadmin/dashboard', [SuperadminDashboard::class, 'index']);
+    Route::get('/superadmin/instrumen-aktif', [InstrumenAktifController::class, 'index'])
+        ->name('instrumen_aktif');
 
     // Master Data Akreditasi - Level 1: Lembaga
     Route::get('/superadmin/lembaga-akreditasi', [LembagaAkreditasiController::class, 'index'])->name('lembaga_akreditasi');
@@ -279,6 +289,7 @@ Route::prefix('pages')->name('akreditasi.superadmin.')->group(function () {
     Route::post('/superadmin/lembaga-akreditasi/{lembagaId}/instrumen', [InstrumenController::class, 'store']);
     Route::put('/superadmin/lembaga-akreditasi/{lembagaId}/instrumen/{instrumenId}', [InstrumenController::class, 'update'])->name('instrumen.update');
     Route::delete('/superadmin/lembaga-akreditasi/{lembagaId}/instrumen/{instrumenId}', [InstrumenController::class, 'destroy'])->name('instrumen.destroy');
+    Route::get('/superadmin/lembaga-akreditasi/{lembagaId}/instrumen/{instrumenId}/hierarchy', [InstrumenController::class, 'hierarchy'])->name('instrumen.hierarchy');
     Route::get('/superadmin/instrumen', function () {
         return redirect()->route('akreditasi.superadmin.lembaga_akreditasi');
     });
@@ -319,7 +330,9 @@ Route::prefix('pages')->name('akreditasi.superadmin.')->group(function () {
         return redirect()->route('akreditasi.superadmin.lembaga_akreditasi');
     });
 
-    Route::get('/superadmin/lembar-kerja', [LembarKerjaController::class, 'index'])->name('lembar_kerja');
+    Route::get('/superadmin/lembar-kerja', function () {
+        return redirect()->route('akreditasi.superadmin.instrumen_aktif');
+    })->name('lembar_kerja');
     Route::get('/superadmin/bukti-dokumen', [BuktiDokumenController::class, 'index'])->name('bukti_dokumen');
 });
 Route::get('/superadmin', [SuperadminDashboard::class, 'index']);

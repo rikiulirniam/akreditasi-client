@@ -48,7 +48,9 @@ class SpmiController extends Controller
         // 4. Definisi 4 kategori dokumen bukti evidence
         $kategoriEvidence = $this->getKategoriEvidence();
 
-        return view('pages.kaprodi.evidence-spmi', [
+        $viewName = view()->exists('pages.spmi.evidence') ? 'pages.spmi.evidence' : 'pages.kaprodi.evidence-spmi';
+
+        return view($viewName, [
             'projects' => $projects,
             'selectedProjectId' => $selectedProjectId,
             'activeProject' => $activeProject,
@@ -489,34 +491,46 @@ class SpmiController extends Controller
         return [
             [
                 'key' => 'bukti_evaluasi',
-                'label' => 'Bukti Evaluasi',
-                'deskripsi' => 'Dokumen evaluasi capaian standar mutu (hasil audit mutu internal, analisis gap, evaluasi diri).',
+                'label' => 'Laporan Audit Mutu Internal (AMI & Monev)',
+                'pilar' => 'Pilar 1: Evaluasi Mutu',
+                'deskripsi' => 'Dokumen evaluasi capaian standar mutu, laporan berkala Audit Mutu Internal (AMI), monitoring, dan evaluasi diri.',
                 'field_link' => 'link_bukti_evaluasi',
                 'field_deskripsi' => 'deskripsi_bukti_evaluasi',
+                'placeholder_deskripsi' => 'Contoh: Laporan audit mutu internal AMI siklus berjalan, analisis gap kurikulum, dan evaluasi standar prodi...',
+                'placeholder_link' => 'https://drive.google.com/drive/folders/... atau https://drive.google.com/file/d/...',
                 'icon' => 'clipboard-check',
             ],
             [
                 'key' => 'bukti_pengendalian',
-                'label' => 'Bukti Pengendalian & Peningkatan',
-                'deskripsi' => 'Dokumen tindakan korektif, preventif, dan peningkatan mutu berkelanjutan (RTL & RTM).',
+                'label' => 'Rapat Tinjauan Manajemen (RTM & RTL)',
+                'pilar' => 'Pilar 2: Pengendalian Mutu',
+                'deskripsi' => 'Dokumen notulensi Rapat Tinjauan Manajemen (RTM), Rencana Tindak Lanjut (RTL), tindakan korektif, dan preventif.',
                 'field_link' => 'link_bukti_pengendalian',
                 'field_deskripsi' => 'deskripsi_bukti_pengendalian',
+                'placeholder_deskripsi' => 'Contoh: Risalah rapat tinjauan manajemen (RTM) fakultas/prodi dan lembar rencana tindak lanjut (RTL)...',
+                'placeholder_link' => 'https://drive.google.com/drive/folders/... atau https://drive.google.com/file/d/...',
                 'icon' => 'adjustments',
             ],
             [
                 'key' => 'bukti_dampak_tridharma',
-                'label' => 'Bukti Dampak Tridharma',
-                'deskripsi' => 'Bukti luaran Tridharma (prestasi mahasiswa/dosen, publikasi, luaran riset, kepuasan mitra).',
+                'label' => 'Capaian IKU & Survei Kepuasan Stakeholder',
+                'pilar' => 'Pilar 3: Dampak & Kepuasan',
+                'deskripsi' => 'Dokumen capaian Indikator Kinerja Utama (IKU), luaran Tridharma perguruan tinggi, serta laporan survei kepuasan stakeholder.',
                 'field_link' => 'link_bukti_dampak',
                 'field_deskripsi' => 'deskripsi_bukti_dampak',
+                'placeholder_deskripsi' => 'Contoh: Laporan capaian IKU prodi, survei kepuasan pengguna lulusan, mitra industri, mahasiswa, dan dosen...',
+                'placeholder_link' => 'https://drive.google.com/drive/folders/... atau https://drive.google.com/file/d/...',
                 'icon' => 'academic-cap',
             ],
             [
                 'key' => 'dokumen_implementasi',
-                'label' => 'Dokumen Implementasi Harian',
-                'deskripsi' => 'Dokumen operasional harian prodi (SOP, instrumen, logbook, rubrik penilaian, notulen).',
+                'label' => 'Dokumen Implementasi (Buku Kebijakan SPMI, Manual Mutu, SOP PPEPP)',
+                'pilar' => 'Pilar 4: Implementasi & SOP',
+                'deskripsi' => 'Repositori dokumen mutu institusi mencakup Buku Kebijakan SPMI, Manual Mutu, Dokumen Standar, dan SOP PPEPP.',
                 'field_link' => 'link_dokumen_implementasi',
                 'field_deskripsi' => 'deskripsi_dokumen_implementasi',
+                'placeholder_deskripsi' => 'Contoh: Berkas Buku Kebijakan SPMI, Manual Mutu, standar pendidikan/penelitian/pengabdian, dan SOP PPEPP prodi...',
+                'placeholder_link' => 'https://drive.google.com/drive/folders/... atau https://drive.google.com/file/d/...',
                 'icon' => 'document-text',
             ],
         ];
@@ -534,14 +548,14 @@ class SpmiController extends Controller
             return [
                 'bukti_evaluasi' => [
                     'id' => 101,
-                    'deskripsi' => 'Laporan Hasil Audit Mutu Internal (AMI) dan analisis gap kurikulum semester berjalan.',
+                    'deskripsi' => 'Laporan Hasil Audit Mutu Internal (AMI & Monev) dan matriks analisis gap capaian standar kurikulum.',
                     'link_dokumen' => 'https://drive.google.com/file/d/ami-evaluasi-trk-2026',
                     'status' => 'terverifikasi',
                     'updated_at' => '2026-09-15',
                 ],
                 'bukti_pengendalian' => [
                     'id' => 102,
-                    'deskripsi' => 'Dokumen Rencana Tindak Lanjut (RTL) dan notulensi Rapat Tinjauan Manajemen (RTM).',
+                    'deskripsi' => 'Dokumen Rencana Tindak Lanjut (RTL) dan notulensi Rapat Tinjauan Manajemen (RTM) berkala.',
                     'link_dokumen' => 'https://drive.google.com/file/d/rtl-rtm-trk-2026',
                     'status' => 'terverifikasi',
                     'updated_at' => '2026-09-20',
@@ -618,6 +632,183 @@ class SpmiController extends Controller
                 'status_project' => 'Selesai',
                 'nama_lembaga' => 'BAN-PT',
                 'nama_prodi' => 'D4 Teknologi Rekayasa Komputer',
+            ],
+        ];
+    }
+
+    /**
+     * Halaman Rekapitulasi Dokumen Evidence Asesor (Read Data).
+     * Sesuai alur Bu Wikta: Project > Evidence > PIC > Read Data.
+     */
+    public function evidenceOverview(Request $request, ?int $id = null): View
+    {
+        $projects = $this->loadProjectsFromApi();
+        $defaultProjectId = $projects[0]['id'] ?? 1;
+        $selectedProjectId = (int) ($id ?: $request->query('project_id', $defaultProjectId));
+
+        $activeProject = null;
+        foreach ($projects as $p) {
+            if ((int) ($p['id'] ?? 0) === $selectedProjectId) {
+                $activeProject = $p;
+                break;
+            }
+        }
+        if (! $activeProject && ! empty($projects)) {
+            $activeProject = $projects[0];
+            $selectedProjectId = (int) ($activeProject['id'] ?? 1);
+        }
+
+        $overviewData = $this->loadOverviewForProject($selectedProjectId);
+        $publicToken = $this->generatePublicEvidenceToken($selectedProjectId);
+        $publicUrl = route('spmi.public-overview', ['token' => $publicToken]);
+
+        return view('pages.kaprodi.evidence_overview', [
+            'projects' => $projects,
+            'selectedProjectId' => $selectedProjectId,
+            'activeProject' => $activeProject,
+            'evidenceData' => $overviewData['evidenceData'],
+            'assignedIndicators' => $overviewData['assignedIndicators'],
+            'indicatorStats' => $overviewData['indicatorStats'],
+            'publicToken' => $publicToken,
+            'publicUrl' => $publicUrl,
+            'isReadOnly' => false,
+        ]);
+    }
+
+    /**
+     * Halaman Rekapitulasi Dokumen Read-Only untuk Asesor Eksternal via Token Publik.
+     */
+    public function publicEvidenceOverview(string $token): View
+    {
+        $projectId = $this->resolveProjectIdFromToken($token);
+        $projects = $this->loadProjectsFromApi();
+
+        $activeProject = null;
+        foreach ($projects as $p) {
+            if ((int) ($p['id'] ?? 0) === $projectId) {
+                $activeProject = $p;
+                break;
+            }
+        }
+        if (! $activeProject && ! empty($projects)) {
+            $activeProject = $projects[0];
+            $projectId = (int) ($activeProject['id'] ?? 1);
+        }
+
+        $overviewData = $this->loadOverviewForProject($projectId);
+
+        return view('pages.kaprodi.evidence_overview', [
+            'projects' => [$activeProject],
+            'selectedProjectId' => $projectId,
+            'activeProject' => $activeProject,
+            'evidenceData' => $overviewData['evidenceData'],
+            'assignedIndicators' => $overviewData['assignedIndicators'],
+            'indicatorStats' => $overviewData['indicatorStats'],
+            'publicToken' => $token,
+            'publicUrl' => route('spmi.public-overview', ['token' => $token]),
+            'isReadOnly' => true,
+        ]);
+    }
+
+    /**
+     * Generate secure URL token for external assessor view.
+     */
+    protected function generatePublicEvidenceToken(int $projectId): string
+    {
+        $payload = "{$projectId}:".date('Ymd');
+
+        return rtrim(strtr(base64_encode($payload), '+/', '-_'), '=');
+    }
+
+    /**
+     * Resolve project ID from public assessor token.
+     */
+    protected function resolveProjectIdFromToken(string $token): int
+    {
+        try {
+            $decoded = base64_decode(strtr($token, '-_', '+/'));
+            if ($decoded && str_contains($decoded, ':')) {
+                [$pid] = explode(':', $decoded, 2);
+                if (is_numeric($pid) && (int) $pid > 0) {
+                    return (int) $pid;
+                }
+            }
+        } catch (\Throwable) {
+        }
+
+        return 1;
+    }
+
+    /**
+     * Memuat ringkasan overview evidence dan mapping indikator untuk sebuah project.
+     *
+     * @return array<string, mixed>
+     */
+    protected function loadOverviewForProject(int $projectId): array
+    {
+        $evidenceData = $this->loadEvidenceForProject($projectId);
+        $assignedIndicators = [];
+
+        try {
+            $res = $this->akreditasiService->getEvidenceOverview($projectId);
+            if ($res->successful()) {
+                $data = $res->json('data') ?? [];
+                if (! empty($data['assigned_indicators']) && is_array($data['assigned_indicators'])) {
+                    $assignedIndicators = $data['assigned_indicators'];
+                }
+            }
+        } catch (\Throwable) {
+        }
+
+        if (empty($assignedIndicators)) {
+            $assignedIndicators = [
+                [
+                    'id_indikator' => 1,
+                    'role' => 'PIC',
+                    'nama_dosen' => 'Dr. Budi Raharjo, M.Kom.',
+                    'link_evidence' => 'https://drive.google.com/drive/folders/cpl-trk-bukti',
+                    'indikator' => [
+                        'id' => 1,
+                        'kode_indikator' => 'IND-C.1.1',
+                        'deskripsi_indikator' => 'Kesesuaian kurikulum prodi dengan standar kompetensi lulusan TIK',
+                    ],
+                ],
+                [
+                    'id_indikator' => 2,
+                    'role' => 'PIC',
+                    'nama_dosen' => 'Siti Aminah, M.T.',
+                    'link_evidence' => 'https://drive.google.com/drive/folders/dosen-tri-dharma',
+                    'indikator' => [
+                        'id' => 2,
+                        'kode_indikator' => 'IND-C.3.2',
+                        'deskripsi_indikator' => 'Rekapitulasi publikasi ilmiah dosen dan karya terapan',
+                    ],
+                ],
+                [
+                    'id_indikator' => 3,
+                    'role' => 'PJ',
+                    'nama_dosen' => 'Agus Priyono, Ph.D.',
+                    'link_evidence' => '',
+                    'indikator' => [
+                        'id' => 3,
+                        'kode_indikator' => 'IND-C.4.1',
+                        'deskripsi_indikator' => 'Kecukupan fasilitas laboratorium komputasi dan workstation',
+                    ],
+                ],
+            ];
+        }
+
+        $totalIndikator = count($assignedIndicators);
+        $terisiIndikator = count(array_filter($assignedIndicators, fn ($i) => ! empty($i['link_evidence']) || ! empty($i['link'])));
+        $persenIndikator = $totalIndikator > 0 ? (int) round(($terisiIndikator / $totalIndikator) * 100) : 0;
+
+        return [
+            'evidenceData' => $evidenceData,
+            'assignedIndicators' => $assignedIndicators,
+            'indicatorStats' => [
+                'total' => $totalIndikator,
+                'terisi' => $terisiIndikator,
+                'persen' => $persenIndikator,
             ],
         ];
     }

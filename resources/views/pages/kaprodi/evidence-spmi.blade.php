@@ -3,16 +3,54 @@
 @section('title', 'Evidence SPMI')
 
 @section('content')
+<style>
+    /* Custom Slim & Themed Horizontal Scrollbar for Evidence Tabs */
+    .custom-tabs-scroll {
+        scrollbar-width: thin;
+        scrollbar-color: #94A3B8 #F1F5F9;
+        scroll-behavior: smooth;
+        -webkit-overflow-scrolling: touch;
+    }
+    .custom-tabs-scroll::-webkit-scrollbar {
+        height: 5px;
+    }
+    .custom-tabs-scroll::-webkit-scrollbar-track {
+        background: #F1F5F9;
+        border-radius: 9999px;
+        margin: 0 1.5rem;
+    }
+    .custom-tabs-scroll::-webkit-scrollbar-thumb {
+        background-color: #94A3B8;
+        border-radius: 9999px;
+        transition: background-color 0.2s ease;
+    }
+    .custom-tabs-scroll::-webkit-scrollbar-thumb:hover {
+        background-color: #012650;
+    }
+</style>
+
 <div class="max-w-[1120px] mx-auto space-y-6 pb-12 font-['Plus_Jakarta_Sans']">
 
     {{-- 1. Header Section --}}
-    <div class="space-y-1">
-        <h2 class="text-2xl sm:text-3xl font-bold text-black tracking-tight">
-            Evidence SPMI
-        </h2>
-        <p class="text-base sm:text-lg text-black/80 font-normal leading-7">
-            Kelola dan unggah bukti mutu operasional program studi per project akreditasi.
-        </p>
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div class="space-y-1">
+            <h2 class="text-2xl sm:text-3xl font-bold text-black tracking-tight">
+                Evidence SPMI
+            </h2>
+            <p class="text-base sm:text-lg text-black/80 font-normal leading-7">
+                Kelola dan unggah bukti mutu operasional program studi per project akreditasi.
+            </p>
+        </div>
+        @if (Route::has('spmi.overview'))
+            <a href="{{ route('spmi.overview', ['id' => $selectedProjectId]) }}"
+                class="inline-flex items-center gap-2 px-4 py-2.5 bg-sky-900 hover:bg-sky-950 text-white font-bold text-xs sm:text-sm rounded-xl transition-all shadow-xs shrink-0 self-start sm:self-auto">
+                <svg class="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+                <span>Rekapitulasi Dokumen Asesor</span>
+            </a>
+        @endif
     </div>
 
     {{-- Flash Notifications --}}
@@ -176,7 +214,7 @@
             <input type="hidden" name="project_id" value="{{ $selectedProjectId }}">
 
             {{-- Horizontal Tab Navigation Bar --}}
-            <div class="px-6 border-b border-zinc-200 bg-white flex items-center gap-1 sm:gap-2 overflow-x-auto shrink-0" id="categoryTabsContainer">
+            <div class="px-6 border-b border-zinc-200 bg-white flex items-center gap-1 sm:gap-2 overflow-x-auto shrink-0 custom-tabs-scroll pb-1" id="categoryTabsContainer">
                 @foreach ($kategoriEvidence as $tIndex => $kat)
                     @php
                         $tabEv = $evidenceData[$kat['key']] ?? null;
@@ -228,7 +266,10 @@
                                     target="_blank"
                                     rel="noopener noreferrer"
                                     class="px-3.5 py-2 bg-white border border-zinc-300 hover:bg-slate-50 text-slate-700 text-xs font-semibold rounded-lg shadow-2xs inline-flex items-center gap-1.5 transition-colors {{ $hasLink ? 'inline-flex' : 'hidden' }}">
-                                    <span>Buka Dokumen ↗</span>
+                                    <svg class="size-4 text-sky-800" fill="currentColor" viewBox="0 0 24 24">
+                                        <path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM19 18H6c-2.21 0-4-1.79-4-4 0-2.05 1.53-3.76 3.56-3.97l1.07-.11.5-.95C8.08 7.14 9.94 6 12 6c2.62 0 4.88 1.86 5.39 4.43l.3 1.5 1.53.11c1.56.1 2.78 1.41 2.78 2.96 0 1.65-1.35 3-3 3z"/>
+                                    </svg>
+                                    <span>Buka Dokumen Google Drive ↗</span>
                                 </a>
                             </div>
                         </div>
@@ -242,28 +283,48 @@
                         {{-- Input Deskripsi Dokumen --}}
                         <div class="space-y-1.5">
                             <label for="evidence_deskripsi_{{ $kat['key'] }}" class="block text-xs font-bold text-slate-800">
-                                Deskripsi Ringkas Dokumen Evidence
+                                Deskripsi Ringkas Dokumen Mutu Institusi
                                 <span class="text-slate-400 font-normal">(opsional)</span>
                             </label>
                             <textarea name="{{ $kat['field_deskripsi'] }}"
                                 id="evidence_deskripsi_{{ $kat['key'] }}"
                                 rows="3"
-                                placeholder="Tuliskan ringkasan bukti dokumen atau catatan pendukung..."
+                                placeholder="{{ $kat['placeholder_deskripsi'] ?? 'Tuliskan ringkasan bukti dokumen mutu atau catatan pendukung...' }}"
                                 class="w-full bg-white border border-zinc-300 rounded-lg p-3 text-sm text-slate-800 placeholder:text-slate-400 focus:outline-sky-800 focus:ring-2 focus:ring-sky-800/10 transition-colors">{{ $evData['deskripsi'] ?? '' }}</textarea>
                         </div>
 
                         {{-- Input Tautan Dokumen --}}
                         <div class="space-y-1.5">
-                            <label for="evidence_link_{{ $kat['key'] }}" class="block text-xs font-bold text-slate-800">
-                                Tautan Dokumen (Google Drive / Cloud URL)
-                                <span class="text-slate-400 font-normal">(opsional)</span>
-                            </label>
-                            <input type="url"
-                                name="{{ $kat['field_link'] }}"
-                                id="evidence_link_{{ $kat['key'] }}"
-                                value="{{ $evData['link_dokumen'] ?? '' }}"
-                                placeholder="https://drive.google.com/..."
-                                class="w-full h-11 bg-white border border-zinc-300 rounded-lg px-3.5 text-sm text-slate-800 placeholder:text-slate-400 focus:outline-sky-800 focus:ring-2 focus:ring-sky-800/10 transition-colors">
+                            <div class="flex items-center justify-between">
+                                <label for="evidence_link_{{ $kat['key'] }}" class="block text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                                    <svg class="size-4 text-sky-800" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M13.19 8.688a4.5 4.5 0 011.242 7.244l-4.5 4.5a4.5 4.5 0 01-6.364-6.364l1.757-1.757m13.35-.622l1.757-1.757a4.5 4.5 0 00-6.364-6.364l-4.5 4.5a4.5 4.5 0 001.242 7.244" />
+                                    </svg>
+                                    <span>Tautan Berkas / Folder Google Drive</span>
+                                </label>
+                                <span class="text-[11px] text-slate-400 font-medium">Format: https://drive.google.com/...</span>
+                            </div>
+                            <div class="relative">
+                                <input type="url"
+                                    name="{{ $kat['field_link'] }}"
+                                    id="evidence_link_{{ $kat['key'] }}"
+                                    value="{{ $evData['link_dokumen'] ?? '' }}"
+                                    placeholder="{{ $kat['placeholder_link'] ?? 'https://drive.google.com/drive/folders/...' }}"
+                                    class="w-full h-11 bg-white border border-zinc-300 rounded-lg pl-3.5 pr-28 text-sm text-slate-800 placeholder:text-slate-400 focus:outline-sky-800 focus:ring-2 focus:ring-sky-800/10 transition-colors">
+                                @if(!empty($evData['link_dokumen']))
+                                    <div class="absolute inset-y-0 right-2 flex items-center">
+                                        <a href="{{ $evData['link_dokumen'] }}" target="_blank" rel="noopener noreferrer"
+                                            class="text-xs text-sky-800 hover:text-sky-950 font-bold px-2 py-1 bg-sky-50 rounded hover:bg-sky-100 transition-colors inline-flex items-center gap-1">
+                                            <span>Buka Link</span>
+                                            <span>↗</span>
+                                        </a>
+                                    </div>
+                                @endif
+                            </div>
+                            <p class="text-[11px] text-slate-500 flex items-center gap-1">
+                                <span class="text-sky-800 font-bold">&bull;</span>
+                                Pastikan izin akses link Google Drive disetel ke "Siapa saja yang memiliki link dapat melihat" agar dapat diverifikasi asesor.
+                            </p>
                         </div>
 
                     </div>
@@ -341,6 +402,8 @@
             if (kat.key === targetKey) {
                 btn.className = 'category-tab-btn py-3.5 px-3 text-xs sm:text-sm font-bold border-b-2 border-sky-800 text-sky-800 flex items-center gap-2 transition-all cursor-pointer whitespace-nowrap';
                 if (content) content.classList.remove('hidden');
+                // Auto scroll tab aktif ke posisi nyaman jika terpotong
+                btn.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
             } else {
                 btn.className = 'category-tab-btn py-3.5 px-3 text-xs sm:text-sm font-semibold border-b-2 border-transparent text-slate-500 hover:text-slate-800 flex items-center gap-2 transition-all cursor-pointer whitespace-nowrap';
                 if (content) content.classList.add('hidden');
@@ -348,9 +411,23 @@
         });
     }
 
+    // Scroll horizontal dengan mouse wheel & touch/drag
+    function initHorizontalTabScroll() {
+        const tabsContainer = document.getElementById('categoryTabsContainer');
+        if (!tabsContainer) return;
+
+        tabsContainer.addEventListener('wheel', function (e) {
+            if (e.deltaY !== 0) {
+                e.preventDefault();
+                tabsContainer.scrollLeft += e.deltaY * 1.2;
+            }
+        }, { passive: false });
+    }
+
     document.addEventListener('DOMContentLoaded', () => {
         switchCategoryTab('{{ $kategoriEvidence[0]['key'] ?? 'bukti_evaluasi' }}');
         adjustProjectSelectorWidth();
+        initHorizontalTabScroll();
     });
 
     window.addEventListener('resize', adjustProjectSelectorWidth);

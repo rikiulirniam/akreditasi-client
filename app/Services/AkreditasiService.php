@@ -347,11 +347,16 @@ class AkreditasiService
     }
 
     /**
-     * Mengaktifkan versi instrumen.
+     * Mengaktifkan versi instrumen untuk jenjang tertentu.
      */
-    public function activateVersiInstrumen(int|string $id): Response
-    {
-        return $this->patch("/master/versi-instrumen/{$id}/aktifkan");
+    public function activateVersiInstrumen(
+        int|string $id,
+        int|string|array $payload
+    ): Response {
+        return $this->patch(
+            "/master/versi-instrumen/{$id}/aktifkan",
+            is_array($payload) ? $payload : ['id_jenjang' => $payload]
+        );
     }
 
     /**
@@ -378,6 +383,22 @@ class AkreditasiService
     public function getInstrumen(int|string $id): Response
     {
         return $this->get("/master/instrumen/{$id}");
+    }
+
+    /**
+     * Mengambil hierarki instrumen aktif LAM-INFOKOM 2.1 TRK.
+     */
+    public function getActiveStaticInstrumen(): Response
+    {
+        return $this->get('/master/instrumen/active-static');
+    }
+
+    /**
+     * Mengambil struktur hierarki instrumen akreditasi berdasarkan ID.
+     */
+    public function getInstrumenHierarchy(int|string $id): Response
+    {
+        return $this->get("/instrumen/{$id}/hierarchy");
     }
 
     /**
@@ -671,6 +692,14 @@ class AkreditasiService
     }
 
     /**
+     * Mengambil data simulasi kuantitatif skor SDM dosen LAM-INFOKOM untuk project akreditasi.
+     */
+    public function getScoringSimulation(int|string $id): Response
+    {
+        return $this->get("/projects/{$id}/scoring-simulation");
+    }
+
+    /**
      * Memperbarui status lifecycle project akreditasi.
      *
      * @param  array<string, mixed>  $data
@@ -745,6 +774,37 @@ class AkreditasiService
     public function updateIndicatorEvidence(int|string $projectId, int|string $indicatorId, array $data): Response
     {
         return $this->put("/projects/{$projectId}/indicators/{$indicatorId}/evidence", $data);
+    }
+
+    /**
+     * Mengambil modul-modul placeholder (Kriteria C.2 & C.5) yang dikelola institusi/UPPS.
+     * Endpoint: GET /api/v1/projects/{id}/placeholder-modules
+     */
+    public function getPlaceholderModules(int|string $projectId): Response
+    {
+        return $this->get("/projects/{$projectId}/placeholder-modules");
+    }
+
+    /**
+     * Mengambil daftar dosen dari API Kelompok 2 (Tridharma / Akademik eksternal).
+     * Endpoint: GET /api/v1/external/dosen
+     *
+     * @param  array<string, mixed>  $query
+     */
+    public function getExternalDosen(array $query = []): Response
+    {
+        return $this->get('/external/dosen', $query);
+    }
+
+    /**
+     * Mengambil data mapping tim untuk project berdasarkan project ID.
+     * Endpoint: GET /api/v1/projects/{id}/mapping-tim
+     *
+     * @param  array<string, mixed>  $query
+     */
+    public function getMappingTimByProject(int|string $projectId, array $query = []): Response
+    {
+        return $this->get("/projects/{$projectId}/mapping-tim", $query);
     }
 
     /*

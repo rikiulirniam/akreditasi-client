@@ -57,10 +57,10 @@ class EvidenceSpmiTest extends TestCase
         $response->assertStatus(200);
         $response->assertSee('Evidence SPMI');
         $response->assertSee('PILIH PROJECT AKREDITASI');
-        $response->assertSee('Bukti Evaluasi');
-        $response->assertSee('Bukti Pengendalian &amp; Peningkatan', false);
-        $response->assertSee('Bukti Dampak Tridharma');
-        $response->assertSee('Dokumen Implementasi Harian');
+        $response->assertSee('Laporan Audit Mutu Internal (AMI &amp; Monev)', false);
+        $response->assertSee('Rapat Tinjauan Manajemen (RTM &amp; RTL)', false);
+        $response->assertSee('Capaian IKU &amp; Survei Kepuasan Stakeholder', false);
+        $response->assertSee('Dokumen Implementasi (Buku Kebijakan SPMI, Manual Mutu, SOP PPEPP)');
     }
 
     public function test_user_can_submit_evidence(): void
@@ -167,5 +167,34 @@ class EvidenceSpmiTest extends TestCase
 
         $afterSubmit->assertStatus(200);
         $afterSubmit->assertSee('Publikasi artikel ilmiah mahasiswa di jurnal terakreditasi');
+    }
+
+    public function test_user_can_view_evidence_overview_asesor(): void
+    {
+        $response = $this->withSession($this->authSession())
+            ->get(route('spmi.overview', 1));
+
+        $response->assertStatus(200);
+        $response->assertSee('Rekapitulasi Dokumen Evidence');
+        $response->assertSee('Dokumen Mutu Institusi (4 Pilar Evidence SPMI)');
+        $response->assertDontSee('Kesiapan Bukti Indikator Dosen PIC');
+        $response->assertSee('Salin Token Akses Asesor Eksternal');
+    }
+
+    public function test_external_asesor_can_access_public_read_only_overview(): void
+    {
+        $raw = '1:20261122';
+        $token = rtrim(strtr(base64_encode($raw), '+/', '-_'), '=');
+
+        $response = $this->get(route('spmi.public-overview', ['token' => $token]));
+
+        $response->assertStatus(200);
+        $response->assertSee('Mode Asesor Eksternal (Read-Only)');
+        $response->assertSee('Read-Only Asesor');
+        $response->assertSee('Dokumen Mutu Institusi (4 Pilar Evidence SPMI)');
+        $response->assertDontSee('Kesiapan Bukti Indikator Dosen PIC');
+        // Mode publik read-only tidak boleh menampilkan tombol kelola atau salin token
+        $response->assertDontSee('Kelola Dokumen');
+        $response->assertDontSee('Salin Token Akses Asesor Eksternal');
     }
 }

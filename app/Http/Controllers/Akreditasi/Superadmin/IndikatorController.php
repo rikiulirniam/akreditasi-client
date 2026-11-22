@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Akreditasi\Superadmin;
 
 use App\Http\Controllers\Controller;
 use App\Services\AkreditasiService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -127,7 +128,7 @@ class IndikatorController extends Controller
 
         $payload = array_merge($validated, [
             'id_subkriteria' => $subkriteriaId,
-            'bobot' => $validated['bobot'] ?? 1,
+            'bobot' => (float) $validated['bobot'],
         ]);
 
         try {
@@ -152,8 +153,13 @@ class IndikatorController extends Controller
             'bobot' => 'required|numeric|between:0,999999.99',
         ]);
 
+        $payload = array_merge($validated, [
+            'id_subkriteria' => $subkriteriaId,
+            'bobot' => (float) $validated['bobot'],
+        ]);
+
         try {
-            $response = $this->akreditasiService->updateIndikator($indikatorId, $validated);
+            $response = $this->akreditasiService->updateIndikator($indikatorId, $payload);
             if ($response->successful()) {
                 return redirect()->route('akreditasi.superadmin.indikator', [$lembagaId, $instrumenId, $kriteriaId, $subkriteriaId])
                     ->with('success', 'Indikator berhasil diperbarui.');
@@ -165,17 +171,58 @@ class IndikatorController extends Controller
         }
     }
 
-    public function destroy(int|string $lembagaId, int|string $instrumenId, int|string $kriteriaId, int|string $subkriteriaId, int|string $indikatorId): RedirectResponse
+    public function destroy(Request $request, int|string $lembagaId, int|string $instrumenId, int|string $kriteriaId, int|string $subkriteriaId, int|string $indikatorId): JsonResponse|RedirectResponse
     {
         try {
             $response = $this->akreditasiService->deleteIndikator($indikatorId);
+            $message = $response->json('message');
+
+            if ($request->wantsJson() || $request->ajax()) {
+                if ($response->successful()) {
+                    return response()->json([
+                        'success' => true,
+                        'message' => $message ?? 'Indikator berhasil dihapus.',
+                    ]);
+                }
+
+                return response()->json([
+                    'success' => false,
+                    'message' => $message ?? 'Gagal menghapus indikator.',
+                ], $response->status() ?: 422);
+            }
+
             if ($response->successful()) {
+                if (request()->expectsJson()) {
+                    return response()->json([
+                        'success' => true,
+                        'message' => 'Indikator berhasil dihapus.',
+                    ]);
+                }
+
                 return redirect()->route('akreditasi.superadmin.indikator', [$lembagaId, $instrumenId, $kriteriaId, $subkriteriaId])
                     ->with('success', 'Indikator berhasil dihapus.');
             }
 
-            return back()->with('error', (string) ($response->json('message') ?? 'Gagal menghapus indikator.'));
+            $message = $response->status() === 422
+                ? 'Data tidak dapat dihapus karena telah digunakan pada instrumen atau penilaian aktif.'
+                : (string) ($response->json('message') ?? 'Gagal menghapus indikator.');
+
+            if ($request->wantsJson() || $request->ajax() || request()->expectsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => $message,
+                ], $response->status() === 422 ? 422 : ($response->status() ?: 500));
+            }
+
+            return back()->with('error', $message);
         } catch (\Throwable $e) {
+            if ($request->wantsJson() || $request->ajax() || request()->expectsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Terjadi kesalahan saat menghapus indikator.',
+                ], 500);
+            }
+
             return back()->with('error', 'Terjadi kesalahan: '.$e->getMessage());
         }
     }

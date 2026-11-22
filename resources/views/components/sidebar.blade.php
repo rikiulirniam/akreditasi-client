@@ -151,12 +151,26 @@
                         @if (Route::has('spmi.evidence'))
                         <div>
                             <a href="{{ route('spmi.evidence') }}"
-                                class="sidebar-link w-full flex items-center gap-3.5 px-3.5 py-3 rounded-2xl text-sm font-semibold transition-all duration-150 group {{ request()->routeIs('spmi.*') ? 'bg-white/20 text-white shadow-xs font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}"
+                                class="sidebar-link w-full flex items-center gap-3.5 px-3.5 py-3 rounded-2xl text-sm font-semibold transition-all duration-150 group {{ request()->routeIs('spmi.evidence*') ? 'bg-white/20 text-white shadow-xs font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}"
                                 title="Evidence SPMI">
                                 <svg class="w-6 h-6 shrink-0 text-white/90 group-hover:text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                                 </svg>
                                 <span class="sidebar-text truncate">Evidence SPMI</span>
+                            </a>
+                        </div>
+                        @endif
+
+                        {{-- 4. Overview Dokumen Asesor --}}
+                        @if (Route::has('spmi.overview'))
+                        <div>
+                            <a href="{{ route('spmi.overview') }}"
+                                class="sidebar-link w-full flex items-center gap-3.5 px-3.5 py-3 rounded-2xl text-sm font-semibold transition-all duration-150 group {{ request()->routeIs('spmi.overview*') ? 'bg-white/20 text-white shadow-xs font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}"
+                                title="Overview Dokumen Asesor">
+                                <svg class="w-6 h-6 shrink-0 text-white/90 group-hover:text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" />
+                                </svg>
+                                <span class="sidebar-text truncate">Overview Dokumen</span>
                             </a>
                         </div>
                         @endif
@@ -206,7 +220,7 @@
                         {{-- 3. Evidence SPMI --}}
                         <div>
                             <a href="{{ route('spmi.evidence') }}"
-                                class="sidebar-link w-full flex items-center gap-3.5 px-3.5 py-3 rounded-2xl text-sm font-semibold transition-all duration-150 group {{ request()->routeIs('spmi.*') ? 'bg-white/20 text-white shadow-xs font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}"
+                                class="sidebar-link w-full flex items-center gap-3.5 px-3.5 py-3 rounded-2xl text-sm font-semibold transition-all duration-150 group {{ request()->routeIs('spmi.evidence*') ? 'bg-white/20 text-white shadow-xs font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}"
                                 title="Evidence SPMI">
                                 <svg class="w-6 h-6 shrink-0 text-white/90 group-hover:text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
@@ -215,7 +229,21 @@
                             </a>
                         </div>
 
-                        {{-- 4. Laporan Akhir --}}
+                        {{-- 4. Overview Dokumen Asesor --}}
+                        @if (Route::has('spmi.overview'))
+                        <div>
+                            <a href="{{ route('spmi.overview') }}"
+                                class="sidebar-link w-full flex items-center gap-3.5 px-3.5 py-3 rounded-2xl text-sm font-semibold transition-all duration-150 group {{ request()->routeIs('spmi.overview*') ? 'bg-white/20 text-white shadow-xs font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}"
+                                title="Overview Dokumen Asesor">
+                                <svg class="w-6 h-6 shrink-0 text-white/90 group-hover:text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" />
+                                </svg>
+                                <span class="sidebar-text truncate">Overview Dokumen</span>
+                            </a>
+                        </div>
+                        @endif
+
+                        {{-- 5. Laporan Akhir --}}
                         <div>
                             <a href="{{ route('laporan-akhir.index') }}"
                                 class="sidebar-link w-full flex items-center gap-3.5 px-3.5 py-3 rounded-2xl text-sm font-semibold transition-all duration-150 group {{ request()->routeIs('laporan-akhir.*') ? 'bg-white/20 text-white shadow-xs font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}"
