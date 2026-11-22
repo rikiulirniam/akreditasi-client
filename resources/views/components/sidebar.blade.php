@@ -3,10 +3,9 @@
 @php
     $sidebarUser = session('user', []);
     $userRole = strtolower((string) (($sidebarUser['role'] ?? null) ?: ($sidebarUser['role_name'] ?? '')));
-    $isReviewerRole = str_contains($userRole, 'reviewer');
     $isKaprodiRole  = str_contains($userRole, 'kaprodi');
     $isDosenRole    = str_contains($userRole, 'dosen');
-    $isAdminRole = ! $isKaprodiRole && ! $isReviewerRole && ! $isDosenRole;
+    $isAdminRole = ! $isKaprodiRole && ! $isDosenRole;
 @endphp
 
 {{-- Backdrop untuk sidebar mobile --}}
@@ -40,40 +39,7 @@
 
             <nav class="space-y-2" aria-label="Menu Utama">
 
-                @if ($isReviewerRole)
-                    {{-- ============================================================== --}}
-                    {{-- MENU REVIEWER --}}
-                    {{-- ============================================================== --}}
-
-                    <div class="sidebar-section-header pt-1 pb-1 px-3.5">
-                        <p class="sidebar-text text-[11px] font-bold uppercase tracking-wider text-white/50">Portal Reviewer</p>
-                    </div>
-
-                    {{-- Dashboard Reviewer --}}
-                    <div>
-                        <a href="{{ route('reviewer.dashboard') }}"
-                            class="sidebar-link w-full flex items-center gap-3.5 px-3.5 py-3 rounded-2xl text-sm font-semibold transition-all duration-150 group {{ request()->routeIs('reviewer.dashboard') ? 'bg-white/20 text-white shadow-xs font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}"
-                            title="Dashboard">
-                            <svg class="w-6 h-6 shrink-0 fill-current text-white/90 group-hover:text-white" viewBox="0 0 24 24">
-                                <path d="M4 4h6v6H4V4zm10 0h6v6h-6V4zM4 14h6v6H4v-6zm10 0h6v6h-6v-6z" />
-                            </svg>
-                            <span class="sidebar-text truncate">Dashboard</span>
-                        </a>
-                    </div>
-
-                    {{-- Penilaian Reviewer --}}
-                    <div>
-                        <a href="{{ route('reviewer.assessments') }}"
-                            class="sidebar-link w-full flex items-center gap-3.5 px-3.5 py-3 rounded-2xl text-sm font-semibold transition-all duration-150 group {{ request()->routeIs('reviewer.assessments*') || request()->routeIs('reviewer.assessment-*') ? 'bg-white/20 text-white shadow-xs font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}"
-                            title="Penilaian">
-                            <svg class="w-6 h-6 shrink-0 text-white/90 group-hover:text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 6.75h12m-12 5.25h12m-12 5.25h12M3.75 6.75h.008v.008H3.75V6.75zm0 5.25h.008v.008H3.75V12zm0 5.25h.008v.008H3.75v-.008z" />
-                            </svg>
-                            <span class="sidebar-text truncate">Penilaian</span>
-                        </a>
-                    </div>
-
-                @elseif ($isDosenRole)
+                @if ($isDosenRole)
                     {{-- ============================================================== --}}
                     {{-- MENU DOSEN TIM AKREDITASI --}}
                     {{-- ============================================================== --}}
@@ -141,6 +107,19 @@
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 3v11.25A2.25 2.25 0 006 16.5h2.25M3.75 3h-1.5m1.5 0h16.5m0 0h1.5m-1.5 0v11.25A2.25 2.25 0 0118 16.5h-2.25m-7.5 0h7.5m-7.5 0l-1 3m8.5-3l1 3m0 0l.5 1.5m-.5-1.5h-9.5m0 0l-.5 1.5M9 11.25v1.5M12 9v3.75m3-6v6" />
                             </svg>
                             <span class="sidebar-text truncate">Project Akreditasi</span>
+                        </a>
+                    </div>
+                    @endif
+
+                    @if ($isKaprodiRole && Route::has('kaprodi.assessments'))
+                    <div>
+                        <a href="{{ route('kaprodi.assessments') }}"
+                            class="sidebar-link w-full flex items-center gap-3.5 px-3.5 py-3 rounded-2xl text-sm font-semibold transition-all duration-150 group {{ request()->routeIs('kaprodi.assessment*') ? 'bg-white/20 text-white shadow-xs font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}"
+                            title="Penilaian Indikator">
+                            <svg class="w-6 h-6 shrink-0 text-white/90 group-hover:text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 6.75h12m-12 5.25h12m-12 5.25h12M3.75 6.75h.008v.008H3.75V6.75zm0 5.25h.008v.008H3.75V12zm0 5.25h.008v.008H3.75v-.008z" />
+                            </svg>
+                            <span class="sidebar-text truncate">Penilaian Indikator</span>
                         </a>
                     </div>
                     @endif

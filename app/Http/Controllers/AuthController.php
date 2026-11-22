@@ -402,12 +402,8 @@ HTML;
             return url('/dosen/my-assignments');
         }
 
-        if (str_contains($role, 'reviewer')) {
-            return url('/reviewer/dashboard');
-        }
-
-        if (str_contains($role, 'admin') || str_contains($role, 'superadmin') || str_contains($role, 'administrator')) {
-            return url('/superadmin');
+        if (str_contains($role, 'admin') || str_contains($role, 'superadmin')) {
+            return url('/pages/superadmin');
         }
 
         return url('/superadmin');

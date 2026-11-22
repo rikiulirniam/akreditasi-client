@@ -28,8 +28,18 @@
                 <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                 <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
             </svg>
-            <p class="text-sm font-bold text-primary">Menganalisis Kesiapan Indikator Kritis...</p>
+            <p class="text-sm font-bold text-primary">Menganalisis kesiapan indikator project...</p>
             <p class="text-xs text-gray-400 mt-1">Memeriksa penugasan PIC, link dokumen bukti, dan penilaian reviewer.</p>
+        </div>
+
+        <div id="readinessError" class="hidden p-6" role="alert">
+            <div class="rounded-2xl border border-rose-200 bg-rose-50 p-4">
+                <p class="text-sm font-bold text-rose-900">Data readiness tidak dapat dimuat</p>
+                <p id="readinessErrorMessage" class="mt-1 text-xs text-rose-800"></p>
+                <button type="button" onclick="openReadinessModal(currentReadinessProjectId, document.getElementById('readinessModalProjectName').textContent)" class="mt-3 rounded-xl border border-rose-300 bg-white px-4 py-2 text-xs font-bold text-rose-900 hover:bg-rose-100">
+                    Coba lagi
+                </button>
+            </div>
         </div>
 
         <!-- Content Area (Scrollable) -->
@@ -65,7 +75,7 @@
                         <span id="metricMissingPic" class="text-2xl font-black text-amber-800">0</span>
                         <span class="text-[11px] text-amber-700 font-semibold">Butir</span>
                     </div>
-                    <div class="text-[10px] text-amber-600 font-medium mt-1">Butuh PIC penugasan</div>
+                    <div class="text-[10px] text-amber-600 font-medium mt-1">Pada cakupan indikator yang ditampilkan</div>
                 </div>
 
                 <!-- Belum ada Bukti -->
@@ -89,6 +99,10 @@
                 </div>
             </div>
 
+            <div id="readinessPicWarning" class="hidden rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs text-amber-900" role="status">
+                Status PIC belum dapat diverifikasi dari mapping project. Angka PIC dan keputusan kesiapan tidak akan dianggap valid.
+            </div>
+
             <!-- Filter Tabs -->
             <div class="flex items-center justify-between border-b border-gray-200 pb-3">
                 <div class="flex items-center gap-2">
@@ -102,7 +116,7 @@
                         Siap (<span id="badgeFilterReady">0</span>)
                     </button>
                 </div>
-                <span class="text-[11px] text-gray-400 font-medium hidden sm:inline">Daftar butir indikator kritis penentu submit</span>
+                <span id="readinessScopeLabel" class="text-[11px] text-gray-400 font-medium hidden sm:inline"></span>
             </div>
 
             <!-- Checklist Table -->
@@ -111,7 +125,7 @@
                     <table class="w-full text-left text-xs text-gray-700">
                         <thead class="bg-gray-50/80 border-b border-gray-200 text-gray-600 font-bold uppercase text-[10px] tracking-wider">
                             <tr>
-                                <th class="py-3 px-4 min-w-[200px]">Butir Indikator Kritis</th>
+                                <th class="py-3 px-4 min-w-[200px]">Butir Indikator</th>
                                 <th class="py-3 px-3 text-center min-w-[130px]">Penugasan PIC</th>
                                 <th class="py-3 px-3 text-center min-w-[130px]">Link Bukti Dokumen</th>
                                 <th class="py-3 px-3 text-center min-w-[130px]">Penilaian Reviewer</th>
@@ -174,6 +188,7 @@
         currentReadinessProjectId = projectId;
         const modal = document.getElementById('modal-readiness-check');
         const loading = document.getElementById('readinessLoading');
+        const errorState = document.getElementById('readinessError');
         const content = document.getElementById('readinessContent');
         const projNameEl = document.getElementById('readinessModalProjectName');
 
@@ -182,6 +197,7 @@
 
         if (projNameEl) projNameEl.textContent = projectName || 'Project #' + projectId;
         if (loading) loading.classList.remove('hidden');
+        if (errorState) errorState.classList.add('hidden');
         if (content) content.classList.add('hidden');
 
         try {
@@ -200,19 +216,35 @@
             });
 
             if (!response.ok) {
-                throw new Error('HTTP ' + response.status);
+                const messages = {
+                    401: 'Sesi Anda telah berakhir. Silakan masuk kembali.',
+                    403: 'Anda tidak memiliki akses ke data readiness project ini.',
+                    404: 'Project atau data readiness tidak ditemukan.'
+                };
+                throw new Error(messages[response.status] || 'Server gagal memuat data readiness (HTTP ' + response.status + ').');
             }
 
-            const payload = await response.json();
-            currentReadinessData = mapReadinessPayload(payload);
-            renderReadinessData(currentReadinessData);
+            const resJson = await response.json();
+            if (resJson.success === false || !resJson.data) {
+                throw new Error(resJson.message || 'Respons server tidak memuat data readiness.');
+            }
+
+            const data = resJson.data;
+            if (data.data_available === false) {
+                throw new Error('Daftar indikator aktual belum tersedia. Tidak ada angka contoh yang ditampilkan.');
+            }
+            currentReadinessData = data;
+
+            renderReadinessData(data);
+            if (content) content.classList.remove('hidden');
         } catch (error) {
             console.error('Gagal mengambil data readiness:', error);
-            currentReadinessData = mapReadinessPayload([]);
-            renderReadinessData(currentReadinessData, true);
+            currentReadinessData = null;
+            const errorMessage = document.getElementById('readinessErrorMessage');
+            if (errorMessage) errorMessage.textContent = error.message || 'Terjadi kesalahan saat memuat data readiness.';
+            if (errorState) errorState.classList.remove('hidden');
         } finally {
             if (loading) loading.classList.add('hidden');
-            if (content) content.classList.remove('hidden');
         }
     }
 
@@ -237,6 +269,12 @@
             }
         }
 
+        const picAvailable = data.pic_data_available !== false;
+        const isReady = data.is_ready === true && picAvailable;
+        const total = data.total_indikator || (data.indicators ? data.indicators.length : 0);
+        const readyCount = data.ready_indikator !== undefined ? data.ready_indikator : (data.indicators ? data.indicators.filter(i => i.is_ready).length : 0);
+        const unreadyCount = data.unready_indikator !== undefined ? data.unready_indikator : (total - readyCount);
+        const percentage = data.percentage !== undefined ? data.percentage : (total > 0 ? Math.round((readyCount / total) * 100) : 0);
         const indicators = items
             .filter(item => item && typeof item === 'object' && !Array.isArray(item))
             .map(item => {
@@ -313,30 +351,30 @@
             bannerIcon.className = 'w-8 h-8 rounded-xl bg-emerald-600 text-white flex items-center justify-center shrink-0 mt-0.5';
             bannerIcon.innerHTML = '<svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" /></svg>';
             bannerTitle.textContent = 'SIAP DIAJUKAN (Readiness 100%)';
-            bannerDesc.textContent = 'Seluruh butir indikator kritis telah memiliki PIC yang bertugas, link dokumen bukti pendukung, dan penilaian dari reviewer. Project siap diajukan ke lembaga akreditasi.';
+            bannerDesc.textContent = 'Seluruh ' + (data.scope_label || 'butir indikator kritis') + ' telah memiliki PIC yang bertugas, link dokumen bukti pendukung, dan penilaian dari reviewer. Project siap diajukan ke lembaga akreditasi.';
         } else {
             banner.className = 'p-4 rounded-2xl border flex items-start gap-3 bg-amber-50 border-amber-200 text-amber-900';
             bannerIcon.className = 'w-8 h-8 rounded-xl bg-amber-500 text-white flex items-center justify-center shrink-0 mt-0.5';
             bannerIcon.innerHTML = '<svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" /></svg>';
-            bannerTitle.textContent = hasError
-                ? 'Data kesiapan tidak dapat dimuat'
-                : total === 0
-                    ? 'BELUM SIAP DIAJUKAN (Tidak ada data indikator)'
-                    : 'BELUM SIAP DIAJUKAN (' + unreadyCount + ' Butir Kritis Belum Lengkap)';
-            bannerDesc.textContent = hasError
-                ? 'Status pengajuan tidak dapat dipastikan karena data readiness gagal dimuat.'
-                : 'Terdapat indikator kritis yang belum memiliki PIC, belum ada bukti dokumen, atau belum dinilai oleh reviewer. Tombol pengajuan akhir dinonaktifkan hingga seluruh butir lengkap.';
+            bannerTitle.textContent = 'BELUM SIAP DIAJUKAN (' + unreadyCount + ' Butir Kritis Belum Lengkap)';
+            bannerDesc.textContent = picAvailable
+                ? 'Terdapat ' + (data.scope_label || 'indikator kritis') + ' yang belum memiliki PIC, belum ada bukti dokumen, atau belum dinilai oleh reviewer. Tombol pengajuan akhir dinonaktifkan hingga seluruh butir lengkap.'
+                : 'Status PIC tidak dapat diverifikasi dari mapping project. Kesiapan tidak dapat dinyatakan valid dan tombol pengajuan akhir dinonaktifkan.';
         }
 
         // Update Metrics
-        document.getElementById('metricPercentage').textContent = percentage + '%';
+        document.getElementById('metricPercentage').textContent = picAvailable ? percentage + '%' : '—';
         document.getElementById('metricReadyRatio').textContent = '(' + readyCount + '/' + total + ')';
         document.getElementById('metricProgressBar').style.width = percentage + '%';
         document.getElementById('metricProgressBar').className = isReady ? 'h-full bg-emerald-600 transition-all duration-500' : 'h-full bg-additional transition-all duration-500';
 
-        document.getElementById('metricMissingPic').textContent = data.missingPicCount;
-        document.getElementById('metricMissingEvidence').textContent = data.missingEvidenceCount;
-        document.getElementById('metricMissingAssessment').textContent = data.missingAssessmentCount;
+        document.getElementById('metricMissingPic').textContent = picAvailable
+            ? (data.missing_pic_count !== undefined ? data.missing_pic_count : (data.indicators ? data.indicators.filter(i => !i.has_pic).length : 0))
+            : '—';
+        document.getElementById('metricMissingEvidence').textContent = data.missing_evidence_count !== undefined ? data.missing_evidence_count : (data.indicators ? data.indicators.filter(i => !i.has_evidence).length : 0);
+        document.getElementById('metricMissingAssessment').textContent = data.missing_assessment_count !== undefined ? data.missing_assessment_count : (data.indicators ? data.indicators.filter(i => !i.has_assessment).length : 0);
+        document.getElementById('readinessPicWarning').classList.toggle('hidden', picAvailable);
+        document.getElementById('readinessScopeLabel').textContent = data.scope_label || 'Daftar butir indikator kritis penentu submit';
 
         // Update Filter Badges
         document.getElementById('badgeFilterAll').textContent = total;
@@ -366,7 +404,9 @@
             // Cell 2: PIC
             const tdPic = document.createElement('td');
             tdPic.className = 'py-3.5 px-3 text-center';
-            if (item.has_pic) {
+            if (!picAvailable) {
+                tdPic.innerHTML = '<span class="text-[10px] font-semibold text-amber-700">Tidak dapat diverifikasi</span>';
+            } else if (item.has_pic) {
                 tdPic.innerHTML = `
                     <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
                         <svg class="w-3 h-3 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" /></svg>
@@ -476,9 +516,9 @@
             submitBtn.disabled = true;
             submitBtn.className = 'px-6 py-2.5 rounded-xl text-xs font-bold transition shadow-none cursor-not-allowed bg-slate-200 text-slate-400 disabled:opacity-60 disabled:cursor-not-allowed';
             noticeEl.className = 'font-bold text-rose-700';
-            noticeEl.textContent = hasError
-                ? 'Pengajuan dinonaktifkan hingga data readiness berhasil dimuat.'
-                : '⚠ Tombol pengajuan akhir dinonaktifkan: Masih terdapat ' + unreadyCount + ' butir indikator kritis yang belum siap.';
+            noticeEl.textContent = picAvailable
+                ? '⚠ Tombol pengajuan akhir dinonaktifkan: Masih terdapat ' + unreadyCount + ' butir yang belum siap.'
+                : '⚠ Tombol pengajuan akhir dinonaktifkan karena status PIC belum dapat diverifikasi.';
         }
 
         filterReadinessTable('all');

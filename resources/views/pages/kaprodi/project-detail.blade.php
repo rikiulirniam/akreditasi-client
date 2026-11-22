@@ -4,32 +4,49 @@
 
 @section('content')
 @php
+    $displayScalar = function (mixed $value, mixed $fallback = '-'): mixed {
+        if (is_array($value)) {
+            foreach (['nama', 'nama_prodi', 'nama_program_studi', 'nama_jenjang', 'nama_jenis', 'nomor_versi', 'nama_versi', 'nama_project', 'name', 'label', 'value'] as $key) {
+                if (isset($value[$key]) && ! is_array($value[$key])) {
+                    return $value[$key];
+                }
+            }
+            return $fallback;
+        }
+        if ($value === null || $value === '') {
+            return $fallback;
+        }
+        return is_scalar($value) ? $value : $fallback;
+    };
+
     $sidebarUser = session('user', []);
     $userRole = strtolower((string) (($sidebarUser['role'] ?? null) ?: ($sidebarUser['role_name'] ?? '')));
     $isKaprodi = str_contains($userRole, 'kaprodi');
     $isAdmin = ! $isKaprodi && ! str_contains($userRole, 'reviewer');
 
-    $id = $project['id'] ?? null;
-    $namaProject = $project['nama_project'] ?? 'Sarjana Terapan Test';
-    $versiNomor = $project['versi_instrumen']['nomor_versi'] ?? '2.1';
-    $jenjangNama = $project['jenjang']['nama_jenjang'] ?? 'Sarjana Terapan';
-    $jenisNama = $project['jenis_instrumen']['nama_jenis'] ?? ($project['status_project'] ?? 'Unggul');
-    $tahunTarget = $project['tahun_target_submit'] ?? 2026;
-    $statusRaw = strtolower((string) ($project['status_project'] ?? 'draft'));
-    $statusKey = str_replace(' ', '_', $statusRaw);
-    $statusConfig = [
-        'draft' => ['label' => 'Draft', 'badge' => 'bg-slate-100 text-slate-700 border-slate-300', 'dot' => 'bg-slate-400'],
-        'in_progress' => ['label' => 'On Progress', 'badge' => 'bg-amber-100 text-amber-800 border-amber-300', 'dot' => 'bg-amber-500 animate-pulse'],
-        'on_progress' => ['label' => 'On Progress', 'badge' => 'bg-amber-100 text-amber-800 border-amber-300', 'dot' => 'bg-amber-500 animate-pulse'],
-        'pending' => ['label' => 'Pending', 'badge' => 'bg-orange-100 text-orange-800 border-orange-300', 'dot' => 'bg-orange-500'],
-        'cancel' => ['label' => 'Cancel', 'badge' => 'bg-rose-100 text-rose-800 border-rose-300', 'dot' => 'bg-rose-500'],
-        'selesai' => ['label' => 'Selesai', 'badge' => 'bg-emerald-100 text-emerald-800 border-emerald-300', 'dot' => 'bg-emerald-500'],
-    ];
-    $currentStatusCfg = $statusConfig[$statusKey] ?? $statusConfig[$statusRaw] ?? $statusConfig['draft'];
-    $statusLabel = $currentStatusCfg['label'];
-    $isSelesai = $statusRaw === 'selesai';
-    $isInProgress = str_contains($statusRaw, 'progress');
-    $isDraft = $statusRaw === 'draft' || empty($statusRaw);
+    $compositeOverview = is_array($compositeOverview ?? null) ? $compositeOverview : [];
+    $overviewData = $compositeOverview;
+    $profile = $overviewData['profil_project'] ?? $project;
+    $profile = is_array($profile) ? $profile : [];
+
+    $id = $displayScalar($profile['id'] ?? $project['id'] ?? $projectId ?? null);
+    $namaProject = $displayScalar($profile['nama_project'] ?? $profile['nama'] ?? $profile['name'] ?? null);
+    $programStudi = $displayScalar($profile['program_studi'] ?? null, 'Belum tersedia');
+    $versiNomor = $displayScalar($profile['versi_instrumen'] ?? null);
+    $jenjangNama = $displayScalar($profile['jenjang'] ?? null);
+    $jenisNama = $displayScalar($profile['jenis_instrumen'] ?? null);
+    $tahunTarget = $displayScalar($profile['tahun_target_submit'] ?? $profile['tahun'] ?? $profile['periode'] ?? null);
+    $statusRaw = strtolower((string) $displayScalar($profile['status_project'] ?? $project['status_project'] ?? null, ''));
+    $isInProgress = $statusRaw === 'in_progress' || $statusRaw === 'pengisian' || str_contains($statusRaw, 'progress');
+    $statusLabel = $displayScalar($profile['status_project'] ?? $project['status_project'] ?? null, 'Belum tersedia');
+    $progressSummary = is_array($overviewData['progress'] ?? null) ? $overviewData['progress'] : [];
+    $criterionItems = is_array($overviewData['progress_9_kriteria'] ?? null) ? array_values($overviewData['progress_9_kriteria']) : [];
+    $evidenceItems = is_array($overviewData['ringkasan_evidence_per_kriteria'] ?? null) ? array_values($overviewData['ringkasan_evidence_per_kriteria']) : [];
+    $scoring = is_array($overviewData['simulasi_skor'] ?? null) ? $overviewData['simulasi_skor'] : [];
+    $overallProgress = is_numeric($progressSummary['progres_total_persen'] ?? null) ? (float) $progressSummary['progres_total_persen'] : null;
+    $totalIndicators = is_numeric($progressSummary['total_indikator'] ?? null) ? (int) $progressSummary['total_indikator'] : null;
+    $filledIndicators = is_numeric($progressSummary['indikator_terisi_bukti'] ?? null) ? (int) $progressSummary['indikator_terisi_bukti'] : null;
+    $picSummary = is_array($picSummary ?? null) ? $picSummary : null;
 @endphp
 
 <div class="space-y-6 pb-10">
@@ -46,6 +63,142 @@
         <div class="rounded-2xl bg-rose-50 border border-rose-200 p-4 text-sm font-semibold text-rose-800">
             {{ session('error') }}
         </div>
+    @endif
+
+    @if ($apiError)
+        <div role="alert" class="flex flex-col gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-4 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+                <p class="text-sm font-bold text-amber-900">Ringkasan project belum dapat dimuat</p>
+                <p class="mt-0.5 text-xs text-amber-800">{{ $apiError }}</p>
+            </div>
+            @if ($id)
+                <button type="button" id="retry-composite" class="inline-flex shrink-0 items-center justify-center rounded-xl border border-amber-300 bg-white px-4 py-2 text-xs font-bold text-amber-900 hover:bg-amber-100">
+                    Retry
+                </button>
+            @endif
+        </div>
+    @endif
+
+    @php
+        $criteriaCards = [];
+        foreach ($criterionItems as $criterion) {
+            if (! is_array($criterion)) {
+                continue;
+            }
+            $criterionProgress = is_numeric($criterion['progres_persen'] ?? null)
+                ? max(0, min(100, (float) $criterion['progres_persen']))
+                : null;
+            $criteriaCards[] = [
+                'code' => $displayScalar($criterion['kode_kriteria'] ?? null, 'Kriteria'),
+                'name' => $displayScalar($criterion['nama_kriteria'] ?? null, 'Data belum tersedia'),
+                'progress' => $criterionProgress,
+                'total' => is_numeric($criterion['total_indikator'] ?? null) ? (int) $criterion['total_indikator'] : null,
+                'filled' => is_numeric($criterion['indikator_terisi_bukti'] ?? null) ? (int) $criterion['indikator_terisi_bukti'] : null,
+            ];
+        }
+    @endphp
+
+    @if (! $apiError)
+        <section class="grid gap-4 lg:grid-cols-[minmax(0,1.35fr)_minmax(280px,.65fr)]" aria-label="Ringkasan composite project">
+            <article class="rounded-2xl border border-slate-200 bg-white p-5">
+                <div class="flex flex-wrap items-start justify-between gap-3">
+                    <div class="min-w-0">
+                        <p class="text-xs font-bold uppercase tracking-wider text-additional">Profil project</p>
+                        <h2 class="mt-1 text-xl font-extrabold text-primary">{{ $namaProject }}</h2>
+                        <p class="mt-1 text-sm text-slate-500">{{ $programStudi }}</p>
+                    </div>
+                    <span class="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-bold text-slate-700">{{ $statusLabel }}</span>
+                </div>
+                <dl class="mt-4 grid gap-3 sm:grid-cols-2">
+                    <div><dt class="text-xs text-slate-400">Jenjang pendidikan</dt><dd class="mt-0.5 text-sm font-bold text-slate-700">{{ $jenjangNama }}</dd></div>
+                    <div><dt class="text-xs text-slate-400">Jenis instrumen</dt><dd class="mt-0.5 text-sm font-bold text-slate-700">{{ $jenisNama }}</dd></div>
+                    <div><dt class="text-xs text-slate-400">Versi instrumen</dt><dd class="mt-0.5 text-sm font-bold text-slate-700">{{ $versiNomor }}</dd></div>
+                    <div><dt class="text-xs text-slate-400">Tahun / periode</dt><dd class="mt-0.5 text-sm font-bold text-slate-700">{{ $tahunTarget }}</dd></div>
+                    <div class="sm:col-span-2"><dt class="text-xs text-slate-400">Identitas project</dt><dd class="mt-0.5 break-all text-sm font-bold text-slate-700">{{ $id !== null ? $id : '-' }}</dd></div>
+                </dl>
+            </article>
+            <article class="rounded-2xl border border-slate-200 bg-white p-5">
+                <p class="text-xs font-bold uppercase tracking-wider text-additional">Progress keseluruhan</p>
+                <p class="mt-3 text-3xl font-extrabold text-primary">{{ $overallProgress !== null ? $overallProgress.'%' : 'Belum tersedia' }}</p>
+                <div class="mt-3 h-2.5 overflow-hidden rounded-full bg-slate-100">
+                    @if ($overallProgress !== null)
+                        <div class="h-full rounded-full bg-primary" style="width: {{ max(0, min(100, $overallProgress)) }}%"></div>
+                    @endif
+                </div>
+                <p class="mt-3 text-xs text-slate-500">
+                    {{ $displayScalar($progressSummary['kriteria'] ?? null) }} kriteria · {{ $filledIndicators !== null ? $filledIndicators : '-' }} dari {{ $totalIndicators !== null ? $totalIndicators : '-' }} indikator terisi bukti
+                </p>
+            </article>
+        </section>
+
+        <section class="rounded-2xl border border-slate-200 bg-white p-5" aria-label="Progress kriteria">
+            <h2 class="text-base font-extrabold text-primary">Progress {{ count($criteriaCards) }} Kriteria LAM-INFOKOM</h2>
+            <div class="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                @forelse ($criteriaCards as $criterion)
+                    <article class="min-w-0 rounded-xl border border-slate-200 p-4">
+                        <p class="text-xs font-extrabold text-additional">{{ $criterion['code'] }}</p>
+                        <p class="mt-1 truncate text-sm font-bold text-slate-700" title="{{ $criterion['name'] }}">{{ $criterion['name'] }}</p>
+                        <div class="mt-3 h-2 overflow-hidden rounded-full bg-slate-100">
+                            @if ($criterion['progress'] !== null)
+                                <div class="h-full rounded-full bg-emerald-500" style="width: {{ $criterion['progress'] }}%"></div>
+                            @endif
+                        </div>
+                        <div class="mt-2 flex items-center justify-between gap-2 text-xs">
+                            <span class="text-slate-500">
+                                {{ $criterion['filled'] !== null && $criterion['total'] !== null ? $criterion['filled'].'/'.$criterion['total'].' indikator terisi' : 'Data belum tersedia' }}
+                            </span>
+                            <span class="font-bold text-slate-700">{{ $criterion['progress'] !== null ? $criterion['progress'].'%' : '-' }}</span>
+                        </div>
+                    </article>
+                @empty
+                    <p class="text-sm text-slate-500">Data progress kriteria belum tersedia dari server.</p>
+                @endforelse
+            </div>
+        </section>
+
+        <section class="grid gap-4 md:grid-cols-3" aria-label="Ringkasan evidence, plotting, dan scoring">
+            <article class="rounded-2xl border border-slate-200 bg-white p-5">
+                <h2 class="text-sm font-extrabold text-primary">Evidence per Kriteria</h2>
+                <div class="mt-3 space-y-2">
+                    @forelse ($evidenceItems as $evidenceItem)
+                        @if (is_array($evidenceItem))
+                            <div class="flex items-start justify-between gap-3 border-b border-slate-100 pb-2 text-xs last:border-0">
+                                <div class="min-w-0">
+                                    <p class="font-bold text-slate-700">{{ $displayScalar($evidenceItem['kode_kriteria'] ?? null, 'Kriteria') }} · {{ $displayScalar($evidenceItem['nama_kriteria'] ?? null, 'Data belum tersedia') }}</p>
+                                    <p class="mt-0.5 text-slate-500">{{ $displayScalar($evidenceItem['jumlah_evidence'] ?? null) }} evidence / {{ $displayScalar($evidenceItem['total_indikator'] ?? null) }} indikator</p>
+                                </div>
+                            </div>
+                        @endif
+                    @empty
+                        <p class="text-xs text-slate-500">Ringkasan evidence belum tersedia.</p>
+                    @endforelse
+                </div>
+            </article>
+            <article class="rounded-2xl border border-slate-200 bg-white p-5">
+                <h2 class="text-sm font-extrabold text-primary">Ringkasan PIC</h2>
+                <p class="mt-1 text-[11px] text-slate-500">Jumlah indikator project secara keseluruhan; modal Readiness Check menghitung subset indikator kritis.</p>
+                @if ($picSummary !== null)
+                    <dl class="mt-3 grid grid-cols-2 gap-3 text-sm">
+                        <div><dt class="text-xs text-slate-400">Indikator seluruh project dengan PIC</dt><dd class="mt-1 font-bold text-slate-700">{{ $picSummary['assigned'] }}</dd></div>
+                        <div><dt class="text-xs text-slate-400">Indikator seluruh project tanpa PIC</dt><dd class="mt-1 font-bold text-slate-700">{{ $picSummary['unassigned'] ?? 'Belum tersedia' }}</dd></div>
+                    </dl>
+                @else
+                    <p class="mt-3 text-xs text-slate-500">Data PIC belum tersedia.</p>
+                @endif
+            </article>
+            <article class="rounded-2xl border border-slate-200 bg-white p-5">
+                <h2 class="text-sm font-extrabold text-primary">Simulasi skor</h2>
+                <dl class="mt-3 grid grid-cols-2 gap-3 text-sm">
+                    <div><dt class="text-xs text-slate-400">Total skor</dt><dd class="mt-1 font-bold text-slate-700">{{ $displayScalar($scoring['total_skor'] ?? null) }}</dd></div>
+                    <div><dt class="text-xs text-slate-400">Predikat</dt><dd class="mt-1 font-bold text-slate-700">{{ $displayScalar($scoring['predikat'] ?? null) }}</dd></div>
+                    <div><dt class="text-xs text-slate-400">Dinilai</dt><dd class="mt-1 font-bold text-slate-700">{{ $displayScalar($scoring['jumlah_dinilai'] ?? null) }}</dd></div>
+                    <div><dt class="text-xs text-slate-400">Belum dinilai</dt><dd class="mt-1 font-bold text-slate-700">{{ $displayScalar($scoring['jumlah_belum_dinilai'] ?? null) }}</dd></div>
+                    <div><dt class="text-xs text-slate-400">Jumlah total</dt><dd class="mt-1 font-bold text-slate-700">{{ $displayScalar($scoring['jumlah_total'] ?? null) }}</dd></div>
+                    <div><dt class="text-xs text-slate-400">Ambang Kriteria D</dt><dd class="mt-1 font-bold text-slate-700">{{ $displayScalar($scoring['threshold_kriteria_d'] ?? null) }}</dd></div>
+                    <div class="col-span-2"><dt class="text-xs text-slate-400">Kelengkapan penilaian</dt><dd class="mt-1 font-bold text-slate-700">{{ is_numeric($scoring['persentase_kelengkapan'] ?? null) ? $scoring['persentase_kelengkapan'].'%' : 'Belum tersedia' }}</dd></div>
+                </dl>
+            </article>
+        </section>
     @endif
 
     <!-- Header Halaman -->
@@ -103,7 +256,7 @@
                 LAM INFOKOM · V{{ $versiNomor }} · {{ strtoupper($jenjangNama) }}
             </div>
             <h2 class="text-2xl sm:text-3xl font-extrabold text-primary mb-1 tracking-tight">{{ $namaProject }}</h2>
-            <p class="text-gray-500 text-xs sm:text-sm font-medium">{{ $jenisNama }} · Tahun Target Submit: {{ $tahunTarget }}</p>
+            <p class="text-gray-500 text-xs sm:text-sm font-medium">{{ $programStudi }} · {{ $jenisNama }} · Tahun Target Submit: {{ $tahunTarget }}</p>
         </div>
 
         <!-- Status & Monitoring Pengerjaan -->
@@ -145,28 +298,35 @@
             @endif
 
             <p class="text-[11px] text-gray-400 mt-2">
-                *Penilaian formal borang dilakukan oleh Tim Reviewer.
+                Penilaian indikator dilaksanakan oleh Kaprodi dan Administrator.
             </p>
         </div>
     </div>
 
-    <!-- 5 Kotak Statistik Kecil -->
-    <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
+    <!-- Ringkasan berdasarkan response Composite Overview -->
+    @php
+        $evidenceCount = null;
+        if ($evidenceItems !== []) {
+            $evidenceCount = 0;
+            foreach ($evidenceItems as $evidenceItem) {
+                if (is_array($evidenceItem) && is_numeric($evidenceItem['jumlah_evidence'] ?? null)) {
+                    $evidenceCount += (int) $evidenceItem['jumlah_evidence'];
+                }
+            }
+        }
+    @endphp
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
         <div class="bg-white border border-[#EAEAEA] p-5 rounded-2xl shadow-xs">
             <div class="text-gray-400 text-[10px] font-bold uppercase tracking-wider mb-2">Kriteria</div>
-            <div class="text-primary text-2xl font-extrabold leading-none">9</div>
-        </div>
-        <div class="bg-white border border-[#EAEAEA] p-5 rounded-2xl shadow-xs">
-            <div class="text-gray-400 text-[10px] font-bold uppercase tracking-wider mb-2">Subkriteria</div>
-            <div class="text-primary text-2xl font-extrabold leading-none">18</div>
+            <div class="text-primary text-2xl font-extrabold leading-none">{{ $apiError ? '-' : count($criteriaCards) }}</div>
         </div>
         <div class="bg-white border border-[#EAEAEA] p-5 rounded-2xl shadow-xs">
             <div class="text-gray-400 text-[10px] font-bold uppercase tracking-wider mb-2">Indikator</div>
-            <div class="text-primary text-2xl font-extrabold leading-none">36</div>
+            <div class="text-primary text-2xl font-extrabold leading-none">{{ $totalIndicators ?? '-' }}</div>
         </div>
         <div class="bg-white border border-[#EAEAEA] p-5 rounded-2xl shadow-xs">
-            <div class="text-gray-400 text-[10px] font-bold uppercase tracking-wider mb-2">Jenis Bukti</div>
-            <div class="text-primary text-2xl font-extrabold leading-none">6</div>
+            <div class="text-gray-400 text-[10px] font-bold uppercase tracking-wider mb-2">Evidence</div>
+            <div class="text-primary text-2xl font-extrabold leading-none">{{ $evidenceCount ?? '-' }}</div>
         </div>
         <div class="bg-white border border-[#EAEAEA] p-5 rounded-2xl shadow-xs">
             <div class="text-gray-400 text-[10px] font-bold uppercase tracking-wider mb-2">Status</div>
@@ -179,6 +339,48 @@
         </div>
     </div>
 
+    @php
+        $narrativeSubkriteria = [];
+        foreach (($overviewData['subkriteria'] ?? $overviewData['subkriterias'] ?? []) as $subkriteria) {
+            if (is_array($subkriteria)) {
+                $narrativeSubkriteria[] = $subkriteria;
+            }
+        }
+    @endphp
+    @if ($id && $narrativeSubkriteria !== [])
+        <section class="rounded-2xl border border-slate-200 bg-white p-5" aria-labelledby="narrative-template-title">
+            <div class="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                    <h2 id="narrative-template-title" class="text-base font-extrabold text-primary">Template Narasi Subkriteria</h2>
+                    <p class="mt-0.5 text-xs text-slate-500">Draft dari data live backend; angka kuantitatif tidak dapat diubah melalui narasi.</p>
+                </div>
+            </div>
+            <div class="mt-4 grid gap-4 lg:grid-cols-[220px_minmax(0,1fr)]">
+                <div>
+                    <label for="narrative-subkriteria" class="mb-1.5 block text-xs font-bold text-slate-700">Subkriteria</label>
+                    <select id="narrative-subkriteria" class="block w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary">
+                        @foreach ($narrativeSubkriteria as $subkriteria)
+                            <option value="{{ $subkriteria['id'] ?? '' }}">{{ $subkriteria['kode_subkriteria'] ?? $subkriteria['kode'] ?? '-' }} — {{ $subkriteria['nama_subkriteria'] ?? $subkriteria['nama'] ?? 'Subkriteria' }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                <div>
+                    <div id="narrative-facts" class="mb-3 rounded-xl border border-sky-100 bg-sky-50 p-3 text-xs text-sky-900">Pilih subkriteria untuk memuat template.</div>
+                    <label for="narrative-text" class="mb-1.5 block text-xs font-bold text-slate-700">Narasi deskriptif</label>
+                    <textarea id="narrative-text" rows="8" class="block w-full resize-y rounded-xl border border-slate-200 px-3 py-3 text-sm leading-relaxed text-slate-700 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary" placeholder="Memuat draft narasi..."></textarea>
+                    <div class="mt-2 flex flex-wrap items-center justify-between gap-3">
+                        <p id="narrative-status" class="text-xs text-slate-500" aria-live="polite"></p>
+                        <div class="flex items-center gap-2">
+                            <button type="button" id="narrative-cancel" class="rounded-xl border border-slate-200 px-4 py-2 text-xs font-bold text-slate-600 hover:bg-slate-50">Batal</button>
+                            <button type="button" id="narrative-save" class="rounded-xl bg-primary px-4 py-2 text-xs font-bold text-white hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60">Simpan</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    @endif
+
+    {{-- Legacy sample matrix is intentionally disabled; only Composite Overview data is rendered.
     @php
         // Ambil data kriteria 1 (Visi, Misi, Tujuan, dan Strategi) dari API jika ada
         $apiC1 = collect($apiKriteria ?? [])->first(function ($item) {
@@ -384,6 +586,25 @@
             ],
         ];
     @endphp
+    --}}
+
+    @php
+        $compositeKriteria = $criterionItems;
+        $kriteriaList = [];
+        foreach ($compositeKriteria as $criterion) {
+            if (! is_array($criterion)) {
+                continue;
+            }
+
+            $kriteriaList[] = [
+                'code' => $displayScalar($criterion['kode_kriteria'] ?? null, 'Kriteria'),
+                'name' => $displayScalar($criterion['nama_kriteria'] ?? null, 'Data belum tersedia'),
+                'progress' => is_numeric($criterion['progres_persen'] ?? null) ? max(0, min(100, (float) $criterion['progres_persen'])) : null,
+                'filled' => is_numeric($criterion['indikator_terisi_bukti'] ?? null) ? (int) $criterion['indikator_terisi_bukti'] : null,
+                'total' => is_numeric($criterion['total_indikator'] ?? null) ? (int) $criterion['total_indikator'] : null,
+            ];
+        }
+    @endphp
 
     <!-- Bagian Matriks Kriteria & Monitoring Borang -->
     <div class="mt-8 bg-white rounded-2xl border border-[#EAEAEA] shadow-xs overflow-hidden">
@@ -394,79 +615,41 @@
             </div>
             <div class="flex items-center gap-2">
                 <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-primary/10 text-primary">
-                    9 Kriteria · 36 Indikator
+                    {{ count($criteriaCards) }} Kriteria · {{ $totalIndicators ?? '-' }} Indikator
                 </span>
             </div>
         </div>
 
         <div class="flex flex-col">
-            @foreach($kriteriaList as $index => $item)
+            @forelse($kriteriaList as $item)
                 @php
-                    $cId = strtolower($item['code']);
-                    $isOpen = $item['isOpen'];
                     $isLast = $loop->last;
                 @endphp
 
-                <div class="flex flex-col {{ ! $isLast ? 'border-b border-[#EAEAEA]' : '' }}">
-                    <!-- Header Accordion Kriteria -->
-                    <div
-                        onclick="toggleAccordion('{{ $cId }}')"
-                        class="flex items-center justify-between p-4 sm:p-5 hover:bg-gray-50 transition-colors group cursor-pointer bg-white select-none"
-                    >
-                        <div class="flex items-center gap-3.5">
-                            <span class="text-additional text-xs sm:text-sm font-extrabold w-9 sm:w-10 text-center bg-additional/10 py-1.5 rounded-lg shrink-0">
-                                {{ $item['code'] }}
-                            </span>
-                            <span id="title-{{ $cId }}" class="text-base font-bold transition-colors {{ $isOpen ? 'text-primary' : 'text-gray-800 group-hover:text-primary' }}">
-                                {{ $item['name'] }}
-                            </span>
-                        </div>
-                        <div class="flex items-center gap-4 sm:gap-6 shrink-0">
-                            <span class="text-gray-400 text-xs font-bold" id="badge-{{ $cId }}">Terpantau</span>
-                            <div class="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-gray-100 flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-white transition-colors">
-                                <span id="icon-{{ $cId }}" class="text-lg font-bold leading-none mb-0.5">
-                                    {{ $isOpen ? '−' : '+' }}
-                                </span>
-                            </div>
-                        </div>
+                <div class="grid gap-3 border-b border-[#EAEAEA] p-4 sm:grid-cols-[minmax(0,1fr)_minmax(180px,.45fr)] sm:items-center {{ $isLast ? 'border-0' : '' }}">
+                    <div class="min-w-0">
+                        <p class="text-sm font-bold text-slate-800">
+                            <span class="mr-2 text-additional">{{ $item['code'] }}</span>{{ $item['name'] }}
+                        </p>
+                        <p class="mt-1 text-xs text-slate-500">
+                            {{ $item['filled'] !== null && $item['total'] !== null ? $item['filled'].' dari '.$item['total'].' indikator terisi bukti' : 'Data jumlah indikator belum tersedia' }}
+                        </p>
                     </div>
-
-                    <!-- Konten Expand Subkriteria & Indikator -->
-                    <div id="content-{{ $cId }}" class="{{ $isOpen ? 'flex' : 'hidden' }} flex-col bg-white">
-                        @foreach($item['subkriteria'] as $sub)
-                            <!-- Subkriteria Header -->
-                            <div class="px-5 py-2.5 border-t border-b border-[#EAEAEA] bg-gray-50/70">
-                                <span class="text-gray-500 text-xs font-bold tracking-wider uppercase">
-                                    {{ $sub['code'] }} · {{ $sub['name'] }}
-                                </span>
-                            </div>
-
-                            <!-- List Indikator -->
-                            @foreach($sub['indikator'] as $ind)
-                                <div class="flex flex-col border-b border-[#EAEAEA] last:border-b-0">
-                                    <div class="flex flex-col sm:flex-row sm:items-center justify-between px-5 py-3.5 gap-4">
-                                        <div class="flex-1 text-xs sm:text-sm font-medium text-gray-800">
-                                            <span class="text-additional font-bold mr-1.5">{{ $ind['code'] }}</span>
-                                            {{ $ind['name'] }}
-                                        </div>
-                                        <div class="flex items-center gap-2 shrink-0 select-none">
-                                            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                                                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-                                                Borang Tersedia
-                                            </span>
-                                        </div>
-                                    </div>
-                                    <div class="px-5 pb-3">
-                                        <p class="text-gray-400 text-xs font-normal">
-                                            {{ $ind['desc'] }} · Bobot <span class="text-gray-600 font-bold">{{ $ind['bobot'] }}</span>
-                                        </p>
-                                    </div>
-                                </div>
-                            @endforeach
-                        @endforeach
+                    <div>
+                        <div class="flex items-center justify-between gap-2 text-xs">
+                            <span class="text-slate-500">Progress</span>
+                            <span class="font-bold text-slate-700">{{ $item['progress'] !== null ? $item['progress'].'%' : 'Belum tersedia' }}</span>
+                        </div>
+                        <div class="mt-1.5 h-2 overflow-hidden rounded-full bg-slate-100">
+                            @if ($item['progress'] !== null)
+                                <div class="h-full rounded-full bg-emerald-500" style="width: {{ $item['progress'] }}%"></div>
+                            @endif
+                        </div>
                     </div>
                 </div>
-            @endforeach
+            @empty
+                <p class="p-5 text-sm text-slate-500">Matriks kriteria belum tersedia dari Composite Overview.</p>
+            @endforelse
         </div>
     </div>
 </div>
@@ -681,6 +864,111 @@
         if (modal) {
             modal.classList.add('hidden');
         }
+    }
+
+    const compositeProjectId = {{ $id !== null ? json_encode((string) $id) : 'null' }};
+    const retryButton = document.getElementById('retry-composite');
+    if (retryButton && compositeProjectId) {
+        retryButton.addEventListener('click', async () => {
+            retryButton.disabled = true;
+            retryButton.textContent = 'Memuat...';
+            try {
+                const response = await fetch(`{{ url('/kaprodi/project') }}/${encodeURIComponent(compositeProjectId)}/composite-overview`, {
+                    headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+                });
+                if (!response.ok) throw new Error('Retry gagal');
+                window.location.reload();
+            } catch (error) {
+                retryButton.disabled = false;
+                retryButton.textContent = 'Retry';
+            }
+        });
+    }
+
+    const narrativeSelect = document.getElementById('narrative-subkriteria');
+    const narrativeText = document.getElementById('narrative-text');
+    const narrativeFacts = document.getElementById('narrative-facts');
+    const narrativeStatus = document.getElementById('narrative-status');
+    const narrativeSave = document.getElementById('narrative-save');
+    const narrativeCancel = document.getElementById('narrative-cancel');
+    let originalNarrative = '';
+    let narrativeDirty = false;
+
+    async function loadNarrativeTemplate() {
+        if (!narrativeSelect || !narrativeText || !compositeProjectId || !narrativeSelect.value) return;
+        const subkriteriaId = narrativeSelect.value;
+        narrativeStatus.textContent = 'Memuat template...';
+        narrativeText.disabled = true;
+        try {
+            const templateUrl = `{{ url('/kaprodi/project') }}/${encodeURIComponent(compositeProjectId)}/subkriteria/${encodeURIComponent(subkriteriaId)}/narasi-template`;
+            const response = await fetch(templateUrl, { headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' } });
+            const body = await response.json();
+            if (!response.ok) throw new Error(body.message || 'Template tidak dapat dimuat.');
+            const data = body.data && typeof body.data === 'object' ? body.data : body;
+            const draft = data.narasi ?? data.narrative ?? data.template_narasi ?? data.draft_narasi ?? data.template ?? '';
+            const facts = data.data ?? data.statistik ?? data.fakta ?? data.quantitative_data ?? null;
+            narrativeFacts.textContent = facts && typeof facts === 'object'
+                ? 'Data kuantitatif berasal dari data akademik terintegrasi dan tidak dapat diubah melalui narasi.'
+                : 'Data kuantitatif berasal dari data akademik terintegrasi dan tidak dapat diubah melalui narasi.';
+            narrativeText.value = typeof draft === 'string' ? draft : '';
+            originalNarrative = narrativeText.value;
+            narrativeDirty = false;
+            narrativeStatus.textContent = '';
+        } catch (error) {
+            narrativeText.value = '';
+            narrativeStatus.textContent = error.message || 'Template tidak dapat dimuat.';
+        } finally {
+            narrativeText.disabled = false;
+        }
+    }
+
+    if (narrativeSelect) {
+        narrativeSelect.addEventListener('change', loadNarrativeTemplate);
+        narrativeText.addEventListener('input', () => {
+            narrativeDirty = narrativeText.value !== originalNarrative;
+            narrativeStatus.textContent = narrativeDirty ? `${narrativeText.value.length} karakter · Perubahan belum disimpan` : '';
+        });
+        narrativeCancel.addEventListener('click', () => {
+            if (narrativeDirty && !window.confirm('Batalkan perubahan narasi yang belum disimpan?')) return;
+            narrativeText.value = originalNarrative;
+            narrativeDirty = false;
+            narrativeStatus.textContent = 'Perubahan dibatalkan.';
+        });
+        narrativeSave.addEventListener('click', async () => {
+            if (!compositeProjectId || !narrativeSelect.value) return;
+            narrativeSave.disabled = true;
+            narrativeSave.textContent = 'Menyimpan...';
+            narrativeStatus.textContent = '';
+            try {
+                const saveUrl = `{{ url('/kaprodi/project') }}/${encodeURIComponent(compositeProjectId)}/subkriteria/${encodeURIComponent(narrativeSelect.value)}/narasi`;
+                const response = await fetch(saveUrl, {
+                    method: 'PUT',
+                    headers: {
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                    },
+                    body: JSON.stringify({ narasi: narrativeText.value }),
+                });
+                const body = await response.json();
+                if (!response.ok) throw new Error(body.message || 'Narasi gagal disimpan.');
+                originalNarrative = narrativeText.value;
+                narrativeDirty = false;
+                narrativeStatus.textContent = body.message || 'Narasi berhasil disimpan.';
+            } catch (error) {
+                narrativeStatus.textContent = error.message || 'Narasi gagal disimpan.';
+            } finally {
+                narrativeSave.disabled = false;
+                narrativeSave.textContent = 'Simpan';
+            }
+        });
+        window.addEventListener('beforeunload', (event) => {
+            if (!narrativeDirty) return;
+            event.preventDefault();
+            event.returnValue = '';
+        });
+        loadNarrativeTemplate();
     }
 </script>
 

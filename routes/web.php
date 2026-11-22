@@ -97,6 +97,12 @@ Route::middleware('auth.akademik')->group(function () {
         Route::match(['patch', 'post'], '/project/{id}/status', [KaprodiController::class, 'updateStatusProject'])->name('project.update-status');
         Route::delete('/project/{id}', [KaprodiController::class, 'destroyProject'])->name('project.destroy');
         Route::get('/project/detail/{id?}', [KaprodiController::class, 'projectDetail'])->name('project.detail');
+        Route::get('/project/{id}/composite-overview', [KaprodiController::class, 'compositeOverview'])->name('project.composite-overview');
+        Route::get('/project/{projectId}/subkriteria/{subkriteriaId}/narasi-template', [KaprodiController::class, 'subkriteriaNarrativeTemplate'])->name('subkriteria.narrative-template');
+        Route::put('/project/{projectId}/subkriteria/{subkriteriaId}/narasi', [KaprodiController::class, 'updateSubkriteriaNarrative'])->name('subkriteria.narrative.update');
+        Route::get('/penilaian', [ReviewerController::class, 'assessments'])->name('assessments');
+        Route::get('/penilaian/{projectId}', [ReviewerController::class, 'assessmentDetail'])->name('assessment-detail');
+        Route::post('/penilaian/{projectId}/indikator/{indicatorId}', [ReviewerController::class, 'saveAssessment'])->name('assessment-save');
 
         Route::get('/plotting', [KaprodiController::class, 'plotting'])->name('plotting');
         Route::post('/plotting', [KaprodiController::class, 'storePlotting'])->name('plotting.store');
