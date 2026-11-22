@@ -636,6 +636,37 @@ class AkreditasiService
         return $this->put("/projects/{$projectId}/indicators/{$indicatorId}/evidence", $data);
     }
 
+    /**
+     * Mengambil modul-modul placeholder (Kriteria C.2 & C.5) yang dikelola institusi/UPPS.
+     * Endpoint: GET /api/v1/projects/{id}/placeholder-modules
+     */
+    public function getPlaceholderModules(int|string $projectId): Response
+    {
+        return $this->get("/projects/{$projectId}/placeholder-modules");
+    }
+
+    /**
+     * Mengambil daftar dosen dari API Kelompok 2 (Tridharma / Akademik eksternal).
+     * Endpoint: GET /api/v1/external/dosen
+     *
+     * @param  array<string, mixed>  $query
+     */
+    public function getExternalDosen(array $query = []): Response
+    {
+        return $this->get('/external/dosen', $query);
+    }
+
+    /**
+     * Mengambil data mapping tim untuk project berdasarkan project ID.
+     * Endpoint: GET /api/v1/projects/{id}/mapping-tim
+     *
+     * @param  array<string, mixed>  $query
+     */
+    public function getMappingTimByProject(int|string $projectId, array $query = []): Response
+    {
+        return $this->get("/projects/{$projectId}/mapping-tim", $query);
+    }
+
     /*
     |--------------------------------------------------------------------------
     | Self Assessment Endpoints

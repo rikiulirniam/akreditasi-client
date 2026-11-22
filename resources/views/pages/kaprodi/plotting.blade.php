@@ -398,6 +398,139 @@
                         </div>
                     @endforeach
 
+                    {{-- ═══════════════════════════════════════════════════════════
+                        PLACEHOLDER MODULES: Kriteria Non-Handle (C.2 & C.5)
+                        Data Terkelola Institusi / Terintegrasi UPPS Polines
+                        GET /api/v1/projects/{id}/placeholder-modules
+                    ═══════════════════════════════════════════════════════════ --}}
+                    <div class="mt-4 mb-2 pt-3 border-t border-dashed border-amber-200/80 flex items-center justify-between">
+                        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold bg-amber-50 text-amber-800 border border-amber-200">
+                            <svg class="w-3.5 h-3.5 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
+                            </svg>
+                            Data Terkelola Institusi / Terintegrasi UPPS
+                        </span>
+                        <span class="text-[11px] text-gray-400 font-semibold">C.2 & C.5 (Read-Only)</span>
+                    </div>
+                    @if(!empty($placeholderModules))
+                        @foreach($placeholderModules as $pm)
+                        <div class="indicator-group py-2.5 opacity-80" data-kriteria="{{ $pm['kode'] ?? 'placeholder' }}">
+                            <div class="flex items-center justify-between p-3 bg-amber-50/60 rounded-xl border border-dashed border-amber-200/80">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-4 h-4 rounded border border-amber-300 bg-amber-100 flex items-center justify-center shrink-0">
+                                        <svg class="w-2.5 h-2.5 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
+                                        </svg>
+                                    </div>
+                                    <div>
+                                        <span class="text-sm font-extrabold text-amber-800">{{ $pm['nama'] ?? $pm['kode'] ?? 'Kriteria Institusi' }}</span>
+                                        <div class="flex items-center gap-1.5 mt-0.5 flex-wrap">
+                                            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-700 border border-amber-300/80">
+                                                <svg class="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
+                                                </svg>
+                                                Terkunci (Data Pusat Polines)
+                                            </span>
+                                            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-600 border border-slate-200/80">
+                                                Terintegrasi UPPS
+                                            </span>
+                                        </div>
+                                        <p class="text-[10px] text-amber-600/80 mt-0.5">{{ $pm['info'] ?? ($pm['keterangan'] ?? 'Dikelola unit institusi Polines (UPPS). Data terintegrasi terpusat.') }}</p>
+                                    </div>
+                                </div>
+                                <span class="text-xs text-amber-600 font-semibold shrink-0">{{ count($pm['indikators'] ?? []) }} butir</span>
+                            </div>
+                            @if(!empty($pm['indikators']))
+                            <div class="flex flex-col pl-7 pr-2 space-y-1.5 mt-1">
+                                @foreach($pm['indikators'] as $ind)
+                                <div class="flex flex-col sm:flex-row sm:items-center justify-between p-3 bg-amber-50/30 rounded-xl border border-dashed border-amber-200/60 gap-3 cursor-not-allowed">
+                                    <div class="flex items-center gap-3 flex-1 min-w-0">
+                                        <div class="w-4 h-4 rounded border border-amber-200 bg-amber-50 shrink-0"></div>
+                                        <div class="flex flex-col">
+                                            <div class="flex items-center gap-2">
+                                                <span class="text-xs font-extrabold text-amber-700 shrink-0">{{ $ind['kode_indikator'] ?? $ind['code'] ?? '-' }}</span>
+                                                <span class="text-[10px] text-amber-500 font-semibold">Bobot: {{ $ind['bobot'] ?? '-' }}</span>
+                                            </div>
+                                            <span class="text-xs sm:text-sm text-amber-800/80 font-medium break-words leading-tight mt-0.5">{{ $ind['deskripsi'] ?? $ind['desc'] ?? '-' }}</span>
+                                        </div>
+                                    </div>
+                                    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold bg-amber-100 text-amber-700 border border-amber-200/80 shrink-0">
+                                        <svg class="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
+                                        </svg>
+                                        Dikelola Institusi
+                                    </span>
+                                </div>
+                                @endforeach
+                            </div>
+                            @endif
+                        </div>
+                        @endforeach
+                    @else
+                        {{-- Fallback statis jika API placeholder-modules belum tersedia --}}
+                        @foreach([
+                            ['kode' => 'C.2', 'nama' => 'C.2 · Tata Pamong, Tata Kelola dan Kerjasama', 'info' => 'Dikelola unit institusi Polines (UPPS). Data terintegrasi terpusat.', 'indikators' => [
+                                ['code' => 'K2.1', 'bobot' => 4.0, 'desc' => 'Sistem tata pamong, kepemimpinan publik, dan efektivitas pengelolaan operasional prodi.'],
+                                ['code' => 'K2.2', 'bobot' => 4.0, 'desc' => 'Sistem penjaminan mutu internal (SPMI) dan siklus PPEPP secara berkelanjutan.'],
+                                ['code' => 'K2.3', 'bobot' => 3.0, 'desc' => 'Efektivitas kerjasama strategis tridharma tingkat nasional maupun internasional.'],
+                            ]],
+                            ['kode' => 'C.5', 'nama' => 'C.5 · Keuangan, Sarana dan Prasarana', 'info' => 'Dikelola Bagian Keuangan & Sarana Polines. Data terintegrasi dari UPPS.', 'indikators' => [
+                                ['code' => 'K5.1', 'bobot' => 3.5, 'desc' => 'Kecukupan alokasi dana operasional, penelitian, pkm, dan investasi sarana prodi.'],
+                                ['code' => 'K5.2', 'bobot' => 4.0, 'desc' => 'Kelayakan dan kecukupan laboratorium komputer, perangkat keras, dan sistem informasi.'],
+                            ]],
+                        ] as $pm)
+                        <div class="indicator-group py-2.5 opacity-80" data-kriteria="{{ $pm['kode'] }}">
+                            <div class="flex items-center justify-between p-3 bg-amber-50/60 rounded-xl border border-dashed border-amber-200/80">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-4 h-4 rounded border border-amber-300 bg-amber-100 flex items-center justify-center shrink-0">
+                                        <svg class="w-2.5 h-2.5 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
+                                        </svg>
+                                    </div>
+                                    <div>
+                                        <span class="text-sm font-extrabold text-amber-800">{{ $pm['nama'] }}</span>
+                                        <div class="flex items-center gap-1.5 mt-0.5 flex-wrap">
+                                            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-700 border border-amber-300/80">
+                                                <svg class="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
+                                                </svg>
+                                                Terkunci (Data Pusat Polines)
+                                            </span>
+                                            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-600 border border-slate-200/80">
+                                                Terintegrasi UPPS
+                                            </span>
+                                        </div>
+                                        <p class="text-[10px] text-amber-600/80 mt-0.5">{{ $pm['info'] }}</p>
+                                    </div>
+                                </div>
+                                <span class="text-xs text-amber-600 font-semibold shrink-0">{{ count($pm['indikators']) }} butir</span>
+                            </div>
+                            <div class="flex flex-col pl-7 pr-2 space-y-1.5 mt-1">
+                                @foreach($pm['indikators'] as $ind)
+                                <div class="flex flex-col sm:flex-row sm:items-center justify-between p-3 bg-amber-50/30 rounded-xl border border-dashed border-amber-200/60 gap-3 cursor-not-allowed">
+                                    <div class="flex items-center gap-3 flex-1 min-w-0">
+                                        <div class="w-4 h-4 rounded border border-amber-200 bg-amber-50 shrink-0"></div>
+                                        <div class="flex flex-col">
+                                            <div class="flex items-center gap-2">
+                                                <span class="text-xs font-extrabold text-amber-700 shrink-0">{{ $ind['code'] }}</span>
+                                                <span class="text-[10px] text-amber-500 font-semibold">Bobot: {{ $ind['bobot'] }}</span>
+                                            </div>
+                                            <span class="text-xs sm:text-sm text-amber-800/80 font-medium break-words leading-tight mt-0.5">{{ $ind['desc'] }}</span>
+                                        </div>
+                                    </div>
+                                    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold bg-amber-100 text-amber-700 border border-amber-200/80 shrink-0">
+                                        <svg class="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
+                                        </svg>
+                                        Dikelola Institusi
+                                    </span>
+                                </div>
+                                @endforeach
+                            </div>
+                        </div>
+                        @endforeach
+                    @endif
+
                 </div>
             </div>
 
