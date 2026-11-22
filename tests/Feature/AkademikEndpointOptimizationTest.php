@@ -127,6 +127,7 @@ class AkademikEndpointOptimizationTest extends TestCase
                     'nama_kurikulum' => 'Kurikulum TRK 2025',
                     'sk_kurikulum' => 'SK-TRK-2025',
                     'berlaku_sampai' => 2029,
+                    'dokumen_url' => 'https://siakre.polines.ac.id/dokumen/kurikulum-trk-2022.pdf',
                     'id_prodi' => 1,
                 ],
             ], 200),
@@ -164,6 +165,8 @@ class AkademikEndpointOptimizationTest extends TestCase
         $response->assertSee('Kurikulum TRK 2025');
         $response->assertSee('Kecerdasan Buatan');
         $response->assertSee('TRK301');
+        $response->assertSee('Lihat ↗');
+        $response->assertSee('https://siakre.polines.ac.id/dokumen/kurikulum-trk-2022.pdf');
 
         Http::assertSent(fn (HttpRequest $request) => str_contains($request->url(), '/api/kurikulum/3/mata-kuliah'));
     }

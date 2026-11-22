@@ -110,11 +110,8 @@ class KurikulumController extends Controller
         $prodiResponse = $this->akademikService->getProdiList();
         $prodiList = $prodiResponse->json('data') ?? [];
 
-        $kategoriCplList = $this->getKategoriCplList();
-
         return view('kurikulum.create', [
             'prodiList' => is_array($prodiList) ? $prodiList : [],
-            'kategoriCplList' => $kategoriCplList,
         ]);
     }
 
@@ -154,6 +151,7 @@ class KurikulumController extends Controller
             'tahun_mulai' => $tahunMulai,
             'berlaku_sampai' => $berlakuTahun,
             'link_dokumen' => $linkDokumen !== '' ? $linkDokumen : null,
+            'dokumen_url' => $linkDokumen !== '' ? $linkDokumen : null,
             'id_prodi' => (int) $validated['id_prodi'],
         ];
 
@@ -407,12 +405,9 @@ class KurikulumController extends Controller
         $prodiResponse = $this->akademikService->getProdiList();
         $prodiList = $prodiResponse->json('data') ?? [];
 
-        $kategoriCplList = $this->getKategoriCplList();
-
         return view('kurikulum.edit', [
             'kurikulum' => $kurikulum,
             'prodiList' => is_array($prodiList) ? $prodiList : [],
-            'kategoriCplList' => $kategoriCplList,
         ]);
     }
 
@@ -452,6 +447,7 @@ class KurikulumController extends Controller
             'tahun_mulai' => $tahunMulai,
             'berlaku_sampai' => $berlakuTahun,
             'link_dokumen' => $linkDokumen !== '' ? $linkDokumen : null,
+            'dokumen_url' => $linkDokumen !== '' ? $linkDokumen : null,
             'id_prodi' => (int) $validated['id_prodi'],
         ];
 
@@ -573,13 +569,22 @@ class KurikulumController extends Controller
             $berlakuSampai = is_numeric($berlakuSampai) ? (int) $berlakuSampai : 2028;
         }
 
+        $linkDokumen = $item['link_dokumen']
+            ?? $item['dokumen_url']
+            ?? $item['dokumen_kurikulum']
+            ?? $item['dokumen']
+            ?? $item['link']
+            ?? $item['url']
+            ?? null;
+
         return [
             'id' => $item['id'] ?? null,
             'nama_kurikulum' => $item['nama_kurikulum'] ?? 'Kurikulum Merdeka 2024',
             'sk_kurikulum' => $item['sk_kurikulum'] ?? 'SK-08202421/2024',
             'tahun_mulai' => $tahunMulai,
             'berlaku_sampai' => $berlakuSampai,
-            'link_dokumen' => $item['link_dokumen'] ?? ($item['dokumen_kurikulum'] ?? null),
+            'link_dokumen' => $linkDokumen,
+            'dokumen_url' => $linkDokumen,
             'id_prodi' => $item['id_prodi'] ?? null,
             'nama_prodi' => $item['prodi']['nama_prodi'] ?? $item['nama_prodi'] ?? 'Teknologi Rekayasa Komputer',
             'cpl' => $item['cpl'] ?? [],
