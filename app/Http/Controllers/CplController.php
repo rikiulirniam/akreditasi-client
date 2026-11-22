@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Services\AkademikService;
 use Illuminate\Http\Client\ConnectionException;
+use Illuminate\Http\Client\Response;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -12,6 +13,8 @@ use Illuminate\View\View;
 
 class CplController extends Controller
 {
+    private const CPL_CATEGORIES = ['Sikap', 'Pengetahuan', 'Keterampilan Umum', 'Keterampilan Khusus'];
+
     public function __construct(
         protected AkademikService $akademikService,
     ) {}
@@ -117,6 +120,7 @@ class CplController extends Controller
             'search' => $search,
             'selectedKategori' => $kategoriFilter,
             'selectedKurikulum' => $kurikulumFilter,
+            'kategoriOptions' => self::CPL_CATEGORIES,
         ]);
     }
 
@@ -131,7 +135,7 @@ class CplController extends Controller
             'id_kurikulum' => ['required', 'integer'],
             'kode_cpl' => ['required', 'string', 'max:50'],
             'deskripsi_cpl' => ['required', 'string'],
-            'kategori' => ['required', 'string', 'in:Sikap,Pengetahuan,Keterampilan Umum,Keterampilan Khusus'],
+            'kategori' => ['required', 'string', 'in:'.implode(',', self::CPL_CATEGORIES)],
         ], [
             'id_kurikulum.required' => 'Kurikulum wajib dipilih.',
             'id_kurikulum.integer' => 'Pilihan kurikulum tidak valid.',
@@ -148,6 +152,10 @@ class CplController extends Controller
             'deskripsi_cpl' => trim($validated['deskripsi_cpl']),
             'kategori' => trim($validated['kategori']),
         ];
+
+        if ($duplicateResponse = $this->validateCplCodeUniqueness($payload, null, 'create')) {
+            return $duplicateResponse;
+        }
 
         $response = $this->akademikService->createCpl($payload);
         $body = $response->json();
@@ -177,7 +185,7 @@ class CplController extends Controller
 
         $errorMessage = $this->extractErrorMessage($response, 'Gagal menambahkan data CPL.');
 
-        return back()->withInput()->with('toast', [
+        return back()->withInput()->withErrors($this->validationErrors($response))->with('cpl_form', 'create')->with('toast', [
             'type' => 'error',
             'title' => 'Gagal Menambahkan',
             'message' => $errorMessage,
@@ -206,7 +214,7 @@ class CplController extends Controller
             'id_kurikulum' => ['required', 'integer'],
             'kode_cpl' => ['required', 'string', 'max:50'],
             'deskripsi_cpl' => ['required', 'string'],
-            'kategori' => ['required', 'string', 'in:Sikap,Pengetahuan,Keterampilan Umum,Keterampilan Khusus'],
+            'kategori' => ['required', 'string', 'in:'.implode(',', self::CPL_CATEGORIES)],
         ], [
             'id_kurikulum.required' => 'Kurikulum wajib dipilih.',
             'id_kurikulum.integer' => 'Pilihan kurikulum tidak valid.',
@@ -223,6 +231,10 @@ class CplController extends Controller
             'deskripsi_cpl' => trim($validated['deskripsi_cpl']),
             'kategori' => trim($validated['kategori']),
         ];
+
+        if ($duplicateResponse = $this->validateCplCodeUniqueness($payload, $id, 'edit')) {
+            return $duplicateResponse;
+        }
 
         $response = $this->akademikService->updateCpl($id, $payload);
         $body = $response->json();
@@ -261,7 +273,7 @@ class CplController extends Controller
 
         $errorMessage = $this->extractErrorMessage($response, 'Gagal memperbarui data CPL.');
 
-        return back()->withInput()->with('toast', [
+        return back()->withInput()->withErrors($this->validationErrors($response))->with('cpl_form', 'edit')->with('toast', [
             'type' => 'error',
             'title' => 'Gagal Memperbarui',
             'message' => $errorMessage,
@@ -344,7 +356,7 @@ class CplController extends Controller
                     ]);
                 }
 
-                if (! $response->successful()) {
+                if (! $response->successful() || $response->json('success') === false) {
                     $apiError = (string) ($response->json('message') ?? 'Hasil evaluasi CPL tidak dapat dimuat dari API.');
                 } else {
                     $data = $response->json('data') ?? [];
@@ -433,7 +445,81 @@ class CplController extends Controller
             'selectedKategori' => $kategoriFilter,
             'stats' => $stats,
             'apiError' => $apiError,
+            'kategoriOptions' => self::CPL_CATEGORIES,
         ]);
+    }
+
+    /**
+     * Ensure a CPL code is unique within its selected curriculum.
+     */
+    private function validateCplCodeUniqueness(array $payload, int|string|null $exceptId, string $form): ?RedirectResponse
+    {
+        $response = $this->akademikService->getCplList();
+
+        if ($response->status() === 401) {
+            return redirect()->route('login')->with('toast', [
+                'type' => 'warning',
+                'title' => 'Sesi Berakhir',
+                'message' => 'Sesi Anda telah kedaluwarsa. Silakan login kembali.',
+            ]);
+        }
+
+        $cplList = $response->json('data');
+        if (is_array($cplList) && is_array($cplList['data'] ?? null)) {
+            $cplList = $cplList['data'];
+        }
+
+        if (! $response->successful() || $response->json('success') === false || ! is_array($cplList)) {
+            return back()->withInput()->with('cpl_form', $form)->with('toast', [
+                'type' => 'error',
+                'title' => 'Validasi Tidak Tersedia',
+                'message' => $this->extractErrorMessage($response, 'Daftar CPL tidak dapat dimuat untuk memeriksa duplikasi. Data belum disimpan.'),
+            ]);
+        }
+
+        foreach ($cplList as $item) {
+            if (! is_array($item) || ($exceptId !== null && (string) ($item['id'] ?? '') === (string) $exceptId)) {
+                continue;
+            }
+
+            $sameCurriculum = (string) ($item['id_kurikulum'] ?? ($item['kurikulum']['id'] ?? '')) === (string) $payload['id_kurikulum'];
+            $sameCode = strtolower(trim((string) ($item['kode_cpl'] ?? ''))) === strtolower(trim($payload['kode_cpl']));
+
+            if ($sameCurriculum && $sameCode) {
+                return back()->withInput()->withErrors([
+                    'kode_cpl' => 'Kode CPL sudah digunakan pada kurikulum yang dipilih.',
+                ])->with('cpl_form', $form)->with('toast', [
+                    'type' => 'error',
+                    'title' => 'Kode CPL Duplikat',
+                    'message' => 'Gunakan kode CPL yang berbeda untuk kurikulum ini.',
+                ]);
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    private function validationErrors(Response $response): array
+    {
+        $errors = $response->json('errors', []);
+        if (! is_array($errors)) {
+            return [];
+        }
+
+        $validationErrors = [];
+        foreach ($errors as $field => $messages) {
+            $messages = is_array($messages) ? collect($messages)->flatten()->all() : [$messages];
+            $message = implode(' ', array_filter(array_map('strval', $messages)));
+
+            if ($message !== '') {
+                $validationErrors[(string) $field] = $message;
+            }
+        }
+
+        return $validationErrors;
     }
 
     private function numericAssessmentValue(mixed $value): ?float
