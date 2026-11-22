@@ -158,6 +158,117 @@ class LulusanTest extends TestCase
         $response->assertDontSee('IPK Riil');
     }
 
+    public function test_authenticated_user_can_view_lulusan_show_detail(): void
+    {
+        Http::fake([
+            '*/api/lulusan*' => Http::response([
+                'success' => true,
+                'data' => [
+                    [
+                        'id' => 12,
+                        'nim' => '33420005',
+                        'nim_display' => '3.34.20.0.05',
+                        'nama_mahasiswa' => 'Budi Santoso',
+                        'tahun_masuk' => 2020,
+                        'jenis_pendaftaran' => 'baru',
+                        'tanggal_kelulusan' => '2024-08-25',
+                        'jenjang_prodi' => 'D4',
+                        'batas_masa_studi_bulan' => 48,
+                        'masa_studi_bulan' => 48,
+                        'masa_tunggu_bulan' => 3,
+                        'tempat_kerja' => 'PT Bank Mandiri',
+                        'ipk_riil' => 3.78,
+                        'total_sks' => 144,
+                        'lulus_tepat_waktu' => true,
+                    ],
+                ],
+                'pagination' => [
+                    'total' => 1,
+                    'per_page' => 10,
+                    'current_page' => 1,
+                    'last_page' => 1,
+                ],
+            ], 200),
+        ]);
+
+        $response = $this->withSession($this->authSession())
+            ->get(route('lulusan.show', '33420005'));
+
+        $response->assertStatus(200);
+        $response->assertSee('Detail Lulusan');
+        $response->assertSee('Budi Santoso');
+        $response->assertSee('3.34.20.0.05');
+        $response->assertSee('Tepat Waktu');
+        $response->assertSee('PT Bank Mandiri');
+        $response->assertSee('Masa Tunggu Kerja');
+        $response->assertSee('Kembali ke Daftar Lulusan');
+        $response->assertSee('Edit Data');
+    }
+
+    public function test_authenticated_user_can_view_lulusan_edit_page(): void
+    {
+        Http::fake([
+            '*/api/mahasiswa/12' => Http::response([
+                'success' => true,
+                'data' => [
+                    'id' => 12,
+                    'nim' => '33420005',
+                    'nim_display' => '3.34.20.0.05',
+                    'nama_mahasiswa' => 'Budi Santoso',
+                    'tahun_masuk' => 2020,
+                    'tanggal_kelulusan' => '2024-08-25',
+                    'masa_tunggu_bulan' => 3,
+                    'tempat_kerja' => 'PT Bank Mandiri',
+                ],
+            ], 200),
+        ]);
+
+        $response = $this->withSession($this->authSession())
+            ->get(route('lulusan.edit', 12));
+
+        $response->assertStatus(200);
+        $response->assertSee('Edit Data Lulusan');
+        $response->assertSee('Budi Santoso');
+        $response->assertSee('3.34.20.0.05');
+        $response->assertSee('2024-08-25');
+        $response->assertSee('PT Bank Mandiri');
+    }
+
+    public function test_authenticated_user_can_update_lulusan_data(): void
+    {
+        Http::fake([
+            '*/api/mahasiswa/12' => Http::response([
+                'success' => true,
+                'data' => [
+                    'id' => 12,
+                    'nim' => '33420005',
+                    'nim_display' => '3.34.20.0.05',
+                    'nama_mahasiswa' => 'Budi Santoso',
+                    'tahun_masuk' => 2020,
+                    'tanggal_kelulusan' => '2024-09-01',
+                    'masa_studi_bulan' => 48,
+                    'masa_tunggu_bulan' => 2,
+                    'tempat_kerja' => 'PT Telkom Indonesia',
+                ],
+            ], 200),
+        ]);
+
+        $response = $this->withSession($this->authSession())
+            ->put(route('lulusan.update', 12), [
+                'nama_mahasiswa' => 'Budi Santoso',
+                'nim' => '33420005',
+                'tahun_masuk' => 2020,
+                'jenis_pendaftaran' => 'baru',
+                'tanggal_kelulusan' => '2024-09-01',
+                'masa_studi_bulan' => 48,
+                'masa_tunggu_bulan' => 2,
+                'tempat_kerja' => 'PT Telkom Indonesia',
+            ]);
+
+        $response->assertStatus(302);
+        $response->assertSessionHas('toast.type', 'success');
+    }
+
     public function test_dashboard_route_redirects_to_lulusan_index(): void
     {
         $response = $this->withSession($this->authSession())

@@ -678,7 +678,7 @@
             <div>
                 <h2 class="text-lg font-bold tracking-tight text-gray-900">Daftar Lulusan</h2>
                 <p class="text-xs font-medium text-gray-500 mt-0.5">
-                    Data kelulusan mahasiswa dengan rincian masa studi, masa tunggu, tempat kerja, IPK riil, dan status kelulusan.
+                    Data kelulusan mahasiswa dengan rincian masa studi, IPK riil, dan status kelulusan. Klik ikon mata untuk melihat detail lengkap.
                 </p>
             </div>
         </div>
@@ -792,10 +792,9 @@
                 <x-table.th class="w-28">Tahun Masuk</x-table.th>
                 <x-table.th class="whitespace-nowrap">Tanggal Lulus</x-table.th>
                 <x-table.th class="w-28">Masa Studi</x-table.th>
-                <x-table.th class="w-28">Masa Tunggu</x-table.th>
-                <x-table.th class="min-w-[180px]">Tempat Kerja</x-table.th>
                 <x-table.th class="w-24">IPK</x-table.th>
-                <x-table.th class="w-36 text-right">Kelulusan</x-table.th>
+                <x-table.th class="w-36">Kelulusan</x-table.th>
+                <x-table.th class="w-24 text-right">Action</x-table.th>
             </x-slot:header>
 
             @forelse($lulusanList as $index => $item)
@@ -871,33 +870,6 @@
                         @endif
                     </x-table.cell>
 
-                    <!-- Masa Tunggu -->
-                    <x-table.cell class="w-28 whitespace-nowrap">
-                        @if($masaTunggu !== null)
-                            <span class="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-200">
-                                {{ $masaTunggu }} bln
-                            </span>
-                        @else
-                            <span class="text-gray-400 text-xs">-</span>
-                        @endif
-                    </x-table.cell>
-
-                    <!-- Tempat Bekerja -->
-                    <x-table.cell class="min-w-[180px]">
-                        @if(!empty($tempatKerja))
-                            <div class="flex items-center gap-1.5">
-                                <svg class="w-3.5 h-3.5 text-gray-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 21h19.5m-18-18v18m10.5-18v18m6-13.5V21M6.75 6.75h.75m-.75 3h.75m-.75 3h.75m3-6h.75m-.75 3h.75m-.75 3h.75M6.75 21v-3.375c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21M3 3h12m-.75 4.5H21m-3.75 3.75h.008v.008h-.008v-.008Zm0 3h.008v.008h-.008v-.008Zm0 3h.008v.008h-.008v-.008Z" />
-                                </svg>
-                                <span class="text-xs sm:text-sm font-semibold text-gray-800">
-                                    {{ $tempatKerja }}
-                                </span>
-                            </div>
-                        @else
-                            <span class="text-gray-400 text-xs italic">Belum Bekerja</span>
-                        @endif
-                    </x-table.cell>
-
                     <!-- IPK -->
                     <x-table.cell class="w-24">
                         @if($ipk !== null)
@@ -910,7 +882,7 @@
                     </x-table.cell>
 
                     <!-- Kelulusan Tepat Waktu (Badge) -->
-                    <x-table.cell class="w-36 text-right">
+                    <x-table.cell class="w-36">
                         @if($lulusTepatWaktu === true)
                             <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 shadow-2xs">
                                 <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
@@ -929,16 +901,48 @@
                             <span class="text-gray-400 text-xs">-</span>
                         @endif
                     </x-table.cell>
+
+                    <!-- Action -->
+                    <x-table.cell class="w-24">
+                        <div class="flex items-center justify-end gap-2.5">
+                            {{-- Edit (Modal) --}}
+                            <button
+                                type="button"
+                                class="open-edit-lulusan-btn text-[#F59E0B] hover:text-[#D97706] transition p-1 cursor-pointer"
+                                title="Edit Lulusan"
+                                data-action="{{ route('lulusan.update', $item['id'] ?? $item['nim'] ?? '') }}"
+                                data-nama="{{ $nama }}"
+                                data-nim="{{ $nim }}"
+                                data-tahun="{{ $tahunMasuk }}"
+                                data-jenis="{{ $item['jenis_pendaftaran'] ?? 'baru' }}"
+                                data-kelulusan="{{ !empty($rawKelulusan) ? \Carbon\Carbon::parse($rawKelulusan)->format('Y-m-d') : '' }}"
+                                data-masa-studi="{{ $masaStudi ?? '' }}"
+                                data-masa-tunggu="{{ $masaTunggu ?? '' }}"
+                                data-tempat-kerja="{{ $tempatKerja ?? '' }}"
+                            >
+                                <x-icon.edit class="w-5 h-5" />
+                            </button>
+
+                            {{-- Detail (mata) --}}
+                            <a
+                                href="{{ route('lulusan.show', $item['nim'] ?? $item['nim_display'] ?? '') }}"
+                                class="text-[#3B82F6] hover:text-[#1D4ED8] transition p-1 cursor-pointer"
+                                title="Lihat Detail"
+                            >
+                                <x-icon.eye class="w-5 h-5" />
+                            </a>
+                        </div>
+                    </x-table.cell>
                 </x-table.row>
             @empty
                 <x-table.empty 
-                    colspan="11" 
+                    colspan="10" 
                     message="Belum ada lulusan" 
                     submessage="Data lulusan dari endpoint API belum tersedia atau filter yang dipilih tidak memiliki hasil." 
                 />
             @endforelse
             <tr id="noLulusanFilterMatchRow" class="hidden">
-                <td colspan="11" class="text-center py-10 text-gray-400 text-xs font-medium">
+                <td colspan="10" class="text-center py-10 text-gray-400 text-xs font-medium">
                     Tidak ada lulusan yang sesuai dengan filter yang dipilih.
                 </td>
             </tr>
@@ -1053,6 +1057,103 @@
                 window.location.href = "{{ route('lulusan.index') }}";
             });
         }
+
+        // ==========================================
+        // Modal Edit Lulusan Handling
+        // ==========================================
+        const editModal = document.getElementById('editLulusanModal');
+        const editForm = document.getElementById('editLulusanForm');
+        const editNama = document.getElementById('editNamaInput');
+        const editNim = document.getElementById('editNimInput');
+        const editTahun = document.getElementById('editTahunInput');
+        const editJenis = document.getElementById('editJenisInput');
+        const editKelulusan = document.getElementById('editKelulusanInput');
+        const editMasaStudi = document.getElementById('editMasaStudiInput');
+        const editMasaTunggu = document.getElementById('editMasaTungguInput');
+        const editTempatKerja = document.getElementById('editTempatKerjaInput');
+
+        function showModal(modalEl) {
+            if (!modalEl) return;
+            const card = modalEl.querySelector('.lulusan-modal-card');
+            modalEl.classList.remove('opacity-0', 'pointer-events-none');
+            modalEl.classList.add('opacity-100');
+            if (card) {
+                card.classList.remove('scale-95');
+                card.classList.add('scale-100');
+            }
+        }
+
+        function hideModal(modalEl) {
+            if (!modalEl) return;
+            const card = modalEl.querySelector('.lulusan-modal-card');
+            modalEl.classList.remove('opacity-100');
+            modalEl.classList.add('opacity-0', 'pointer-events-none');
+            if (card) {
+                card.classList.remove('scale-100');
+                card.classList.add('scale-95');
+            }
+        }
+
+        function populateAndShowEdit(data) {
+            if (editForm) editForm.action = data.action || '';
+            if (editNama) editNama.value = data.nama || '';
+            if (editNim) editNim.value = data.nim || '';
+            if (editTahun) editTahun.value = data.tahun || '';
+            if (editJenis) {
+                editJenis.value = data.jenis || 'baru';
+                if (!editJenis.value && data.jenis) {
+                    for (let opt of editJenis.options) {
+                        if (opt.value.toLowerCase() === data.jenis.toLowerCase()) {
+                            opt.selected = true;
+                            break;
+                        }
+                    }
+                }
+            }
+            if (editKelulusan) editKelulusan.value = data.kelulusan || '';
+            if (editMasaStudi) editMasaStudi.value = data.masaStudi || '48';
+            if (editMasaTunggu) editMasaTunggu.value = data.masaTunggu || '';
+            if (editTempatKerja) editTempatKerja.value = data.tempatKerja || '';
+
+            showModal(editModal);
+            setTimeout(() => editKelulusan?.focus(), 100);
+        }
+
+        document.querySelectorAll('.open-edit-lulusan-btn').forEach(btn => {
+            btn.addEventListener('click', function () {
+                populateAndShowEdit({
+                    action: this.getAttribute('data-action'),
+                    nama: this.getAttribute('data-nama'),
+                    nim: this.getAttribute('data-nim'),
+                    tahun: this.getAttribute('data-tahun'),
+                    jenis: this.getAttribute('data-jenis'),
+                    kelulusan: this.getAttribute('data-kelulusan'),
+                    masaStudi: this.getAttribute('data-masa-studi'),
+                    masaTunggu: this.getAttribute('data-masa-tunggu'),
+                    tempatKerja: this.getAttribute('data-tempat-kerja')
+                });
+            });
+        });
+
+        document.querySelectorAll('.close-lulusan-modal').forEach(btn => {
+            btn.addEventListener('click', function () {
+                hideModal(this.closest('[role="dialog"]'));
+            });
+        });
+
+        if (editModal) {
+            editModal.addEventListener('click', function (e) {
+                if (e.target === editModal) hideModal(editModal);
+            });
+        }
+
+        document.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape') {
+                hideModal(editModal);
+            }
+        });
     });
 </script>
+
+@include('lulusan.partials.edit-modal')
 @endsection

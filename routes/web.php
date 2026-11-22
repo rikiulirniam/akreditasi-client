@@ -121,6 +121,9 @@ Route::middleware('auth.akademik')->group(function () {
     Route::resource('kegiatan-mahasiswa', KegiatanMahasiswaController::class);
     Route::get('/lulusan/dashboard', [LulusanController::class, 'dashboard'])->name('lulusan.dashboard');
     Route::get('/lulusan', [LulusanController::class, 'index'])->name('lulusan.index');
+    Route::get('/lulusan/{id}/edit', [LulusanController::class, 'edit'])->name('lulusan.edit');
+    Route::put('/lulusan/{id}', [LulusanController::class, 'update'])->name('lulusan.update');
+    Route::get('/lulusan/{nim}', [LulusanController::class, 'show'])->name('lulusan.show');
 
     Route::get('/kemahasiswaan/jenis-prestasi', [MahasiswaController::class, 'jenisPrestasi'])->name('kemahasiswaan.jenis-prestasi.index');
     Route::post('/kemahasiswaan/jenis-prestasi', [MahasiswaController::class, 'storeJenisPrestasi'])->name('kemahasiswaan.jenis-prestasi.store');
