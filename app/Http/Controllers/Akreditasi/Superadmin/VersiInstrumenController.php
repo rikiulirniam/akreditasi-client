@@ -173,13 +173,19 @@ class VersiInstrumenController extends Controller
     /**
      * Mengaktifkan versi instrumen.
      */
-    public function activate(int|string $id): RedirectResponse
+    public function activate(Request $request, int|string $id): RedirectResponse
     {
+        $idJenjang = $request->input('id_jenjang', 2);
+
         try {
-            $response = $this->akreditasiService->activateVersiInstrumen($id);
+            $response = $this->akreditasiService->activateVersiInstrumen($id, [
+                'id_jenjang' => (int) $idJenjang,
+            ]);
 
             if ($response->successful()) {
-                return back()->with('success', 'Versi instrumen berhasil diaktifkan!');
+                $message = (string) ($response->json('message') ?? 'Versi instrumen berhasil diaktifkan!');
+
+                return back()->with('success', $message);
             }
 
             return back()->with(

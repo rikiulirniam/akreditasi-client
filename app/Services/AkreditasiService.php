@@ -310,10 +310,12 @@ class AkreditasiService
 
     /**
      * Mengaktifkan versi instrumen.
+     *
+     * @param  array<string, mixed>  $data
      */
-    public function activateVersiInstrumen(int|string $id): Response
+    public function activateVersiInstrumen(int|string $id, array $data = []): Response
     {
-        return $this->patch("/master/versi-instrumen/{$id}/aktifkan");
+        return $this->patch("/master/versi-instrumen/{$id}/aktifkan", $data);
     }
 
     /**
@@ -340,6 +342,14 @@ class AkreditasiService
     public function getInstrumen(int|string $id): Response
     {
         return $this->get("/master/instrumen/{$id}");
+    }
+
+    /**
+     * Mengambil struktur hierarki instrumen akreditasi berdasarkan ID.
+     */
+    public function getInstrumenHierarchy(int|string $id): Response
+    {
+        return $this->get("/instrumen/{$id}/hierarchy");
     }
 
     /**
