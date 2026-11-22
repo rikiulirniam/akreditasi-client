@@ -421,8 +421,7 @@ class LuaranController extends Controller
             'tahun_terbit' => ['required', 'integer', 'digits:4'],
             'jenis_buku' => ['required', 'in:Buku Ajar,Buku Referensi,Buku Monograf,Buku Jurnal'],
             'bidang_ilmu' => ['nullable', 'string', 'max:255'],
-            'halaman_buku' => ['nullable', 'integer', 'min:1'],
-            'url_luaran' => ['nullable', 'url', 'max:2048'],
+            'halaman_buku' => ['nullable', 'string', 'min:1'],
             'tautan_buku' => ['nullable', 'url', 'max:2048'],
         ], [
             'judul_buku.required' => 'Judul buku wajib diisi.',
@@ -438,9 +437,8 @@ class LuaranController extends Controller
             'tahun_terbit' => (int) $val['tahun_terbit'],
             'jenis_buku' => trim($val['jenis_buku']),
             'bidang_ilmu' => isset($val['bidang_ilmu']) ? trim($val['bidang_ilmu']) : null,
-            'halaman_buku' => isset($val['halaman_buku']) ? (int) $val['halaman_buku'] : null,
-            'url_luaran' => $val['url_luaran'] ?? ($val['tautan_buku'] ?? null),
-            'tautan_buku' => $val['url_luaran'] ?? ($val['tautan_buku'] ?? null),
+            'halaman_buku' => isset($val['halaman_buku']) ? trim($val['halaman_buku']) : null,
+            'tautan_buku' => $val['tautan_buku'] ?? null,
         ];
     }
 
@@ -453,9 +451,8 @@ class LuaranController extends Controller
             'tanggal_terbit' => ['required', 'date'],
             'doi' => ['nullable', 'string', 'max:255'],
             'nomor_edisi' => ['nullable', 'string', 'max:100'],
-            'halaman_jurnal' => ['nullable', 'integer', 'min:1'],
+            'halaman_jurnal' => ['nullable', 'string', 'min:1'],
             'indeksasi' => ['nullable', 'string', 'max:100'],
-            'url_luaran' => ['nullable', 'url', 'max:2048'],
             'tautan_jurnal' => ['nullable', 'url', 'max:2048'],
         ], [
             'nama_jurnal.required' => 'Nama jurnal wajib diisi.',
@@ -469,10 +466,9 @@ class LuaranController extends Controller
             'tanggal_terbit' => trim($val['tanggal_terbit']),
             'doi' => ! empty($val['doi']) ? trim($val['doi']) : null,
             'nomor_edisi' => ! empty($val['nomor_edisi']) ? trim($val['nomor_edisi']) : null,
-            'halaman_jurnal' => isset($val['halaman_jurnal']) ? (int) $val['halaman_jurnal'] : null,
+            'halaman_jurnal' => isset($val['halaman_jurnal']) ? trim($val['halaman_jurnal']) : null,
             'indeksasi' => ! empty($val['indeksasi']) ? trim($val['indeksasi']) : null,
-            'url_luaran' => $val['url_luaran'] ?? ($val['tautan_jurnal'] ?? null),
-            'tautan_jurnal' => $val['url_luaran'] ?? ($val['tautan_jurnal'] ?? null),
+            'tautan_jurnal' => $val['tautan_jurnal'] ?? null,
         ];
     }
 
@@ -485,11 +481,9 @@ class LuaranController extends Controller
             'penyelenggara' => ['nullable', 'string', 'max:255'],
             'tanggal_seminar' => ['required', 'date'],
             'lokasi_seminar' => ['nullable', 'string', 'max:255'],
-            'halaman_prosiding' => ['nullable', 'integer', 'min:1'],
+            'halaman_prosiding' => ['nullable', 'string', 'min:1'],
             'doi_prosiding' => ['nullable', 'string', 'max:255'],
-            'url_luaran' => ['nullable', 'url', 'max:2048'],
             'tautan_seminar' => ['nullable', 'url', 'max:2048'],
-            'tautan_prosiding' => ['nullable', 'url', 'max:2048'],
         ], [
             'nama_seminar.required' => 'Nama seminar wajib diisi.',
             'nama_prosiding.required' => 'Nama prosiding wajib diisi.',
@@ -503,10 +497,9 @@ class LuaranController extends Controller
             'penyelenggara' => ! empty($val['penyelenggara']) ? trim($val['penyelenggara']) : null,
             'tanggal_seminar' => trim($val['tanggal_seminar']),
             'lokasi_seminar' => ! empty($val['lokasi_seminar']) ? trim($val['lokasi_seminar']) : null,
-            'halaman_prosiding' => isset($val['halaman_prosiding']) ? (int) $val['halaman_prosiding'] : null,
+            'halaman_prosiding' => isset($val['halaman_prosiding']) ? trim($val['halaman_prosiding']) : null,
             'doi_prosiding' => isset($val['doi_prosiding']) ? trim($val['doi_prosiding']) : null,
-            'url_luaran' => $val['url_luaran'] ?? ($val['tautan_seminar'] ?? ($val['tautan_prosiding'] ?? null)),
-            'tautan_seminar' => $val['url_luaran'] ?? ($val['tautan_seminar'] ?? ($val['tautan_prosiding'] ?? null)),
+            'tautan_seminar' => $val['tautan_seminar'] ?? null,
         ];
     }
 
@@ -521,7 +514,6 @@ class LuaranController extends Controller
             'tanggal_terbit_sertifikat_hki' => ['nullable', 'date'],
             'pemegang_hki' => ['nullable', 'string', 'max:255'],
             'status_hki' => ['nullable', 'in:Draft,Terdaftar/Dalam Proses,Sertifikat Terbit/Granted,Ditolak'],
-            'url_luaran' => ['nullable', 'url', 'max:2048'],
             'tautan_hki' => ['nullable', 'url', 'max:2048'],
         ], [
             'judul_hak_cipta.required' => 'Judul HKI / Ciptaan wajib diisi.',
@@ -536,8 +528,7 @@ class LuaranController extends Controller
             'tanggal_terbit_sertifikat_hki' => $val['tanggal_terbit_sertifikat_hki'] ?? null,
             'pemegang_hki' => $val['pemegang_hki'] ?? null,
             'status_hki' => $val['status_hki'] ?? null,
-            'url_luaran' => $val['url_luaran'] ?? ($val['tautan_hki'] ?? null),
-            'tautan_hki' => $val['url_luaran'] ?? ($val['tautan_hki'] ?? null),
+            'tautan_hki' => $val['tautan_hki'] ?? null,
         ];
     }
 
@@ -550,7 +541,6 @@ class LuaranController extends Controller
             'tingkat_kesiapanterapan' => ['required', 'in:TKT 1,TKT 2,TKT 3,TKT 4,TKT 5,TKT 6,TKT 7,TKT 8,TKT 9'],
             'tanggal_pembuatan' => ['required', 'date'],
             'deskripsi_produk' => ['nullable', 'string', 'max:1000'],
-            'url_luaran' => ['nullable', 'url', 'max:2048'],
             'tautan_produk' => ['nullable', 'url', 'max:2048'],
         ], [
             'nama_produk.required' => 'Nama produk wajib diisi.',
@@ -564,8 +554,7 @@ class LuaranController extends Controller
             'tingkat_kesiapanterapan' => $val['tingkat_kesiapanterapan'],
             'tanggal_pembuatan' => $val['tanggal_pembuatan'],
             'deskripsi_produk' => $val['deskripsi_produk'] ?? null,
-            'url_luaran' => $val['url_luaran'] ?? ($val['tautan_produk'] ?? null),
-            'tautan_produk' => $val['url_luaran'] ?? ($val['tautan_produk'] ?? null),
+            'tautan_produk' => $val['tautan_produk'] ?? null,
         ];
     }
 

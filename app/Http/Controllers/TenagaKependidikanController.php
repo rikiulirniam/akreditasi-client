@@ -2,8 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Console\Commands\ImportPdaTendikCommand;
 use App\Services\TenagaKependidikanService;
 use Illuminate\Http\Client\ConnectionException;
+use Illuminate\Http\Client\Pool;
 use Illuminate\Http\Client\Response;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -11,6 +13,8 @@ use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Illuminate\View\View;
 
@@ -73,13 +77,30 @@ class TenagaKependidikanController extends Controller
                 ['id' => 1, 'id_pendidikan' => 1, 'jenjang' => 'S2'],
                 ['id' => 3, 'id_pendidikan' => 3, 'jenjang' => 'S3'],
             ];
+            $smaId = $this->resolvePendidikanId($apiPendidikan, 'SMA');
+            if ($smaId !== null) {
+                array_unshift($standardOptions, ['id' => $smaId, 'id_pendidikan' => $smaId, 'jenjang' => 'SMA/SMK']);
+            }
 
-            // Merge API items with standard options so D4/S1, S2, S3 are always present, ordered D4/S1 to S3
+            // Merge API items with standard options so SMA/SMK, D4/S1, S2, S3 are always present, ordered SMA/SMK to S3
             $pendidikan = collect($apiPendidikan)
+                ->map(function (array $item) {
+                    if (in_array(Str::upper($item['jenjang']), ['SMA', 'SMK', 'SLTA'], true)) {
+                        $item['jenjang'] = 'SMA/SMK';
+                    }
+
+                    return $item;
+                })
                 ->concat($standardOptions)
                 ->unique(fn (array $item) => Str::lower($item['jenjang']))
                 ->sortBy(function (array $item) {
                     $val = Str::lower($item['jenjang']);
+                    if (Str::contains($val, ['sma', 'smk', 'slta'])) {
+                        return 0;
+                    }
+                    if ($val === 'd3' || Str::startsWith($val, 'd3')) {
+                        return 0.5;
+                    }
                     if ($val === 'd4/s1' || $val === 's1' || $val === 'd4' || Str::startsWith($val, 's1') || Str::startsWith($val, 'd4')) {
                         return 1;
                     }
@@ -105,7 +126,9 @@ class TenagaKependidikanController extends Controller
 
             $pendidikanById = $apiPendidikanById + $standardPendidikanById;
 
-            $items = collect($this->listData($tendikResponse))
+            $rawTendikRecords = $this->fetchAllTendikRecords($tendikResponse, $search);
+
+            $items = collect($rawTendikRecords)
                 ->map(fn (array $item) => $this->normalizeTendik($item, $pendidikanById))
                 ->filter(fn (array $item) => $search === '' || Str::contains(
                     Str::lower($item['nama'].' '.$item['nip']),
@@ -135,7 +158,7 @@ class TenagaKependidikanController extends Controller
                 })
                 ->values();
 
-            $jabatans = collect($this->listData($tendikResponse))
+            $jabatans = collect($rawTendikRecords)
                 ->map(fn (array $item) => trim((string) ($item['jabatan_tendik'] ?? '')))
                 ->filter()
                 ->unique()
@@ -169,7 +192,7 @@ class TenagaKependidikanController extends Controller
                 'selectedKualifikasi' => $selectedKualifikasi,
                 'jabatans' => $jabatans,
                 'pendidikan' => $pendidikan,
-                'apiError' => null,
+                'apiError' => $smaId === null ? 'Pilihan jenjang SMA/SMK tidak tersedia karena data pendidikan belum ditemukan.' : null,
             ]);
         } catch (ConnectionException) {
             return $this->renderIndexError(
@@ -559,20 +582,34 @@ class TenagaKependidikanController extends Controller
 
         $id = $record['id'] ?? $record['id_tendik'] ?? '';
 
-        $bidangKeahlian = (string) ($record['bidang_keahlian'] ?? (is_array($pendidikan) ? ($pendidikan['program_studi'] ?? '') : ''));
+        $bidangKeahlian = trim((string) ($record['bidang_keahlian'] ?? (is_array($pendidikan) ? ($pendidikan['program_studi'] ?? '') : '')));
+        if ($bidangKeahlian === '-') {
+            $bidangKeahlian = '';
+        }
         $email = (string) ($record['email'] ?? '');
         $status = (string) ($record['status'] ?? ($record['status_kepegawaian'] ?? ''));
 
+        $resolvedKualifikasi = (string) ($kualifikasi ?: ($pendidikanById[$pendidikanId] ?? '-'));
+        if (in_array(Str::upper(trim($resolvedKualifikasi)), ['SMA', 'SMK', 'SLTA'], true)) {
+            $resolvedKualifikasi = 'SMA/SMK';
+        }
+
+        $nama = (string) ($record['nama_tendik'] ?? $record['nama'] ?? '');
+        $rawNip = trim((string) ($record['nip'] ?? ''));
+        $nip = ($rawNip !== '' && preg_match('/^\d{8,}$/', $rawNip) === 1)
+            ? $rawNip
+            : ImportPdaTendikCommand::generateDummyNip($rawNip !== '' ? $rawNip : $nama);
+
         return [
             'id' => $id,
-            'nama' => (string) ($record['nama_tendik'] ?? $record['nama'] ?? ''),
-            'nip' => (string) ($record['nip'] ?? ''),
+            'nama' => $nama,
+            'nip' => $nip,
             'jabatan' => (string) ($record['jabatan_tendik'] ?? $record['jabatan'] ?? ''),
             'bidang_keahlian' => $bidangKeahlian,
             'email' => $email,
             'status' => $status,
             'id_pendidikan' => $pendidikanId,
-            'kualifikasi' => (string) ($kualifikasi ?: ($pendidikanById[$pendidikanId] ?? '-')),
+            'kualifikasi' => $resolvedKualifikasi,
         ];
     }
 
@@ -630,6 +667,123 @@ class TenagaKependidikanController extends Controller
     private function mergeKualifikasi(array $record, array $tendik, int $tendikApiId): array
     {
         return $this->tridharmaService->getTendikPendidikanList($tendikApiId, $record);
+    }
+
+    /** @return array<int, array<string, mixed>> */
+    private function fetchAllTendikRecords(Response $firstResponse, string $search): array
+    {
+        $records = $this->listData($firstResponse);
+        $lastPage = (int) ($firstResponse->json('data.last_page') ?? $firstResponse->json('pagination.last_page') ?? 1);
+
+        if ($lastPage > 1) {
+            for ($page = 2; $page <= min($lastPage, 10); $page++) {
+                $nextResponse = $this->tridharmaService->getTendikList(array_filter([
+                    'search' => $search !== '' ? $search : null,
+                    'per_page' => 100,
+                    'page' => $page,
+                ], static fn ($value) => $value !== null));
+
+                if (! $this->apiSucceeded($nextResponse)) {
+                    break;
+                }
+
+                $records = array_merge($records, $this->listData($nextResponse));
+            }
+        }
+
+        if (! app()->runningUnitTests() && $records !== []) {
+            $this->scheduleDummyNipApiSync($records);
+        }
+
+        return $records;
+    }
+
+    /**
+     * Memperbarui record di API Tridharma yang masih menggunakan slug sebagai NIP menjadi NIP dummy 18 digit.
+     *
+     * @param  array<int, array<string, mixed>>  $records
+     */
+    private function scheduleDummyNipApiSync(array $records): void
+    {
+        $toUpdate = [];
+        $defaultPendidikanId = null;
+        $hasResolvedDefaultPendidikanId = false;
+
+        foreach ($records as $record) {
+            $id = (int) ($record['id_tendik'] ?? $record['id'] ?? 0);
+            $rawNip = trim((string) ($record['nip'] ?? ''));
+            if ($id > 0 && ($rawNip === '' || preg_match('/^\d{8,}$/', $rawNip) !== 1)) {
+                $nama = trim((string) ($record['nama_tendik'] ?? $record['nama'] ?? ''));
+                $jabatan = trim((string) ($record['jabatan_tendik'] ?? $record['jabatan'] ?? 'Tenaga Kependidikan'));
+
+                $pendidikan = is_array($record['pendidikan'] ?? null) ? $record['pendidikan'] : [];
+                $idPendidikan = $record['id_pendidikan'] ?? ($pendidikan['id_pendidikan'] ?? null);
+                if (! is_numeric($idPendidikan) || (int) $idPendidikan <= 0) {
+                    if (! $hasResolvedDefaultPendidikanId) {
+                        $pendidikanResponse = $this->tridharmaService->getPendidikanList(['per_page' => 100]);
+                        if ($this->apiSucceeded($pendidikanResponse)) {
+                            $defaultPendidikanId = $this->resolvePendidikanId($this->listData($pendidikanResponse), 'SMA');
+                        } else {
+                            Log::warning('Unable to load education levels while syncing Tendik records.', [
+                                'status' => $pendidikanResponse->status(),
+                            ]);
+                        }
+                        $hasResolvedDefaultPendidikanId = true;
+                    }
+
+                    $idPendidikan = $defaultPendidikanId;
+                }
+
+                if (! is_numeric($idPendidikan) || (int) $idPendidikan <= 0) {
+                    Log::warning('Skipping Tendik sync because no valid education ID is available.', [
+                        'tendik_id' => $id,
+                    ]);
+
+                    continue;
+                }
+
+                $dummyNip = ImportPdaTendikCommand::generateDummyNip($rawNip !== '' ? $rawNip : $nama);
+
+                $toUpdate[$id] = [
+                    'id_pendidikan' => (int) $idPendidikan,
+                    'nama_tendik' => $nama,
+                    'jabatan_tendik' => $jabatan,
+                    'nip' => $dummyNip,
+                ];
+            }
+        }
+
+        if ($toUpdate === []) {
+            return;
+        }
+
+        $token = (string) session('access_token', '');
+        $baseUrl = $this->tridharmaService->getBaseUrl();
+
+        if ($token === '') {
+            return;
+        }
+
+        app()->terminating(static function () use ($toUpdate, $token, $baseUrl): void {
+            try {
+                foreach (array_chunk($toUpdate, 25, true) as $chunk) {
+                    Http::pool(static function (Pool $pool) use ($chunk, $token, $baseUrl): array {
+                        $requests = [];
+                        foreach ($chunk as $id => $payload) {
+                            $requests[(string) $id] = $pool->as((string) $id)
+                                ->acceptJson()
+                                ->asJson()
+                                ->withToken($token)
+                                ->timeout(15)
+                                ->put("{$baseUrl}/tendik/{$id}", $payload);
+                        }
+
+                        return $requests;
+                    });
+                }
+            } catch (\Throwable) {
+            }
+        });
     }
 
     /** @return array<int, array<string, mixed>> */
@@ -787,5 +941,25 @@ class TenagaKependidikanController extends Controller
             ],
             'apiError' => $message,
         ]);
+    }
+
+    private function resolvePendidikanId(array $educationLevels, string $jenjangKeyword): ?int
+    {
+        $keyword = Str::lower($jenjangKeyword);
+        $keywords = $keyword === 'sma' ? ['sma', 'smk', 'slta'] : [$keyword];
+
+        foreach ($educationLevels as $item) {
+            $jenjang = Str::lower((string) ($item['jenjang'] ?? $item['nama_pendidikan'] ?? ''));
+            $id = $item['id_pendidikan'] ?? $item['id'] ?? null;
+            if (is_numeric($id) && (int) $id > 0 && Str::contains($jenjang, $keywords)) {
+                return (int) $id;
+            }
+        }
+
+        Log::warning('Unable to resolve education ID for requested level.', [
+            'jenjang' => $jenjangKeyword,
+        ]);
+
+        return null;
     }
 }

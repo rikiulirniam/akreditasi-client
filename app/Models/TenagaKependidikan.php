@@ -26,14 +26,30 @@ class TenagaKependidikan extends Model
      */
     protected $fillable = [
         'nama',
+        'nama_tendik',
         'nip',
         'jabatan',
+        'jabatan_tendik',
+        'sertifikasi',
+        'id_pendidikan',
         'kualifikasi',
         'bidang_keahlian',
         'program_studi',
         'email',
         'status',
     ];
+
+    /**
+     * Get the primary key for the model, supporting both id and id_tendik.
+     */
+    public function getKeyName(): string
+    {
+        if (array_key_exists('id_tendik', $this->attributes) && ! array_key_exists('id', $this->attributes)) {
+            return 'id_tendik';
+        }
+
+        return $this->primaryKey;
+    }
 
     /**
      * Relasi ke riwayat kualifikasi akademik.

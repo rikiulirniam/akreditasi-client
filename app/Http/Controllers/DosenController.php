@@ -177,12 +177,21 @@ class DosenController extends Controller
         $rawBidang = $bidangKeahlianResponse->json('data') ?? [];
         $bidangKeahlianList = isset($rawBidang['data']) && is_array($rawBidang['data']) ? $rawBidang['data'] : (is_array($rawBidang) ? $rawBidang : []);
 
+        $user = session('user', []);
+        $roles = is_array($user) && is_array($user['roles'] ?? null) ? $user['roles'] : [];
+        $primaryRole = is_array($roles[0] ?? null)
+            ? ($roles[0]['name'] ?? '')
+            : ($roles[0] ?? '');
+        $role = is_array($user) ? ($user['role'] ?? $user['role_name'] ?? $primaryRole) : '';
+        $canManageJabatan = strtolower((string) $role) !== 'dosen';
+
         return view('dosen.index', [
             'dosenList' => $dosenList,
             'pagination' => $pagination,
             'jabatanList' => $jabatanList,
             'pendidikanList' => $pendidikanList,
             'bidangKeahlianList' => $bidangKeahlianList,
+            'canManageJabatan' => $canManageJabatan,
             'search' => $search ?? '',
             'selectedStatus' => $status,
             'selectedStatusLabel' => $statusLabels[$status] ?? 'Status',
@@ -231,7 +240,6 @@ class DosenController extends Controller
             'nuptk' => ['nullable', 'string', 'max:50'],
             'status_dosen' => ['required', 'string', 'max:50'],
             'email' => ['required', 'email', 'max:255'],
-            'sertifikasi' => ['nullable', 'string', 'max:500'],
             'sertifikasi_dosen' => ['nullable', 'string', 'max:255'],
             'id_jabatan' => ['nullable', 'integer'],
             'id_pendidikan' => ['nullable', 'integer'],
@@ -249,7 +257,7 @@ class DosenController extends Controller
             'nuptk' => isset($validated['nuptk']) ? trim($validated['nuptk']) : null,
             'status_dosen' => trim($validated['status_dosen']),
             'email' => strtolower(trim($validated['email'])),
-            'sertifikasi_dosen' => $validated['sertifikasi_dosen'] ?? ($validated['sertifikasi'] ?? null),
+            'sertifikasi_dosen' => $validated['sertifikasi_dosen'] ?? null,
             'id_jabatan' => isset($validated['id_jabatan']) && $validated['id_jabatan'] !== null ? (int) $validated['id_jabatan'] : null,
             'id_pendidikan' => isset($validated['id_pendidikan']) && $validated['id_pendidikan'] !== null ? (int) $validated['id_pendidikan'] : null,
         ];
@@ -319,17 +327,11 @@ class DosenController extends Controller
         $rawPendidikan = $dosenData['pendidikan_terakhir'] ?? ($dosenData['pendidikan'] ?? null);
         $rawNama = $dosenData['nama_dosen'] ?? ($dosenData['nama'] ?? ($dosenData['name'] ?? null));
 
-        $valJurusan = ! empty($rawJurusan) ? $this->extractString($rawJurusan, 'Teknik Elektro') : 'Teknik Elektro';
-        if ($valJurusan === '-' || trim($valJurusan) === '') {
-            $valJurusan = 'Teknik Elektro';
-        }
-
-        $valProdi = ! empty($rawProdi) ? $this->extractString($rawProdi, 'Teknologi Rekayasa Komputer') : 'Teknologi Rekayasa Komputer';
-        if ($valProdi === '-' || trim($valProdi) === '') {
-            $valProdi = 'Teknologi Rekayasa Komputer';
-        }
-
-        $dosenId = is_scalar($dosenData['id_dosen'] ?? ($dosenData['id'] ?? null)) ? ($dosenData['id_dosen'] ?? $dosenData['id']) : $id;
+        $valJurusan = ! empty($rawJurusan) ? $this->extractString($rawJurusan, '-') : '-';
+        $valProdi = $this->extractString($rawProdi, '-');
+        $dosenId = is_scalar($dosenData['id_dosen'] ?? ($dosenData['id'] ?? null))
+            ? ($dosenData['id_dosen'] ?? $dosenData['id'])
+            : $id;
 
         $dosen = [
             'id' => $dosenId,
@@ -568,7 +570,6 @@ class DosenController extends Controller
             'nuptk' => ['nullable', 'string', 'max:50'],
             'status_dosen' => ['required', 'string', 'max:50'],
             'email' => ['required', 'email', 'max:255'],
-            'sertifikasi' => ['nullable', 'string', 'max:500'],
             'sertifikasi_dosen' => ['nullable', 'string', 'max:255'],
             'id_jabatan' => ['nullable', 'integer'],
             'id_pendidikan' => ['nullable', 'integer'],
@@ -586,7 +587,7 @@ class DosenController extends Controller
             'nuptk' => isset($validated['nuptk']) ? trim($validated['nuptk']) : null,
             'status_dosen' => trim($validated['status_dosen']),
             'email' => strtolower(trim($validated['email'])),
-            'sertifikasi_dosen' => $validated['sertifikasi_dosen'] ?? ($validated['sertifikasi'] ?? null),
+            'sertifikasi_dosen' => $validated['sertifikasi_dosen'] ?? null,
             'id_jabatan' => isset($validated['id_jabatan']) && $validated['id_jabatan'] !== null ? (int) $validated['id_jabatan'] : null,
             'id_pendidikan' => isset($validated['id_pendidikan']) && $validated['id_pendidikan'] !== null ? (int) $validated['id_pendidikan'] : null,
         ];
@@ -700,6 +701,9 @@ class DosenController extends Controller
         );
     }
 
+    /**
+     * Store riwayat pendidikan for a dosen.
+     */
     public function storePendidikan(Request $request, int|string $dosenId): RedirectResponse
     {
         $validated = $request->validate([
