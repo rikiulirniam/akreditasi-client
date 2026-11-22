@@ -73,6 +73,9 @@ Route::get('/login', [AuthController::class, 'showLoginForm'])->name('login');
 Route::post('/login', [AuthController::class, 'login']);
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
+// Public Read-Only Access untuk Asesor Eksternal (Token Link)
+Route::get('/public/evidence/{token}', [SpmiController::class, 'publicEvidenceOverview'])->name('spmi.public-overview');
+
 Route::get('/auth/google', [AuthController::class, 'redirectToGoogle'])->name('auth.google');
 Route::get('/auth/google/callback', [AuthController::class, 'handleGoogleCallback'])->name('auth.google.callback');
 
@@ -241,6 +244,7 @@ Route::middleware('auth.akademik')->group(function () {
     Route::get('/spmi/evidence', [SpmiController::class, 'evidenceSpmi'])->name('spmi.evidence');
     Route::post('/spmi/evidence', [SpmiController::class, 'storeEvidence'])->name('spmi.evidence.store');
     Route::put('/spmi/evidence/{id}', [SpmiController::class, 'updateEvidence'])->name('spmi.evidence.update');
+    Route::get('/spmi/overview/{id?}', [SpmiController::class, 'evidenceOverview'])->name('spmi.overview');
 
     Route::get('/laporan-akhir', [LaporanAkhirController::class, 'index'])->name('laporan-akhir.index');
     Route::get('/laporan-akhir/download', [LaporanAkhirController::class, 'download'])->name('laporan-akhir.download');
