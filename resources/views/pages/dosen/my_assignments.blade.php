@@ -155,6 +155,8 @@
                             class="assignment-row hover:bg-slate-50/60 transition-colors"
                             data-has-bukti="{{ $hasBukti ? 'true' : 'false' }}"
                             data-role="{{ strtolower($roleUpper) }}"
+                            data-indicator-id="{{ $indId }}"
+                            data-project-id="{{ $projId }}"
                             id="row-{{ $code }}"
                         >
                             <!-- Kode Indikator -->
@@ -316,6 +318,9 @@
         const row = document.getElementById('row-' + code);
         if (!row) return;
 
+        const indId = row.getAttribute('data-indicator-id') || '1';
+        const projId = row.getAttribute('data-project-id') || '1';
+
         row.setAttribute('data-has-bukti', 'true');
         const statusCell = row.querySelector('.status-cell');
         if (statusCell) {
@@ -355,8 +360,8 @@
                         <button 
                             type="button" 
                             onclick="openUploadEvidenceModal('modal-upload-evidence-link', {
-                                indicatorId: '1',
-                                projectId: '1',
+                                indicatorId: '${indId}',
+                                projectId: '${projId}',
                                 code: '${code}',
                                 description: '${desc}',
                                 existingUrl: '${url}',

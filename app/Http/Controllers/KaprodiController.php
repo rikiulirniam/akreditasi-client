@@ -844,7 +844,7 @@ class KaprodiController extends Controller
             $mappingTim = [];
         }
 
-        // Ambil data dosen dari API Kelompok 2 (Tridharma)
+        // Ambil data dosen dari API Kelompok 2 Tridharma atau fallback ke GET /external/dosen
         $dosenList = [];
         try {
             $resDosen = $this->tridharmaService->getDosenList(['per_page' => 100]);
@@ -854,6 +854,21 @@ class KaprodiController extends Controller
             }
         } catch (\Throwable $e) {
             $dosenList = [];
+        }
+
+        // Fallback ke GET /api/v1/external/dosen jika Tridharma kosong
+        if (empty($dosenList)) {
+            try {
+                $resExternal = $this->akreditasiService->getExternalDosen(['per_page' => 100]);
+                if ($resExternal->successful()) {
+                    $rawExternal = $resExternal->json('data') ?? [];
+                    $dosenList = isset($rawExternal['data']) && is_array($rawExternal['data'])
+                        ? $rawExternal['data']
+                        : (is_array($rawExternal) ? $rawExternal : []);
+                }
+            } catch (\Throwable $e) {
+                $dosenList = [];
+            }
         }
 
         // Fallback ke API Akademik jika Tridharma belum mengembalikan data
@@ -891,6 +906,39 @@ class KaprodiController extends Controller
                     'jabatan' => $this->extractString($d['jabatan_fungsional'] ?? ($d['jabatan'] ?? null), 'Dosen Tetap'),
                 ];
             }, $dosenList);
+        }
+
+        // ── Fitur Kaprodi Mandiri: Kaprodi dapat menugaskan dirinya sendiri sebagai PIC ──
+        // Tambahkan akun Kaprodi yang sedang login ke dalam daftar dosen jika belum ada
+        $currentUser = session('user', []);
+        $kaprodiName = $currentUser['nama'] ?? ($currentUser['name'] ?? null);
+        $kaprodiNidn = $currentUser['nidn'] ?? ($currentUser['nip'] ?? null);
+        $kaprodiRole = strtolower((string) ($currentUser['role'] ?? ($currentUser['role_name'] ?? '')));
+
+        if ($kaprodiName && str_contains($kaprodiRole, 'kaprodi')) {
+            $alreadyInList = false;
+            foreach ($dosenList as &$d) {
+                $existingName = strtolower(trim((string) ($d['nama'] ?? '')));
+                $cleanKaprodi = strtolower(trim($kaprodiName));
+                if ($existingName === $cleanKaprodi
+                    || str_contains($existingName, $cleanKaprodi)
+                    || str_contains($cleanKaprodi, $existingName)) {
+                    $alreadyInList = true;
+                    $d['jabatan'] = 'Kaprodi TRK';
+                    break;
+                }
+            }
+            unset($d);
+
+            if (! $alreadyInList) {
+                array_unshift($dosenList, [
+                    'id' => $currentUser['id'] ?? 0,
+                    'nama' => $kaprodiName.' (Kaprodi)',
+                    'nidn' => $kaprodiNidn ?? '-',
+                    'bidang_keahlian' => 'Kaprodi — Butir Strategis',
+                    'jabatan' => 'Ketua Program Studi',
+                ]);
+            }
         }
 
         // Ambil nama-nama dosen aktual untuk default assignment dinamis
@@ -963,6 +1011,44 @@ class KaprodiController extends Controller
 
         $assignments = is_array($sessionAssignments) ? array_merge($defaultAssignments, $sessionAssignments) : $defaultAssignments;
 
+        // Ambil Placeholder Modules (C.2 & C.5) dari API backend
+        // Endpoint: GET /api/v1/projects/{id}/placeholder-modules
+        $placeholderModules = [];
+        try {
+            $resPlaceholder = $this->akreditasiService->getPlaceholderModules($projectId);
+            if ($resPlaceholder->successful()) {
+                $rawModules = $resPlaceholder->json('data') ?? [];
+
+                $defaultPlaceholderIndicators = [
+                    'C.2' => [
+                        ['code' => 'K2.1', 'bobot' => 4.0, 'desc' => 'Sistem tata pamong, kepemimpinan publik, dan efektivitas pengelolaan operasional prodi.'],
+                        ['code' => 'K2.2', 'bobot' => 4.0, 'desc' => 'Sistem penjaminan mutu internal (SPMI) dan siklus PPEPP secara berkelanjutan.'],
+                        ['code' => 'K2.3', 'bobot' => 3.0, 'desc' => 'Efektivitas kerjasama strategis tridharma tingkat nasional maupun internasional.'],
+                    ],
+                    'C.5' => [
+                        ['code' => 'K5.1', 'bobot' => 3.5, 'desc' => 'Kecukupan alokasi dana operasional, penelitian, pkm, dan investasi sarana prodi.'],
+                        ['code' => 'K5.2', 'bobot' => 4.0, 'desc' => 'Kelayakan dan kecukupan laboratorium komputer, perangkat keras, dan sistem informasi.'],
+                    ],
+                ];
+
+                foreach ($rawModules as $pm) {
+                    $kode = $pm['kode_kriteria'] ?? ($pm['kode'] ?? 'C.2');
+                    $nama = $pm['nama_kriteria'] ?? ($pm['nama'] ?? 'Tata Pamong, Tata Kelola dan Kerjasama');
+                    $info = $pm['keterangan'] ?? ($pm['info'] ?? 'Dikelola unit institusi Polines (UPPS). Data terintegrasi terpusat.');
+                    $inds = ! empty($pm['indikators']) ? $pm['indikators'] : ($defaultPlaceholderIndicators[$kode] ?? []);
+
+                    $placeholderModules[] = [
+                        'kode' => $kode,
+                        'nama' => str_contains($nama, $kode) ? $nama : "{$kode} · {$nama}",
+                        'info' => $info,
+                        'indikators' => $inds,
+                    ];
+                }
+            }
+        } catch (\Throwable $e) {
+            $placeholderModules = [];
+        }
+
         return view('pages.kaprodi.plotting', [
             'projects' => $projects,
             'kriteriaList' => $rawKriteria,
@@ -971,6 +1057,7 @@ class KaprodiController extends Controller
             'mappingTim' => $mappingTim,
             'projectId' => $projectId,
             'assignments' => $assignments,
+            'placeholderModules' => $placeholderModules,
         ]);
     }
 
