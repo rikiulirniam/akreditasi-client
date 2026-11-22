@@ -87,20 +87,20 @@
                     </div>
                 </label>
 
-                <!-- 5. Selesai (Dengan Verifikasi SK Wajib) -->
+                <!-- 5. Selesai (Verifikasi SK Opsional) -->
                 <label class="flex items-start gap-3 p-3 rounded-2xl border border-gray-200 bg-white hover:bg-slate-50/70 transition-all cursor-pointer has-checked:border-emerald-600 has-checked:bg-emerald-50/40">
                     <input type="radio" name="status_project" value="Selesai" id="statusOptionSelesai" class="status-radio-option mt-1 text-emerald-600 focus:ring-emerald-500" onchange="evaluateStatusProtection()">
                     <div class="flex-1">
                         <div class="flex items-center gap-2">
                             <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">Selesai</span>
-                            <span class="text-xs font-bold text-gray-800">Selesai & Terverifikasi SK</span>
+                            <span class="text-xs font-bold text-gray-800">Selesai (Verifikasi SK Opsional)</span>
                         </div>
-                        <p class="text-[11px] text-gray-500 mt-0.5">Project telah tervalidasi tuntas. Wajib mengisi Nomor SK dan Tanggal Verifikasi Akreditasi.</p>
+                        <p class="text-[11px] text-gray-500 mt-0.5">Project telah tervalidasi tuntas. Nomor SK dan Tanggal Verifikasi bersifat opsional dan dapat dilengkapi jika sudah diterbitkan.</p>
                     </div>
                 </label>
             </div>
 
-            <!-- SECTION PROTEKSI FORM: KHUSUS STATUS SELESAI -->
+            <!-- SECTION INPUT SK: KHUSUS STATUS SELESAI (OPSIONAL) -->
             <div id="section-verifikasi-sk" class="hidden transition-all duration-200 space-y-4 p-4 rounded-2xl bg-emerald-50/60 border border-emerald-200 mb-5">
                 <div class="flex items-start gap-2.5">
                     <div class="w-6 h-6 rounded-lg bg-emerald-600 text-white flex items-center justify-center shrink-0 mt-0.5">
@@ -109,9 +109,9 @@
                         </svg>
                     </div>
                     <div>
-                        <h4 class="text-xs font-bold text-emerald-900">Verifikasi SK Akreditasi Wajib</h4>
+                        <h4 class="text-xs font-bold text-emerald-900">Verifikasi SK Akreditasi (Opsional)</h4>
                         <p class="text-[11px] text-emerald-700 mt-0.5 leading-relaxed">
-                            Untuk menyelesaikan lifecycle project, Anda wajib melengkapi data Surat Keputusan (SK) resmi dan tanggal verifikasi akreditasi.
+                            Data Surat Keputusan (SK) resmi dan tanggal verifikasi akreditasi bersifat opsional dan dapat dilengkapi kemudian jika sudah diterbitkan.
                         </p>
                     </div>
                 </div>
@@ -119,42 +119,29 @@
                 <!-- Input Nomor SK -->
                 <div>
                     <label for="statusNomorSk" class="block text-xs font-bold text-gray-800 mb-1">
-                        Nomor SK Akreditasi <span class="text-rose-500">*</span>
+                        Nomor SK Akreditasi <span class="text-gray-400 font-normal">(Opsional)</span>
                     </label>
                     <input 
                         type="text" 
                         name="nomor_sk_akreditasi" 
                         id="statusNomorSk" 
-                        placeholder="Contoh: 0048/SK/LAM-INFOKOM/Akred/ST/2026"
+                        placeholder="Contoh: 0048/SK/LAM-INFOKOM/Akred/ST/2026 (Opsional)"
                         class="block w-full rounded-xl border border-gray-300 bg-white p-2.5 text-xs text-gray-900 focus:border-emerald-600 focus:outline-none focus:ring-1 focus:ring-emerald-600"
-                        oninput="evaluateStatusProtection()"
                     />
-                    <span id="errNomorSk" class="hidden text-[10px] font-semibold text-rose-600 mt-1">Nomor SK Akreditasi wajib diisi.</span>
                 </div>
 
                 <!-- Input Tanggal Verifikasi -->
                 <div>
                     <label for="statusTanggalVerifikasi" class="block text-xs font-bold text-gray-800 mb-1">
-                        Tanggal Verifikasi Akreditasi <span class="text-rose-500">*</span>
+                        Tanggal Verifikasi Akreditasi <span class="text-gray-400 font-normal">(Opsional)</span>
                     </label>
                     <input 
                         type="date" 
                         name="tanggal_verifikasi_akreditasi" 
                         id="statusTanggalVerifikasi" 
                         class="block w-full rounded-xl border border-gray-300 bg-white p-2.5 text-xs text-gray-900 focus:border-emerald-600 focus:outline-none focus:ring-1 focus:ring-emerald-600"
-                        oninput="evaluateStatusProtection()"
-                        onchange="evaluateStatusProtection()"
                     />
-                    <span id="errTanggalVerifikasi" class="hidden text-[10px] font-semibold text-rose-600 mt-1">Tanggal Verifikasi Akreditasi wajib diisi.</span>
                 </div>
-            </div>
-
-            <!-- Warning Alert Jika Tombol Dinonaktifkan -->
-            <div id="statusValidationNotice" class="hidden p-3 rounded-xl bg-amber-50 border border-amber-200 text-[11px] text-amber-800 font-medium mb-5 flex items-center gap-2">
-                <svg class="w-4 h-4 text-amber-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
-                </svg>
-                <span>Tombol Simpan dinonaktifkan: Mohon lengkapi <strong>Nomor SK</strong> dan <strong>Tanggal Verifikasi</strong>.</span>
             </div>
 
             <!-- Footer Actions -->
@@ -252,44 +239,21 @@
         }
     }
 
-    // Evaluasi proteksi form: jika opsi Selesai dipilih, wajibkan input Nomor SK & Tanggal Verifikasi
+    // Evaluasi form status: jika opsi Selesai dipilih, tampilkan input SK opsional
     function evaluateStatusProtection() {
         const selectedRadio = document.querySelector('.status-radio-option:checked');
         const sectionSk = document.getElementById('section-verifikasi-sk');
         const submitBtn = document.getElementById('btnSubmitStatus');
-        const noticeEl = document.getElementById('statusValidationNotice');
-        const errNomor = document.getElementById('errNomorSk');
-        const errTgl = document.getElementById('errTanggalVerifikasi');
 
-        if (!selectedRadio || !submitBtn) return;
+        if (!submitBtn) return;
 
-        const isSelesai = selectedRadio.value === 'Selesai';
+        // Tombol submit selalu aktif karena SK bersifat murni opsional
+        submitBtn.disabled = false;
 
-        if (isSelesai) {
+        if (selectedRadio && selectedRadio.value === 'Selesai') {
             if (sectionSk) sectionSk.classList.remove('hidden');
-
-            const nomorSk = document.getElementById('statusNomorSk')?.value?.trim() || '';
-            const tglVerifikasi = document.getElementById('statusTanggalVerifikasi')?.value?.trim() || '';
-
-            const isNomorValid = nomorSk.length > 0;
-            const isTglValid = tglVerifikasi.length > 0;
-
-            if (errNomor) errNomor.classList.toggle('hidden', isNomorValid);
-            if (errTgl) errTgl.classList.toggle('hidden', isTglValid);
-
-            if (isNomorValid && isTglValid) {
-                submitBtn.disabled = false;
-                if (noticeEl) noticeEl.classList.add('hidden');
-            } else {
-                submitBtn.disabled = true;
-                if (noticeEl) noticeEl.classList.remove('hidden');
-            }
         } else {
             if (sectionSk) sectionSk.classList.add('hidden');
-            if (noticeEl) noticeEl.classList.add('hidden');
-            if (errNomor) errNomor.classList.add('hidden');
-            if (errTgl) errTgl.classList.add('hidden');
-            submitBtn.disabled = false;
         }
     }
 </script>

@@ -63,7 +63,25 @@
         </div>
     </div>
 
-    <!-- Bagian 4 Kotak Statistik (Grid) -->
+    <!-- Bagian 4 Kotak Statistik (Grid) - Dihitung Dinamis dari Data Aktual Tabel -->
+    @php
+        $calcCurrentYear = (int) date('Y');
+        $calcTotal = count($projects ?? []);
+        $calcTahunBerjalan = 0;
+        $calcInProgress = 0;
+        $calcDraft = 0;
+        foreach ($projects ?? [] as $p) {
+            if ((int) ($p['tahun_target_submit'] ?? 0) === $calcCurrentYear) {
+                $calcTahunBerjalan++;
+            }
+            $st = strtolower((string) ($p['status_project'] ?? 'draft'));
+            if ($st === 'on_progress' || $st === 'on progress' || $st === 'in_progress' || $st === 'pengisian' || str_contains($st, 'progress')) {
+                $calcInProgress++;
+            } elseif ($st === 'draft' || empty($st)) {
+                $calcDraft++;
+            }
+        }
+    @endphp
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-6">
         <!-- Card 1 -->
         <div class="bg-white rounded-2xl border border-[#EAEAEA] p-5 flex flex-col justify-center shadow-xs">
@@ -74,7 +92,7 @@
                         <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
                     </svg>
                 </div>
-                <span id="stat-total" class="text-primary text-[28px] font-extrabold leading-none">{{ $stats['total'] ?? count($projects ?? []) }}</span>
+                <span id="stat-total" class="text-primary text-[28px] font-extrabold leading-none">{{ $calcTotal }}</span>
             </div>
         </div>
 
@@ -87,7 +105,7 @@
                         <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                     </svg>
                 </div>
-                <span id="stat-tahun" class="text-primary text-[28px] font-extrabold leading-none">{{ $stats['tahun_berjalan'] ?? 0 }}</span>
+                <span id="stat-tahun" class="text-primary text-[28px] font-extrabold leading-none">{{ $calcTahunBerjalan }}</span>
             </div>
         </div>
 
@@ -101,7 +119,7 @@
                     </svg>
                 </div>
                 <span id="stat-inprogress" class="text-amber-600 text-[28px] font-extrabold leading-none">
-                    {{ $stats['in_progress'] ?? 0 }}
+                    {{ $calcInProgress }}
                 </span>
             </div>
         </div>
@@ -116,7 +134,7 @@
                     </svg>
                 </div>
                 <span id="stat-draft" class="text-slate-700 text-[28px] font-extrabold leading-none">
-                    {{ $stats['draft'] ?? 0 }}
+                    {{ $calcDraft }}
                 </span>
             </div>
         </div>
@@ -215,22 +233,32 @@
                         </div>
                     </x-table.cell>
 
-                    <!-- Status Project (Dapat diubah melalui Modal Lifecycle Status) -->
+                    <!-- Status Project (Dropdown Lifecycle Status) -->
                     <x-table.cell class="text-center">
                         <div class="flex items-center justify-center">
                             @if ($isKaprodi && $id)
-                                <button 
-                                    type="button" 
-                                    onclick="openStatusModal({{ json_encode($item) }})"
-                                    title="Klik untuk ubah lifecycle status project"
-                                    class="group inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold transition-all cursor-pointer shadow-2xs hover:scale-105 {{ $currentStatusCfg['badge'] }} border"
-                                >
-                                    <span class="w-2 h-2 rounded-full {{ $currentStatusCfg['dot'] }}"></span>
-                                    <span>{{ $statusLabel }}</span>
-                                    <svg class="w-3 h-3 opacity-60 group-hover:opacity-100 transition-opacity" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
-                                    </svg>
-                                </button>
+                                <form action="{{ route('kaprodi.project.update-status', $id) }}" method="POST" class="inline-block m-0 p-0">
+                                    @csrf
+                                    @method('PATCH')
+                                    <div class="relative inline-flex items-center">
+                                        <span class="absolute left-2.5 w-2 h-2 rounded-full {{ $currentStatusCfg['dot'] }} pointer-events-none"></span>
+                                        <select 
+                                            name="status_project" 
+                                            onchange="this.form.submit()" 
+                                            title="Pilih untuk langsung mengubah status project"
+                                            class="appearance-none pl-6 pr-6 py-1 rounded-full text-xs font-bold border transition-all cursor-pointer shadow-2xs hover:scale-105 focus:outline-none focus:ring-2 focus:ring-primary/20 {{ $currentStatusCfg['badge'] }}"
+                                        >
+                                            <option value="Draft" {{ $statusLabel === 'Draft' ? 'selected' : '' }} class="bg-white text-slate-700 font-semibold">Draft</option>
+                                            <option value="On Progress" {{ $statusLabel === 'On Progress' ? 'selected' : '' }} class="bg-white text-amber-800 font-semibold">On Progress</option>
+                                            <option value="Pending" {{ $statusLabel === 'Pending' ? 'selected' : '' }} class="bg-white text-orange-800 font-semibold">Pending</option>
+                                            <option value="Cancel" {{ $statusLabel === 'Cancel' ? 'selected' : '' }} class="bg-white text-rose-800 font-semibold">Cancel</option>
+                                            <option value="Selesai" {{ $statusLabel === 'Selesai' ? 'selected' : '' }} class="bg-white text-emerald-800 font-semibold">Selesai</option>
+                                        </select>
+                                        <svg class="w-3 h-3 absolute right-2 text-current opacity-60 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
+                                        </svg>
+                                    </div>
+                                </form>
                             @else
                                 <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold {{ $currentStatusCfg['badge'] }} border">
                                     <span class="w-2 h-2 rounded-full {{ $currentStatusCfg['dot'] }}"></span>
@@ -254,6 +282,19 @@
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                                 </svg>
                                 <span>Kesiapan</span>
+                            </button>
+
+                            <!-- Tombol Simulasi Skor SDM Dosen LAM-INFOKOM -->
+                            <button 
+                                type="button" 
+                                onclick="openScoringSimulationModal({{ $id }}, '{{ addslashes($namaProject) }}')" 
+                                class="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-bold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 rounded-lg transition-colors cursor-pointer shadow-2xs"
+                                title="Simulasi Skor Kuantitatif SDM Dosen LAM-INFOKOM"
+                            >
+                                <svg class="w-3.5 h-3.5 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z" />
+                                </svg>
+                                <span>Simulasi SDM</span>
                             </button>
 
                             @if(Route::has('kaprodi.plotting'))
@@ -403,12 +444,12 @@
                         <label class="block text-xs font-bold text-gray-800 mb-1.5">Status Project Awal</label>
                         <div class="flex flex-wrap gap-2 pt-1">
                             <label class="cursor-pointer">
-                                <input type="radio" name="status_project" value="draft" class="peer sr-only" checked>
+                                <input type="radio" name="status_project" value="Draft" class="peer sr-only" checked>
                                 <div class="bg-slate-100 text-gray-600 text-xs font-semibold px-3 py-1.5 rounded-lg peer-checked:bg-primary peer-checked:text-white hover:bg-slate-200 transition-colors">Draft</div>
                             </label>
                             @if ($isKaprodi)
                             <label class="cursor-pointer">
-                                <input type="radio" name="status_project" value="on_progress" class="peer sr-only">
+                                <input type="radio" name="status_project" value="On Progress" class="peer sr-only">
                                 <div class="bg-slate-100 text-gray-600 text-xs font-semibold px-3 py-1.5 rounded-lg peer-checked:bg-primary peer-checked:text-white hover:bg-slate-200 transition-colors">On Progress</div>
                             </label>
                             @endif
@@ -529,12 +570,24 @@
                         @if ($isKaprodi)
                             <div class="flex flex-wrap gap-2 pt-1">
                                 <label class="cursor-pointer">
-                                    <input type="radio" name="status_project" value="draft" id="editStatusDraft" class="peer sr-only">
-                                    <div class="bg-slate-100 text-gray-600 text-xs font-semibold px-4 py-2 rounded-xl peer-checked:bg-primary peer-checked:text-white hover:bg-slate-200 transition-colors">Draft</div>
+                                    <input type="radio" name="status_project" value="Draft" class="edit-status-radio peer sr-only">
+                                    <div class="bg-slate-100 text-gray-600 text-xs font-semibold px-3 py-1.5 rounded-xl peer-checked:bg-primary peer-checked:text-white hover:bg-slate-200 transition-colors">Draft</div>
                                 </label>
                                 <label class="cursor-pointer">
-                                    <input type="radio" name="status_project" value="on_progress" id="editStatusInProgress" class="peer sr-only">
-                                    <div class="bg-slate-100 text-gray-600 text-xs font-semibold px-4 py-2 rounded-xl peer-checked:bg-primary peer-checked:text-white hover:bg-slate-200 transition-colors">On Progress</div>
+                                    <input type="radio" name="status_project" value="On Progress" class="edit-status-radio peer sr-only">
+                                    <div class="bg-slate-100 text-gray-600 text-xs font-semibold px-3 py-1.5 rounded-xl peer-checked:bg-primary peer-checked:text-white hover:bg-slate-200 transition-colors">On Progress</div>
+                                </label>
+                                <label class="cursor-pointer">
+                                    <input type="radio" name="status_project" value="Pending" class="edit-status-radio peer sr-only">
+                                    <div class="bg-slate-100 text-gray-600 text-xs font-semibold px-3 py-1.5 rounded-xl peer-checked:bg-primary peer-checked:text-white hover:bg-slate-200 transition-colors">Pending</div>
+                                </label>
+                                <label class="cursor-pointer">
+                                    <input type="radio" name="status_project" value="Cancel" class="edit-status-radio peer sr-only">
+                                    <div class="bg-slate-100 text-gray-600 text-xs font-semibold px-3 py-1.5 rounded-xl peer-checked:bg-primary peer-checked:text-white hover:bg-slate-200 transition-colors">Cancel</div>
+                                </label>
+                                <label class="cursor-pointer">
+                                    <input type="radio" name="status_project" value="Selesai" class="edit-status-radio peer sr-only">
+                                    <div class="bg-slate-100 text-gray-600 text-xs font-semibold px-3 py-1.5 rounded-xl peer-checked:bg-primary peer-checked:text-white hover:bg-slate-200 transition-colors">Selesai</div>
                                 </label>
                             </div>
                         @else
@@ -657,20 +710,26 @@
             syncInstrumenData(select, 'edit');
         }
         
-        const status = (item.status_project || 'draft').toLowerCase();
-        const isProg = status === 'in_progress' || status === 'pengisian' || status.includes('progress');
-        const draftRadio = document.getElementById('editStatusDraft');
-        const inProgRadio = document.getElementById('editStatusInProgress');
-        if (draftRadio && inProgRadio) {
-            if (isProg) {
-                inProgRadio.checked = true;
+        const rawStatus = (item.status_project || 'Draft').toLowerCase();
+        const radios = document.querySelectorAll('#modal-edit-project .edit-status-radio');
+        let radioMatched = false;
+        radios.forEach(radio => {
+            const rVal = radio.value.toLowerCase();
+            const isProg = (rVal === 'on progress') && (rawStatus === 'in_progress' || rawStatus === 'on_progress' || rawStatus === 'on progress' || rawStatus.includes('progress'));
+            if (rVal === rawStatus || isProg) {
+                radio.checked = true;
+                radioMatched = true;
             } else {
-                draftRadio.checked = true;
+                radio.checked = false;
             }
+        });
+        if (!radioMatched && radios.length > 0) {
+            radios[0].checked = true;
         }
+
         const statusReadonly = document.getElementById('editStatusReadonly');
         if (statusReadonly) {
-            statusReadonly.innerText = isProg ? 'On Progress' : 'Draft';
+            statusReadonly.innerText = item.status_project || 'Draft';
         }
 
         modal.classList.remove('hidden');
@@ -715,6 +774,22 @@
             console.error('Gagal sinkronisasi kredensial ke localStorage:', e);
         }
     })();
+
+    // Indikator loading untuk form Quick Create Project TRK 2026
+    document.getElementById('formQuickCreate')?.addEventListener('submit', function() {
+        const btn = document.getElementById('btnQuickCreateTRK');
+        if (btn) {
+            btn.disabled = true;
+            btn.innerHTML = `
+                <svg class="animate-spin w-4 h-4 text-white shrink-0" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                <span>Membuat Project TRK 2026...</span>
+            `;
+            btn.classList.add('opacity-75', 'cursor-not-allowed');
+        }
+    });
 </script>
 
 <!-- MODAL LIFECYCLE STATUS & VERIFIKASI SK AKREDITASI -->
@@ -722,4 +797,7 @@
 
 <!-- MODAL PENGECEKAN KESIAPAN SUBMIT (READINESS CHECK) -->
 <x-modal-readiness-check />
+
+<!-- MODAL SIMULASI KUANTITATIF SDM DOSEN LAM-INFOKOM -->
+<x-modal-scoring-simulation />
 @endsection

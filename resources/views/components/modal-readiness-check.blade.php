@@ -199,31 +199,17 @@
                 headers: headers
             });
 
-            const resJson = await response.json();
-            const data = resJson.data || resJson;
-            currentReadinessData = data;
+            if (!response.ok) {
+                throw new Error('HTTP ' + response.status);
+            }
 
-            renderReadinessData(data);
+            const payload = await response.json();
+            currentReadinessData = mapReadinessPayload(payload);
+            renderReadinessData(currentReadinessData);
         } catch (error) {
             console.error('Gagal mengambil data readiness:', error);
-            // Render fallback state
-            renderReadinessData({
-                is_ready: false,
-                total_indikator: 5,
-                ready_indikator: 2,
-                unready_indikator: 3,
-                percentage: 40,
-                missing_pic_count: 1,
-                missing_evidence_count: 2,
-                missing_assessment_count: 3,
-                indicators: [
-                    { id_indikator: 1, kode_indikator: 'IND-1.1.1', deskripsi_indikator: 'Kesesuaian VMTS Program Studi', has_pic: true, pic_name: 'Dr. Rina Kusuma', has_evidence: true, evidence_link: 'https://drive.google.com/...', has_assessment: true, score: 3.5, is_ready: true, missing_items: [] },
-                    { id_indikator: 2, kode_indikator: 'IND-2.1.1', deskripsi_indikator: 'Sistem Penjaminan Mutu Internal (SPMI)', has_pic: true, pic_name: 'Budi Santoso M.Kom.', has_evidence: true, evidence_link: 'https://drive.google.com/...', has_assessment: false, score: null, is_ready: false, missing_items: ['Belum dinilai oleh reviewer'] },
-                    { id_indikator: 3, kode_indikator: 'IND-3.1.1', deskripsi_indikator: 'Kecukupan dan Kualifikasi Dosen Tetap', has_pic: false, pic_name: null, has_evidence: false, evidence_link: null, has_assessment: false, score: null, is_ready: false, missing_items: ['Belum memiliki PIC', 'Belum ada link bukti', 'Belum dinilai oleh reviewer'] },
-                    { id_indikator: 4, kode_indikator: 'IND-4.1.1', deskripsi_indikator: 'Struktur Kurikulum dan Capaian Pembelajaran', has_pic: true, pic_name: 'Sari Wulandari', has_evidence: false, evidence_link: null, has_assessment: false, score: null, is_ready: false, missing_items: ['Belum ada link bukti', 'Belum dinilai oleh reviewer'] },
-                    { id_indikator: 5, kode_indikator: 'IND-5.1.1', deskripsi_indikator: 'Sarana dan Prasarana Pembelajaran', has_pic: true, pic_name: 'Andi Pratama', has_evidence: true, evidence_link: 'https://drive.google.com/...', has_assessment: true, score: 4.0, is_ready: true, missing_items: [] }
-                ]
-            });
+            currentReadinessData = mapReadinessPayload([]);
+            renderReadinessData(currentReadinessData, true);
         } finally {
             if (loading) loading.classList.add('hidden');
             if (content) content.classList.remove('hidden');
@@ -235,15 +221,86 @@
         if (modal) modal.classList.add('hidden');
     }
 
-    // Render tampilan checklist dan status tombol submit
-    function renderReadinessData(data) {
-        if (!data) return;
+    function mapReadinessPayload(payload) {
+        const data = payload && !Array.isArray(payload) && payload.data !== undefined && payload.data !== null
+            ? payload.data
+            : payload;
+        let items = Array.isArray(data) ? data : [];
 
-        const isReady = data.is_ready === true;
-        const total = data.total_indikator || (data.indicators ? data.indicators.length : 0);
-        const readyCount = data.ready_indikator !== undefined ? data.ready_indikator : (data.indicators ? data.indicators.filter(i => i.is_ready).length : 0);
-        const unreadyCount = data.unready_indikator !== undefined ? data.unready_indikator : (total - readyCount);
-        const percentage = data.percentage !== undefined ? data.percentage : (total > 0 ? Math.round((readyCount / total) * 100) : 0);
+        if (!Array.isArray(data) && data && typeof data === 'object') {
+            const arrayKeys = ['indikator_belum_siap', 'items', 'checklist', 'indikators', 'butir_kritis', 'details', 'indicators'];
+            for (const key of arrayKeys) {
+                if (Array.isArray(data[key])) {
+                    items = data[key];
+                    break;
+                }
+            }
+        }
+
+        const indicators = items
+            .filter(item => item && typeof item === 'object' && !Array.isArray(item))
+            .map(item => {
+                const missingItems = Array.isArray(item.belum_terpenuhi) ? item.belum_terpenuhi : null;
+                const hasPic = missingItems
+                    ? !missingItems.includes('pic')
+                    : Boolean(item.has_pic ?? item.pic);
+                const hasEvidence = missingItems
+                    ? !missingItems.includes('link_evidence')
+                    : Boolean(item.has_evidence ?? item.link_bukti);
+                const hasAssessment = missingItems
+                    ? !missingItems.includes('skor_reviewer')
+                    : Boolean(item.has_score ?? (item.penilaian !== null));
+                const isReady = missingItems
+                    ? missingItems.length === 0
+                    : Boolean(item.is_ready);
+                const assessmentValue = item.penilaian ?? item.score ?? item.nilai;
+                const pic = item.pic && typeof item.pic === 'object' ? item.pic : null;
+
+                return {
+                    kode_indikator: item.kode_indikator || item.kode || item.code || '',
+                    deskripsi_indikator: item.deskripsi_indikator || item.nama_indikator || item.nama || item.name || '',
+                    has_pic: hasPic,
+                    pic_name: item.pic_name || item.nama_pic || (pic ? pic.nama || pic.name || pic.nama_pic : '') || '',
+                    has_evidence: hasEvidence,
+                    has_assessment: hasAssessment,
+                    score: assessmentValue,
+                    is_ready: isReady
+                };
+            });
+        const totalFromPayload = Number(data && data.total_indikator_kritis != null ? data.total_indikator_kritis : items.length);
+        const total = Number.isFinite(totalFromPayload) ? totalFromPayload : items.length;
+        const unreadyFromPayload = Number(data && data.jumlah_indikator_belum_siap != null
+            ? data.jumlah_indikator_belum_siap
+            : indicators.filter(item => !item.is_ready).length);
+        const unreadyCount = Number.isFinite(unreadyFromPayload)
+            ? unreadyFromPayload
+            : indicators.filter(item => !item.is_ready).length;
+        const readyCount = Math.max(0, total - unreadyCount);
+        const isReady = data && data.siap_submit !== undefined
+            ? Boolean(data.siap_submit)
+            : total > 0 && readyCount === total;
+
+        return {
+            indicators: indicators,
+            total: total,
+            readyCount: readyCount,
+            unreadyCount: unreadyCount,
+            percentage: total > 0 ? Math.round((readyCount / total) * 100) : (isReady ? 100 : 0),
+            is_ready: isReady,
+            missingPicCount: indicators.filter(item => !item.has_pic).length,
+            missingEvidenceCount: indicators.filter(item => !item.has_evidence).length,
+            missingAssessmentCount: indicators.filter(item => !item.has_assessment).length
+        };
+    }
+
+    // Render tampilan checklist dan status tombol submit
+    function renderReadinessData(data, hasError = false) {
+        const indicators = data.indicators;
+        const total = data.total;
+        const readyCount = data.readyCount;
+        const unreadyCount = data.unreadyCount;
+        const percentage = data.percentage;
+        const isReady = data.is_ready;
 
         // Update Banner
         const banner = document.getElementById('readinessBanner');
@@ -261,8 +318,14 @@
             banner.className = 'p-4 rounded-2xl border flex items-start gap-3 bg-amber-50 border-amber-200 text-amber-900';
             bannerIcon.className = 'w-8 h-8 rounded-xl bg-amber-500 text-white flex items-center justify-center shrink-0 mt-0.5';
             bannerIcon.innerHTML = '<svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" /></svg>';
-            bannerTitle.textContent = 'BELUM SIAP DIAJUKAN (' + unreadyCount + ' Butir Kritis Belum Lengkap)';
-            bannerDesc.textContent = 'Terdapat indikator kritis yang belum memiliki PIC, belum ada bukti dokumen, atau belum dinilai oleh reviewer. Tombol pengajuan akhir dinonaktifkan hingga seluruh butir lengkap.';
+            bannerTitle.textContent = hasError
+                ? 'Data kesiapan tidak dapat dimuat'
+                : total === 0
+                    ? 'BELUM SIAP DIAJUKAN (Tidak ada data indikator)'
+                    : 'BELUM SIAP DIAJUKAN (' + unreadyCount + ' Butir Kritis Belum Lengkap)';
+            bannerDesc.textContent = hasError
+                ? 'Status pengajuan tidak dapat dipastikan karena data readiness gagal dimuat.'
+                : 'Terdapat indikator kritis yang belum memiliki PIC, belum ada bukti dokumen, atau belum dinilai oleh reviewer. Tombol pengajuan akhir dinonaktifkan hingga seluruh butir lengkap.';
         }
 
         // Update Metrics
@@ -271,9 +334,9 @@
         document.getElementById('metricProgressBar').style.width = percentage + '%';
         document.getElementById('metricProgressBar').className = isReady ? 'h-full bg-emerald-600 transition-all duration-500' : 'h-full bg-additional transition-all duration-500';
 
-        document.getElementById('metricMissingPic').textContent = data.missing_pic_count !== undefined ? data.missing_pic_count : (data.indicators ? data.indicators.filter(i => !i.has_pic).length : 0);
-        document.getElementById('metricMissingEvidence').textContent = data.missing_evidence_count !== undefined ? data.missing_evidence_count : (data.indicators ? data.indicators.filter(i => !i.has_evidence).length : 0);
-        document.getElementById('metricMissingAssessment').textContent = data.missing_assessment_count !== undefined ? data.missing_assessment_count : (data.indicators ? data.indicators.filter(i => !i.has_assessment).length : 0);
+        document.getElementById('metricMissingPic').textContent = data.missingPicCount;
+        document.getElementById('metricMissingEvidence').textContent = data.missingEvidenceCount;
+        document.getElementById('metricMissingAssessment').textContent = data.missingAssessmentCount;
 
         // Update Filter Badges
         document.getElementById('badgeFilterAll').textContent = total;
@@ -284,7 +347,6 @@
         const tbody = document.getElementById('readinessTableBody');
         tbody.innerHTML = '';
 
-        const indicators = data.indicators || [];
         indicators.forEach(item => {
             const tr = document.createElement('tr');
             tr.className = 'hover:bg-slate-50/70 transition-colors readiness-row';
@@ -308,14 +370,14 @@
                 tdPic.innerHTML = `
                     <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
                         <svg class="w-3 h-3 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" /></svg>
-                        <span>${escapeHtml(item.pic_name || 'PIC Ditugaskan')}</span>
+                        <span>${escapeHtml(item.pic_name || 'Sudah Ditugaskan')}</span>
                     </span>
                 `;
             } else {
                 tdPic.innerHTML = `
                     <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-50 text-rose-700 border border-rose-200">
                         <svg class="w-3 h-3 text-rose-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
-                        <span>Belum Ada PIC</span>
+                        <span>Belum Ditugaskan</span>
                     </span>
                 `;
             }
@@ -328,14 +390,14 @@
                 tdEv.innerHTML = `
                     <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
                         <svg class="w-3 h-3 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" /></svg>
-                        <span>Ada Bukti</span>
+                        <span>Tersedia</span>
                     </span>
                 `;
             } else {
                 tdEv.innerHTML = `
                     <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-50 text-rose-700 border border-rose-200">
                         <svg class="w-3 h-3 text-rose-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
-                        <span>Belum Ada Bukti</span>
+                        <span>Belum Ada</span>
                     </span>
                 `;
             }
@@ -345,10 +407,13 @@
             const tdAs = document.createElement('td');
             tdAs.className = 'py-3.5 px-3 text-center';
             if (item.has_assessment) {
+                const scoreLabel = item.score !== undefined && item.score !== null && item.score !== ''
+                    ? String(item.score)
+                    : 'Dinilai';
                 tdAs.innerHTML = `
                     <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
                         <svg class="w-3 h-3 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" /></svg>
-                        <span>Skor: ${escapeHtml(String(item.score || 'Dinilai'))}</span>
+                        <span>${scoreLabel === 'Dinilai' ? 'Sudah Dinilai' : 'Sudah Dinilai: ' + escapeHtml(scoreLabel)}</span>
                     </span>
                 `;
             } else {
@@ -382,6 +447,22 @@
             tbody.appendChild(tr);
         });
 
+        if (indicators.length === 0) {
+            const emptyRow = document.createElement('tr');
+            const emptyCell = document.createElement('td');
+            emptyCell.colSpan = 5;
+            emptyCell.className = 'py-8 px-4 text-center text-xs text-gray-500';
+            emptyCell.textContent = hasError
+                ? 'Data indikator tidak dapat dimuat. Silakan coba lagi.'
+                : isReady
+                    ? 'Tidak ada indikator yang belum siap.'
+                    : total === 0
+                        ? 'Tidak ada indikator kesiapan yang tersedia.'
+                        : 'Tidak ada rincian indikator belum siap yang dikembalikan.';
+            emptyRow.appendChild(emptyCell);
+            tbody.appendChild(emptyRow);
+        }
+
         // Update Tombol Pengajuan Akhir & Notice
         const submitBtn = document.getElementById('btnFinalSubmit');
         const noticeEl = document.getElementById('finalSubmitNotice');
@@ -395,7 +476,9 @@
             submitBtn.disabled = true;
             submitBtn.className = 'px-6 py-2.5 rounded-xl text-xs font-bold transition shadow-none cursor-not-allowed bg-slate-200 text-slate-400 disabled:opacity-60 disabled:cursor-not-allowed';
             noticeEl.className = 'font-bold text-rose-700';
-            noticeEl.textContent = '⚠ Tombol pengajuan akhir dinonaktifkan: Masih terdapat ' + unreadyCount + ' butir indikator kritis yang belum siap.';
+            noticeEl.textContent = hasError
+                ? 'Pengajuan dinonaktifkan hingga data readiness berhasil dimuat.'
+                : '⚠ Tombol pengajuan akhir dinonaktifkan: Masih terdapat ' + unreadyCount + ' butir indikator kritis yang belum siap.';
         }
 
         filterReadinessTable('all');
