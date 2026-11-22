@@ -55,7 +55,7 @@ class PrestasiMahasiswaController extends Controller
         $mahasiswaMap = collect($mahasiswaList)->keyBy(fn (array $item) => (string) ($item['id'] ?? ''));
         $evidenceByPrestasi = collect($this->responseList($evidenceResponse))
             ->groupBy(fn (array $item) => (string) ($item['id_prestasi_mahasiswa'] ?? ''));
-        
+
         // Perbaikan: Mapping master jenis prestasi berdasarkan ID (arsitektur master baru)
         $jenisMasterMap = collect($this->responseList($jenisResponse))
             ->keyBy(fn (array $item) => (string) ($item['id'] ?? ''));
@@ -248,7 +248,7 @@ class PrestasiMahasiswaController extends Controller
             $this->responseList($evidenceResponse),
             fn (array $item) => (string) ($item['id_prestasi_mahasiswa'] ?? '') === (string) $id
         ));
-        
+
         $jenisMasterMap = collect($this->responseList($jenisResponse))
             ->keyBy(fn (array $item) => (string) ($item['id'] ?? ''));
         $idJenis = $prestasi['id_jenis_prestasi'] ?? null;

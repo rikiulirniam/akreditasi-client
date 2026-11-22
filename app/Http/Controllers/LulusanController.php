@@ -13,6 +13,154 @@ class LulusanController extends Controller
         protected AkademikService $akademikService,
     ) {}
 
+    public function edit(Request $request, string $id): View|RedirectResponse
+    {
+        $response = $this->akademikService->getMahasiswaById($id);
+
+        if ($response->status() === 401) {
+            return redirect()->route('login')->with('toast', [
+                'type' => 'warning',
+                'title' => 'Sesi Berakhir',
+                'message' => 'Sesi Anda telah kedaluwarsa. Silakan login kembali.',
+            ]);
+        }
+
+        $mahasiswa = $response->json('data');
+
+        if (! $mahasiswa) {
+            // Fallback searching via lulusan list if id was passed as NIM or not found directly
+            $searchResponse = $this->akademikService->getLulusanList(['search' => $id, 'per_page' => 5]);
+            if ($searchResponse->successful()) {
+                $rawLulusan = $searchResponse->json('data') ?? [];
+                $items = isset($rawLulusan['data']) && is_array($rawLulusan['data']) ? $rawLulusan['data'] : (is_array($rawLulusan) ? $rawLulusan : []);
+                foreach ($items as $item) {
+                    $nimRaw = (string) ($item['nim'] ?? '');
+                    $nimDisplay = (string) ($item['nim_display'] ?? '');
+                    $mId = (string) ($item['id'] ?? '');
+                    if ($mId === $id || $nimRaw === $id || $nimDisplay === $id || str_replace('.', '', $nimDisplay) === $id) {
+                        $mahasiswa = $item;
+                        break;
+                    }
+                }
+                if (! $mahasiswa && ! empty($items)) {
+                    $mahasiswa = $items[0];
+                }
+            }
+        }
+
+        if (! $mahasiswa) {
+            return redirect()->route('lulusan.index')->with('toast', [
+                'type' => 'error',
+                'title' => 'Data Tidak Ditemukan',
+                'message' => 'Data lulusan tidak ditemukan.',
+            ]);
+        }
+
+        return view('lulusan.edit', [
+            'mahasiswa' => $mahasiswa,
+        ]);
+    }
+
+    public function update(Request $request, string $id): RedirectResponse
+    {
+        $validated = $request->validate([
+            'nama_mahasiswa' => ['required', 'string', 'max:255'],
+            'nim' => ['required'],
+            'tahun_masuk' => ['required', 'integer'],
+            'jenis_pendaftaran' => ['nullable', 'string'],
+            'tanggal_kelulusan' => ['nullable', 'date'],
+            'masa_studi_bulan' => ['nullable', 'integer', 'min:1', 'max:120'],
+            'masa_tunggu_bulan' => ['nullable', 'integer', 'min:0', 'max:120'],
+            'tempat_kerja' => ['nullable', 'string', 'max:255'],
+        ], [
+            'nama_mahasiswa.required' => 'Nama Mahasiswa wajib diisi.',
+            'nim.required' => 'NIM wajib diisi.',
+            'tahun_masuk.required' => 'Tahun masuk wajib diisi.',
+            'tanggal_kelulusan.date' => 'Format tanggal kelulusan tidak valid.',
+            'masa_studi_bulan.integer' => 'Masa studi harus berupa angka bulat.',
+            'masa_tunggu_bulan.integer' => 'Masa tunggu harus berupa angka bulat.',
+            'masa_tunggu_bulan.min' => 'Masa tunggu tidak boleh negatif.',
+            'masa_tunggu_bulan.max' => 'Masa tunggu maksimal 120 bulan.',
+            'tempat_kerja.max' => 'Nama tempat kerja maksimal 255 karakter.',
+        ]);
+
+        $rawNim = (string) $validated['nim'];
+        $cleanNim = (int) str_replace(['.', '-', ' '], '', $rawNim);
+
+        $payload = array_merge($validated, [
+            'nim' => $cleanNim > 0 ? $cleanNim : $rawNim,
+            'masa_studi_bulan' => ! empty($validated['masa_studi_bulan']) ? (int) $validated['masa_studi_bulan'] : 48,
+            'jenis_pendaftaran' => ! empty($validated['jenis_pendaftaran']) ? $validated['jenis_pendaftaran'] : 'baru',
+        ]);
+
+        $response = $this->akademikService->updateMahasiswa($id, $payload);
+
+        if (! $response->successful()) {
+            $message = $response->json('message') ?? 'Gagal memperbarui data lulusan.';
+
+            return back()->withInput()->with('toast', [
+                'type' => 'error',
+                'title' => 'Gagal Memperbarui',
+                'message' => $message,
+            ]);
+        }
+
+        return back()->with('toast', [
+            'type' => 'success',
+            'title' => 'Berhasil Diperbarui',
+            'message' => 'Data lulusan berhasil diperbarui.',
+        ]);
+    }
+
+    public function show(Request $request, string $nim): View|RedirectResponse
+    {
+        // Try to get the lulusan data from the index API, filtered by search
+        $apiParams = ['search' => $nim, 'per_page' => 10];
+        $lulusanResponse = $this->akademikService->getLulusanList($apiParams);
+
+        $lulusan = null;
+
+        if ($lulusanResponse->successful()) {
+            $rawData = $lulusanResponse->json('data') ?? [];
+            $items = [];
+
+            if (is_array($rawData)) {
+                if (isset($rawData['data']) && is_array($rawData['data'])) {
+                    $items = $rawData['data'];
+                } else {
+                    $items = $rawData;
+                }
+            }
+
+            // Find matching item by NIM (nim or nim_display)
+            foreach ($items as $item) {
+                $nimRaw = (string) ($item['nim'] ?? '');
+                $nimDisplay = (string) ($item['nim_display'] ?? '');
+                if ($nimRaw === $nim || $nimDisplay === $nim || str_replace('.', '', $nimDisplay) === $nim || str_replace('.', '', $nimRaw) === $nim) {
+                    $lulusan = $item;
+                    break;
+                }
+            }
+
+            // If not found by exact match, take first result
+            if (! $lulusan && ! empty($items)) {
+                $lulusan = $items[0];
+            }
+        }
+
+        if (! $lulusan) {
+            return redirect()->route('lulusan.index')->with('toast', [
+                'type' => 'error',
+                'title' => 'Data Tidak Ditemukan',
+                'message' => 'Data lulusan dengan NIM '.$nim.' tidak ditemukan.',
+            ]);
+        }
+
+        return view('lulusan.show', [
+            'lulusan' => $lulusan,
+        ]);
+    }
+
     public function dashboard(): RedirectResponse
     {
         return redirect()->route('lulusan.index');
