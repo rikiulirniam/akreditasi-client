@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Akreditasi\Superadmin;
 
 use App\Http\Controllers\Controller;
 use App\Services\AkreditasiService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -165,17 +166,40 @@ class IndikatorController extends Controller
         }
     }
 
-    public function destroy(int|string $lembagaId, int|string $instrumenId, int|string $kriteriaId, int|string $subkriteriaId, int|string $indikatorId): RedirectResponse
+    public function destroy(Request $request, int|string $lembagaId, int|string $instrumenId, int|string $kriteriaId, int|string $subkriteriaId, int|string $indikatorId): JsonResponse|RedirectResponse
     {
         try {
             $response = $this->akreditasiService->deleteIndikator($indikatorId);
+            $message = $response->json('message');
+
+            if ($request->wantsJson() || $request->ajax()) {
+                if ($response->successful()) {
+                    return response()->json([
+                        'success' => true,
+                        'message' => $message ?? 'Indikator berhasil dihapus.',
+                    ]);
+                }
+
+                return response()->json([
+                    'success' => false,
+                    'message' => $message ?? 'Gagal menghapus indikator.',
+                ], $response->status() ?: 422);
+            }
+
             if ($response->successful()) {
                 return redirect()->route('akreditasi.superadmin.indikator', [$lembagaId, $instrumenId, $kriteriaId, $subkriteriaId])
                     ->with('success', 'Indikator berhasil dihapus.');
             }
 
-            return back()->with('error', (string) ($response->json('message') ?? 'Gagal menghapus indikator.'));
+            return back()->with('error', (string) ($message ?? 'Gagal menghapus indikator.'));
         } catch (\Throwable $e) {
+            if ($request->wantsJson() || $request->ajax()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Terjadi kesalahan: '.$e->getMessage(),
+                ], 500);
+            }
+
             return back()->with('error', 'Terjadi kesalahan: '.$e->getMessage());
         }
     }

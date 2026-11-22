@@ -309,11 +309,18 @@ class AkreditasiService
     }
 
     /**
-     * Mengaktifkan versi instrumen.
+     * Mengaktifkan versi instrumen untuk jenjang tertentu.
      */
-    public function activateVersiInstrumen(int|string $id): Response
-    {
-        return $this->patch("/master/versi-instrumen/{$id}/aktifkan");
+    public function activateVersiInstrumen(
+        int|string $id,
+        int|string $idJenjang
+    ): Response {
+        return $this->patch(
+            "/master/versi-instrumen/{$id}/aktifkan",
+            [
+                'id_jenjang' => $idJenjang,
+            ]
+        );
     }
 
     /**
@@ -340,6 +347,14 @@ class AkreditasiService
     public function getInstrumen(int|string $id): Response
     {
         return $this->get("/master/instrumen/{$id}");
+    }
+
+    /**
+     * Mengambil hierarki instrumen aktif LAM-INFOKOM 2.1 TRK.
+     */
+    public function getActiveStaticInstrumen(): Response
+    {
+        return $this->get('/master/instrumen/active-static');
     }
 
     /**

@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Akreditasi\Superadmin;
 
 use App\Http\Controllers\Controller;
 use App\Services\AkreditasiService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -140,17 +141,40 @@ class SubkriteriaController extends Controller
         }
     }
 
-    public function destroy(int|string $lembagaId, int|string $instrumenId, int|string $kriteriaId, int|string $subkriteriaId): RedirectResponse
+    public function destroy(Request $request, int|string $lembagaId, int|string $instrumenId, int|string $kriteriaId, int|string $subkriteriaId): JsonResponse|RedirectResponse
     {
         try {
             $response = $this->akreditasiService->deleteSubkriteria($subkriteriaId);
+            $message = $response->json('message');
+
+            if ($request->wantsJson() || $request->ajax()) {
+                if ($response->successful()) {
+                    return response()->json([
+                        'success' => true,
+                        'message' => $message ?? 'Subkriteria berhasil dihapus.',
+                    ]);
+                }
+
+                return response()->json([
+                    'success' => false,
+                    'message' => $message ?? 'Gagal menghapus subkriteria.',
+                ], $response->status() ?: 422);
+            }
+
             if ($response->successful()) {
                 return redirect()->route('akreditasi.superadmin.subkriteria', [$lembagaId, $instrumenId, $kriteriaId])
                     ->with('success', 'Subkriteria berhasil dihapus.');
             }
 
-            return back()->with('error', (string) ($response->json('message') ?? 'Gagal menghapus subkriteria.'));
+            return back()->with('error', (string) ($message ?? 'Gagal menghapus subkriteria.'));
         } catch (\Throwable $e) {
+            if ($request->wantsJson() || $request->ajax()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Terjadi kesalahan: '.$e->getMessage(),
+                ], 500);
+            }
+
             return back()->with('error', 'Terjadi kesalahan: '.$e->getMessage());
         }
     }

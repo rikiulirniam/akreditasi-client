@@ -3,10 +3,10 @@
 use App\Http\Controllers\Akreditasi\Superadmin\BuktiDokumenController;
 use App\Http\Controllers\Akreditasi\Superadmin\DashboardController as SuperadminDashboard;
 use App\Http\Controllers\Akreditasi\Superadmin\IndikatorController;
+use App\Http\Controllers\Akreditasi\Superadmin\InstrumenAktifController;
 use App\Http\Controllers\Akreditasi\Superadmin\InstrumenController;
 use App\Http\Controllers\Akreditasi\Superadmin\KriteriaController;
 use App\Http\Controllers\Akreditasi\Superadmin\LembagaAkreditasiController;
-use App\Http\Controllers\Akreditasi\Superadmin\LembarKerjaController;
 use App\Http\Controllers\Akreditasi\Superadmin\RubrikController;
 use App\Http\Controllers\Akreditasi\Superadmin\SubkriteriaController;
 use App\Http\Controllers\Akreditasi\Superadmin\VersiInstrumenController;
@@ -253,6 +253,8 @@ Route::middleware('auth.akademik')->group(function () {
 Route::prefix('pages')->name('akreditasi.superadmin.')->group(function () {
     Route::get('/superadmin', [SuperadminDashboard::class, 'index'])->name('dashboard');
     Route::get('/superadmin/dashboard', [SuperadminDashboard::class, 'index']);
+    Route::get('/superadmin/instrumen-aktif', [InstrumenAktifController::class, 'index'])
+        ->name('instrumen_aktif');
 
     // Master Data Akreditasi - Level 1: Lembaga
     Route::get('/superadmin/lembaga-akreditasi', [LembagaAkreditasiController::class, 'index'])->name('lembaga_akreditasi');
@@ -317,7 +319,9 @@ Route::prefix('pages')->name('akreditasi.superadmin.')->group(function () {
         return redirect()->route('akreditasi.superadmin.lembaga_akreditasi');
     });
 
-    Route::get('/superadmin/lembar-kerja', [LembarKerjaController::class, 'index'])->name('lembar_kerja');
+    Route::get('/superadmin/lembar-kerja', function () {
+        return redirect()->route('akreditasi.superadmin.instrumen_aktif');
+    })->name('lembar_kerja');
     Route::get('/superadmin/bukti-dokumen', [BuktiDokumenController::class, 'index'])->name('bukti_dokumen');
 });
 Route::get('/superadmin', [SuperadminDashboard::class, 'index']);
