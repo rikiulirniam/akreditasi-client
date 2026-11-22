@@ -147,16 +147,34 @@ class KriteriaController extends Controller
             }
 
             if ($response->successful()) {
+                if (request()->expectsJson()) {
+                    return response()->json([
+                        'success' => true,
+                        'message' => 'Kriteria berhasil dihapus.',
+                    ]);
+                }
+
                 return redirect()->route('akreditasi.superadmin.kriteria', [$lembagaId, $instrumenId])
                     ->with('success', 'Kriteria berhasil dihapus.');
             }
 
-            return back()->with('error', (string) ($message ?? 'Gagal menghapus kriteria.'));
-        } catch (\Throwable $e) {
-            if ($request->wantsJson() || $request->ajax()) {
+            $message = $response->status() === 422
+                ? 'Data tidak dapat dihapus karena telah digunakan pada instrumen atau penilaian aktif.'
+                : (string) ($response->json('message') ?? 'Gagal menghapus kriteria.');
+
+            if ($request->wantsJson() || $request->ajax() || request()->expectsJson()) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Terjadi kesalahan: '.$e->getMessage(),
+                    'message' => $message,
+                ], $response->status() === 422 ? 422 : ($response->status() ?: 500));
+            }
+
+            return back()->with('error', $message);
+        } catch (\Throwable $e) {
+            if ($request->wantsJson() || $request->ajax() || request()->expectsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Terjadi kesalahan saat menghapus kriteria.',
                 ], 500);
             }
 

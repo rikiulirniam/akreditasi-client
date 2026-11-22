@@ -279,6 +279,7 @@ Route::prefix('pages')->name('akreditasi.superadmin.')->group(function () {
     Route::post('/superadmin/lembaga-akreditasi/{lembagaId}/instrumen', [InstrumenController::class, 'store']);
     Route::put('/superadmin/lembaga-akreditasi/{lembagaId}/instrumen/{instrumenId}', [InstrumenController::class, 'update'])->name('instrumen.update');
     Route::delete('/superadmin/lembaga-akreditasi/{lembagaId}/instrumen/{instrumenId}', [InstrumenController::class, 'destroy'])->name('instrumen.destroy');
+    Route::get('/superadmin/lembaga-akreditasi/{lembagaId}/instrumen/{instrumenId}/hierarchy', [InstrumenController::class, 'hierarchy'])->name('instrumen.hierarchy');
     Route::get('/superadmin/instrumen', function () {
         return redirect()->route('akreditasi.superadmin.lembaga_akreditasi');
     });

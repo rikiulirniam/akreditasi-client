@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Akreditasi\Superadmin;
 
 use App\Http\Controllers\Controller;
 use App\Services\AkreditasiService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -202,17 +203,52 @@ class RubrikController extends Controller
         }
     }
 
-    public function destroy(int|string $lembagaId, int|string $instrumenId, int|string $kriteriaId, int|string $subkriteriaId, int|string $indikatorId, int|string $rubrikId): RedirectResponse
-    {
+    public function destroy(
+        int|string $lembagaId,
+        int|string $instrumenId,
+        int|string $kriteriaId,
+        int|string $subkriteriaId,
+        int|string $indikatorId,
+        int|string $rubrikId
+    ): JsonResponse|RedirectResponse {
         try {
             $response = $this->akreditasiService->deleteRubrik($rubrikId);
+
             if ($response->successful()) {
-                return redirect()->route('akreditasi.superadmin.rubrik', [$lembagaId, $instrumenId, $kriteriaId, $subkriteriaId, $indikatorId])
-                    ->with('success', 'Rubrik penilaian berhasil dihapus.');
+                if (request()->expectsJson()) {
+                    return response()->json([
+                        'success' => true,
+                        'message' => 'Rubrik penilaian berhasil dihapus.',
+                    ]);
+                }
+
+                return redirect()->route(
+                    'akreditasi.superadmin.rubrik',
+                    [$lembagaId, $instrumenId, $kriteriaId, $subkriteriaId, $indikatorId]
+                )->with('success', 'Rubrik penilaian berhasil dihapus.');
             }
 
-            return back()->with('error', (string) ($response->json('message') ?? 'Gagal menghapus rubrik penilaian.'));
+            $message = $response->status() === 422
+                ? 'Data tidak dapat dihapus karena telah digunakan pada instrumen atau penilaian aktif.'
+                : (string) ($response->json('message') ?? 'Gagal menghapus rubrik penilaian.');
+
+            if (request()->expectsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => $message,
+                ], $response->status() === 422 ? 422 : 500);
+            }
+
+            return back()->with('error', $message);
+
         } catch (\Throwable $e) {
+            if (request()->expectsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Terjadi kesalahan saat menghapus rubrik penilaian.',
+                ], 500);
+            }
+
             return back()->with('error', 'Terjadi kesalahan: '.$e->getMessage());
         }
     }

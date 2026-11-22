@@ -313,13 +313,11 @@ class AkreditasiService
      */
     public function activateVersiInstrumen(
         int|string $id,
-        int|string $idJenjang
+        int|string|array $payload
     ): Response {
         return $this->patch(
             "/master/versi-instrumen/{$id}/aktifkan",
-            [
-                'id_jenjang' => $idJenjang,
-            ]
+            is_array($payload) ? $payload : ['id_jenjang' => $payload]
         );
     }
 
@@ -355,6 +353,14 @@ class AkreditasiService
     public function getActiveStaticInstrumen(): Response
     {
         return $this->get('/master/instrumen/active-static');
+    }
+
+    /**
+     * Mengambil struktur hierarki instrumen akreditasi berdasarkan ID.
+     */
+    public function getInstrumenHierarchy(int|string $id): Response
+    {
+        return $this->get("/instrumen/{$id}/hierarchy");
     }
 
     /**

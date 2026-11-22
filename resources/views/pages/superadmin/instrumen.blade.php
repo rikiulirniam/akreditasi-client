@@ -148,6 +148,18 @@
                         </x-table.cell>
                         <x-table.cell class="w-32 text-right">
                             <div class="flex items-center justify-end gap-1" onclick="event.stopPropagation()">
+                                <!-- Hierarchy Icon (Tree Structure) -->
+                                <button 
+                                    type="button" 
+                                    class="text-[#0284C7] hover:text-[#0369A1] transition p-1.5 rounded-lg hover:bg-sky-50 cursor-pointer"
+                                    title="Lihat Hierarki Instrumen (7 Level)"
+                                    onclick="openHierarchyModal('{{ $item['id'] }}', '{{ addslashes($item['jenis_instrumen']['nama_jenis'] ?? ($item['nama_instrumen'] ?? 'Instrumen')) }}')"
+                                >
+                                    <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25z" />
+                                    </svg>
+                                </button>
+
                                 <!-- Edit Icon (Yellow) -->
                                 <button 
                                     type="button" 
@@ -303,6 +315,90 @@
 
 <x-modal.confirm-delete />
 
+{{-- Modal Hierarki Instrumen (7 Level) --}}
+<div id="modal-hierarki-instrumen" tabindex="-1" class="hidden fixed inset-0 z-50 items-center justify-center bg-gray-900/60 backdrop-blur-[2px] p-4">
+    <div class="relative w-full max-w-4xl max-h-[90vh] flex flex-col rounded-2xl bg-white shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+        {{-- Header Modal --}}
+        <div class="flex items-center justify-between border-b border-gray-200 p-5 sm:p-6 bg-slate-50/70 shrink-0">
+            <div>
+                <div class="flex items-center gap-2">
+                    <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-extrabold uppercase tracking-wider bg-primary/10 text-primary">
+                        7 Tingkat Struktur
+                    </span>
+                    <h3 class="text-lg sm:text-xl font-bold text-gray-900 tracking-tight">Struktur Hierarki Instrumen</h3>
+                </div>
+                <p id="hierarki-instrumen-subtitle" class="text-xs sm:text-sm text-gray-500 mt-1 font-medium">Memuat data instrumen...</p>
+            </div>
+            <button type="button" onclick="toggleModal('modal-hierarki-instrumen')" class="text-gray-400 hover:bg-gray-200 hover:text-gray-700 rounded-xl p-2 transition cursor-pointer">
+                <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+            </button>
+        </div>
+
+        {{-- Body Modal --}}
+        <div class="p-5 sm:p-6 overflow-y-auto space-y-4">
+            {{-- Loading State --}}
+            <div id="hierarki-loading" class="py-12 flex flex-col items-center justify-center text-center space-y-3">
+                <svg class="animate-spin h-8 w-8 text-primary" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+                </svg>
+                <p class="text-sm font-semibold text-gray-600">Mengambil struktur hierarki instrumen dari backend...</p>
+            </div>
+
+            {{-- Error State --}}
+            <div id="hierarki-error" class="hidden rounded-2xl bg-rose-50 border border-rose-200 p-6 text-center space-y-3">
+                <div class="mx-auto w-10 h-10 rounded-full bg-rose-100 text-rose-600 flex items-center justify-center font-bold">!</div>
+                <p id="hierarki-error-message" class="text-sm font-semibold text-rose-800">Gagal memuat hierarki instrumen.</p>
+                <button type="button" onclick="if (currentHierarchyInstrumenId) loadHierarchyData(currentHierarchyInstrumenId)" class="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold transition shadow-xs cursor-pointer">
+                    Coba Lagi
+                </button>
+            </div>
+
+            {{-- Empty State --}}
+            <div id="hierarki-empty" class="hidden rounded-2xl border border-dashed border-gray-300 p-12 text-center text-sm font-medium text-gray-500">
+                Struktur hierarki belum memiliki kriteria atau butir penilaian aktif.
+            </div>
+
+            {{-- Content State --}}
+            <div id="hierarki-content" class="hidden space-y-4">
+                {{-- Metadata Overview (Level 1, 2, 3) --}}
+                <div class="rounded-xl border border-gray-200 bg-slate-50 p-4 grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div>
+                        <span class="text-[10px] font-bold uppercase tracking-wider text-gray-500 block">Tingkat 1: Lembaga</span>
+                        <span id="hierarki-lembaga-badge" class="text-xs font-bold text-gray-900 mt-0.5 block">-</span>
+                    </div>
+                    <div>
+                        <span class="text-[10px] font-bold uppercase tracking-wider text-gray-500 block">Tingkat 2: Versi Instrumen</span>
+                        <span id="hierarki-versi-badge" class="text-xs font-bold text-gray-900 mt-0.5 block">-</span>
+                    </div>
+                    <div>
+                        <span class="text-[10px] font-bold uppercase tracking-wider text-gray-500 block">Tingkat 3: Instrumen & Jenjang</span>
+                        <span id="hierarki-jenjang-badge" class="text-xs font-bold text-primary mt-0.5 block leading-tight">-</span>
+                    </div>
+                    <div class="col-span-full pt-2 border-t border-gray-200/80 flex items-center justify-between text-xs text-gray-600">
+                        <span class="font-semibold text-gray-500">Statistik Data:</span>
+                        <span id="hierarki-stats" class="font-bold text-gray-800">-</span>
+                    </div>
+                </div>
+
+                {{-- Tree Hierarchy Container (Level 4 - 7) --}}
+                <div id="hierarki-tree" class="space-y-4">
+                    {{-- Rendered via JavaScript --}}
+                </div>
+            </div>
+        </div>
+
+        {{-- Footer Modal --}}
+        <div class="flex items-center justify-end border-t border-gray-200 p-4 bg-gray-50 shrink-0">
+            <button type="button" onclick="toggleModal('modal-hierarki-instrumen')" class="rounded-xl bg-white border border-gray-300 px-5 py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-100 transition cursor-pointer">
+                Tutup
+            </button>
+        </div>
+    </div>
+</div>
+
 <script>
     function toggleModal(modalId) {
         const modal = document.getElementById(modalId);
@@ -325,6 +421,179 @@
             if (jenjangSelect) jenjangSelect.value = item.id_jenjang || '1';
             toggleModal('modal-edit-instrumen');
         }
+    }
+
+    let currentHierarchyInstrumenId = null;
+
+    function openHierarchyModal(instrumenId, title) {
+        currentHierarchyInstrumenId = instrumenId;
+        const subtitle = document.getElementById('hierarki-instrumen-subtitle');
+        if (subtitle) {
+            subtitle.textContent = title ? 'Instrumen: ' + title : 'Memuat data...';
+        }
+        toggleModal('modal-hierarki-instrumen');
+        loadHierarchyData(instrumenId);
+    }
+
+    function loadHierarchyData(instrumenId) {
+        const loadingEl = document.getElementById('hierarki-loading');
+        const errorEl = document.getElementById('hierarki-error');
+        const contentEl = document.getElementById('hierarki-content');
+        const emptyEl = document.getElementById('hierarki-empty');
+        const errorMessageEl = document.getElementById('hierarki-error-message');
+
+        loadingEl.classList.remove('hidden');
+        errorEl.classList.add('hidden');
+        contentEl.classList.add('hidden');
+        emptyEl.classList.add('hidden');
+
+        const url = "{{ route('akreditasi.superadmin.instrumen.hierarchy', ['lembagaId' => $lembagaId, 'instrumenId' => ':id']) }}".replace(':id', instrumenId);
+
+        fetch(url, {
+            headers: {
+                'Accept': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(async response => {
+            let res = {};
+            try { res = await response.json(); } catch(e) {}
+            if (!response.ok || (res.success !== undefined && res.success === false)) {
+                throw new Error(res.message || 'Gagal memuat hierarki instrumen.');
+            }
+            return res.data;
+        })
+        .then(data => {
+            loadingEl.classList.add('hidden');
+            if (!data || !data.kriteria || data.kriteria.length === 0) {
+                emptyEl.classList.remove('hidden');
+                return;
+            }
+            renderHierarchy(data);
+            contentEl.classList.remove('hidden');
+        })
+        .catch(err => {
+            loadingEl.classList.add('hidden');
+            errorEl.classList.remove('hidden');
+            if (errorMessageEl) {
+                errorMessageEl.textContent = err.message || 'Terjadi kesalahan saat memuat data.';
+            }
+        });
+    }
+
+    function renderHierarchy(data) {
+        // Populate level 1-3 badges
+        const lembagaEl = document.getElementById('hierarki-lembaga-badge');
+        const versiEl = document.getElementById('hierarki-versi-badge');
+        const jenjangEl = document.getElementById('hierarki-jenjang-badge');
+
+        if (lembagaEl) lembagaEl.textContent = data.lembaga?.nama || '{{ $lembaga['nama_lembaga'] ?? '-' }}';
+        if (versiEl) versiEl.textContent = 'v' + (data.versi_instrumen?.nomor_versi || '{{ $versi['nomor_versi'] ?? '-' }}');
+        if (jenjangEl) jenjangEl.textContent = (data.jenis_instrumen?.nama || '-') + ' (' + (data.jenjang?.nama || 'Sarjana Terapan') + ')';
+
+        const kriterias = data.kriteria || [];
+        let totalSub = 0;
+        let totalInd = 0;
+        kriterias.forEach(k => {
+            const subs = k.subkriteria || [];
+            totalSub += subs.length;
+            subs.forEach(s => {
+                totalInd += (s.indikator || []).length;
+            });
+        });
+
+        const statsEl = document.getElementById('hierarki-stats');
+        if (statsEl) {
+            statsEl.textContent = kriterias.length + ' Kriteria • ' + totalSub + ' Subkriteria • ' + totalInd + ' Indikator';
+        }
+
+        const treeContainer = document.getElementById('hierarki-tree');
+        treeContainer.innerHTML = '';
+
+        kriterias.forEach(kriteria => {
+            const subkriterias = kriteria.subkriteria || [];
+
+            let subHtml = '';
+            if (subkriterias.length === 0) {
+                subHtml = '<p class="text-xs text-gray-400 italic py-2 pl-4">Belum ada subkriteria pada kriteria ini.</p>';
+            } else {
+                subkriterias.forEach(sub => {
+                    const indikators = sub.indikator || [];
+                    let indHtml = '';
+                    if (indikators.length === 0) {
+                        indHtml = '<p class="text-xs text-gray-400 italic py-1 pl-4">Belum ada indikator pada subkriteria ini.</p>';
+                    } else {
+                        indikators.forEach(ind => {
+                            let rubrikHtml = '';
+                            if (ind.rubriks && Array.isArray(ind.rubriks) && ind.rubriks.length > 0) {
+                                rubrikHtml = '<div class="mt-2.5 grid grid-cols-1 sm:grid-cols-2 gap-2 pt-2 border-t border-gray-100">' +
+                                    ind.rubriks.map(r => {
+                                        const skor = r.skor || 0;
+                                        const color = skor >= 4 ? 'bg-emerald-50 text-emerald-800 border-emerald-200' :
+                                                      skor == 3 ? 'bg-sky-50 text-sky-800 border-sky-200' :
+                                                      skor == 2 ? 'bg-amber-50 text-amber-800 border-amber-200' :
+                                                                  'bg-rose-50 text-rose-800 border-rose-200';
+                                        return `<div class="p-2 rounded-lg border text-xs ${color}">
+                                            <span class="font-bold">Tingkat 7: Skor ${skor}</span> &bull; ${r.deskripsi_rubrik || r.deskripsi_kondisi || '-'}
+                                        </div>`;
+                                    }).join('') +
+                                '</div>';
+                            } else {
+                                rubrikHtml = `<div class="mt-2 flex items-center justify-between text-xs text-gray-500 pt-1.5 border-t border-gray-100">
+                                    <span class="flex items-center gap-1.5 font-medium">
+                                        <span class="inline-block w-2 h-2 rounded-full bg-emerald-500"></span>
+                                        Tingkat 7: 4 Skala Rubrik Penilaian (Skor 1 - 4)
+                                    </span>
+                                </div>`;
+                            }
+
+                            indHtml += `
+                                <div class="bg-white rounded-xl p-3.5 border border-gray-200 shadow-2xs hover:border-primary/40 transition">
+                                    <div class="flex items-start justify-between gap-2 flex-wrap">
+                                        <div class="flex items-center gap-2">
+                                            <span class="px-2 py-0.5 rounded-md font-mono text-xs font-bold bg-sky-100 text-sky-800">${ind.kode || '-'}</span>
+                                            <span class="text-xs font-bold text-gray-800">Tingkat 6: Indikator</span>
+                                        </div>
+                                        <span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                            Bobot: ${ind.bobot !== undefined ? ind.bobot : 1}
+                                        </span>
+                                    </div>
+                                    <p class="text-xs text-gray-700 mt-1.5 leading-relaxed font-medium">${ind.nama || '-'}</p>
+                                    ${ind.target_sumber_data ? `<p class="text-[11px] text-gray-500 mt-1 font-mono">Sumber: ${ind.target_sumber_data}</p>` : ''}
+                                    ${rubrikHtml}
+                                </div>
+                            `;
+                        });
+                    }
+
+                    subHtml += `
+                        <div class="ml-2 sm:ml-4 pl-3 sm:pl-4 border-l-2 border-primary/20 space-y-2 mt-3">
+                            <div class="flex items-center gap-2">
+                                <span class="px-2 py-0.5 rounded-md font-mono text-xs font-bold bg-amber-100 text-amber-800">${sub.kode || '-'}</span>
+                                <span class="text-xs font-bold text-gray-800">Tingkat 5: Subkriteria &bull; ${sub.nama || '-'}</span>
+                            </div>
+                            <div class="space-y-2 mt-2">
+                                ${indHtml}
+                            </div>
+                        </div>
+                    `;
+                });
+            }
+
+            const kriteriaCard = document.createElement('div');
+            kriteriaCard.className = 'rounded-2xl border border-gray-200 bg-gray-50/70 p-4 sm:p-5 space-y-3';
+            kriteriaCard.innerHTML = `
+                <div class="flex items-center justify-between gap-3">
+                    <div class="flex items-center gap-2.5">
+                        <span class="px-2.5 py-1 rounded-lg font-mono text-xs font-bold bg-primary text-white tracking-tight">${kriteria.kode || '-'}</span>
+                        <h5 class="text-sm sm:text-base font-extrabold text-gray-900 tracking-tight">Tingkat 4: Kriteria &bull; ${kriteria.nama || '-'}</h5>
+                    </div>
+                    <span class="text-xs font-semibold text-gray-500 bg-white px-2.5 py-1 rounded-lg border border-gray-200 shadow-2xs">${subkriterias.length} Subkriteria</span>
+                </div>
+                ${subHtml}
+            `;
+            treeContainer.appendChild(kriteriaCard);
+        });
     }
 </script>
 @endsection

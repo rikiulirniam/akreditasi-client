@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Akreditasi\Superadmin;
 
 use App\Http\Controllers\Controller;
 use App\Services\AkreditasiService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -202,6 +203,34 @@ class InstrumenController extends Controller
             return back()->with('error', (string) ($response->json('message') ?? 'Gagal menghapus instrumen.'));
         } catch (\Throwable $e) {
             return back()->with('error', 'Terjadi kesalahan: '.$e->getMessage());
+        }
+    }
+
+    /**
+     * Mengambil struktur hierarki lengkap instrumen akreditasi (7 tingkat).
+     */
+    public function hierarchy(int|string $lembagaId, int|string $instrumenId): JsonResponse
+    {
+        try {
+            $response = $this->akreditasiService->getInstrumenHierarchy($instrumenId);
+
+            if ($response->successful()) {
+                return response()->json([
+                    'success' => true,
+                    'data' => $response->json('data'),
+                    'message' => (string) ($response->json('message') ?? 'Hierarki instrumen berhasil diambil.'),
+                ]);
+            }
+
+            return response()->json([
+                'success' => false,
+                'message' => (string) ($response->json('message') ?? 'Gagal memuat hierarki instrumen.'),
+            ], $response->status() > 0 ? $response->status() : 500);
+        } catch (\Throwable $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Terjadi kesalahan saat memuat hierarki instrumen: '.$e->getMessage(),
+            ], 500);
         }
     }
 }

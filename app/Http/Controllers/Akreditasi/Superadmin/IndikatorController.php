@@ -128,7 +128,7 @@ class IndikatorController extends Controller
 
         $payload = array_merge($validated, [
             'id_subkriteria' => $subkriteriaId,
-            'bobot' => $validated['bobot'] ?? 1,
+            'bobot' => (float) $validated['bobot'],
         ]);
 
         try {
@@ -153,8 +153,13 @@ class IndikatorController extends Controller
             'bobot' => 'required|numeric|between:0,999999.99',
         ]);
 
+        $payload = array_merge($validated, [
+            'id_subkriteria' => $subkriteriaId,
+            'bobot' => (float) $validated['bobot'],
+        ]);
+
         try {
-            $response = $this->akreditasiService->updateIndikator($indikatorId, $validated);
+            $response = $this->akreditasiService->updateIndikator($indikatorId, $payload);
             if ($response->successful()) {
                 return redirect()->route('akreditasi.superadmin.indikator', [$lembagaId, $instrumenId, $kriteriaId, $subkriteriaId])
                     ->with('success', 'Indikator berhasil diperbarui.');
@@ -187,16 +192,34 @@ class IndikatorController extends Controller
             }
 
             if ($response->successful()) {
+                if (request()->expectsJson()) {
+                    return response()->json([
+                        'success' => true,
+                        'message' => 'Indikator berhasil dihapus.',
+                    ]);
+                }
+
                 return redirect()->route('akreditasi.superadmin.indikator', [$lembagaId, $instrumenId, $kriteriaId, $subkriteriaId])
                     ->with('success', 'Indikator berhasil dihapus.');
             }
 
-            return back()->with('error', (string) ($message ?? 'Gagal menghapus indikator.'));
-        } catch (\Throwable $e) {
-            if ($request->wantsJson() || $request->ajax()) {
+            $message = $response->status() === 422
+                ? 'Data tidak dapat dihapus karena telah digunakan pada instrumen atau penilaian aktif.'
+                : (string) ($response->json('message') ?? 'Gagal menghapus indikator.');
+
+            if ($request->wantsJson() || $request->ajax() || request()->expectsJson()) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Terjadi kesalahan: '.$e->getMessage(),
+                    'message' => $message,
+                ], $response->status() === 422 ? 422 : ($response->status() ?: 500));
+            }
+
+            return back()->with('error', $message);
+        } catch (\Throwable $e) {
+            if ($request->wantsJson() || $request->ajax() || request()->expectsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Terjadi kesalahan saat menghapus indikator.',
                 ], 500);
             }
 
