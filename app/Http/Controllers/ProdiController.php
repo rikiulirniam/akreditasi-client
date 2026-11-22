@@ -52,11 +52,21 @@ class ProdiController extends Controller
             }
         }
 
-        // Map UPPS by prodi_id
+        // Map UPPS by ID and prodi_id (mendukung relasi 1 UPPS menaungi banyak prodi)
+        $allUppsById = [];
         $uppsByProdiId = [];
         foreach ($allUpps as $u) {
+            $uId = $u['id'] ?? null;
+            if (! empty($uId)) {
+                $allUppsById[$uId] = $u;
+            }
             if (! empty($u['prodi_id'])) {
                 $uppsByProdiId[$u['prodi_id']] = $u;
+            }
+            if (! empty($u['prodi_ids']) && is_array($u['prodi_ids'])) {
+                foreach ($u['prodi_ids'] as $pid) {
+                    $uppsByProdiId[$pid] = $u;
+                }
             }
         }
 
@@ -66,14 +76,18 @@ class ProdiController extends Controller
         if (is_array($apiData) && ! empty($apiData)) {
             foreach ($apiData as $item) {
                 $pId = $item['id'] ?? null;
-                $matchedUpps = $uppsByProdiId[$pId] ?? ($item['upps'][0] ?? null);
+                $pUppsId = $item['id_upps'] ?? null;
+                $matchedUpps = ($pUppsId && isset($allUppsById[$pUppsId]))
+                    ? $allUppsById[$pUppsId]
+                    : ($uppsByProdiId[$pId] ?? ($item['upps'][0] ?? null));
 
                 $prodiList[] = [
                     'id' => $pId,
                     'kode_prodi' => $item['kode_prodi'] ?? '',
                     'nama_prodi' => $item['nama_prodi'] ?? '-',
                     'akreditasi' => $item['akreditasi'] ?? '-',
-                    'nama_upps' => $matchedUpps['nama_upps'] ?? '-',
+                    'id_upps' => $matchedUpps['id'] ?? $pUppsId,
+                    'nama_upps' => $matchedUpps['nama_upps'] ?? ($matchedUpps['nama'] ?? '-'),
                     'upps' => $matchedUpps,
                 ];
             }
@@ -94,9 +108,14 @@ class ProdiController extends Controller
                     }
                 }
                 $pId = $customItem['id'] ?? null;
-                $matchedUpps = $uppsByProdiId[$pId] ?? ($customItem['upps'] ?? null);
+                $pUppsId = $customItem['id_upps'] ?? null;
+                $matchedUpps = ($pUppsId && isset($allUppsById[$pUppsId]))
+                    ? $allUppsById[$pUppsId]
+                    : ($uppsByProdiId[$pId] ?? ($customItem['upps'] ?? null));
+
                 $customItem['upps'] = $matchedUpps;
-                $customItem['nama_upps'] = $matchedUpps['nama_upps'] ?? ($customItem['nama_upps'] ?? '-');
+                $customItem['nama_upps'] = $matchedUpps['nama_upps'] ?? ($matchedUpps['nama'] ?? ($customItem['nama_upps'] ?? '-'));
+                $customItem['id_upps'] = $matchedUpps['id'] ?? $pUppsId;
 
                 if ($existingIndex !== null) {
                     $prodiList[$existingIndex] = array_merge($prodiList[$existingIndex], $customItem);
@@ -106,36 +125,54 @@ class ProdiController extends Controller
             }
         }
 
-        // Fallback matching reference screenshot if no data
+        // Fallback matching reference: 1 UPPS menaungi beberapa prodi
         if (empty($prodiList) && ! session()->has('custom_prodi_list')) {
+            $sharedUppsTeknikElektro = [
+                'id' => 1,
+                'id_pt' => 1,
+                'kode_upps' => 'JTE-01',
+                'nama_upps' => 'Jurusan Teknik Elektro',
+                'pimpinan_upps' => 'Dr. Garup Lambang Goro, S.T., M.T.',
+                'jenis' => 'Jurusan',
+                'prodi_ids' => [1, 2, 3, 4],
+            ];
+
+            $dummyNames = [
+                1 => ['kode' => 'TL01', 'nama' => 'Teknik Listrik'],
+                2 => ['kode' => 'TE02', 'nama' => 'Teknik Elektronika'],
+                3 => ['kode' => 'TT03', 'nama' => 'Teknik Telekomunikasi'],
+                4 => ['kode' => 'TI04', 'nama' => 'Teknik Informatika'],
+                5 => ['kode' => 'TM05', 'nama' => 'Teknik Mesin'],
+                6 => ['kode' => 'TS06', 'nama' => 'Teknik Sipil'],
+                7 => ['kode' => 'AK07', 'nama' => 'Akuntansi'],
+                8 => ['kode' => 'AB08', 'nama' => 'Administrasi Bisnis'],
+            ];
+
             for ($i = 1; $i <= 8; $i++) {
-                $hasUpps = ($i <= 4); // First 4 have UPPS, next 4 demonstrate empty UPPS state
-                $uppsObj = $hasUpps ? [
-                    'id' => $i,
-                    'id_pt' => 1,
-                    'kode_upps' => 'TE0'.$i,
-                    'nama_upps' => 'Teknik Elektro',
-                    'pimpinan_upps' => 'Dr. Garup Lambang Goro, S.T., M.T.',
-                    'jenis' => 'Jurusan',
-                    'prodi_id' => $i,
-                ] : null;
+                $hasUpps = ($i <= 4); // 4 Prodi pertama dinaungi oleh Jurusan Teknik Elektro (1 UPPS menaungi banyak prodi)
+                $uppsObj = $hasUpps ? $sharedUppsTeknikElektro : null;
 
                 $prodiList[] = [
                     'id' => $i,
-                    'kode_prodi' => 'TL0'.$i,
-                    'nama_prodi' => 'Teknik Listrik',
+                    'kode_prodi' => $dummyNames[$i]['kode'] ?? ('TL0'.$i),
+                    'nama_prodi' => $dummyNames[$i]['nama'] ?? 'Teknik Listrik',
                     'akreditasi' => 'Unggul',
+                    'id_upps' => $uppsObj ? $uppsObj['id'] : null,
                     'nama_upps' => $uppsObj ? $uppsObj['nama_upps'] : '-',
                     'upps' => $uppsObj,
                 ];
             }
         }
 
-        // Make sure all UPPS relations are updated from $uppsByProdiId
+        // Make sure all UPPS relations are updated from $allUppsById or $uppsByProdiId
         foreach ($prodiList as &$p) {
-            if (isset($uppsByProdiId[$p['id']])) {
+            $pUppsId = $p['id_upps'] ?? null;
+            if ($pUppsId && isset($allUppsById[$pUppsId])) {
+                $p['upps'] = $allUppsById[$pUppsId];
+                $p['nama_upps'] = $allUppsById[$pUppsId]['nama_upps'] ?? ($allUppsById[$pUppsId]['nama'] ?? '-');
+            } elseif (isset($uppsByProdiId[$p['id']])) {
                 $p['upps'] = $uppsByProdiId[$p['id']];
-                $p['nama_upps'] = $uppsByProdiId[$p['id']]['nama_upps'] ?? '-';
+                $p['nama_upps'] = $uppsByProdiId[$p['id']]['nama_upps'] ?? ($uppsByProdiId[$p['id']]['nama'] ?? '-');
             } elseif (in_array($p['upps']['id'] ?? null, $deletedUppsIds)) {
                 $p['upps'] = null;
                 $p['nama_upps'] = '-';

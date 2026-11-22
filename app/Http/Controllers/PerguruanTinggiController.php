@@ -61,12 +61,22 @@ Mengoptimalkan mutu manajemen institusi secara berkelanjutan dengan menerapkan p
         $uppsData = $uppsResponse->json('data') ?? [];
         $prodiData = $prodiResponse->json('data') ?? [];
 
-        // Map UPPS by prodi_id for fast lookup (same as ProdiController)
+        // Map UPPS by ID and prodi_id (mendukung relasi 1 UPPS menaungi banyak prodi)
         $allUpps = is_array($uppsData) ? $uppsData : [];
+        $allUppsById = [];
         $uppsByProdiId = [];
         foreach ($allUpps as $u) {
+            $uId = $u['id'] ?? null;
+            if (! empty($uId)) {
+                $allUppsById[$uId] = $u;
+            }
             if (! empty($u['prodi_id'])) {
                 $uppsByProdiId[$u['prodi_id']] = $u;
+            }
+            if (! empty($u['prodi_ids']) && is_array($u['prodi_ids'])) {
+                foreach ($u['prodi_ids'] as $pid) {
+                    $uppsByProdiId[$pid] = $u;
+                }
             }
         }
 
@@ -75,37 +85,48 @@ Mengoptimalkan mutu manajemen institusi secara berkelanjutan dengan menerapkan p
         if (is_array($prodiData) && ! empty($prodiData)) {
             foreach ($prodiData as $item) {
                 $pId = $item['id'] ?? null;
-                $matchedUpps = $uppsByProdiId[$pId] ?? ($item['upps'][0] ?? null);
+                $pUppsId = $item['id_upps'] ?? null;
+                $matchedUpps = ($pUppsId && isset($allUppsById[$pUppsId]))
+                    ? $allUppsById[$pUppsId]
+                    : ($uppsByProdiId[$pId] ?? ($item['upps'][0] ?? null));
 
                 $prodiList[] = [
                     'id' => $pId,
                     'kode_prodi' => $item['kode_prodi'] ?? '',
                     'nama_prodi' => $item['nama_prodi'] ?? '-',
                     'akreditasi' => $item['akreditasi'] ?? '-',
-                    'nama_upps' => $matchedUpps['nama_upps'] ?? '-',
+                    'nama_upps' => $matchedUpps['nama_upps'] ?? ($matchedUpps['nama'] ?? '-'),
                     'upps' => $matchedUpps,
                 ];
             }
         }
 
-        // Fallback matching reference screenshot if no data
+        // Fallback matching reference: 1 UPPS menaungi beberapa prodi
         if (empty($prodiList)) {
+            $sharedUppsTeknikElektro = [
+                'id' => 1,
+                'kode_upps' => 'JTE-01',
+                'nama_upps' => 'Jurusan Teknik Elektro',
+                'pimpinan_upps' => 'Dr. Garup Lambang Goro, S.T., M.T.',
+                'jenis' => 'Jurusan',
+                'prodi_ids' => [1, 2, 3, 4],
+            ];
+
+            $dummyProdis = [
+                1 => ['kode' => 'TL01', 'nama' => 'Teknik Listrik'],
+                2 => ['kode' => 'TE02', 'nama' => 'Teknik Elektronika'],
+                3 => ['kode' => 'TT03', 'nama' => 'Teknik Telekomunikasi'],
+                4 => ['kode' => 'TI04', 'nama' => 'Teknik Informatika'],
+            ];
+
             for ($i = 1; $i <= 4; $i++) {
-                $uppsObj = [
-                    'id' => $i,
-                    'kode_upps' => 'TE0'.$i,
-                    'nama_upps' => 'Teknik Elektro',
-                    'pimpinan_upps' => 'Dr. Garup Lambang Goro, S.T., M.T.',
-                    'jenis' => 'Jurusan',
-                    'prodi_id' => $i,
-                ];
                 $prodiList[] = [
                     'id' => $i,
-                    'kode_prodi' => 'TL0'.$i,
-                    'nama_prodi' => 'Teknik Listrik',
+                    'kode_prodi' => $dummyProdis[$i]['kode'] ?? ('TL0'.$i),
+                    'nama_prodi' => $dummyProdis[$i]['nama'] ?? 'Teknik Listrik',
                     'akreditasi' => 'Unggul',
-                    'nama_upps' => $uppsObj['nama_upps'],
-                    'upps' => $uppsObj,
+                    'nama_upps' => $sharedUppsTeknikElektro['nama_upps'],
+                    'upps' => $sharedUppsTeknikElektro,
                 ];
             }
         }
