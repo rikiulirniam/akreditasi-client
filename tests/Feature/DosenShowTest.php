@@ -267,7 +267,16 @@ class DosenShowTest extends TestCase
             ->assertSee('mt-7 min-w-0 overflow-x-auto', false)
             ->assertSee('openImportModalBtnTable')
             ->assertSee('openCreateModalBtnTable')
+            ->assertSee('stroke="currentColor"', false)
+            ->assertSee('style="background-color: #0F294A; color: #FFFFFF;"', false)
+            ->assertSee('lg:flex-nowrap', false)
             ->assertSee('Download Template Excel');
+
+        $html = $response->getContent();
+        $toolbar = substr($html, 0, strpos($html, '<div class="mt-7 min-w-0 overflow-x-auto"'));
+        $this->assertStringNotContainsString('Download Template Excel', $toolbar);
+        $this->assertStringContainsString('bg-amber-400', $html);
+        $this->assertStringContainsString('hover:bg-amber-500', $html);
     }
 
     public function test_dosen_index_passes_search_and_status_to_remote_api(): void
@@ -353,8 +362,101 @@ class DosenShowTest extends TestCase
 
         $response->assertSee('id="createPendidikanSelect"', false)
             ->assertSee('id="editPendidikanSelect"', false)
-            ->assertSee('data-id-jabatan="4"', false)
-            ->assertSee('data-id-pendidikan="6"', false);
+            ->assertDontSee('edit-dosen-btn');
+    }
+
+    public function test_dosen_index_maps_nested_jabatan_and_serdos_records_from_api(): void
+    {
+        Http::fake([
+            '*/dosen*' => Http::response([
+                'success' => true,
+                'data' => [
+                    'data' => [[
+                        'id_dosen' => 12,
+                        'nama_dosen' => 'Dosen Jabatan Baru',
+                        'nidn' => '0012001200',
+                        'status_dosen' => 'DTPS',
+                        'email' => 'dosen@example.com',
+                        'jabatan_akademik' => [
+                            'id_jabatan' => 8,
+                            'nama_jabatan' => 'Guru Besar',
+                        ],
+                        'pendidikan_terakhir' => 'S3',
+                        'sertifikasi_dosen' => [[
+                            'jenis_sertifikasi' => 'Sertifikat Pendidik (Serdos)',
+                            'status_sertifikasi' => 'Aktif',
+                        ]],
+                    ], [
+                        'id_dosen' => 14,
+                        'nama_dosen' => 'Dosen Serdos Nonaktif',
+                        'nidn' => '0014001400',
+                        'status_dosen' => 'DTPS',
+                        'email' => 'nonaktif@example.com',
+                        'sertifikasi_dosen' => [[
+                            'jenis_sertifikasi' => 'Sertifikat Pendidik (Serdos)',
+                            'status_sertifikasi' => 'Nonaktif',
+                        ]],
+                    ]],
+                    'total' => 2,
+                    'per_page' => 100,
+                    'current_page' => 1,
+                    'last_page' => 1,
+                ],
+            ]),
+            '*/jabatan-akademik*' => Http::response([
+                'data' => [['id_jabatan' => 8, 'nama_jabatan' => 'Guru Besar']],
+            ]),
+            '*/pendidikan*' => Http::response(['data' => []]),
+            '*/bidang-keahlian*' => Http::response(['data' => []]),
+        ]);
+
+        $response = $this->withSession([
+            'access_token' => 'dummy-token',
+            'user' => ['nama' => 'Pengguna', 'role' => 'Kaprodi'],
+        ])->get(route('dosen.index', ['serdos' => 'tersertifikasi']));
+
+        $response->assertOk()
+            ->assertSee('Guru Besar')
+            ->assertSee('S3')
+            ->assertSee('Tersertifikasi')
+            ->assertDontSee('Dosen Serdos Nonaktif')
+            ->assertDontSee('edit-dosen-btn')
+            ->assertSee('data-confirm-delete', false)
+            ->assertSee('data-test="dosen-detail-link"', false);
+    }
+
+    public function test_dosen_detail_displays_latest_education_jabatan_and_serdos_from_api(): void
+    {
+        Http::fake([
+            '*/dosen/13*' => Http::response([
+                'success' => true,
+                'data' => [
+                    'id_dosen' => 13,
+                    'nama_dosen' => 'Dosen Detail',
+                    'nidn' => '0013001300',
+                    'status_dosen' => 'DTPS',
+                    'jabatan_akademik' => [
+                        'id_jabatan' => 9,
+                        'nama_jabatan' => 'Lektor Kepala',
+                    ],
+                    'pendidikan_terakhir' => 'S3',
+                    'sertifikasi_dosen' => [[
+                        'jenis_sertifikasi' => 'Sertifikat Pendidik (Serdos)',
+                        'status_sertifikasi' => 'Aktif',
+                    ]],
+                ],
+            ]),
+        ]);
+
+        $response = $this->withSession([
+            'access_token' => 'dummy-token',
+            'user' => ['nama' => 'Pengguna', 'role' => 'Kaprodi'],
+        ])->get(route('dosen.show', 13));
+
+        $response->assertOk()
+            ->assertSee('Lektor Kepala')
+            ->assertDontSee('Pendidikan Terakhir:')
+            ->assertDontSee('Sertifikasi Dosen (Serdos):');
     }
 
     public function test_dosen_store_passes_dynamic_jabatan_and_pendidikan(): void
@@ -571,7 +673,7 @@ class DosenShowTest extends TestCase
         $response->assertOk();
         $html = preg_replace('/\s+/', ' ', $response->getContent());
         $this->assertStringContainsString(
-            '<span id="filterStatusLabel" class="text-sm font-semibold text-gray-900 truncate pr-2"> Tidak tetap </span>',
+            '<span id="filterStatusLabel" class="truncate pr-2"> Tidak tetap </span>',
             $html
         );
         $this->assertStringContainsString('name="status" id="filterStatusSelect" value="DTT"', $html);

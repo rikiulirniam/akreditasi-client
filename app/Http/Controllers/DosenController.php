@@ -135,14 +135,7 @@ class DosenController extends Controller
             $dosenList = array_values(array_filter($allDosen, function (array $dosen) use ($jabatanFilter, $serdosFilter): bool {
                 $jabatan = $dosen['jabatan_akademik'] ?? ($dosen['jabatan'] ?? []);
                 $jabatanId = $dosen['id_jabatan'] ?? (is_array($jabatan) ? ($jabatan['id_jabatan'] ?? ($jabatan['id'] ?? '')) : '');
-                $sertifikasi = strtolower(trim((string) ($dosen['sertifikasi_dosen'] ?? ($dosen['sertifikasi'] ?? ''))));
-                $hasSerdos = $sertifikasi !== ''
-                    && ! str_contains($sertifikasi, 'belum')
-                    && (
-                        str_contains($sertifikasi, 'tersertifikasi')
-                        || str_contains($sertifikasi, 'serdos')
-                        || str_contains($sertifikasi, 'sertifikat pendidik')
-                    );
+                $hasSerdos = $this->hasActiveSerdos($dosen['sertifikasi_dosen'] ?? ($dosen['sertifikasi'] ?? null));
 
                 return ($jabatanFilter === '' || (string) $jabatanId === $jabatanFilter)
                     && ($serdosFilter === ''
@@ -162,6 +155,14 @@ class DosenController extends Controller
                 'last_page' => $lastPage,
             ];
         }
+
+        $dosenList = array_map(function (array $dosen): array {
+            $dosen['_serdos_status'] = $this->hasActiveSerdos(
+                $dosen['sertifikasi_dosen'] ?? ($dosen['sertifikasi'] ?? null)
+            ) ? 'Tersertifikasi' : 'Belum Tersertifikasi';
+
+            return $dosen;
+        }, $dosenList);
 
         // Fetch master data for dropdowns/selects (extract .data if paginated)
         $jabatanResponse = $this->tridharmaService->getJabatanAkademikList(['per_page' => 100]);
@@ -314,7 +315,8 @@ class DosenController extends Controller
         $rawJabatan = $dosenData['jabatan_akademik'] ?? ($dosenData['jabatan'] ?? ($dosenData['nama_jabatan'] ?? null));
         $rawJurusan = $dosenData['jurusan'] ?? ($dosenData['bidang_keahlian'] ?? ($dosenData['bidang'] ?? null));
         $rawProdi = $dosenData['prodi'] ?? ($dosenData['program_studi'] ?? ($dosenData['nama_prodi'] ?? null));
-        $rawSertifikasi = $dosenData['sertifikasi'] ?? null;
+        $rawSertifikasi = $dosenData['sertifikasi_dosen'] ?? ($dosenData['sertifikasi'] ?? null);
+        $rawPendidikan = $dosenData['pendidikan_terakhir'] ?? ($dosenData['pendidikan'] ?? null);
         $rawNama = $dosenData['nama_dosen'] ?? ($dosenData['nama'] ?? ($dosenData['name'] ?? null));
 
         $valJurusan = ! empty($rawJurusan) ? $this->extractString($rawJurusan, 'Teknik Elektro') : 'Teknik Elektro';
@@ -334,11 +336,12 @@ class DosenController extends Controller
             'nama_dosen' => $this->extractString($rawNama, '-'),
             'nidn' => $this->extractString($dosenData['nidn'] ?? null, '-'),
             'jabatan' => $this->extractString($rawJabatan, '-'),
+            'pendidikan_terakhir' => $this->extractString($rawPendidikan, '-'),
             'jurusan' => $valJurusan,
             'prodi' => $valProdi,
             'email' => $this->extractString($dosenData['email'] ?? null, '-'),
             'status_dosen' => $this->extractString($dosenData['status_dosen'] ?? ($dosenData['status'] ?? null), '-'),
-            'sertifikasi' => is_string($rawSertifikasi) && trim($rawSertifikasi) !== '' ? trim($rawSertifikasi) : (is_array($rawSertifikasi) ? $this->extractString($rawSertifikasi, '') : null),
+            'sertifikasi' => $this->hasActiveSerdos($rawSertifikasi) ? 'Tersertifikasi' : 'Belum Tersertifikasi',
         ];
 
         // Penelitian list — API key: penelitian
@@ -470,7 +473,7 @@ class DosenController extends Controller
 
         if (is_array($value)) {
             $keys = [
-                'nama_jabatan', 'nama_bidang', 'nama_jurusan', 'nama_prodi', 'program_studi',
+                'nama_jabatan', 'jenjang', 'nama_bidang', 'nama_jurusan', 'nama_prodi', 'program_studi',
                 'nama', 'name', 'label', 'title', 'judul', 'status', 'email', 'link', 'url',
             ];
             foreach ($keys as $key) {
@@ -493,6 +496,63 @@ class DosenController extends Controller
         }
 
         return $default;
+    }
+
+    private function hasActiveSerdos(mixed $certificationData): bool
+    {
+        if (is_string($certificationData)) {
+            $value = strtolower(trim($certificationData));
+
+            return $value !== ''
+                && ! str_contains($value, 'belum')
+                && (
+                    str_contains($value, 'tersertifikasi')
+                    || str_contains($value, 'serdos')
+                    || str_contains($value, 'sertifikat pendidik')
+                );
+        }
+
+        if (! is_array($certificationData)) {
+            return false;
+        }
+
+        $certifications = array_is_list($certificationData) ? $certificationData : [$certificationData];
+
+        foreach ($certifications as $certification) {
+            if (is_string($certification) && $this->hasActiveSerdos($certification)) {
+                return true;
+            }
+
+            if (! is_array($certification)) {
+                continue;
+            }
+
+            $type = strtolower((string) (
+                $certification['jenis_sertifikasi']
+                ?? ($certification['nama_sertifikasi'] ?? '')
+            ));
+            $status = strtolower(trim((string) (
+                $certification['status_sertifikasi']
+                ?? ($certification['status'] ?? '')
+            )));
+
+            if (
+                $type !== ''
+                && (
+                    str_contains($type, 'serdos')
+                    || str_contains($type, 'sertifikat pendidik')
+                )
+                && ! in_array($status, ['nonaktif', 'tidak aktif', 'expired', 'kedaluwarsa', 'ditolak'], true)
+            ) {
+                return true;
+            }
+
+            if ($this->hasActiveSerdos($status)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     public function edit(int|string $id): RedirectResponse

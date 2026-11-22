@@ -39,45 +39,43 @@
         ->values();
 @endphp
 <div class="space-y-5">
-        <!-- Toolbar: Search and filters, export/import, and add lecturer -->
-            <div class="flex flex-wrap items-center justify-between gap-3 mb-2">
+        <!-- Toolbar: Search, filters, and actions -->
+            <div class="mb-2 flex flex-col items-stretch justify-between gap-3 lg:flex-row lg:flex-nowrap lg:items-center lg:gap-2">
                 <!-- Left: Search "Cari nama" & Status Dropdown Form -->
-                <form method="GET" action="{{ route('dosen.index') }}" id="searchFilterForm" class="flex items-center gap-3">
+                <form method="GET" action="{{ route('dosen.index') }}" id="searchFilterForm" class="flex min-w-0 items-center gap-2 lg:flex-1 lg:flex-nowrap">
                     <!-- Search Input -->
-                    <div class="relative w-64 sm:w-80 shrink-0">
+                    <div class="relative w-40 shrink-0">
+                        <button type="submit" class="absolute inset-y-0 left-0 flex items-center pl-3.5 text-gray-400 transition hover:text-primary cursor-pointer" aria-label="Cari">
+                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
+                            </svg>
+                        </button>
                         <input
                             type="text"
                             name="search"
                             id="searchDosenInput"
                             value="{{ $search }}"
                             placeholder="Cari nama"
-                            class="w-full h-[36px] pl-4 pr-10 rounded-[10px] bg-[#D9D9D9] border-2 border-primary text-black text-sm font-medium placeholder:text-gray-600 focus:outline-none focus:ring-2 focus:ring-primary/20 transition"
+                            class="h-10 w-full rounded-lg border border-transparent bg-gray-100 pl-10 pr-3 text-xs font-medium text-gray-800 placeholder:text-gray-500 focus:border-gray-200 focus:outline-none focus:ring-2 focus:ring-primary/10 transition"
                         />
-                        <button type="submit" class="absolute inset-y-0 right-0 flex items-center pr-3.5 text-primary hover:scale-110 transition cursor-pointer" aria-label="Cari">
-                            <svg class="w-4 h-4 stroke-[2.5]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
-                            </svg>
-                        </button>
                     </div>
 
                     <!-- Status Filter Dropdown (Custom Mockup Design) -->
-                    <div class="relative w-36 sm:w-40 shrink-0" id="filterStatusDropdown">
+                    <div class="relative w-28 shrink-0" id="filterStatusDropdown">
                         <!-- Trigger Button -->
                         <button
                             type="button"
                             id="filterStatusBtn"
-                            class="w-full h-[36px] pl-3.5 pr-1 bg-[#D9D9D9] border-2 border-primary rounded-[10px] flex items-center justify-between cursor-pointer select-none transition focus:outline-none focus:ring-2 focus:ring-primary/20"
+                            class="flex h-10 w-full cursor-pointer select-none items-center justify-between rounded-lg border border-transparent bg-gray-100 px-3 text-xs font-semibold text-gray-800 transition focus:outline-none focus:ring-2 focus:ring-primary/10"
                             aria-expanded="false"
                             aria-haspopup="true"
                         >
-                            <span id="filterStatusLabel" class="text-sm font-semibold text-gray-900 truncate pr-2">
+                            <span id="filterStatusLabel" class="truncate pr-2">
                                 {{ $selectedStatusLabel ?? 'Status' }}
                             </span>
-                            <div class="w-7 h-7 rounded-[6px] bg-secondary border border-primary flex items-center justify-center shrink-0 shadow-2xs">
-                                <svg id="filterStatusChevron" class="w-4 h-4 text-primary stroke-primary transition-transform duration-200 rotate-0" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none" viewBox="0 0 24 24">
-                                    <path d="m6 9 6 6 6-6" />
-                                </svg>
-                            </div>
+                            <svg id="filterStatusChevron" class="h-4 w-4 shrink-0 text-gray-500 transition-transform duration-200 rotate-0" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none" viewBox="0 0 24 24">
+                                <path d="m6 9 6 6 6-6" />
+                            </svg>
                         </button>
 
                         <!-- Hidden Input for Form/Query state & Event Dispatching -->
@@ -86,12 +84,12 @@
                         <!-- Dropdown Menu Popover -->
                         <div
                             id="filterStatusMenu"
-                            class="hidden absolute left-0 top-full mt-1.5 w-full bg-white border border-primary rounded-[10px] shadow-lg py-1.5 z-40 overflow-hidden transition-all duration-150"
+                            class="hidden absolute left-0 top-full mt-1.5 w-full bg-white border border-gray-200 rounded-lg shadow-lg py-1.5 z-40 overflow-hidden transition-all duration-150"
                             role="menu"
                         >
                             <button
                                 type="button"
-                                class="status-option-btn w-full text-left px-4 py-1.5 text-xs sm:text-sm font-medium text-gray-900 hover:bg-black/5 hover:text-primary transition cursor-pointer select-none"
+                                class="status-option-btn w-full text-left px-3 py-2 text-xs font-medium text-gray-700 hover:bg-gray-100 hover:text-primary transition cursor-pointer select-none"
                                 data-value=""
                                 data-label="All Data"
                             >
@@ -99,7 +97,7 @@
                             </button>
                             <button
                                 type="button"
-                                class="status-option-btn w-full text-left px-4 py-1.5 text-xs sm:text-sm font-medium text-gray-900 hover:bg-black/5 hover:text-primary transition cursor-pointer select-none"
+                                class="status-option-btn w-full text-left px-3 py-2 text-xs font-medium text-gray-700 hover:bg-gray-100 hover:text-primary transition cursor-pointer select-none"
                                 data-value="DTPS"
                                 data-label="DTPS"
                             >
@@ -107,7 +105,7 @@
                             </button>
                             <button
                                 type="button"
-                                class="status-option-btn w-full text-left px-4 py-1.5 text-xs sm:text-sm font-medium text-gray-900 hover:bg-black/5 hover:text-primary transition cursor-pointer select-none"
+                                class="status-option-btn w-full text-left px-3 py-2 text-xs font-medium text-gray-700 hover:bg-gray-100 hover:text-primary transition cursor-pointer select-none"
                                 data-value="DTT"
                                 data-label="Tidak tetap"
                             >
@@ -120,7 +118,7 @@
                         name="jabatan"
                         id="filterJabatanSelect"
                         aria-label="Filter jabatan akademik"
-                        class="h-[36px] max-w-48 rounded-[10px] bg-[#D9D9D9] border-2 border-primary px-3 text-sm font-medium text-gray-900 focus:outline-none focus:ring-2 focus:ring-primary/20"
+                        class="h-10 w-36 shrink-0 rounded-lg border border-transparent bg-gray-100 px-2.5 text-xs font-medium text-gray-800 focus:border-gray-200 focus:outline-none focus:ring-2 focus:ring-primary/10"
                         onchange="this.form.submit()"
                     >
                         <option value="">Semua Jabatan</option>
@@ -141,10 +139,10 @@
                         name="serdos"
                         id="filterSerdosSelect"
                         aria-label="Filter sertifikasi dosen"
-                        class="h-[36px] max-w-48 rounded-[10px] bg-[#D9D9D9] border-2 border-primary px-3 text-sm font-medium text-gray-900 focus:outline-none focus:ring-2 focus:ring-primary/20"
+                        class="h-10 w-36 shrink-0 rounded-lg border border-transparent bg-gray-100 px-2.5 text-xs font-medium text-gray-800 focus:border-gray-200 focus:outline-none focus:ring-2 focus:ring-primary/10"
                         onchange="this.form.submit()"
                     >
-                        <option value="">Semua Serdos</option>
+                        <option value="">Serdos</option>
                         <option value="tersertifikasi" {{ $serdosFilter === 'tersertifikasi' ? 'selected' : '' }}>Tersertifikasi</option>
                         <option value="belum" {{ $serdosFilter === 'belum' ? 'selected' : '' }}>Belum Tersertifikasi</option>
                     </select>
@@ -152,26 +150,22 @@
                 </form>
 
                 <!-- Right Action Buttons: Export, import, and add lecturer -->
-                <div class="flex items-center gap-3 shrink-0">
+                <div class="flex shrink-0 items-center gap-2">
                     <button
                         type="button"
                         id="exportDosenBtn"
                         data-export-url="{{ route('dosen.export') }}"
-                        class="h-[35px] inline-flex items-center gap-2 px-3.5 rounded-[8px] border border-[#01568D] text-[#01568D] hover:bg-blue-50 text-xs sm:text-[13px] font-bold transition cursor-pointer shadow-2xs whitespace-nowrap shrink-0"
+                        class="inline-flex h-10 shrink-0 cursor-pointer items-center gap-1.5 whitespace-nowrap rounded-2xl border-0 bg-blue-600 px-2.5 text-xs font-semibold text-white shadow-sm transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
                     >
+                        <svg class="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v12m0 0 4-4m-4 4-4-4m-4 7v1a2 2 0 002 2h12a2 2 0 002-2v-1" />
+                        </svg>
                         <span class="export-dosen-label">Download Excel</span>
                     </button>
-                    <a
-                        href="{{ route('dosen.template') }}"
-                        class="h-[35px] inline-flex items-center gap-2 px-3.5 rounded-[8px] border border-secondary text-secondary hover:bg-secondary/10 text-xs sm:text-[13px] font-bold transition cursor-pointer shadow-2xs whitespace-nowrap shrink-0"
-                    >
-                        Download Template Excel
-                    </a>
-                    <!-- Import Excel (Green Border, Single Line) -->
                     <button
                         type="button"
                         id="openImportModalBtnTable"
-                        class="open-import-modal-btn h-[35px] inline-flex items-center gap-2 px-3.5 rounded-[8px] border border-[#16A34A] text-[#16A34A] bg-white hover:bg-emerald-50 text-xs sm:text-[13px] font-bold transition cursor-pointer shadow-2xs whitespace-nowrap shrink-0"
+                        class="open-import-modal-btn inline-flex h-10 shrink-0 cursor-pointer items-center gap-1.5 whitespace-nowrap rounded-2xl border-0 bg-green-700 px-2.5 text-xs font-semibold text-white shadow-sm transition hover:bg-green-800"
                     >
                         <svg class="w-4 h-4 stroke-[2.2] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m6.75 12l-3-3m0 0l-3 3m3-3v6m-1.5-15H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
@@ -179,11 +173,11 @@
                         <span>Import Excel</span>
                     </button>
 
-                    <!-- Tambah Dosen (Dark Blue Solid, Single Line) -->
                     <button
                         type="button"
                         id="openCreateModalBtnTable"
-                        class="open-create-modal-btn h-[35px] inline-flex items-center gap-2 px-3.5 rounded-[8px] bg-[#01568D] hover:bg-[#012650] text-white text-xs sm:text-[13px] font-bold shadow-xs transition cursor-pointer whitespace-nowrap shrink-0"
+                        class="open-create-modal-btn inline-flex h-10 shrink-0 cursor-pointer items-center gap-1.5 whitespace-nowrap rounded-2xl border-0 bg-primary px-2.5 text-xs font-bold text-white shadow-sm transition hover:bg-additional"
+                        style="background-color: #0F294A; color: #FFFFFF;"
                     >
                         <svg class="w-4 h-4 stroke-[2.5] shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor">
                             <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2"/>
@@ -227,27 +221,12 @@
                                 $rawStatus = $d['status_dosen'] ?? ($d['status'] ?? 'DTPS');
                                 $statusDosen = is_string($rawStatus) ? $rawStatus : (is_array($rawStatus) ? ($rawStatus['status'] ?? ($rawStatus['nama'] ?? 'DTPS')) : 'DTPS');
 
-                                $rawEmail = $d['email'] ?? '-';
-                                $email = is_string($rawEmail) ? $rawEmail : '-';
-
-                                $rawSertifikasi = $d['sertifikasi_dosen'] ?? ($d['sertifikasi'] ?? '');
-                                $sertifikasi = is_string($rawSertifikasi)
-                                    ? trim($rawSertifikasi)
-                                    : (is_array($rawSertifikasi) ? ($rawSertifikasi['nama_sertifikasi'] ?? ($rawSertifikasi['jenis_sertifikasi'] ?? '')) : '');
-                                $sertifikasiLower = strtolower($sertifikasi);
-                                $isSertifikasi = $sertifikasi !== ''
-                                    && !str_contains($sertifikasiLower, 'belum')
-                                    && (
-                                        str_contains($sertifikasiLower, 'tersertifikasi')
-                                        || str_contains($sertifikasiLower, 'serdos')
-                                        || str_contains($sertifikasiLower, 'sertifikat pendidik')
-                                    );
+                                $sertifikasi = $d['_serdos_status'] ?? 'Belum Tersertifikasi';
+                                $isSertifikasi = $sertifikasi === 'Tersertifikasi';
                                 $rawJabatan = $d['jabatan_akademik'] ?? ($d['jabatan'] ?? []);
                                 $jabatanNama = is_array($rawJabatan)
                                     ? ($rawJabatan['nama_jabatan'] ?? ($rawJabatan['nama'] ?? ''))
                                     : (is_string($rawJabatan) ? $rawJabatan : '');
-                                $rawJabatanId = $d['id_jabatan'] ?? (is_array($rawJabatan) ? ($rawJabatan['id_jabatan'] ?? ($rawJabatan['id'] ?? '')) : '');
-                                $idJabatan = is_scalar($rawJabatanId) ? (string) $rawJabatanId : '';
                                 $rawPendidikan = $d['pendidikan_terakhir'] ?? ($d['pendidikan'] ?? []);
                                 $pendidikanJenjang = is_array($rawPendidikan)
                                     ? ($rawPendidikan['jenjang'] ?? ($rawPendidikan['nama_pendidikan'] ?? ''))
@@ -255,8 +234,6 @@
                                 $pendidikanJenjang = preg_match('/(?:^|[^A-Z0-9])(?:S[123]|D4)(?:$|[^A-Z0-9])|terapan/i', $pendidikanJenjang) === 1
                                     ? $pendidikanJenjang
                                     : '-';
-                                $rawPendidikanId = $d['id_pendidikan'] ?? (is_array($rawPendidikan) ? ($rawPendidikan['id_pendidikan'] ?? ($rawPendidikan['id'] ?? '')) : '');
-                                $idPendidikan = is_scalar($rawPendidikanId) ? (string) $rawPendidikanId : '';
                             @endphp
                             <tr class="dosen-row border-b border-gray-200 hover:bg-gray-50/60 transition-colors duration-150 group">
                                 <td class="w-16 text-center text-gray-900 py-4 px-2 sm:px-3">{{ $rowNumber }}.</td>
@@ -271,27 +248,9 @@
                                     <span class="inline-flex rounded-full px-2.5 py-1 text-xs font-semibold {{ $isSertifikasi ? 'bg-emerald-100 text-emerald-800' : 'bg-gray-100 text-gray-600' }}">
                                         {{ $isSertifikasi ? 'Tersertifikasi' : 'Belum Tersertifikasi' }}
                                     </span>
-                                    </span>
                                 </td>
                                 <td class="w-28 py-4 px-2 sm:px-3">
                                     <div class="flex items-center justify-center gap-2 sm:gap-4">
-                                        <button
-                                            type="button"
-                                            class="edit-dosen-btn text-[#F59E0B] hover:text-[#D97706] transition p-1 cursor-pointer"
-                                            title="Edit Data Dosen"
-                                            data-id="{{ $dosenId }}"
-                                            data-nama="{{ $nama }}"
-                                            data-nidn="{{ $nidn }}"
-                                            data-nuptk="{{ $nuptk }}"
-                                            data-status="{{ $statusDosen }}"
-                                            data-email="{{ $email }}"
-                                            data-sertifikasi="{{ $sertifikasi }}"
-                                            data-id-jabatan="{{ $idJabatan }}"
-                                            data-id-pendidikan="{{ $idPendidikan }}"
-                                            data-action="{{ route('dosen.update', $dosenId) }}"
-                                        >
-                                            <x-icon.edit class="w-5 h-5" />
-                                        </button>
                                         <button
                                             type="button"
                                             class="text-[#DC2626] hover:text-[#B91C1C] transition p-1 cursor-pointer"
@@ -692,6 +651,16 @@
             Import Data Dosen
         </h3>
 
+        <a
+            href="{{ route('dosen.template') }}"
+            class="mb-4 inline-flex w-full items-center justify-center gap-2 rounded-lg border-0 bg-amber-400 px-4 py-2.5 text-sm font-semibold text-slate-900 transition hover:bg-amber-500"
+        >
+            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v12m0 0 4-4m-4 4-4-4m-4 7v1a2 2 0 002 2h12a2 2 0 002-2v-1" />
+            </svg>
+            Download Template Excel
+        </a>
+
         <form id="importExcelForm" action="{{ route('dosen.import') }}" method="POST" enctype="multipart/form-data" class="space-y-4">
             @csrf
 
@@ -1079,51 +1048,6 @@
         // 3. Edit Modal
         const editModal = document.getElementById('editDosenModal');
         const closeEditBtn = document.getElementById('closeEditModalBtn');
-        const editNama = document.getElementById('editNamaInput');
-        const editNidn = document.getElementById('editNidnInput');
-        const editNuptk = document.getElementById('editNuptkInput');
-        const editStatus = document.getElementById('editStatusSelect');
-        const editEmail = document.getElementById('editEmailInput');
-        const editSertifikasi = document.getElementById('editSertifikasiInput');
-        const editJabatan = document.getElementById('editJabatanSelect');
-        const editPendidikan = document.getElementById('editPendidikanSelect');
-
-        document.addEventListener('click', function (event) {
-            const editButton = event.target.closest('.edit-dosen-btn');
-            if (editButton) {
-                const action = editButton.getAttribute('data-action');
-                const nama = editButton.getAttribute('data-nama');
-                const nidn = editButton.getAttribute('data-nidn');
-                const nuptk = editButton.getAttribute('data-nuptk');
-                const status = editButton.getAttribute('data-status');
-                const email = editButton.getAttribute('data-email');
-                const sertifikasi = editButton.getAttribute('data-sertifikasi');
-                const idJabatan = editButton.getAttribute('data-id-jabatan') || '';
-                const idPendidikan = editButton.getAttribute('data-id-pendidikan') || '';
-
-                if (editForm) editForm.action = action;
-                if (editNama) editNama.value = nama || '';
-                if (editNidn) editNidn.value = (nidn && nidn !== '-') ? nidn : '';
-                if (editNuptk) editNuptk.value = (nuptk && nuptk !== '-') ? nuptk : '';
-                if (editStatus) {
-                    if (status === 'Tidak Tetap' || status === 'DTT' || (status && status.toLowerCase().includes('tidak tetap'))) {
-                        editStatus.value = 'DTT';
-                    } else if (status === 'DTPS') {
-                        editStatus.value = 'DTPS';
-                    } else {
-                        editStatus.value = status || '';
-                    }
-                }
-                if (editEmail) editEmail.value = (email && email !== '-') ? email : '';
-                if (editSertifikasi) editSertifikasi.value = sertifikasi || '';
-                if (editJabatan) editJabatan.value = idJabatan;
-                if (editPendidikan) editPendidikan.value = idPendidikan;
-                if (editForm) clearDosenFormErrors(editForm);
-
-                showModal(editModal);
-                setTimeout(() => editNama?.focus(), 100);
-            }
-        });
 
         if (closeEditBtn) {
             closeEditBtn.addEventListener('click', () => hideModal(editModal));
