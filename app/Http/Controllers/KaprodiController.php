@@ -9,6 +9,7 @@ use Illuminate\Http\Client\Response;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Illuminate\View\View;
 
 class KaprodiController extends Controller
@@ -182,7 +183,8 @@ class KaprodiController extends Controller
     public function project(Request $request): View
     {
         // 1. Ambil daftar project akreditasi dari API
-        $projects = $this->extractData($this->akreditasiService->getProjects());
+        $projectsResponse = $this->akreditasiService->getProjects();
+        $projects = $this->extractData($projectsResponse);
 
         // 2. Ambil master data lembaga, versi instrumen, dan instrumen terformat
         $lembagaList = $this->extractData($this->akreditasiService->getLembaga());
@@ -224,7 +226,6 @@ class KaprodiController extends Controller
         return view('pages.kaprodi.project', [
             'projects' => $projects,
             'lembagaList' => $lembagaList,
-            'versiList' => $versiList,
             'instrumenList' => $instrumenList,
             'stats' => $stats,
         ]);
@@ -235,7 +236,7 @@ class KaprodiController extends Controller
      *
      * @return array<int, array<string, mixed>>
      */
-    protected function getFormattedInstrumenList(): array
+    protected function getFormattedInstrumenList(bool $useFallback = true): array
     {
         $raw = [];
         try {
@@ -247,7 +248,7 @@ class KaprodiController extends Controller
             $raw = [];
         }
 
-        if (empty($raw)) {
+        if ($useFallback && empty($raw)) {
             $versiList = $this->extractData($this->akreditasiService->getVersiInstrumen());
             $firstVersi = $versiList[0] ?? ['id' => 1, 'nomor_versi' => '2.1'];
 
@@ -277,25 +278,26 @@ class KaprodiController extends Controller
 
         $formatted = [];
         foreach ($raw as $item) {
+            $defaultLabel = $useFallback ? 'LAM INFOKOM' : '-';
             $lembaga = $item['versi_instrumen']['lembaga']['nama_lembaga']
-                ?? ($item['nama_lembaga'] ?? ($item['lembaga']['nama_lembaga'] ?? 'LAM INFOKOM'));
+                ?? ($item['nama_lembaga'] ?? ($item['lembaga']['nama_lembaga'] ?? $defaultLabel));
 
             $versi = $item['versi_instrumen']['nomor_versi']
-                ?? ($item['nomor_versi'] ?? ($item['versi'] ?? '2.1'));
+                ?? ($item['nomor_versi'] ?? ($item['versi'] ?? ($useFallback ? '2.1' : '-')));
             if (! str_starts_with(strtolower((string) $versi), 'v')) {
                 $versi = 'v'.$versi;
             }
 
             $jenjang = $item['jenjang']['nama_jenjang']
-                ?? ($item['nama_jenjang'] ?? ($item['jenjang'] ?? 'Sarjana Terapan'));
+                ?? ($item['nama_jenjang'] ?? ($item['jenjang'] ?? ($useFallback ? 'Sarjana Terapan' : '-')));
 
             $jenis = $item['jenis_instrumen']['nama_jenis']
-                ?? ($item['nama_jenis'] ?? ($item['jenis'] ?? 'APS'));
+                ?? ($item['nama_jenis'] ?? ($item['jenis'] ?? ($useFallback ? 'APS' : '-')));
 
             $item['formatted_label'] = "{$lembaga} - {$versi} - {$jenjang} - {$jenis}";
-            $item['id_versi_instrumen'] = $item['id_versi_instrumen'] ?? ($item['versi_instrumen']['id'] ?? 1);
-            $item['id_jenjang'] = $item['id_jenjang'] ?? ($item['jenjang']['id'] ?? 1);
-            $item['id_jenis_instrumen'] = $item['id_jenis_instrumen'] ?? ($item['jenis_instrumen']['id'] ?? 1);
+            $item['id_versi_instrumen'] = $item['id_versi_instrumen'] ?? ($item['versi_instrumen']['id'] ?? ($useFallback ? 1 : null));
+            $item['id_jenjang'] = $item['id_jenjang'] ?? ($item['jenjang']['id'] ?? ($useFallback ? 1 : null));
+            $item['id_jenis_instrumen'] = $item['id_jenis_instrumen'] ?? ($item['jenis_instrumen']['id'] ?? ($useFallback ? 1 : null));
 
             $formatted[] = $item;
         }
@@ -616,26 +618,365 @@ class KaprodiController extends Controller
         try {
             $response = $this->akreditasiService->getProjectReadiness($id);
 
-            if ($response->successful() && ! empty($response->json('data'))) {
-                return response()->json($response->json());
+            if (in_array($response->status(), [401, 403, 404], true)) {
+                $message = match ($response->status()) {
+                    401 => 'Sesi Anda telah berakhir. Silakan masuk kembali.',
+                    403 => 'Anda tidak memiliki akses ke data readiness project ini.',
+                    404 => 'Project atau data readiness tidak ditemukan.',
+                };
+
+                return response()->json([
+                    'success' => false,
+                    'message' => $message,
+                ], $response->status());
             }
 
-            $fallback = $this->calculateProjectReadiness($id);
+            if ($response->successful()) {
+                $payload = $response->json();
+                $readinessData = $payload['data'] ?? null;
+                if (($payload['success'] ?? false) !== true || ! is_array($readinessData)) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Respons server tidak memuat data readiness yang valid.',
+                    ], 502);
+                }
+
+                $readinessData = $this->normalizeProjectReadinessData($readinessData);
+                if ($readinessData === null) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Format data readiness dari server tidak valid.',
+                    ], 502);
+                }
+
+                $indicators = $this->extractData($this->akreditasiService->getIndikator());
+                $picAssignments = $this->loadProjectPicAssignments($id, is_array($indicators) ? $indicators : []);
+
+                return response()->json([
+                    'success' => true,
+                    'message' => $payload['message'] ?? 'Data kesiapan submit project berhasil dimuat.',
+                    'data' => $this->mergeReadinessPicData($readinessData, $picAssignments),
+                ]);
+            }
 
             return response()->json([
-                'success' => true,
-                'message' => 'Data kesiapan submit project berhasil dimuat.',
-                'data' => $fallback,
-            ]);
+                'success' => false,
+                'message' => 'Gagal memuat data readiness dari server.',
+            ], 502);
         } catch (\Throwable $e) {
-            $fallback = $this->calculateProjectReadiness($id);
+            Log::error('Kaprodi readiness request failed', [
+                'project_id' => (string) $id,
+                'error_type' => get_debug_type($e),
+            ]);
 
             return response()->json([
-                'success' => true,
-                'message' => 'Data kesiapan submit project berhasil dimuat.',
-                'data' => $fallback,
+                'success' => false,
+                'message' => 'Terjadi kesalahan saat memuat data readiness.',
+            ], 500);
+        }
+    }
+
+    /**
+     * Normalize the upstream critical-indicator readiness response for the modal.
+     *
+     * @param  array<string, mixed>  $readinessData
+     * @return array<string, mixed>|null
+     */
+    protected function normalizeProjectReadinessData(array $readinessData): ?array
+    {
+        if (isset($readinessData['indicators']) && is_array($readinessData['indicators'])) {
+            $readinessData['total_indikator'] ??= count($readinessData['indicators']);
+            $readinessData['scope_label'] = 'Butir indikator kritis dari endpoint readiness';
+            $readinessData['data_available'] = true;
+            $readinessData['readiness_indicators_are_unready_only'] = false;
+
+            return $readinessData;
+        }
+
+        $unreadyIndicators = $readinessData['indikator_belum_siap'] ?? null;
+        $criticalIndicatorCount = $readinessData['total_indikator_kritis'] ?? null;
+        if (! is_array($unreadyIndicators) || ! is_numeric($criticalIndicatorCount)) {
+            return null;
+        }
+
+        $criticalIndicatorCount = (int) $criticalIndicatorCount;
+        if ($criticalIndicatorCount < 0 || count($unreadyIndicators) > $criticalIndicatorCount) {
+            return null;
+        }
+
+        $indicators = [];
+        foreach ($unreadyIndicators as $indicator) {
+            if (! is_array($indicator) || ! is_array($indicator['belum_terpenuhi'] ?? null)) {
+                return null;
+            }
+
+            $unmetRequirements = array_values(array_filter(
+                $indicator['belum_terpenuhi'],
+                fn (mixed $requirement): bool => is_string($requirement),
+            ));
+            if (count($unmetRequirements) !== count($indicator['belum_terpenuhi'])) {
+                return null;
+            }
+            if (array_diff($unmetRequirements, ['pic', 'link_evidence', 'skor_reviewer']) !== []) {
+                return null;
+            }
+
+            $hasPic = ! in_array('pic', $unmetRequirements, true);
+            $hasEvidence = ! in_array('link_evidence', $unmetRequirements, true);
+            $hasAssessment = ! in_array('skor_reviewer', $unmetRequirements, true);
+            $missingItems = [];
+            if (! $hasPic) {
+                $missingItems[] = 'Belum memiliki PIC';
+            }
+            if (! $hasEvidence) {
+                $missingItems[] = 'Belum ada link bukti';
+            }
+            if (! $hasAssessment) {
+                $missingItems[] = 'Belum dinilai oleh reviewer';
+            }
+
+            $indicators[] = [
+                'id_indikator' => $indicator['id_indikator'] ?? null,
+                'kode_indikator' => $indicator['kode_indikator'] ?? null,
+                'deskripsi_indikator' => $indicator['deskripsi_indikator'] ?? null,
+                'has_pic' => $hasPic,
+                'has_evidence' => $hasEvidence,
+                'has_assessment' => $hasAssessment,
+                'is_ready' => $missingItems === [],
+                'missing_items' => $missingItems,
+            ];
+        }
+
+        $readinessData['indicators'] = $indicators;
+        $readinessData['total_indikator'] = $criticalIndicatorCount;
+        $readinessData['scope_label'] = 'Butir indikator kritis dari endpoint readiness';
+        $readinessData['data_available'] = true;
+        $readinessData['readiness_indicators_are_unready_only'] = true;
+
+        $unreadyCount = count(array_filter($indicators, fn (array $indicator): bool => ! $indicator['is_ready']));
+        $readyCount = $criticalIndicatorCount - $unreadyCount;
+        $readinessData['ready_indikator'] = $readyCount;
+        $readinessData['unready_indikator'] = $unreadyCount;
+        $readinessData['percentage'] = $criticalIndicatorCount > 0
+            ? round(($readyCount / $criticalIndicatorCount) * 100)
+            : 0;
+        $readinessData['missing_pic_count'] = count(array_filter($indicators, fn (array $indicator): bool => ! $indicator['has_pic']));
+        $readinessData['missing_evidence_count'] = count(array_filter($indicators, fn (array $indicator): bool => ! $indicator['has_evidence']));
+        $readinessData['missing_assessment_count'] = count(array_filter($indicators, fn (array $indicator): bool => ! $indicator['has_assessment']));
+        $readinessData['is_ready'] = $criticalIndicatorCount > 0 && $unreadyCount === 0;
+
+        return $readinessData;
+    }
+
+    /**
+     * Load distinct PIC assignments scoped to one project.
+     *
+     * @param  array<int, array<string, mixed>>  $indicators
+     * @return array{available: bool, by_id: array<string, array<string, mixed>>, by_code: array<string, array<string, mixed>>, count: int}
+     */
+    protected function loadProjectPicAssignments(int|string $projectId, array $indicators = []): array
+    {
+        $sessionAssignments = session("plotting_assignments_{$projectId}", []);
+        $hasSessionPic = is_array($sessionAssignments) && collect($sessionAssignments)->contains(
+            fn (mixed $assignment): bool => is_array($assignment) && ! empty($assignment['pic']),
+        );
+
+        if ($indicators === [] && $hasSessionPic) {
+            $indicators = $this->extractData($this->akreditasiService->getIndikator());
+            $indicators = is_array($indicators) ? $indicators : [];
+        }
+
+        $indicatorIdByCode = [];
+        $indicatorCodeById = [];
+        foreach ($indicators as $indicator) {
+            if (! is_array($indicator)) {
+                continue;
+            }
+
+            $indicatorId = $indicator['id'] ?? $indicator['id_indikator'] ?? null;
+            $indicatorCode = strtolower(trim((string) ($indicator['kode_indikator'] ?? $indicator['kode'] ?? '')));
+            if ($indicatorId !== null && $indicatorCode !== '') {
+                $indicatorIdByCode[$indicatorCode] = (string) $indicatorId;
+                $indicatorCodeById[(string) $indicatorId] = $indicatorCode;
+            }
+        }
+
+        $byId = [];
+        $byCode = [];
+        $mappingAvailable = false;
+
+        try {
+            $response = $this->akreditasiService->getMappingTim(['project_id' => $projectId]);
+            $payload = $response->json();
+            $mappingData = is_array($payload) ? ($payload['data'] ?? null) : null;
+            $mappingAvailable = $response->successful()
+                && ($payload['success'] ?? false) === true
+                && is_array($mappingData);
+            if ($mappingAvailable) {
+                $mappings = $mappingData;
+                if (is_array($mappings) && isset($mappings['data']) && is_array($mappings['data'])) {
+                    $mappings = $mappings['data'];
+                } elseif (is_array($mappings) && isset($mappings['mapping_tim']) && is_array($mappings['mapping_tim'])) {
+                    $mappings = $mappings['mapping_tim'];
+                } elseif (is_array($mappings) && isset($mappings['assignments']) && is_array($mappings['assignments'])) {
+                    $mappings = $mappings['assignments'];
+                }
+
+                foreach (is_array($mappings) ? $mappings : [] as $mapping) {
+                    if (! is_array($mapping) || strtoupper(trim((string) ($mapping['role'] ?? ''))) !== 'PIC') {
+                        continue;
+                    }
+
+                    $mappingProjectId = $mapping['id_project'] ?? $mapping['project_id'] ?? $mapping['project']['id'] ?? null;
+                    if ($mappingProjectId !== null && (string) $mappingProjectId !== (string) $projectId) {
+                        continue;
+                    }
+
+                    $indicator = is_array($mapping['indikator'] ?? null) ? $mapping['indikator'] : [];
+                    $indicatorId = $mapping['id_indikator'] ?? $indicator['id'] ?? null;
+                    $indicatorCode = strtolower(trim((string) ($mapping['kode_indikator'] ?? $indicator['kode_indikator'] ?? $indicator['kode'] ?? '')));
+                    if ($indicatorId === null && $indicatorCode !== '') {
+                        $indicatorId = $indicatorIdByCode[$indicatorCode] ?? null;
+                    }
+
+                    $assignment = [
+                        'id_indikator' => $indicatorId === null ? null : (string) $indicatorId,
+                        'kode_indikator' => $indicatorCode,
+                        'pic_name' => $mapping['user']['nama'] ?? $mapping['user_name'] ?? null,
+                    ];
+                    if ($indicatorId !== null) {
+                        $key = (string) $indicatorId;
+                        $byId[$key] = $assignment;
+                        $indicatorCode = $indicatorCode ?: ($indicatorCodeById[$key] ?? '');
+                    }
+                    if ($indicatorCode !== '') {
+                        $assignment['kode_indikator'] = $indicatorCode;
+                        $byCode[$indicatorCode] = $assignment;
+                    }
+                }
+            }
+        } catch (\Throwable $e) {
+            $mappingAvailable = false;
+            Log::warning('Kaprodi PIC mapping request failed', [
+                'project_id' => (string) $projectId,
+                'error_type' => get_debug_type($e),
             ]);
         }
+
+        foreach (is_array($sessionAssignments) ? $sessionAssignments : [] as $code => $assignment) {
+            if (! is_array($assignment) || empty($assignment['pic'])) {
+                continue;
+            }
+
+            $indicatorCode = strtolower(trim((string) $code));
+            $indicatorId = $assignment['id_indikator'] ?? $indicatorIdByCode[$indicatorCode] ?? null;
+            $picAssignment = [
+                'id_indikator' => $indicatorId === null ? null : (string) $indicatorId,
+                'kode_indikator' => $indicatorCode,
+                'pic_name' => $assignment['pic'],
+            ];
+            if ($indicatorId !== null) {
+                $byId[(string) $indicatorId] = $picAssignment;
+            }
+            if ($indicatorCode !== '') {
+                $byCode[$indicatorCode] = $picAssignment;
+            }
+        }
+
+        $unresolvedCodeCount = count(array_filter(
+            $byCode,
+            fn (array $assignment): bool => $assignment['id_indikator'] === null,
+        ));
+
+        return [
+            'available' => $mappingAvailable || $hasSessionPic,
+            'by_id' => $byId,
+            'by_code' => $byCode,
+            'count' => count($byId) + $unresolvedCodeCount,
+        ];
+    }
+
+    /**
+     * Reconcile readiness PIC state against project-scoped plotting assignments.
+     *
+     * @param  array<string, mixed>  $backendData
+     * @param  array{available: bool, by_id: array<string, array<string, mixed>>, by_code: array<string, array<string, mixed>>, count: int}  $picAssignments
+     * @return array<string, mixed>
+     */
+    protected function mergeReadinessPicData(array $backendData, array $picAssignments): array
+    {
+        $indicators = $backendData['indicators'] ?? [];
+        if (! $picAssignments['available'] || ! is_array($indicators)) {
+            $backendData['pic_data_available'] = false;
+            unset($backendData['readiness_indicators_are_unready_only']);
+
+            return $backendData;
+        }
+
+        $normalizedIndicators = [];
+        $missingPicCount = 0;
+        $missingEvidenceCount = 0;
+        $missingAssessmentCount = 0;
+
+        foreach ($indicators as $indicator) {
+            if (! is_array($indicator)) {
+                continue;
+            }
+
+            $indicatorId = (string) ($indicator['id_indikator'] ?? $indicator['id'] ?? $indicator['indikator']['id'] ?? '');
+            $indicatorCode = strtolower(trim((string) ($indicator['kode_indikator'] ?? $indicator['indikator']['kode_indikator'] ?? '')));
+            $picAssignment = ($indicatorId !== '' ? ($picAssignments['by_id'][$indicatorId] ?? null) : null)
+                ?? ($indicatorCode !== '' ? ($picAssignments['by_code'][$indicatorCode] ?? null) : null);
+            $hasPic = is_array($picAssignment);
+
+            $indicator['has_pic'] = $hasPic;
+            $indicator['pic_name'] = $hasPic ? ($picAssignment['pic_name'] ?? null) : null;
+            $missingItems = array_values(array_filter(
+                is_array($indicator['missing_items'] ?? null) ? $indicator['missing_items'] : [],
+                fn (mixed $item): bool => is_string($item) && $item !== 'Belum memiliki PIC',
+            ));
+
+            if (! $hasPic) {
+                $missingItems[] = 'Belum memiliki PIC';
+                $missingPicCount++;
+            }
+            if (empty($indicator['has_evidence'])) {
+                $missingItems[] = 'Belum ada link bukti';
+                $missingEvidenceCount++;
+            }
+            if (empty($indicator['has_assessment'])) {
+                $missingItems[] = 'Belum dinilai oleh reviewer';
+                $missingAssessmentCount++;
+            }
+
+            $indicator['missing_items'] = array_values(array_unique($missingItems));
+            $indicator['is_ready'] = $missingItems === [];
+            $normalizedIndicators[] = $indicator;
+        }
+
+        $total = max(0, (int) ($backendData['total_indikator'] ?? count($normalizedIndicators)));
+        $unreadyCount = count(array_filter($normalizedIndicators, fn (array $indicator): bool => empty($indicator['is_ready'])));
+        if (! empty($backendData['readiness_indicators_are_unready_only'])) {
+            $unreadyCount = min($total, $unreadyCount);
+            $readyCount = $total - $unreadyCount;
+        } else {
+            $readyCount = count(array_filter($normalizedIndicators, fn (array $indicator): bool => ! empty($indicator['is_ready'])));
+            $unreadyCount = max(0, $total - $readyCount);
+        }
+
+        $backendData['indicators'] = $normalizedIndicators;
+        $backendData['total_indikator'] = $total;
+        $backendData['ready_indikator'] = $readyCount;
+        $backendData['unready_indikator'] = $unreadyCount;
+        $backendData['percentage'] = $total > 0 ? round(($readyCount / $total) * 100) : 0;
+        $backendData['missing_pic_count'] = $missingPicCount;
+        $backendData['missing_evidence_count'] = $missingEvidenceCount;
+        $backendData['missing_assessment_count'] = $missingAssessmentCount;
+        $backendData['is_ready'] = $unreadyCount === 0 && $total > 0;
+        $backendData['pic_data_available'] = true;
+        unset($backendData['readiness_indicators_are_unready_only']);
+
+        return $backendData;
     }
 
     /**
@@ -649,21 +990,8 @@ class KaprodiController extends Controller
         $projectData = $projectRes->successful() ? ($projectRes->json('data') ?? []) : ['id' => $id, 'nama_project' => 'Project Akreditasi'];
 
         $rawIndikator = $this->extractData($this->akreditasiService->getIndikator());
-        if (empty($rawIndikator)) {
-            $rawIndikator = [
-                ['id' => 1, 'kode_indikator' => 'IND-1.1.1', 'deskripsi_indikator' => 'Kesesuaian Visi, Misi, Tujuan dan Strategi Program Studi'],
-                ['id' => 2, 'kode_indikator' => 'IND-2.1.1', 'deskripsi_indikator' => 'Ketersediaan Sistem Penjaminan Mutu Internal (SPMI)'],
-                ['id' => 3, 'kode_indikator' => 'IND-3.1.1', 'deskripsi_indikator' => 'Rasio Dosen Tetap terhadap Mahasiswa Reguler'],
-                ['id' => 4, 'kode_indikator' => 'IND-4.1.1', 'deskripsi_indikator' => 'Kurikulum dan Pemenuhan Capaian Pembelajaran Lulusan (CPL)'],
-                ['id' => 5, 'kode_indikator' => 'IND-5.1.1', 'deskripsi_indikator' => 'Kecukupan dan Aksesibilitas Sarana Prasarana Laboratorium'],
-            ];
-        }
-
-        $mappingTim = [];
-        try {
-            $mappingTim = $this->extractData($this->akreditasiService->getMappingTim(['project_id' => $id]));
-        } catch (\Throwable) {
-        }
+        $rawIndikator = is_array($rawIndikator) ? $rawIndikator : [];
+        $picAssignments = $this->loadProjectPicAssignments($id, $rawIndikator);
 
         $evidenceList = [];
         try {
@@ -675,14 +1003,6 @@ class KaprodiController extends Controller
         try {
             $assessmentList = $this->extractData($this->akreditasiService->getSelfAssessment(['project_id' => $id]));
         } catch (\Throwable) {
-        }
-
-        $picByIndikator = [];
-        foreach ($mappingTim as $m) {
-            $indId = $m['id_indikator'] ?? ($m['indikator']['id'] ?? null);
-            if ($indId && strtolower((string) ($m['role'] ?? '')) === 'pic') {
-                $picByIndikator[$indId] = $m['user']['nama'] ?? ($m['user_name'] ?? 'PIC Terpilih');
-            }
         }
 
         $evidenceByIndikator = [];
@@ -708,11 +1028,14 @@ class KaprodiController extends Controller
         $missingAssessmentCount = 0;
 
         foreach ($rawIndikator as $item) {
-            $indId = $item['id'] ?? 0;
+            $indId = $item['id'] ?? $item['id_indikator'] ?? 0;
             $kode = $item['kode_indikator'] ?? 'IND-'.$indId;
             $deskripsi = $item['deskripsi_indikator'] ?? ($item['nama_indikator'] ?? 'Indikator Akreditasi');
 
-            $hasPic = isset($picByIndikator[$indId]);
+            $picAssignment = $picAssignments['by_id'][(string) $indId]
+                ?? $picAssignments['by_code'][strtolower(trim((string) $kode))]
+                ?? null;
+            $hasPic = is_array($picAssignment);
             $hasEvidence = isset($evidenceByIndikator[$indId]);
             $hasAssessment = isset($scoreByIndikator[$indId]);
 
@@ -740,7 +1063,7 @@ class KaprodiController extends Controller
                 'kode_indikator' => $kode,
                 'deskripsi_indikator' => $deskripsi,
                 'has_pic' => $hasPic,
-                'pic_name' => $picByIndikator[$indId] ?? null,
+                'pic_name' => $picAssignment['pic_name'] ?? null,
                 'has_evidence' => $hasEvidence,
                 'evidence_link' => $evidenceByIndikator[$indId] ?? null,
                 'has_assessment' => $hasAssessment,
@@ -767,6 +1090,9 @@ class KaprodiController extends Controller
             'missing_evidence_count' => $missingEvidenceCount,
             'missing_assessment_count' => $missingAssessmentCount,
             'indicators' => $indicators,
+            'data_available' => $rawIndikator !== [],
+            'pic_data_available' => $picAssignments['available'],
+            'scope_label' => 'Seluruh indikator data master (fallback, bukan subset kritis)',
         ];
     }
 
@@ -792,38 +1118,147 @@ class KaprodiController extends Controller
      */
     public function projectDetail(Request $request, $id = null): View
     {
-        $project = null;
+        $compositeOverview = [];
+        $apiError = null;
+        $apiStatus = null;
+        $project = [];
+
+        if (! $id) {
+            $allProjects = $this->extractData($this->akreditasiService->getProjects());
+            $id = $allProjects[0]['id'] ?? null;
+        }
 
         if ($id) {
-            $project = $this->extractData($this->akreditasiService->getProject($id), null);
+            try {
+                $response = $this->akreditasiService->getProjectCompositeOverview($id);
+                if ($response->successful()) {
+                    $payload = $response->json();
+                    $overviewData = is_array($payload) ? ($payload['data'] ?? null) : null;
+
+                    if (is_array($overviewData) && ($payload['success'] ?? false) === true) {
+                        $compositeOverview = $overviewData;
+                        $project = is_array($overviewData['profil_project'] ?? null) ? $overviewData['profil_project'] : [];
+                    } else {
+                        $apiStatus = 502;
+                        $apiError = 'Server mengirim data ringkasan kosong atau dengan format yang tidak valid.';
+                    }
+                } else {
+                    $apiStatus = $response->status();
+                    $apiError = $this->projectOverviewErrorMessage($apiStatus);
+                }
+            } catch (\Throwable $e) {
+                $apiStatus = 0;
+                $apiError = 'Tidak dapat terhubung ke server. Periksa koneksi jaringan lalu coba kembali.';
+            }
+        } else {
+            $apiStatus = 404;
+            $apiError = 'Project akreditasi belum tersedia.';
         }
 
-        if (! $project) {
-            // Ambil project pertama yang ada dari API jika ID tidak diberikan
-            $allProjects = $this->extractData($this->akreditasiService->getProjects());
-            $project = $allProjects[0] ?? [
-                'id' => 1,
-                'nama_project' => 'Sarjana Terapan Test',
-                'tahun_target_submit' => 2026,
-                'versi_instrumen' => ['nomor_versi' => '2.1'],
-                'jenjang' => ['nama_jenjang' => 'Sarjana Terapan'],
-                'jenis_instrumen' => ['nama_jenis' => 'Unggul'],
-            ];
-        }
+        $instrumenList = $apiError === null ? $this->getFormattedInstrumenList(false) : [];
+        $picSummary = null;
 
-        // Ambil data kriteria, indikator, dan instrumen dari API
-        $rawKriteria = $this->extractData($this->akreditasiService->getKriteria());
-        $rawIndikator = $this->extractData($this->akreditasiService->getIndikator());
-        $versiList = $this->extractData($this->akreditasiService->getVersiInstrumen());
-        $instrumenList = $this->getFormattedInstrumenList();
+        if ($apiError === null && is_array($compositeOverview['progress'] ?? null)) {
+            $picAssignments = $this->loadProjectPicAssignments($id);
+            $totalIndicators = $compositeOverview['progress']['total_indikator'] ?? null;
+            if ($picAssignments['available']) {
+                $assignedIndicators = $picAssignments['count'];
+                if (is_numeric($totalIndicators)) {
+                    $assignedIndicators = min((int) $totalIndicators, $assignedIndicators);
+                }
+                $picSummary = [
+                    'assigned' => $assignedIndicators,
+                    'unassigned' => is_numeric($totalIndicators)
+                        ? max(0, (int) $totalIndicators - $assignedIndicators)
+                        : null,
+                ];
+            }
+        }
 
         return view('pages.kaprodi.project-detail', [
             'project' => $project,
-            'apiKriteria' => $rawKriteria,
-            'apiIndikator' => $rawIndikator,
-            'versiList' => $versiList,
+            'projectId' => $id,
+            'compositeOverview' => $compositeOverview,
+            'apiError' => $apiError,
+            'apiStatus' => $apiStatus,
+            'picSummary' => $picSummary,
             'instrumenList' => $instrumenList,
         ]);
+    }
+
+    protected function projectOverviewErrorMessage(int $status): string
+    {
+        return match ($status) {
+            401 => 'Sesi Anda telah berakhir. Silakan masuk kembali.',
+            403 => 'Anda tidak memiliki akses untuk melihat project ini.',
+            404 => 'Project akreditasi tidak ditemukan.',
+            408, 504 => 'Server terlalu lama merespons. Silakan coba kembali.',
+            default => 'Ringkasan project tidak dapat dimuat (HTTP '.$status.'). Silakan coba kembali.',
+        };
+    }
+
+    public function compositeOverview(Request $request, int|string $id): JsonResponse
+    {
+        try {
+            $response = $this->akreditasiService->getProjectCompositeOverview($id);
+            $payload = $response->json();
+
+            if (! $response->successful()) {
+                return response()->json([
+                    'message' => match ($response->status()) {
+                        401 => 'Sesi Anda telah berakhir.',
+                        403 => 'Anda tidak memiliki akses.',
+                        404 => 'Project tidak ditemukan.',
+                        408, 504 => 'Server terlalu lama merespons.',
+                        default => 'Ringkasan project gagal dimuat.',
+                    },
+                ], $response->status());
+            }
+
+            return response()->json(is_array($payload) ? $payload : ['data' => []]);
+        } catch (\Throwable $e) {
+            return response()->json([
+                'message' => 'Tidak dapat terhubung ke server.',
+            ], 503);
+        }
+    }
+
+    public function subkriteriaNarrativeTemplate(int|string $projectId, int|string $subkriteriaId): JsonResponse
+    {
+        try {
+            $response = $this->akreditasiService->getSubkriteriaNarrativeTemplate($projectId, $subkriteriaId);
+            $payload = $response->json();
+
+            if (! $response->successful()) {
+                return response()->json([
+                    'message' => 'Template narasi tidak dapat dimuat.',
+                ], $response->status());
+            }
+
+            return response()->json(is_array($payload) ? $payload : ['data' => []]);
+        } catch (\Throwable $e) {
+            return response()->json(['message' => 'Tidak dapat terhubung ke server.'], 503);
+        }
+    }
+
+    public function updateSubkriteriaNarrative(Request $request, int|string $projectId, int|string $subkriteriaId): JsonResponse
+    {
+        $payload = $request->except(['_token', '_method']);
+
+        try {
+            $response = $this->akreditasiService->updateSubkriteriaNarrative($projectId, $subkriteriaId, $payload);
+            $body = $response->json();
+
+            if (! $response->successful()) {
+                return response()->json([
+                    'message' => is_array($body) ? ($body['message'] ?? 'Narasi gagal disimpan.') : 'Narasi gagal disimpan.',
+                ], $response->status());
+            }
+
+            return response()->json(is_array($body) ? $body : ['message' => 'Narasi berhasil disimpan.']);
+        } catch (\Throwable $e) {
+            return response()->json(['message' => 'Tidak dapat terhubung ke server.'], 503);
+        }
     }
 
     /**
@@ -843,6 +1278,15 @@ class KaprodiController extends Controller
         } catch (\Throwable $e) {
             $mappingTim = [];
         }
+        if (is_array($mappingTim) && isset($mappingTim['data']) && is_array($mappingTim['data'])) {
+            $mappingTim = $mappingTim['data'];
+        }
+        $mappingTim = is_array($mappingTim) ? array_values(array_filter(
+            $mappingTim,
+            fn (mixed $mapping): bool => is_array($mapping)
+                && (($mapping['id_project'] ?? $mapping['project_id'] ?? $mapping['project']['id'] ?? null) === null
+                    || (string) ($mapping['id_project'] ?? $mapping['project_id'] ?? $mapping['project']['id']) === $projectId),
+        )) : [];
 
         // Ambil data dosen dari API Kelompok 2 (Tridharma)
         $dosenList = [];
@@ -869,19 +1313,7 @@ class KaprodiController extends Controller
             }
         }
 
-        // Standarisasi dan fallback dosen Prodi TRK
-        if (empty($dosenList)) {
-            $dosenList = [
-                ['id' => 1, 'nama' => 'Prof. Dr. Ir. KURNIANINGSIH S.T., M.T.', 'nidn' => '0026047903', 'bidang_keahlian' => 'Artificial Intelligence & Machine Learning', 'jabatan' => 'Guru Besar'],
-                ['id' => 2, 'nama' => 'KUWAT SANTOSO M.Kom.', 'nidn' => '0419078404', 'bidang_keahlian' => 'Rekayasa Perangkat Lunak & Sistem Terdistribusi', 'jabatan' => 'Lektor'],
-                ['id' => 3, 'nama' => 'Dr. LILIEK TRIYONO S.T., M.Kom.', 'nidn' => '0620048402', 'bidang_keahlian' => 'Jaringan Komputer & Cyber Security', 'jabatan' => 'Lektor Kepala'],
-                ['id' => 4, 'nama' => 'MARDIYONO S.Kom., M.Sc.', 'nidn' => '0011037401', 'bidang_keahlian' => 'Data Science & Big Data Analytics', 'jabatan' => 'Lektor'],
-                ['id' => 5, 'nama' => 'SARNO S.T., M.T.', 'nidn' => '0028118705', 'bidang_keahlian' => 'Keamanan Siber & Kriptografi Terapan', 'jabatan' => 'Asisten Ahli'],
-                ['id' => 6, 'nama' => 'SLAMET HANDOKO S.T., M.Kom.', 'nidn' => '0031129001', 'bidang_keahlian' => 'Tata Kelola TI & Manajemen Proyek', 'jabatan' => 'Asisten Ahli'],
-                ['id' => 7, 'nama' => 'TRISNO CAHYO S.Pd., M.Cs.', 'nidn' => '0019048902', 'bidang_keahlian' => 'Web & Mobile Engineering', 'jabatan' => 'Asisten Ahli'],
-                ['id' => 8, 'nama' => 'SUROSO S.Kom., M.Kom.', 'nidn' => '0022068603', 'bidang_keahlian' => 'Sistem Informasi Enterprise & Basis Data', 'jabatan' => 'Lektor'],
-            ];
-        } else {
+        if (! empty($dosenList)) {
             $dosenList = array_map(function ($d) {
                 return [
                     'id' => $d['id'] ?? null,
@@ -893,75 +1325,21 @@ class KaprodiController extends Controller
             }, $dosenList);
         }
 
-        // Ambil nama-nama dosen aktual untuk default assignment dinamis
-        $dosenNames = array_values(array_filter(array_map(fn ($d) => $d['nama'] ?? null, $dosenList)));
-        $d0 = $dosenNames[0] ?? 'Prof. Dr. Ir. KURNIANINGSIH S.T., M.T.';
-        $d1 = $dosenNames[1] ?? ($dosenNames[0] ?? 'KUWAT SANTOSO M.Kom.');
-        $d2 = $dosenNames[2] ?? ($dosenNames[0] ?? 'Dr. LILIEK TRIYONO S.T., M.Kom.');
-        $d3 = $dosenNames[3] ?? ($dosenNames[1] ?? 'MARDIYONO S.Kom., M.Sc.');
-        $d4 = $dosenNames[4] ?? ($dosenNames[2] ?? 'SARNO S.T., M.T.');
-        $d5 = $dosenNames[5] ?? ($dosenNames[3] ?? 'SLAMET HANDOKO S.T., M.Kom.');
-        $d6 = $dosenNames[6] ?? ($dosenNames[0] ?? 'TRISNO CAHYO S.Pd., M.Cs.');
-        $d7 = $dosenNames[7] ?? ($dosenNames[1] ?? 'SUROSO S.Kom., M.Kom.');
-
-        // Mapping default awal menggunakan dosen aktual Tridharma
-        $defaultAssignments = [
-            'K1.1' => ['pj' => $d0, 'pic' => $d1],
-            'K2.1' => ['pj' => $d0, 'pic' => $d2],
-            'K2.2' => ['pj' => $d0, 'pic' => null],
-            'K2.3' => ['pj' => null, 'pic' => $d3],
-            'K3.1' => ['pj' => $d1, 'pic' => $d4],
-            'K3.2' => ['pj' => $d1, 'pic' => $d1],
-            'K3.3' => ['pj' => null, 'pic' => null],
-            'K3.4' => ['pj' => $d0, 'pic' => $d0],
-            'K4.1' => ['pj' => $d2, 'pic' => $d3],
-            'K4.2' => ['pj' => $d2, 'pic' => $d5],
-            'K5.1' => ['pj' => $d0, 'pic' => $d6],
-            'K6.1' => ['pj' => $d3, 'pic' => $d4],
-            'K7.1' => ['pj' => $d2, 'pic' => $d5],
-            'K8.1' => ['pj' => $d1, 'pic' => $d6],
-            'K9.1' => ['pj' => $d0, 'pic' => $d7],
-        ];
-
-        // Jika mapping dari API ada, sinkronkan
-        if (! empty($mappingTim) && is_array($mappingTim)) {
-            foreach ($mappingTim as $m) {
-                $code = $m['indikator']['kode_indikator'] ?? null;
-                $role = strtolower($m['role'] ?? '');
-                $userName = $m['user']['nama'] ?? null;
-                if ($code && $role && $userName) {
-                    if (! isset($defaultAssignments[$code])) {
-                        $defaultAssignments[$code] = ['pj' => null, 'pic' => null];
-                    }
-                    $defaultAssignments[$code][$role] = $userName;
-                }
+        $apiAssignments = [];
+        foreach ($mappingTim as $mapping) {
+            $code = $mapping['indikator']['kode_indikator'] ?? null;
+            $role = strtolower((string) ($mapping['role'] ?? ''));
+            $userName = $mapping['user']['nama'] ?? null;
+            if ($code && in_array($role, ['pj', 'pic'], true) && $userName) {
+                $apiAssignments[$code] ??= ['pj' => null, 'pic' => null];
+                $apiAssignments[$code][$role] = $userName;
             }
         }
 
         // Ambil mapping yang tersimpan di session untuk project ini
         $sessionAssignments = session("plotting_assignments_{$projectId}", null);
 
-        // Jika session assignments berisi data mock lama (misal 'Dr. Rina' / 'Budi Santoso' yang tidak ada di daftar dosen riil), bersihkan session
-        if (is_array($sessionAssignments)) {
-            $hasObsoleteMock = false;
-            foreach ($sessionAssignments as $roles) {
-                foreach (['pj', 'pic'] as $r) {
-                    if (! empty($roles[$r])) {
-                        $val = (string) $roles[$r];
-                        if (str_contains($val, 'Dr. Rina') || str_contains($val, 'Budi Santoso') || str_contains($val, 'Sari Wulandari') || str_contains($val, 'Andi Pratama') || str_contains($val, 'Hendra Wijaya')) {
-                            $hasObsoleteMock = true;
-                            break 2;
-                        }
-                    }
-                }
-            }
-            if ($hasObsoleteMock) {
-                session()->forget("plotting_assignments_{$projectId}");
-                $sessionAssignments = null;
-            }
-        }
-
-        $assignments = is_array($sessionAssignments) ? array_merge($defaultAssignments, $sessionAssignments) : $defaultAssignments;
+        $assignments = is_array($sessionAssignments) ? array_merge($apiAssignments, $sessionAssignments) : $apiAssignments;
 
         return view('pages.kaprodi.plotting', [
             'projects' => $projects,
@@ -990,6 +1368,28 @@ class KaprodiController extends Controller
             ], 422);
         }
 
+        if (! is_array($assignments)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Format penugasan tidak valid.',
+            ], 422);
+        }
+
+        foreach ($assignments as $item) {
+            if (! is_array($item) || ! empty($item['remove'])) {
+                continue;
+            }
+
+            $indicatorId = filter_var($item['id_indikator'] ?? null, FILTER_VALIDATE_INT);
+            $userId = filter_var($item['id_user'] ?? null, FILTER_VALIDATE_INT);
+            if ($indicatorId === false || $indicatorId < 1 || $userId === false || $userId < 1) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'ID indikator dan dosen harus valid sebelum penugasan disimpan.',
+                ], 422);
+            }
+        }
+
         $sessionKey = "plotting_assignments_{$projectId}";
         $current = session($sessionKey, []);
 
@@ -1003,6 +1403,10 @@ class KaprodiController extends Controller
                 $current[$code] = ['pj' => null, 'pic' => null];
             }
 
+            if (isset($item['id_indikator'])) {
+                $current[$code]['id_indikator'] = (string) $item['id_indikator'];
+            }
+
             if (! empty($item['remove'])) {
                 $current[$code][$role] = null;
             } else {
@@ -1014,6 +1418,7 @@ class KaprodiController extends Controller
         session([$sessionKey => $current]);
 
         // Kirim payload batch ke backend API: POST /api/v1/projects/{id}/mapping-tim
+        $backendSynced = true;
         try {
             $apiAssignments = [];
             foreach ($assignments as $item) {
@@ -1021,26 +1426,30 @@ class KaprodiController extends Controller
                     continue;
                 }
                 $apiAssignments[] = [
-                    'id_indikator' => (int) ($item['id_indikator'] ?? (int) preg_replace('/\D/', '', $item['code'] ?? '1')),
-                    'id_user' => (int) ($item['id_user'] ?? 101),
+                    'id_indikator' => (int) $item['id_indikator'],
+                    'id_user' => (int) $item['id_user'],
                     'role' => strtoupper($role),
                 ];
             }
 
             if (! empty($apiAssignments)) {
-                $this->akreditasiService->saveMappingTim($projectId, [
+                $response = $this->akreditasiService->saveMappingTim($projectId, [
                     'id_project' => (int) $projectId,
                     'assignments' => $apiAssignments,
                 ]);
+                $backendSynced = $response->successful();
             }
         } catch (\Throwable $e) {
-            // Silently fallback to session
+            $backendSynced = false;
         }
 
         return response()->json([
             'success' => true,
-            'message' => 'Penugasan '.strtoupper($role).' berhasil disimpan.',
+            'message' => $backendSynced
+                ? 'Penugasan '.strtoupper($role).' berhasil disimpan.'
+                : 'Penugasan disimpan di sesi saat ini, tetapi belum tersinkron ke server.',
             'assignments' => $current,
+            'backend_synced' => $backendSynced,
         ]);
     }
 }

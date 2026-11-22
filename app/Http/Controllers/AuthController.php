@@ -391,10 +391,6 @@ HTML;
             return url('/kaprodi/dashboard');
         }
 
-        if (str_contains($role, 'reviewer')) {
-            return url('/reviewer/dashboard');
-        }
-
         if (str_contains($role, 'admin') || str_contains($role, 'superadmin')) {
             return url('/pages/superadmin');
         }

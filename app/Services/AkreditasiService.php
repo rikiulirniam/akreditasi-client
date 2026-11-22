@@ -6,6 +6,7 @@ use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 
 class AkreditasiService
 {
@@ -107,13 +108,15 @@ class AkreditasiService
         $client = $this->http($resolvedToken);
 
         try {
-            return match (strtolower($method)) {
+            $response = match (strtolower($method)) {
                 'post' => $client->post($url, $params),
                 'put' => $client->put($url, $params),
                 'patch' => $client->patch($url, $params),
                 'delete' => $client->delete($url, $params),
                 default => $client->get($url, $params),
             };
+
+            return $response;
         } catch (\Throwable $e) {
             Log::warning('Akreditasi API Request Failed: '.$e->getMessage(), [
                 'method' => $method,
@@ -122,6 +125,41 @@ class AkreditasiService
 
             throw $e;
         }
+    }
+
+    protected function sanitizeDiagnosticValue(mixed $value, ?string $key = null, int $depth = 0): mixed
+    {
+        if ($key !== null && preg_match('/token|authorization|password|cookie|secret|email|nama|name|nidn|nip|phone|alamat|address|username|user/i', $key) === 1) {
+            return '[REDACTED]';
+        }
+
+        if ($depth >= 8) {
+            return '[TRUNCATED]';
+        }
+
+        if (is_array($value)) {
+            $sanitized = [];
+            foreach (array_slice($value, 0, 30, true) as $childKey => $childValue) {
+                $sanitized[$childKey] = $this->sanitizeDiagnosticValue($childValue, (string) $childKey, $depth + 1);
+            }
+
+            if (count($value) > 30) {
+                $sanitized['__truncated_items'] = count($value) - 30;
+            }
+
+            return $sanitized;
+        }
+
+        if (is_string($value)) {
+            $value = preg_replace('/Bearer\s+\S+/i', 'Bearer [REDACTED]', $value);
+            $value = preg_replace('/\beyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\b/', '[REDACTED_JWT]', (string) $value);
+            $value = preg_replace("/(access_token|token|password|authorization|cookie)\\s*[:=]\\s*[\"']?[^,\\s\"'}]+/i", '$1=[REDACTED]', (string) $value);
+            $value = preg_replace('/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i', '[REDACTED_EMAIL]', (string) $value);
+
+            return Str::limit((string) $value, 500, '[TRUNCATED]');
+        }
+
+        return is_scalar($value) || $value === null ? $value : '[UNSUPPORTED_VALUE]';
     }
 
     /*
@@ -578,6 +616,32 @@ class AkreditasiService
     public function getProject(int|string $id): Response
     {
         return $this->get("/projects/{$id}");
+    }
+
+    /**
+     * Mengambil ringkasan komposit project akreditasi dalam satu request.
+     */
+    public function getProjectCompositeOverview(int|string $id): Response
+    {
+        return $this->get("/projects/{$id}/composite-overview");
+    }
+
+    /**
+     * Mengambil template narasi subkriteria dari data live backend.
+     */
+    public function getSubkriteriaNarrativeTemplate(int|string $projectId, int|string $subkriteriaId): Response
+    {
+        return $this->get("/projects/{$projectId}/subkriteria/{$subkriteriaId}/narasi-template");
+    }
+
+    /**
+     * Menyimpan narasi subkriteria. Payload diteruskan tanpa mengubah struktur API.
+     *
+     * @param  array<string, mixed>  $data
+     */
+    public function updateSubkriteriaNarrative(int|string $projectId, int|string $subkriteriaId, array $data): Response
+    {
+        return $this->put("/projects/{$projectId}/subkriteria/{$subkriteriaId}/narasi", $data);
     }
 
     /**
