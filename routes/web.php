@@ -46,24 +46,23 @@ Route::get('/', function () {
         $user = session('user', []);
         $role = strtolower((string) ($user['role'] ?? $user['role_name'] ?? ($user['roles'][0]['name'] ?? '')));
 
+        if (str_contains($role, 'kaprodi')) {
+            return redirect()->to('/kaprodi/project');
+        }
+
+        if (str_contains($role, 'dosen')) {
+            return redirect()->to('/dosen/my-assignments');
+        }
+
         if (str_contains($role, 'reviewer')) {
             return redirect()->route('reviewer.dashboard');
         }
 
-        if (str_contains($role, 'kaprodi')) {
-            return redirect()->route('kaprodi.dashboard');
+        if (str_contains($role, 'admin') || str_contains($role, 'superadmin') || str_contains($role, 'administrator')) {
+            return redirect('/superadmin');
         }
 
-        if (str_contains($role, 'dosen')) {
-            return redirect()->route('dosen.my-assignments');
-        }
-
-        return redirect()->route('dashboard');
-        if (str_contains($role, 'admin') || str_contains($role, 'superadmin')) {
-            return redirect('/pages/superadmin');
-        }
-
-        return redirect('/pages/superadmin');
+        return redirect('/superadmin');
     }
 
     return redirect()->route('login');
@@ -90,6 +89,7 @@ Route::middleware('auth.akademik')->group(function () {
         Route::post('/project', [KaprodiController::class, 'storeProject'])->name('project.store');
         Route::post('/project/quick-create', [KaprodiController::class, 'quickCreateProject'])->name('project.quick-create');
         Route::get('/project/{id}/readiness', [KaprodiController::class, 'projectReadiness'])->name('project.readiness');
+        Route::get('/project/{id}/scoring-simulation', [KaprodiController::class, 'scoringSimulation'])->name('project.scoring-simulation');
         Route::put('/project/{id}', [KaprodiController::class, 'updateProject'])->name('project.update');
         Route::match(['patch', 'post'], '/project/{id}/status', [KaprodiController::class, 'updateStatusProject'])->name('project.update-status');
         Route::delete('/project/{id}', [KaprodiController::class, 'destroyProject'])->name('project.destroy');

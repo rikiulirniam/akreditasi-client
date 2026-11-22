@@ -607,6 +607,14 @@ class AkreditasiService
     }
 
     /**
+     * Mengambil data simulasi kuantitatif skor SDM dosen LAM-INFOKOM untuk project akreditasi.
+     */
+    public function getScoringSimulation(int|string $id): Response
+    {
+        return $this->get("/projects/{$id}/scoring-simulation");
+    }
+
+    /**
      * Memperbarui status lifecycle project akreditasi.
      *
      * @param  array<string, mixed>  $data
