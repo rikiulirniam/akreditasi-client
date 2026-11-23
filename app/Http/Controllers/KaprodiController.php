@@ -1509,6 +1509,8 @@ class KaprodiController extends Controller
             if ($code && in_array($role, ['pj', 'pic'], true) && $userName) {
                 $apiAssignments[$code] ??= ['pj' => null, 'pic' => null];
                 $apiAssignments[$code][$role] = $userName;
+            }
+        }
         // ── Fitur Kaprodi Mandiri: Kaprodi dapat menugaskan dirinya sendiri sebagai PIC ──
         // Tambahkan akun Kaprodi yang sedang login ke dalam daftar dosen jika belum ada
         $currentUser = session('user', []);
