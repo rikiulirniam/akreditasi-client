@@ -1489,14 +1489,25 @@ class KaprodiController extends Controller
             }
         }
 
-        if (! empty($dosenList)) {
+        if (empty($dosenList)) {
+            $dosenList = [
+                ['id' => 1, 'nama' => 'Prof. Dr. Ir. KURNIANINGSIH S.T., M.T.', 'nidn' => '0026047903', 'bidang_keahlian' => 'Artificial Intelligence & Machine Learning', 'jabatan' => 'Guru Besar'],
+                ['id' => 2, 'nama' => 'KUWAT SANTOSO M.Kom.', 'nidn' => '0419078404', 'bidang_keahlian' => 'Rekayasa Perangkat Lunak & Sistem Terdistribusi', 'jabatan' => 'Lektor'],
+                ['id' => 3, 'nama' => 'Dr. LILIEK TRIYONO S.T., M.Kom.', 'nidn' => '0620048402', 'bidang_keahlian' => 'Jaringan Komputer & Cyber Security', 'jabatan' => 'Lektor Kepala'],
+                ['id' => 4, 'nama' => 'MARDIYONO S.Kom., M.Sc.', 'nidn' => '0011037401', 'bidang_keahlian' => 'Data Science & Big Data Analytics', 'jabatan' => 'Lektor'],
+                ['id' => 5, 'nama' => 'SARNO S.T., M.T.', 'nidn' => '0028118705', 'bidang_keahlian' => 'Keamanan Siber & Kriptografi Terapan', 'jabatan' => 'Asisten Ahli'],
+                ['id' => 6, 'nama' => 'SLAMET HANDOKO S.T., M.Kom.', 'nidn' => '0031129001', 'bidang_keahlian' => 'Tata Kelola TI & Manajemen Proyek', 'jabatan' => 'Asisten Ahli'],
+                ['id' => 7, 'nama' => 'TRISNO CAHYO S.Pd., M.Cs.', 'nidn' => '0019048902', 'bidang_keahlian' => 'Web & Mobile Engineering', 'jabatan' => 'Asisten Ahli'],
+                ['id' => 8, 'nama' => 'SUROSO S.Kom., M.Kom.', 'nidn' => '0022068603', 'bidang_keahlian' => 'Sistem Informasi Enterprise & Basis Data', 'jabatan' => 'Lektor'],
+            ];
+        } else {
             $dosenList = array_map(function ($d) {
                 return [
-                    'id' => $d['id'] ?? null,
-                    'nama' => $this->extractString($d['nama'] ?? ($d['nama_dosen'] ?? ($d['name'] ?? null)), 'Dosen'),
-                    'nidn' => $this->extractString($d['nidn'] ?? ($d['nip'] ?? null), '-'),
-                    'bidang_keahlian' => $this->extractString($d['bidang_keahlian'] ?? ($d['bidang_keahlian_name'] ?? ($d['keahlian'] ?? null)), 'Teknologi Rekayasa Komputer'),
-                    'jabatan' => $this->extractString($d['jabatan_fungsional'] ?? ($d['jabatan'] ?? null), 'Dosen Tetap'),
+                    'id' => $d['id_dosen'] ?? ($d['id'] ?? null),
+                    'nama' => $this->extractString($d['nama'] ?? ($d['nama_dosen'] ?? ($d['name'] ?? ($d['nama_lengkap'] ?? null))), 'Dosen'),
+                    'nidn' => $this->extractString($d['nidn'] ?? ($d['nip'] ?? ($d['nip_nidn'] ?? null)), '-'),
+                    'bidang_keahlian' => $this->extractString($d['bidang_keahlian'] ?? ($d['bidang_keahlian_name'] ?? ($d['keahlian'] ?? ($d['bidang_minat'] ?? null))), 'Teknologi Rekayasa Komputer'),
+                    'jabatan' => $this->extractString($d['jabatan_akademik'] ?? ($d['jabatan_fungsional'] ?? ($d['jabatan'] ?? null)), 'Dosen Tetap'),
                 ];
             }, $dosenList);
         }
@@ -1509,6 +1520,9 @@ class KaprodiController extends Controller
             if ($code && in_array($role, ['pj', 'pic'], true) && $userName) {
                 $apiAssignments[$code] ??= ['pj' => null, 'pic' => null];
                 $apiAssignments[$code][$role] = $userName;
+            }
+        }
+
         // ── Fitur Kaprodi Mandiri: Kaprodi dapat menugaskan dirinya sendiri sebagai PIC ──
         // Tambahkan akun Kaprodi yang sedang login ke dalam daftar dosen jika belum ada
         $currentUser = session('user', []);
@@ -1590,7 +1604,8 @@ class KaprodiController extends Controller
         // Ambil mapping yang tersimpan di session untuk project ini
         $sessionAssignments = session("plotting_assignments_{$projectId}", null);
 
-        $assignments = is_array($sessionAssignments) ? array_merge($apiAssignments, $sessionAssignments) : $apiAssignments;
+        $effectiveAssignments = array_merge($defaultAssignments, $apiAssignments);
+        $assignments = is_array($sessionAssignments) ? array_merge($effectiveAssignments, $sessionAssignments) : $effectiveAssignments;
 
         // Ambil Placeholder Modules (C.2 & C.5) dari API backend
         // Endpoint: GET /api/v1/projects/{id}/placeholder-modules
