@@ -109,7 +109,13 @@
                     <x-table.row class="bg-white transition-colors hover:bg-gray-50/40">
                         <x-table.cell class="!rounded-none !border-x-0 border-y border-gray-300 !px-3 !py-3.5 text-center text-sm text-gray-900">{{ $startNumber + $index }}.</x-table.cell>
                         @foreach($row['cells'] as $cellIndex => $cell)
-                            <x-table.cell class="!rounded-none !border-x-0 border-y border-gray-300 !px-4 !py-3.5 !text-sm text-gray-900 {{ $cellIndex === 1 ? 'font-medium' : '' }}">{{ $cell }}</x-table.cell>
+                            <x-table.cell class="!rounded-none !border-x-0 border-y border-gray-300 !px-4 !py-3.5 !text-sm text-gray-900 {{ $cellIndex === 1 ? 'font-medium' : '' }}">
+                                @if($cellIndex === 1 && !empty($row['link']))
+                                    <a href="{{ $row['link'] }}" target="_blank" rel="noopener noreferrer" class="text-primary hover:underline hover:text-additional">{{ $cell }}</a>
+                                @else
+                                    {{ $cell }}
+                                @endif
+                            </x-table.cell>
                         @endforeach
                         <x-table.cell class="!rounded-none !border-x-0 border-y border-gray-300 !px-4 !py-3.5 text-center">
                             @if($row['id'])

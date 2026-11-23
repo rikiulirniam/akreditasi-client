@@ -54,7 +54,7 @@
             </div>
 
                         <div class="flex shrink-0 items-center gap-3">
-                <a href="{{ route($rute . '.export', array_filter($filters)) }}"
+                <a href="{{ route($rute . '.export', array_filter(\Illuminate\Support\Arr::except($filters, ['page']))) }}"
                     class="h-[35px] inline-flex items-center gap-2 px-3.5 rounded-[8px] border border-[#16A34A] text-[#16A34A] bg-white hover:bg-emerald-50 text-xs sm:text-[13px] font-bold transition cursor-pointer shadow-2xs whitespace-nowrap shrink-0">
                     <svg class="w-4 h-4 stroke-[2.2] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3" />

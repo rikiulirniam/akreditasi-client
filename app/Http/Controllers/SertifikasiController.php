@@ -437,7 +437,20 @@ class SertifikasiController extends Controller
             'nomor_sertifikat' => ['nullable', 'string', 'max:255'],
             'lembaga_penerbit' => ['required', 'string', 'max:255'],
             'status_sertifikasi' => ['required', 'string', 'max:50'],
-            'tahun_sertifikasi' => ['required', 'date_format:Y-m-d'],
+            'tahun_sertifikasi' => [
+                'required',
+                function ($attribute, $value, $fail) {
+                    if (preg_match('/^\d{4}$/', (string) $value)) {
+                    return;
+                    }
+
+                    if (strtotime((string) $value) !== false) {
+                        return;
+                    }
+
+                    $fail('Tahun sertifikasi harus berupa 4 digit tahun (contoh: 2025) atau tanggal valid (YYYY-MM-DD).');
+                },
+            ],
             'tanggal_kedaluwarsa' => ['nullable', 'date'],
             'url_drive' => ['nullable', 'url', 'max:2048'],
         ];

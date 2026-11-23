@@ -67,39 +67,39 @@ Route::middleware('auth.akademik')->group(function () {
     // ==========================================
     // PENELITIAN & PKM
     // ==========================================
-    
-foreach (['penelitian', 'pkm'] as $slug) {
-    Route::get("/{$slug}", [PenelitianPkmController::class, 'index'])
-        ->name("{$slug}.index");
 
-    Route::get("/{$slug}/export", [PenelitianPkmController::class, 'export'])
-        ->name("{$slug}.export");
+    foreach (['penelitian', 'pkm'] as $slug) {
+        Route::get("/{$slug}", [PenelitianPkmController::class, 'index'])
+            ->name("{$slug}.index");
 
+        Route::get("/{$slug}/export", [PenelitianPkmController::class, 'export'])
+            ->name("{$slug}.export");
 
-    Route::get("/{$slug}/{id}", [PenelitianPkmController::class, 'show'])
-        ->whereNumber('id')
-        ->name("{$slug}.show");
-
-    Route::middleware('role:administrator')->group(function () use ($slug) {
-        Route::get("/{$slug}/create", [PenelitianPkmController::class, 'create'])
-            ->name("{$slug}.create");
-
-        Route::post("/{$slug}", [PenelitianPkmController::class, 'store'])
-            ->name("{$slug}.store");
-
-        Route::get("/{$slug}/{id}/edit", [PenelitianPkmController::class, 'edit'])
+        Route::get("/{$slug}/{id}", [PenelitianPkmController::class, 'show'])
             ->whereNumber('id')
-            ->name("{$slug}.edit");
+            ->name("{$slug}.show");
 
-        Route::put("/{$slug}/{id}", [PenelitianPkmController::class, 'update'])
-            ->whereNumber('id')
-            ->name("{$slug}.update");
+        Route::middleware('role:administrator')->group(function () use ($slug) {
+            Route::get("/{$slug}/create", [PenelitianPkmController::class, 'create'])
+                ->name("{$slug}.create");
 
-        Route::delete("/{$slug}/{id}", [PenelitianPkmController::class, 'destroy'])
-            ->whereNumber('id')
-            ->name("{$slug}.destroy");
-        Route::get("/{$slug}/mahasiswa", [PenelitianPkmController::class, 'cariMahasiswa'])->name("{$slug}.mahasiswa");
-    });}
+            Route::post("/{$slug}", [PenelitianPkmController::class, 'store'])
+                ->name("{$slug}.store");
+
+            Route::get("/{$slug}/{id}/edit", [PenelitianPkmController::class, 'edit'])
+                ->whereNumber('id')
+                ->name("{$slug}.edit");
+
+            Route::put("/{$slug}/{id}", [PenelitianPkmController::class, 'update'])
+                ->whereNumber('id')
+                ->name("{$slug}.update");
+
+            Route::delete("/{$slug}/{id}", [PenelitianPkmController::class, 'destroy'])
+                ->whereNumber('id')
+                ->name("{$slug}.destroy");
+            Route::get("/{$slug}/mahasiswa", [PenelitianPkmController::class, 'cariMahasiswa'])->name("{$slug}.mahasiswa");
+        });
+    }
     Route::redirect('/penelitian-pkm', '/penelitian');
 
     // Luaran per jenis kegiatan dan kategori.
@@ -234,7 +234,7 @@ foreach (['penelitian', 'pkm'] as $slug) {
     // ==========================================
     // MODUL TRI DHARMA: LUARAN (Publikasi, HKI, Buku)
     // ==========================================
-    Route::get('/luaran', [LuaranController::class, 'legacyIndex'])->name('luaran.index');
+    Route::get('/luaran/{kategori?}', [LuaranController::class, 'legacyIndex'])->name('luaran.index');
     Route::get('/luaran/{kategori}/export', [LuaranController::class, 'legacyExport'])
         ->where('kategori', 'artikel|buku|hki|seminar')
         ->name('luaran.export');
@@ -303,8 +303,7 @@ foreach (['penelitian', 'pkm'] as $slug) {
 
     Route::get('/laporan-akhir', [LaporanAkhirController::class, 'index'])->name('laporan-akhir.index');
     Route::get('/laporan-akhir/download', [LaporanAkhirController::class, 'download'])->name('laporan-akhir.download');
-    });
-    
+});
 
 // =====================================================================
 // ROUTE MODUL AKREDITASI (SUPERADMIN)
