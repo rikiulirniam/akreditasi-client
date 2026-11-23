@@ -148,7 +148,7 @@
         </script>
     @else
         <div class="flex min-h-[420px] flex-col items-center justify-center rounded-2xl border border-gray-100 bg-white px-5 py-12 text-center">
-            <h2 class="text-2xl font-extrabold tracking-tight text-black sm:text-3xl">Belum Ada {{ $halaman }}</h2>
+            <h2 class="text-2xl font-extrabold tracking-tight text-black sm:text-3xl">Belum Ada Data {{ $halaman }}</h2>
             @if($canManage)
                 <p class="mt-1 text-sm text-gray-600">Tekan tombol di bawah untuk menambah data</p>
                 <a href="{{ route($rute . '.create') }}" class="mt-4 inline-flex items-center gap-2 rounded-lg bg-additional px-6 py-2.5 text-xs font-semibold text-white transition hover:bg-primary">
