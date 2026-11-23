@@ -86,6 +86,17 @@ class VersiInstrumenController extends Controller
                 return $itemVersiId === $vId;
             });
             $v['instrumen_count'] = count($matching);
+
+            if (! array_key_exists('status_aktif', $v)) {
+                $v['status_aktif'] = collect($v['jenjangs'] ?? [])->contains(
+                    fn (array $jenjang): bool => filter_var(
+                        $jenjang['pivot']['status_aktif'] ?? false,
+                        FILTER_VALIDATE_BOOLEAN
+                    )
+                );
+            } else {
+                $v['status_aktif'] = filter_var($v['status_aktif'], FILTER_VALIDATE_BOOLEAN);
+            }
         }
         unset($v);
 
@@ -156,7 +167,7 @@ class VersiInstrumenController extends Controller
             'id_lembaga' => 'nullable|integer',
             'nomor_versi' => 'required|string|max:50',
             'tanggal_berlaku' => 'nullable|date',
-            'status_aktif' => 'nullable|boolean',
+            'status_aktif' => 'required|boolean',
         ]);
 
         try {
