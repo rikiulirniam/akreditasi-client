@@ -15,7 +15,7 @@ class PenelitianPkmController extends Controller
 
     private const JENIS = [
         'penelitian' => ['id' => 1, 'nama' => 'Penelitian'],
-        'pkm' => ['id' => 2, 'nama' => 'PKM'],
+        'pkm' => ['id' => 2, 'nama' => 'PkM'],
     ];
 
     public function __construct(
@@ -28,8 +28,13 @@ class PenelitianPkmController extends Controller
         $filters = $request->validate([
             'search' => ['nullable', 'string', 'max:255'],
             'status_kegiatan' => ['nullable', 'string', 'max:50'],
+            'tahun' => ['nullable', 'integer', 'digits:4'],
             'page' => ['nullable', 'integer', 'min:1'],
         ]);
+        if (isset($filters['tahun'])) {
+            $filters['tahun_kegiatan'] = $filters['tahun'];
+            unset($filters['tahun']);
+        }
 
         $kegiatan = [];
         $apiError = null;
@@ -37,7 +42,10 @@ class PenelitianPkmController extends Controller
 
         try {
             $response = $this->tridharmaService->getKegiatanList(
-                array_filter($filters) + ['id_jenis_kegiatan' => self::JENIS[$this->rute()]['id']]
+                array_filter($filters) + [
+                    'jenis' => $this->rute(),
+                    'id_jenis_kegiatan' => self::JENIS[$this->rute()]['id'],
+                ]
             );
 
             if ($response->status() === 401) {
@@ -86,6 +94,7 @@ class PenelitianPkmController extends Controller
             return $pindah;
         }
         $kegiatan['anggota'] = $this->lengkapiMahasiswa($kegiatan['anggota'] ?? []);
+
         return view('penelitian-pkm.show', ['kegiatan' => $kegiatan] + $this->konteks());
     }
 
@@ -165,7 +174,7 @@ class PenelitianPkmController extends Controller
             return back()->with('error', $response->json('message') ?: 'Gagal menghapus kegiatan.');
         }
 
-        return redirect()->route($this->rute() . '.index')->with('success', 'Kegiatan berhasil dihapus.');
+        return redirect()->route($this->rute().'.index')->with('success', 'Kegiatan berhasil dihapus.');
     }
 
     public function export(Request $request)
@@ -173,15 +182,42 @@ class PenelitianPkmController extends Controller
         $filters = $request->validate([
             'search' => ['nullable', 'string', 'max:255'],
             'status_kegiatan' => ['nullable', 'string', 'max:50'],
+            'tahun' => ['nullable', 'integer', 'digits:4'],
         ]);
+        if (isset($filters['tahun'])) {
+            $filters['tahun_kegiatan'] = $filters['tahun'];
+            unset($filters['tahun']);
+        }
         $jenis = self::JENIS[$this->rute()];
+
+        try {
+            $response = $this->tridharmaService->exportKegiatan(
+                array_filter($filters) + ['jenis' => $this->rute(), 'id_jenis_kegiatan' => $jenis['id']]
+            );
+            if ($response->successful()) {
+                $filename = strtolower($jenis['nama']).'_'.now()->format('Ymd').'.xlsx';
+
+                $contentDisposition = $response->header('Content-Disposition');
+                if (empty($contentDisposition)) {
+                    $contentDisposition = 'attachment; filename="'.$filename.'"';
+                }
+
+                return response($response->body(), 200, [
+                    'Content-Type' => $response->header('Content-Type') ?: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                    'Content-Disposition' => $contentDisposition,
+                ]);
+            }
+        } catch (ConnectionException) {
+            return back()->with('error', self::KONEKSI_GAGAL);
+        }
+
         $rows = [];
         $page = 1;
 
         try {
             do {
                 $response = $this->tridharmaService->getKegiatanList(
-                    array_filter($filters) + ['id_jenis_kegiatan' => $jenis['id'], 'per_page' => 100, 'page' => $page]
+                    array_filter($filters) + ['jenis' => $this->rute(), 'id_jenis_kegiatan' => $jenis['id'], 'per_page' => 100, 'page' => $page]
                 );
 
                 if ($response->status() === 401) {
@@ -201,7 +237,7 @@ class PenelitianPkmController extends Controller
         }
 
         $peta = $this->petaMahasiswa($rows);
-        $filename = strtolower($jenis['nama']) . '_' . now()->format('Ymd_His') . '.csv';
+        $filename = strtolower($jenis['nama']).'_'.now()->format('Ymd_His').'.csv';
 
         return response()->streamDownload(function () use ($rows, $peta) {
             $out = fopen('php://output', 'w');
@@ -235,7 +271,7 @@ class PenelitianPkmController extends Controller
 
     private function amankanSel($nilai)
     {
-        return is_string($nilai) && preg_match('/^[=+\-@\t\r]./s', $nilai) ? "'" . $nilai : $nilai;
+        return is_string($nilai) && preg_match('/^[=+\-@\t\r]./s', $nilai) ? "'".$nilai : $nilai;
     }
 
     private function rules()
@@ -328,16 +364,16 @@ class PenelitianPkmController extends Controller
         $data = $item['mahasiswa'] ?? [];
         $nama = $data['nama_mahasiswa'] ?? $data['nama'] ?? $item['nama_mahasiswa'] ?? null;
 
-        return $nama ?: 'Mahasiswa #' . $item['id_mahasiswa'];
+        return $nama ?: 'Mahasiswa #'.$item['id_mahasiswa'];
     }
 
-        private function petaMahasiswa($rows)
+    private function petaMahasiswa($rows)
     {
         $ids = [];
 
         foreach ($rows as $row) {
             foreach ($row['anggota'] ?? [] as $item) {
-                if (! empty($item['id_mahasiswa']) && $this->labelMahasiswa($item) === 'Mahasiswa #' . $item['id_mahasiswa']) {
+                if (! empty($item['id_mahasiswa']) && $this->labelMahasiswa($item) === 'Mahasiswa #'.$item['id_mahasiswa']) {
                     $ids[$item['id_mahasiswa']] = true;
                 }
             }
@@ -373,21 +409,21 @@ class PenelitianPkmController extends Controller
         foreach ($anggota as $item) {
             if (! empty($item['id_mahasiswa'])) {
                 $label = $this->labelMahasiswa($item);
-                $mahasiswa[] = $label === 'Mahasiswa #' . $item['id_mahasiswa'] ? ($peta[$item['id_mahasiswa']] ?? $label) : $label;
+                $mahasiswa[] = $label === 'Mahasiswa #'.$item['id_mahasiswa'] ? ($peta[$item['id_mahasiswa']] ?? $label) : $label;
             } elseif (! empty($item['id_dosen']) && ! str_contains(strtolower($item['peran'] ?? ''), 'ketua')) {
-                $dosen[] = $item['dosen']['nama_dosen'] ?? $item['nama_dosen'] ?? 'Dosen #' . $item['id_dosen'];
+                $dosen[] = $item['dosen']['nama_dosen'] ?? $item['nama_dosen'] ?? 'Dosen #'.$item['id_dosen'];
             }
         }
 
         return [implode('; ', $dosen), implode('; ', $mahasiswa)];
     }
 
-        private function lengkapiMahasiswa($anggota)
+    private function lengkapiMahasiswa($anggota)
     {
         foreach ($anggota as $index => $item) {
             $id = $item['id_mahasiswa'] ?? null;
 
-            if (! $id || $this->labelMahasiswa($item) !== 'Mahasiswa #' . $id) {
+            if (! $id || $this->labelMahasiswa($item) !== 'Mahasiswa #'.$id) {
                 continue;
             }
 
@@ -434,7 +470,7 @@ class PenelitianPkmController extends Controller
                 'nama' => $item['nama_mahasiswa'] ?? $item['nama'] ?? '-',
                 'nim' => $item['nim'] ?? '',
             ])
-            ->filter(fn ($item) => $item['id'] && str_contains(mb_strtolower($item['nama'] . ' ' . $item['nim']), $kunci))
+            ->filter(fn ($item) => $item['id'] && str_contains(mb_strtolower($item['nama'].' '.$item['nim']), $kunci))
             ->take(15)
             ->values();
 
@@ -491,7 +527,7 @@ class PenelitianPkmController extends Controller
                 ->with('error', $response->json('message') ?: 'Gagal menyimpan kegiatan.');
         }
 
-        return redirect()->route($this->rute() . '.index')->with('success', $pesanBerhasil);
+        return redirect()->route($this->rute().'.index')->with('success', $pesanBerhasil);
     }
 
     private function loadKegiatan($id)
@@ -499,7 +535,7 @@ class PenelitianPkmController extends Controller
         try {
             $response = $this->tridharmaService->getKegiatan($id);
         } catch (ConnectionException) {
-            return redirect()->route($this->rute() . '.index')->with('error', self::KONEKSI_GAGAL);
+            return redirect()->route($this->rute().'.index')->with('error', self::KONEKSI_GAGAL);
         }
 
         if ($response->status() === 401) {
@@ -511,7 +547,7 @@ class PenelitianPkmController extends Controller
         }
 
         if (! $response->successful()) {
-            return redirect()->route($this->rute() . '.index')->with('error', $response->json('message') ?: 'Gagal memuat data kegiatan.');
+            return redirect()->route($this->rute().'.index')->with('error', $response->json('message') ?: 'Gagal memuat data kegiatan.');
         }
 
         return $response->json('data', []);
@@ -520,6 +556,10 @@ class PenelitianPkmController extends Controller
     private function halamanBenar($kegiatan, $aksi, $id)
     {
         $slug = collect(self::JENIS)->search(fn ($jenis) => $jenis['id'] === ($kegiatan['id_jenis_kegiatan'] ?? null));
+        if (! $slug) {
+            $namaJenis = strtolower((string) ($kegiatan['jenis_kegiatan']['nama_jenis_kegiatan'] ?? ''));
+            $slug = str_contains($namaJenis, 'pkm') || str_contains($namaJenis, 'pengabdian') ? 'pkm' : (str_contains($namaJenis, 'penelitian') ? 'penelitian' : null);
+        }
 
         return $slug && $slug !== $this->rute() ? redirect()->route("{$slug}.{$aksi}", $id) : null;
     }

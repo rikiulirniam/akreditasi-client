@@ -3,164 +3,322 @@
 namespace App\Http\Controllers;
 
 use App\Services\TridharmaService;
+use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Log;
+use Illuminate\Http\Response;
 use Illuminate\View\View;
 
 class LuaranController extends Controller
 {
+    /** @var array<string, string> */
+    private const JENIS_KEGIATAN = [
+        'penelitian' => 'Penelitian',
+        'pkm' => 'PkM',
+    ];
+
+    /**
+     * Kategori luaran ala SINTA beserta kolom yang ditampilkan.
+     *
+     * Setiap kolom: label, daftar key kandidat pada data API (diambil yang pertama terisi).
+     * Kolom "Penulis" dan "Tahun" ditambahkan otomatis oleh controller.
+     *
+     * @var array<string, array{label: string, columns: array<int, array{0: string, 1: array<int, string>}>, dates: array<int, string>, link: string}>
+     */
+    private const KATEGORI = [
+        'artikel' => [
+            'label' => 'Artikel',
+            'columns' => [
+                ['Judul / Jurnal', ['nama_jurnal']],
+                ['Indeksasi', ['indeksasi']],
+                ['DOI', ['doi']],
+            ],
+            'dates' => ['tanggal_terbit'],
+            'link' => 'tautan_jurnal',
+        ],
+        'buku' => [
+            'label' => 'Buku',
+            'columns' => [
+                ['Judul Buku', ['judul_buku']],
+                ['Penerbit', ['penerbit_buku']],
+                ['ISBN', ['isbn']],
+            ],
+            'dates' => ['tanggal_terbit'],
+            'link' => 'tautan_buku',
+        ],
+        'hki' => [
+            'label' => 'HKI',
+            'columns' => [
+                ['Judul', ['judul_hak_cipta']],
+                ['Jenis HKI', ['jenis_hki']],
+                ['No. Sertifikat / Pendaftaran', ['nomor_sertifikat_hki', 'nomor_pendaftaran_hki']],
+                ['Status', ['status_hki']],
+            ],
+            'dates' => ['tanggal_terbit_sertifikat_hki', 'tanggal_pendaftaran_hki'],
+            'link' => 'tautan_hki',
+        ],
+        'seminar' => [
+            'label' => 'Seminar',
+            'columns' => [
+                ['Seminar / Prosiding', ['nama_seminar', 'nama_prosiding']],
+                ['Penyelenggara', ['penyelenggara']],
+                ['Lokasi', ['lokasi_seminar']],
+            ],
+            'dates' => ['tanggal_seminar'],
+            'link' => 'tautan_seminar',
+        ],
+    ];
+
     public function __construct(
         protected TridharmaService $tridharmaService,
     ) {}
 
-    /**
-     * Halaman daftar Luaran (Buku, Jurnal, Seminar, HKI, Produk).
-     */
-    public function index(Request $request): View|RedirectResponse
+    public function index(Request $request, string $jenis, string $kategori = 'artikel'): View|RedirectResponse
     {
-        $page = (int) $request->query('page', 1);
-        $search = trim((string) $request->query('search', ''));
-        $jenis = trim((string) $request->query('jenis', ''));
+        abort_unless(isset(self::JENIS_KEGIATAN[$jenis]), 404);
+        abort_unless(isset(self::KATEGORI[$kategori]), 404);
 
-        $perPage = 10;
+        $meta = self::KATEGORI[$kategori];
+        $filters = $this->validatedFilters($request);
 
-        $queryBase = ['page' => $page, 'per_page' => $perPage];
-        if (! empty($search)) {
-            $queryBase['search'] = $search;
-        }
+        $query = array_filter(
+            $filters + ['kategori' => $kategori, 'per_page' => 10],
+            static fn ($value) => $value !== null && $value !== ''
+        );
 
-        // 1. Coba ambil dari endpoint utama GET /api/luaran
-        $rawLuaran = $this->fetchList('luaran', $queryBase);
-        $items = [];
-        $rawDosen = $this->fetchList('dosen', ['per_page' => 100]);
-
-        if (($rawLuaran['_status'] ?? null) === 401) {
-            return redirect()->route('login')->with('toast', [
-                'type' => 'warning',
-                'title' => 'Sesi Berakhir',
-                'message' => 'Sesi Anda telah kedaluwarsa. Silakan login kembali.',
-            ]);
-        }
-
-        if (($rawDosen['_status'] ?? null) === 401) {
-            return redirect()->route('login')->with('toast', [
-                'type' => 'warning',
-                'title' => 'Sesi Berakhir',
-                'message' => 'Sesi Anda telah kedaluwarsa. Silakan login kembali.',
-            ]);
-        }
-
-        $dosenOptions = array_values(array_filter(array_map(static function (mixed $dosen): ?array {
-            if (! is_array($dosen)) {
-                return null;
-            }
-
-            $id = $dosen['id_dosen'] ?? ($dosen['id'] ?? null);
-            $name = trim((string) ($dosen['nama_dosen'] ?? ($dosen['nama'] ?? '')));
-
-            if (! is_numeric($id) || $name === '') {
-                return null;
-            }
-
-            return ['id' => (int) $id, 'name' => $name];
-        }, $rawDosen['items'] ?? [])));
-        $authenticatedDosenId = $this->authenticatedDosenId();
-
-        if ($this->isAuthenticatedDosen()) {
-            $dosenOptions = array_values(array_filter(
-                $dosenOptions,
-                fn (array $dosen): bool => $dosen['id'] === $authenticatedDosenId
-            ));
-
-            if ($authenticatedDosenId !== null && $dosenOptions === []) {
-                $user = session('user', []);
-                $dosenOptions[] = [
-                    'id' => $authenticatedDosenId,
-                    'name' => (string) ($user['nama'] ?? ($user['name'] ?? 'Dosen')),
-                ];
-            }
-        }
-
-        $dosenLoadError = ($rawDosen['_status'] ?? 500) !== 200 || $dosenOptions === [];
-
-        if (! empty($rawLuaran['items'])) {
-            $items = $this->normalizeGenericLuaran($rawLuaran['items']);
-            $luaranLoadError = false;
-        } else {
-            // Fallback: gabungkan publikasi, hki, buku jika backend belum satukan GET /api/luaran
-            $rawPublikasi = $this->fetchList('publikasi', $queryBase);
-            $rawHki = $this->fetchList('hki', $queryBase);
-            $rawBuku = $this->fetchList('buku', $queryBase);
-
-            foreach ([$rawPublikasi, $rawHki, $rawBuku] as $resp) {
-                if (isset($resp['_status']) && $resp['_status'] === 401) {
-                    return redirect()->route('login')->with('toast', [
-                        'type' => 'warning',
-                        'title' => 'Sesi Berakhir',
-                        'message' => 'Sesi Anda telah kedaluwarsa. Silakan login kembali.',
-                    ]);
-                }
-            }
-
-            $publikasiItems = $this->normalizePublikasi($rawPublikasi['items'] ?? []);
-            $hkiItems = $this->normalizeHki($rawHki['items'] ?? []);
-            $bukuItems = $this->normalizeBuku($rawBuku['items'] ?? []);
-
-            $items = array_merge($publikasiItems, $hkiItems, $bukuItems);
-            $fallbackSucceeded = collect([$rawPublikasi, $rawHki, $rawBuku])
-                ->contains(static fn (array $response): bool => ($response['_status'] ?? 500) === 200);
-            $luaranLoadError = ($rawLuaran['_status'] ?? 500) !== 200 && ! $fallbackSucceeded;
-        }
-
-        // Filter 5 jenis: Buku, Jurnal, Seminar, HKI, Produk
-        if (! empty($jenis)) {
-            $items = array_values(array_filter($items, function (array $item) use ($jenis): bool {
-                return strcasecmp((string) ($item['jenis'] ?? ''), $jenis) === 0;
-            }));
-        }
-
-        // Sort by tanggal_terbit desc
-        usort($items, function (array $a, array $b): int {
-            $dateA = strtotime((string) ($a['tanggal_terbit'] ?? '1970-01-01')) ?: 0;
-            $dateB = strtotime((string) ($b['tanggal_terbit'] ?? '1970-01-01')) ?: 0;
-
-            return $dateB <=> $dateA;
-        });
-
-        // Paginasi manual
-        $totalAll = count($items);
-        $lastPage = max(1, (int) ceil($totalAll / $perPage));
-        $page = max(1, min($page, $lastPage));
-        $offset = ($page - 1) * $perPage;
-        $luaranList = array_slice($items, $offset, $perPage);
-
-        $pagination = [
-            'total' => $totalAll,
-            'per_page' => $perPage,
-            'current_page' => $page,
-            'last_page' => $lastPage,
+        $viewData = [
+            'kategori' => $kategori,
+            'tabs' => array_map(static fn (array $item): string => $item['label'], self::KATEGORI),
+            'kategoriLabel' => $meta['label'],
+            'headers' => array_merge(
+                ['Penulis'],
+                array_map(static fn (array $column): string => $column[0], $meta['columns']),
+                ['Tahun']
+            ),
+            'filters' => $filters,
+            'jenis' => $jenis,
+            'jenisLabel' => self::JENIS_KEGIATAN[$jenis],
         ];
 
-        return view('luaran.index', [
-            'luaranList' => $luaranList,
+        try {
+            $response = $this->tridharmaService->getLuaranList(
+                request()->routeIs('luaran.tridharma.index') ? $query + ['jenis' => $jenis] : $query
+            );
+        } catch (ConnectionException) {
+            return view('luaran.index', $viewData + $this->emptyState('Tidak dapat terhubung ke server Tridharma. Silakan coba lagi nanti.'));
+        }
+
+        if ($response->status() === 401) {
+            return redirect()->route('login')->with('toast', [
+                'type' => 'warning',
+                'title' => 'Sesi Berakhir',
+                'message' => 'Sesi Anda telah kedaluwarsa. Silakan login kembali.',
+            ]);
+        }
+
+        if (! $response->successful() || $response->json('success') === false) {
+            $message = $response->json('message');
+
+            return view('luaran.index', $viewData + $this->emptyState(
+                is_string($message) && $message !== '' ? $message : 'Gagal memuat data luaran.'
+            ));
+        }
+
+        $data = $response->json('data', []);
+        $items = is_array($data['data'] ?? null) ? $data['data'] : (is_array($data) ? $data : []);
+
+        $rows = array_map(
+            fn (array $item): array => $this->toRow($item, $meta),
+            array_values(array_filter($items, fn ($item): bool => is_array($item) && $this->hasCategoryContent($item, $kategori)))
+        );
+
+        $pagination = [
+            'total' => (int) ($data['total'] ?? count($rows)),
+            'per_page' => (int) ($data['per_page'] ?? 10),
+            'current_page' => (int) ($data['current_page'] ?? 1),
+            'last_page' => (int) ($data['last_page'] ?? 1),
+            'from' => $data['from'] ?? null,
+            'to' => $data['to'] ?? null,
+        ];
+
+        return view('luaran.index', $viewData + [
+            'rows' => $rows,
             'pagination' => $pagination,
-            'search' => $search,
-            'selectedJenis' => $jenis,
-            'jenisOptions' => $this->getJenisOptions(),
-            'dosenOptions' => $dosenOptions,
-            'selectedDosenId' => $authenticatedDosenId,
-            'dosenLoadError' => $dosenLoadError,
-            'luaranLoadError' => $luaranLoadError,
+            'apiError' => null,
         ]);
     }
 
-    /**
-     * Simpan data Luaran baru ke endpoint utama: POST /api/luaran
-     * Menerima 5 jenis: Buku, Jurnal, Seminar, HKI, Produk.
-     */
-    public function store(Request $request): JsonResponse|RedirectResponse
+    public function export(Request $request, string $jenis, string $kategori): Response|RedirectResponse
+    {
+        abort_unless(isset(self::JENIS_KEGIATAN[$jenis]), 404);
+        abort_unless(isset(self::KATEGORI[$kategori]), 404);
+
+        $filters = $this->validatedFilters($request);
+        unset($filters['page']);
+
+        try {
+            $response = $this->tridharmaService->exportLuaran(array_filter(
+                $filters + ['kategori' => $kategori] + (request()->routeIs('luaran.tridharma.export') ? ['jenis' => $jenis] : []),
+                static fn ($value) => $value !== null && $value !== ''
+            ));
+        } catch (ConnectionException) {
+            return $this->exportFailed('Tidak dapat terhubung ke server Tridharma. Silakan coba lagi nanti.');
+        }
+
+        if ($response->status() === 401) {
+            return redirect()->route('login')->with('toast', [
+                'type' => 'warning',
+                'title' => 'Sesi Berakhir',
+                'message' => 'Sesi Anda telah kedaluwarsa. Silakan login kembali.',
+            ]);
+        }
+
+        if (! $response->successful()) {
+            return $this->exportFailed((string) ($response->json('message') ?: 'Gagal mengunduh data Excel.'));
+        }
+
+        return response($response->body(), 200, [
+            'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'Content-Disposition' => 'attachment; filename="luaran-'.$kategori.'_'.now()->format('Ymd').'.xlsx"',
+        ]);
+    }
+
+    public function show(string $jenis, string $kategori, int $id): View|RedirectResponse
+    {
+        abort_unless(isset(self::JENIS_KEGIATAN[$jenis], self::KATEGORI[$kategori]), 404);
+
+        try {
+            $response = $this->tridharmaService->getLuaran($id);
+        } catch (ConnectionException) {
+            return redirect()->route('luaran.tridharma.index', [$jenis, $kategori])->with('toast', [
+                'type' => 'error',
+                'title' => 'Gagal Memuat Detail',
+                'message' => 'Tidak dapat terhubung ke server Tridharma.',
+            ]);
+        }
+
+        if ($response->status() === 401) {
+            return redirect()->route('login');
+        }
+
+        abort_if($response->status() === 404, 404);
+
+        if (! $response->successful() || ! is_array($response->json('data'))) {
+            return redirect()->route('luaran.tridharma.index', [$jenis, $kategori])->with('toast', [
+                'type' => 'error',
+                'title' => 'Gagal Memuat Detail',
+                'message' => (string) ($response->json('message') ?: 'Detail luaran tidak tersedia.'),
+            ]);
+        }
+
+        return view('luaran.show', [
+            'jenis' => $jenis,
+            'jenisLabel' => self::JENIS_KEGIATAN[$jenis],
+            'kategori' => $kategori,
+            'kategoriLabel' => self::KATEGORI[$kategori]['label'],
+            'luaran' => $response->json('data'),
+        ]);
+    }
+
+    public function legacyIndex(Request $request, string $kategori = 'artikel'): View|RedirectResponse
+    {
+        $kategoriParam = (string) $request->route('kategori', $request->query('kategori', $kategori));
+
+        return $this->index($request, 'penelitian', $kategoriParam);
+    }
+
+    public function legacyExport(Request $request, string $kategori): Response|RedirectResponse
+    {
+        return $this->export($request, 'penelitian', $kategori);
+    }
+
+    public function create(Request $request, string $jenis): View|RedirectResponse
+    {
+        abort_unless(isset(self::JENIS_KEGIATAN[$jenis]), 404);
+
+        try {
+            $kegiatanResponse = $this->tridharmaService->getKegiatanList([
+                'jenis' => $jenis,
+                'per_page' => 200,
+            ]);
+            $jenisResponse = $this->tridharmaService->getJenisLuaranList(['per_page' => 200]);
+            $dosenResponse = $this->tridharmaService->getDosenList(['per_page' => 200, 'status' => 'DTPS']);
+        } catch (ConnectionException) {
+            return back()->with('toast', [
+                'type' => 'error',
+                'title' => 'Gagal',
+                'message' => 'Tidak dapat terhubung ke server Tridharma.',
+            ]);
+        }
+
+        if ($kegiatanResponse->status() === 401 || $jenisResponse->status() === 401 || $dosenResponse->status() === 401) {
+            return redirect()->route('login');
+        }
+
+        return view('luaran.create', [
+            'jenis' => $jenis,
+            'jenisLabel' => self::JENIS_KEGIATAN[$jenis],
+            'kategori' => $request->query('kategori', 'artikel'),
+            'idKegiatan' => $request->query('id_kegiatan'),
+            'kegiatan' => $kegiatanResponse->json('data.data', []),
+            'jenisLuaran' => $jenisResponse->json('data.data', []),
+            'dosen' => $dosenResponse->json('data.data', []),
+        ]);
+    }
+
+    public function store(Request $request, string $jenis = 'penelitian'): JsonResponse|RedirectResponse
+    {
+        if ($request->expectsJson() || $request->ajax() || $request->isJson() || $request->has('jenis_luaran')) {
+            return $this->storeJson($request);
+        }
+
+        abort_unless(isset(self::JENIS_KEGIATAN[$jenis]), 404);
+
+        $validated = $request->validate([
+            'id_kegiatan' => ['required', 'integer'],
+            'id_dosen' => ['required', 'integer'],
+            'id_jenis_luaran' => ['required', 'integer'],
+            'judul_buku' => ['nullable', 'string', 'max:255'],
+            'nama_jurnal' => ['nullable', 'string', 'max:255'],
+            'nama_seminar' => ['nullable', 'string', 'max:255'],
+            'nama_prosiding' => ['nullable', 'string', 'max:255'],
+            'judul_hak_cipta' => ['nullable', 'string', 'max:255'],
+            'nama_produk' => ['nullable', 'string', 'max:255'],
+            'tahun_terbit' => ['nullable', 'integer', 'digits:4'],
+            'doi' => ['nullable', 'string', 'max:255'],
+            'isbn' => ['nullable', 'string', 'max:100'],
+            'tautan_jurnal' => ['nullable', 'url', 'max:2048'],
+            'tautan_buku' => ['nullable', 'url', 'max:2048'],
+            'tautan_seminar' => ['nullable', 'url', 'max:2048'],
+            'tautan_hki' => ['nullable', 'url', 'max:2048'],
+            'tautan_produk' => ['nullable', 'url', 'max:2048'],
+        ]);
+
+        $response = $this->tridharmaService->createLuaran($validated);
+
+        if ($response->status() === 401) {
+            return redirect()->route('login');
+        }
+
+        if (! $response->successful()) {
+            return back()->withInput()->with('toast', [
+                'type' => 'error',
+                'title' => 'Gagal Menyimpan',
+                'message' => (string) ($response->json('message') ?: 'Data luaran tidak berhasil disimpan.'),
+            ]);
+        }
+
+        $kategori = $request->input('kategori', 'artikel');
+
+        return redirect()->route('luaran.tridharma.index', [$jenis, $kategori])->with('toast', [
+            'type' => 'success',
+            'title' => 'Berhasil',
+            'message' => 'Data luaran berhasil ditambahkan.',
+        ]);
+    }
+
+    private function storeJson(Request $request): JsonResponse|RedirectResponse
     {
         $rawJenis = trim((string) ($request->input('jenis_luaran') ?? $request->input('jenis_luaran_kategori', '')));
 
@@ -187,9 +345,11 @@ class LuaranController extends Controller
             return $idDosen;
         }
 
-        $idJenisLuaran = $this->getJenisLuaranId($jenis);
+        $idJenisLuaran = $this->resolveJenisLuaranId($jenis, $request->input('indeksasi'));
+        if ($idJenisLuaran === null) {
+            $idJenisLuaran = $this->getJenisLuaranId($jenis);
+        }
 
-        // Validasi dan rakit payload spesifik
         $payload = match ($jenis) {
             'Buku' => $this->validateAndBuildBukuPayload($request),
             'Jurnal' => $this->validateAndBuildJurnalPayload($request),
@@ -198,8 +358,8 @@ class LuaranController extends Controller
             'Produk' => $this->validateAndBuildProdukPayload($request),
         };
 
-        $payload['id_dosen'] = $idDosen;
-        $payload['id_jenis_luaran'] = $idJenisLuaran;
+        $payload['id_dosen'] = (int) $idDosen;
+        $payload['id_jenis_luaran'] = (int) $idJenisLuaran;
         $idKegiatan = $request->validate([
             'id_kegiatan' => ['nullable', 'integer', 'min:1'],
         ])['id_kegiatan'] ?? null;
@@ -207,10 +367,26 @@ class LuaranController extends Controller
             $payload['id_kegiatan'] = (int) $idKegiatan;
         }
 
-        // Kirim request ke endpoint utama: POST /api/luaran
+        if (! empty($payload['tautan_jurnal'])) {
+            $payload['url_luaran'] = $payload['tautan_jurnal'];
+        } elseif (! empty($payload['tautan_buku'])) {
+            $payload['url_luaran'] = $payload['tautan_buku'];
+        } elseif (! empty($payload['tautan_seminar'])) {
+            $payload['url_luaran'] = $payload['tautan_seminar'];
+        } elseif (! empty($payload['tautan_hki'])) {
+            $payload['url_luaran'] = $payload['tautan_hki'];
+        } elseif (! empty($payload['tautan_produk'])) {
+            $payload['url_luaran'] = $payload['tautan_produk'];
+        }
+
+        if (isset($payload['halaman_jurnal']) && is_numeric($payload['halaman_jurnal'])) {
+            $payload['halaman_jurnal'] = (int) $payload['halaman_jurnal'];
+        }
+
+        unset($payload['jenis_luaran'], $payload['url_publikasi']);
+
         $response = $this->tridharmaService->post('luaran', $payload);
 
-        // Fallback otomatis jika endpoint /api/luaran belum ada / mengembalikan 404
         if ($response->status() === 404) {
             $fallbackEndpoint = match ($jenis) {
                 'Buku' => 'buku',
@@ -230,7 +406,7 @@ class LuaranController extends Controller
                     'success' => true,
                     'message' => $message,
                     'data' => $body['data'] ?? [],
-                ]);
+                ], 200);
             }
 
             return redirect()->route('luaran.index')->with('toast', [
@@ -240,32 +416,20 @@ class LuaranController extends Controller
             ]);
         }
 
-        $errorMessage = $message;
-        if (! empty($body['errors'])) {
-            $firstError = collect($body['errors'])->flatten()->first();
-            if ($firstError) {
-                $errorMessage = $firstError;
-            }
-        }
-
         if ($request->expectsJson() || $request->ajax()) {
             return response()->json([
                 'success' => false,
-                'message' => $errorMessage,
-                'errors' => $body['errors'] ?? [],
-            ], $response->status() >= 400 ? $response->status() : 422);
+                'message' => $message,
+            ], $response->status() >= 400 ? $response->status() : 400);
         }
 
         return back()->withInput()->with('toast', [
             'type' => 'error',
             'title' => 'Gagal',
-            'message' => $errorMessage,
+            'message' => $message,
         ]);
     }
 
-    /**
-     * Update data Luaran.
-     */
     public function update(Request $request, int|string $id): JsonResponse|RedirectResponse
     {
         $rawJenis = trim((string) ($request->input('jenis_luaran') ?? $request->input('jenis_luaran_kategori', '')));
@@ -284,7 +448,7 @@ class LuaranController extends Controller
             return $idDosen;
         }
 
-        $idJenisLuaran = $this->getJenisLuaranId($jenis);
+        $idJenisLuaran = $this->resolveJenisLuaranId($jenis, $request->input('indeksasi')) ?? $this->getJenisLuaranId($jenis);
 
         $payload = match ($jenis) {
             'Buku' => $this->validateAndBuildBukuPayload($request),
@@ -294,8 +458,8 @@ class LuaranController extends Controller
             'Produk' => $this->validateAndBuildProdukPayload($request),
         };
 
-        $payload['id_dosen'] = $idDosen;
-        $payload['id_jenis_luaran'] = $idJenisLuaran;
+        $payload['id_dosen'] = (int) $idDosen;
+        $payload['id_jenis_luaran'] = (int) $idJenisLuaran;
         $idKegiatan = $request->validate([
             'id_kegiatan' => ['nullable', 'integer', 'min:1'],
         ])['id_kegiatan'] ?? null;
@@ -318,48 +482,20 @@ class LuaranController extends Controller
         $isSuccess = $response->successful() && ($body['success'] ?? true);
         $message = $body['message'] ?? ($isSuccess ? "Data {$jenis} berhasil diperbarui." : "Gagal memperbarui data {$jenis}.");
 
-        if ($isSuccess) {
-            if ($request->expectsJson() || $request->ajax()) {
-                return response()->json([
-                    'success' => true,
-                    'message' => $message,
-                    'data' => $body['data'] ?? [],
-                ]);
-            }
-
-            return redirect()->route('luaran.index')->with('toast', [
-                'type' => 'success',
-                'title' => 'Berhasil',
-                'message' => $message,
-            ]);
-        }
-
-        $errorMessage = $message;
-        if (! empty($body['errors'])) {
-            $firstError = collect($body['errors'])->flatten()->first();
-            if ($firstError) {
-                $errorMessage = $firstError;
-            }
-        }
-
         if ($request->expectsJson() || $request->ajax()) {
             return response()->json([
-                'success' => false,
-                'message' => $errorMessage,
-                'errors' => $body['errors'] ?? [],
-            ], $response->status() >= 400 ? $response->status() : 422);
+                'success' => $isSuccess,
+                'message' => $message,
+            ], $isSuccess ? 200 : 422);
         }
 
-        return back()->withInput()->with('toast', [
-            'type' => 'error',
-            'title' => 'Gagal',
-            'message' => $errorMessage,
+        return redirect()->route('luaran.index')->with('toast', [
+            'type' => $isSuccess ? 'success' : 'error',
+            'title' => $isSuccess ? 'Berhasil' : 'Gagal',
+            'message' => $message,
         ]);
     }
 
-    /**
-     * Hapus data Luaran.
-     */
     public function destroy(Request $request, int|string $id): JsonResponse|RedirectResponse
     {
         $jenis = strtolower(trim((string) $request->input('jenis', 'publikasi')));
@@ -391,10 +527,6 @@ class LuaranController extends Controller
             'message' => $message,
         ]);
     }
-
-    // ══════════════════════════════════════════════════════════════════════════
-    // PRIVATE: PAYLOAD BUILDERS DENGAN VALIDASI
-    // ══════════════════════════════════════════════════════════════════════════
 
     private function validateAndBuildBukuPayload(Request $request): array
     {
@@ -547,10 +679,6 @@ class LuaranController extends Controller
         ];
     }
 
-    // ══════════════════════════════════════════════════════════════════════════
-    // PRIVATE: HELPERS
-    // ══════════════════════════════════════════════════════════════════════════
-
     private function requestedDosenId(Request $request): int|JsonResponse|RedirectResponse
     {
         if ($this->isAuthenticatedDosen()) {
@@ -578,24 +706,85 @@ class LuaranController extends Controller
     private function isAuthenticatedDosen(): bool
     {
         $user = session('user', []);
-        $roles = is_array($user) && is_array($user['roles'] ?? null) ? $user['roles'] : [];
-        $primaryRole = is_array($roles[0] ?? null)
-            ? ($roles[0]['name'] ?? '')
-            : ($roles[0] ?? '');
-        $role = is_array($user) ? ($user['role'] ?? $primaryRole) : '';
+        $role = is_array($user) ? strtolower((string) ($user['role'] ?? '')) : '';
 
-        return strtolower((string) $role) === 'dosen';
+        return $role === 'dosen';
     }
 
     private function authenticatedDosenId(): ?int
     {
-        if (! $this->isAuthenticatedDosen()) {
+        $user = session('user', []);
+        if (! is_array($user)) {
             return null;
         }
 
-        $idDosen = session('user.id_dosen');
+        $idDosen = $user['id_dosen'] ?? ($user['dosen_id'] ?? ($user['id'] ?? null));
 
         return is_numeric($idDosen) ? (int) $idDosen : null;
+    }
+
+    private function resolveJenisLuaranId(string $jenis, mixed $index): ?int
+    {
+        try {
+            $response = $this->tridharmaService->get('jenis-luaran');
+        } catch (\Throwable) {
+            return null;
+        }
+
+        if (! $response->successful()) {
+            return null;
+        }
+
+        $data = $response->json('data', []);
+        if (is_array($data) && is_array($data['data'] ?? null)) {
+            $data = $data['data'];
+        }
+
+        if (! is_array($data)) {
+            return null;
+        }
+
+        $families = match ($jenis) {
+            'Buku' => ['buku', 'monograf'],
+            'Jurnal' => ['jurnal'],
+            'Seminar' => ['prosiding', 'seminar'],
+            'HKI' => ['hki'],
+            'Produk' => ['produk'],
+            default => [],
+        };
+        $candidates = array_values(array_filter($data, static function (mixed $item) use ($families): bool {
+            if (! is_array($item)) {
+                return false;
+            }
+
+            $name = strtolower((string) ($item['nama_jenis_luaran'] ?? ''));
+
+            foreach ($families as $family) {
+                if (str_contains($name, $family)) {
+                    return true;
+                }
+            }
+
+            return false;
+        }));
+
+        if ($candidates === []) {
+            return null;
+        }
+
+        $selectedIndex = strtolower(trim(is_scalar($index) ? (string) $index : ''));
+        if ($selectedIndex !== '') {
+            foreach ($candidates as $candidate) {
+                if (strtolower(trim((string) ($candidate['indeks'] ?? ''))) === $selectedIndex) {
+                    $candidates = [$candidate];
+                    break;
+                }
+            }
+        }
+
+        $id = $candidates[0]['id_jenis_luaran'] ?? ($candidates[0]['id'] ?? null);
+
+        return is_numeric($id) ? (int) $id : null;
     }
 
     private function getJenisLuaranId(string $jenis): int
@@ -610,180 +799,138 @@ class LuaranController extends Controller
         };
     }
 
-    private function fetchList(string $endpoint, array $query): array
+    /**
+     * @return array<string, mixed>
+     */
+    private function validatedFilters(Request $request): array
     {
-        try {
-            $response = $endpoint === 'dosen'
-                ? $this->tridharmaService->getDosenList($query)
-                : $this->tridharmaService->get($endpoint, $query);
+        return $request->validate([
+            'search' => ['nullable', 'string', 'max:255'],
+            'tahun' => ['nullable', 'integer', 'between:1900,2100'],
+            'id_kegiatan' => ['nullable', 'integer'],
+            'page' => ['nullable', 'integer', 'min:1'],
+        ]);
+    }
 
-            if ($response->status() === 401) {
-                return ['items' => [], '_status' => 401];
+    private function exportFailed(string $message): RedirectResponse
+    {
+        return back()->with('toast', [
+            'type' => 'error',
+            'title' => 'Unduh Gagal',
+            'message' => $message,
+        ]);
+    }
+
+    /**
+     * Judul utama sebuah luaran, apa pun jenisnya.
+     *
+     * @param  array<string, mixed>  $luaran
+     */
+    public static function judul(array $luaran): string
+    {
+        foreach (['judul_buku', 'nama_jurnal', 'nama_prosiding', 'nama_seminar', 'judul_hak_cipta', 'nama_produk'] as $key) {
+            $value = trim((string) ($luaran[$key] ?? ''));
+
+            if ($value !== '') {
+                return $value;
             }
-
-            $body = $response->json();
-            $data = $body['data'] ?? [];
-
-            $items = match (true) {
-                is_array($data) && isset($data['data']) && is_array($data['data']) => $data['data'],
-                is_array($data) && array_is_list($data) => $data,
-                default => [],
-            };
-
-            return ['items' => $items, '_status' => $response->status()];
-        } catch (\Throwable $e) {
-            Log::warning("LuaranController: gagal fetch {$endpoint}", ['error' => $e->getMessage()]);
-
-            return ['items' => [], '_status' => 500];
-        }
-    }
-
-    private function normalizeGenericLuaran(array $items): array
-    {
-        return array_map(function (array $item): array {
-            $rawJenis = $item['jenis_luaran'] ?? ($item['jenis'] ?? ($item['jenis_publikasi'] ?? 'Jurnal'));
-
-            // Cek jika $rawJenis berupa Array (misal objek relasi JSON dari API)
-            if (is_array($rawJenis)) {
-                $rawJenis = $rawJenis['nama_jenis_luaran']
-                    ?? ($rawJenis['nama'] ?? ($rawJenis['jenis'] ?? ($rawJenis['nama_jenis'] ?? 'Jurnal')));
-            }
-
-            $lower = strtolower((string) $rawJenis);
-
-            $mappedJenis = match (true) {
-                str_contains($lower, 'buku') => 'Buku',
-                str_contains($lower, 'seminar') || str_contains($lower, 'prosiding') => 'Seminar',
-                str_contains($lower, 'hki') || str_contains($lower, 'hak cipta') || str_contains($lower, 'paten') => 'HKI',
-                str_contains($lower, 'produk') => 'Produk',
-                default => 'Jurnal',
-            };
-
-            $judul = $item['judul_luaran'] ?? ($item['judul'] ?? ($item['judul_buku'] ?? ($item['nama_jurnal'] ?? ($item['nama_seminar'] ?? ($item['judul_hak_cipta'] ?? ($item['nama_produk'] ?? '-'))))));
-            $penerbit = $item['nama_penerbit'] ?? ($item['penerbit_buku'] ?? ($item['nama_prosiding'] ?? ($item['penerbit'] ?? ($item['penyelenggara'] ?? '-'))));
-            $tanggal = $item['tanggal_terbit'] ?? ($item['tahun_terbit'] ?? ($item['tanggal_seminar'] ?? ($item['tahun'] ?? null)));
-            $url = $item['url_luaran']
-                ?? $item['tautan_buku']
-                ?? $item['tautan_jurnal']
-                ?? $item['tautan_seminar']
-                ?? $item['tautan_prosiding']
-                ?? $item['tautan_hki']
-                ?? $item['tautan_produk']
-                ?? $item['url_buku']
-                ?? $item['url_publikasi']
-                ?? $item['url_hki']
-                ?? $item['url_produk']
-                ?? $item['url']
-                ?? null;
-
-            return [
-                'id' => $item['id_luaran'] ?? ($item['id'] ?? null),
-                'kategori' => strtolower($mappedJenis),
-                'judul' => $judul,
-                'jenis' => $mappedJenis,
-                'nama_penerbit' => $penerbit,
-                'tanggal_terbit' => $tanggal,
-                'url' => $url,
-                'nama_dosen' => $this->dosenName($item),
-                'extra' => $item,
-            ];
-        }, $items);
-    }
-
-    private function normalizePublikasi(array $items): array
-    {
-        return array_map(function (array $item): array {
-            $rawJenis = $item['jenis_publikasi'] ?? ($item['jenis'] ?? 'Jurnal');
-            $jenis = is_array($rawJenis) ? ($rawJenis['nama_jenis_publikasi'] ?? 'Jurnal') : (string) $rawJenis;
-
-            $lower = strtolower($jenis);
-            $mappedJenis = match (true) {
-                str_contains($lower, 'seminar') || str_contains($lower, 'prosiding') => 'Seminar',
-                str_contains($lower, 'produk') => 'Produk',
-                str_contains($lower, 'buku') => 'Buku',
-                str_contains($lower, 'hki') || str_contains($lower, 'hak cipta') || str_contains($lower, 'paten') => 'HKI',
-                default => 'Jurnal',
-            };
-
-            $penerbit = $item['nama_prosiding'] ?? ($item['nama_penerbit'] ?? ($item['penerbit'] ?? ($item['penyelenggara'] ?? '-')));
-            if ($penerbit === '-' && ! empty($item['nama_jurnal'])) {
-                $penerbit = $item['nama_jurnal'];
-            }
-
-            return [
-                'id' => $item['id_publikasi'] ?? ($item['id'] ?? null),
-                'kategori' => strtolower($mappedJenis),
-                'judul' => $item['judul_publikasi'] ?? ($item['nama_seminar'] ?? ($item['nama_jurnal'] ?? ($item['judul'] ?? '-'))),
-                'jenis' => $mappedJenis,
-                'nama_penerbit' => $penerbit,
-                'tanggal_terbit' => $item['tanggal_terbit'] ?? ($item['tanggal_seminar'] ?? ($item['tahun_terbit'] ?? ($item['tahun'] ?? null))),
-                'url' => $item['url_luaran'] ?? ($item['tautan_jurnal'] ?? ($item['tautan_seminar'] ?? ($item['tautan_prosiding'] ?? ($item['url_publikasi'] ?? ($item['url'] ?? null))))),
-                'nama_dosen' => $this->dosenName($item),
-                'extra' => $item,
-            ];
-        }, $items);
-    }
-
-    private function normalizeHki(array $items): array
-    {
-        return array_map(function (array $item): array {
-            return [
-                'id' => $item['id_hki'] ?? ($item['id'] ?? null),
-                'kategori' => 'hki',
-                'judul' => $item['judul_hak_cipta'] ?? ($item['judul'] ?? '-'),
-                'jenis' => 'HKI',
-                'nama_penerbit' => $item['nomor_pendaftaran_hki'] ?? ($item['nama_penerbit'] ?? 'Direktorat Jenderal Kekayaan Intelektual'),
-                'tanggal_terbit' => $item['tanggal_terbit'] ?? ($item['tahun'] ?? null),
-                'url' => $item['url_luaran'] ?? ($item['tautan_hki'] ?? ($item['url_hki'] ?? ($item['url'] ?? null))),
-                'nama_dosen' => $this->dosenName($item),
-                'extra' => $item,
-            ];
-        }, $items);
-    }
-
-    private function normalizeBuku(array $items): array
-    {
-        return array_map(function (array $item): array {
-            return [
-                'id' => $item['id_buku'] ?? ($item['id'] ?? null),
-                'kategori' => 'buku',
-                'judul' => $item['judul_buku'] ?? ($item['judul'] ?? '-'),
-                'jenis' => 'Buku',
-                'nama_penerbit' => $item['penerbit_buku'] ?? ($item['nama_penerbit'] ?? ($item['penerbit'] ?? '-')),
-                'tanggal_terbit' => $item['tahun_terbit'] ?? ($item['tanggal_terbit'] ?? ($item['tahun'] ?? null)),
-                'url' => $item['url_luaran'] ?? ($item['tautan_buku'] ?? ($item['url_buku'] ?? ($item['url'] ?? null))),
-                'nama_dosen' => $this->dosenName($item),
-                'extra' => $item,
-            ];
-        }, $items);
-    }
-
-    private function dosenName(array $item): string
-    {
-        $dosen = $item['dosen'] ?? [];
-        $name = is_array($dosen)
-            ? ($dosen['nama_dosen'] ?? ($dosen['nama'] ?? null))
-            : null;
-        $name ??= $item['nama_dosen'] ?? null;
-
-        if (is_string($name) && trim($name) !== '') {
-            return trim($name);
         }
 
-        $id = $item['id_dosen'] ?? (is_array($dosen) ? ($dosen['id_dosen'] ?? ($dosen['id'] ?? null)) : null);
-
-        return is_numeric($id) ? 'Dosen #'.$id : '-';
+        return '-';
     }
 
-    private function getJenisOptions(): array
+    /**
+     * @param  array<string, mixed>  $item
+     * @param  array{label: string, columns: array<int, array{0: string, 1: array<int, string>}>, dates: array<int, string>, link: string}  $meta
+     * @return array{cells: array<int, string>, link: ?string}
+     */
+    private function toRow(array $item, array $meta): array
+    {
+        $cells = [(string) ($item['nama_penulis'] ?? $item['dosen']['nama_dosen'] ?? '-')];
+
+        foreach ($meta['columns'] as [, $keys]) {
+            $cells[] = $this->firstFilled($item, $keys);
+        }
+
+        $cells[] = $this->tahun($item, $meta['dates']);
+
+        $link = trim((string) ($item[$meta['link']] ?? ''));
+
+        return [
+            'id' => $item['id_luaran'] ?? null,
+            'cells' => $cells,
+            'link' => preg_match('~^https?://~i', $link) === 1 && filter_var($link, FILTER_VALIDATE_URL) ? $link : null,
+        ];
+    }
+
+    /**
+     * @param  array<string, mixed>  $item
+     * @param  array<int, string>  $keys
+     */
+    private function firstFilled(array $item, array $keys): string
+    {
+        foreach ($keys as $key) {
+            $value = trim((string) ($item[$key] ?? ''));
+
+            if ($value !== '') {
+                return $value;
+            }
+        }
+
+        return '-';
+    }
+
+    /**
+     * Hindari menampilkan data yang tidak memiliki field utama kategorinya.
+     *
+     * @param  array<string, mixed>  $item
+     */
+    private function hasCategoryContent(array $item, string $kategori): bool
+    {
+        $fields = match ($kategori) {
+            'artikel' => ['nama_jurnal'],
+            'buku' => ['judul_buku'],
+            'hki' => ['judul_hak_cipta'],
+            'seminar' => ['nama_seminar', 'nama_prosiding'],
+        };
+
+        foreach ($fields as $field) {
+            if (trim((string) ($item[$field] ?? '')) !== '') {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * @param  array<string, mixed>  $item
+     * @param  array<int, string>  $dateKeys
+     */
+    private function tahun(array $item, array $dateKeys): string
+    {
+        if (! empty($item['tahun_terbit'])) {
+            return (string) $item['tahun_terbit'];
+        }
+
+        foreach ($dateKeys as $key) {
+            if (! empty($item[$key]) && preg_match('/^\d{4}/', (string) $item[$key], $matches)) {
+                return $matches[0];
+            }
+        }
+
+        return '-';
+    }
+
+    /**
+     * @return array{rows: array<int, mixed>, pagination: array<string, int>, apiError: string}
+     */
+    private function emptyState(string $message): array
     {
         return [
-            ['value' => '', 'label' => 'Semua Jenis'],
-            ['value' => 'Buku', 'label' => 'Buku'],
-            ['value' => 'Jurnal', 'label' => 'Jurnal'],
-            ['value' => 'Seminar', 'label' => 'Seminar'],
-            ['value' => 'HKI', 'label' => 'HKI'],
-            ['value' => 'Produk', 'label' => 'Produk'],
+            'rows' => [],
+            'pagination' => ['total' => 0, 'per_page' => 10, 'current_page' => 1, 'last_page' => 1],
+            'apiError' => $message,
         ];
     }
 }

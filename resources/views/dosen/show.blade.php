@@ -57,6 +57,7 @@
                     </svg>
                     <span>{{ is_string($dosen['status_dosen'] ?? null) ? $dosen['status_dosen'] : '-' }}</span>
                 </div>
+
             </div>
 
             <div class="flex flex-wrap items-center justify-between gap-3 pt-5">
