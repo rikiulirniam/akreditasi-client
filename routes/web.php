@@ -50,10 +50,6 @@ Route::get('/', function () {
             return redirect()->to('/kaprodi/project');
         }
 
-        if (str_contains($role, 'dosen')) {
-            return redirect()->to('/dosen/my-assignments');
-        }
-
         if (str_contains($role, 'reviewer')) {
             return redirect()->route('reviewer.dashboard');
         }
@@ -62,7 +58,7 @@ Route::get('/', function () {
             return redirect('/superadmin');
         }
 
-        return redirect('/superadmin');
+        return redirect()->route('dashboard');
     }
 
     return redirect()->route('login');
