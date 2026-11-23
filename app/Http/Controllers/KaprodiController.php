@@ -735,7 +735,7 @@ class KaprodiController extends Controller
             $readinessData['total_indikator'] ??= count($readinessData['indicators']);
             $readinessData['scope_label'] = 'Butir indikator kritis dari endpoint readiness';
             $readinessData['data_available'] = true;
-            $readinessData['readiness_indicators_are_unready_only'] = false;
+            $readinessData['indicator_list_is_partial'] = false;
 
             return $readinessData;
         }
@@ -798,7 +798,7 @@ class KaprodiController extends Controller
         $readinessData['total_indikator'] = $criticalIndicatorCount;
         $readinessData['scope_label'] = 'Butir indikator kritis dari endpoint readiness';
         $readinessData['data_available'] = true;
-        $readinessData['readiness_indicators_are_unready_only'] = true;
+        $readinessData['indicator_list_is_partial'] = true;
 
         $unreadyCount = count(array_filter($indicators, fn (array $indicator): bool => ! $indicator['is_ready']));
         $readyCount = $criticalIndicatorCount - $unreadyCount;
@@ -955,7 +955,6 @@ class KaprodiController extends Controller
         $indicators = $backendData['indicators'] ?? [];
         if (! $picAssignments['available'] || ! is_array($indicators)) {
             $backendData['pic_data_available'] = false;
-            unset($backendData['readiness_indicators_are_unready_only']);
 
             return $backendData;
         }
@@ -1003,7 +1002,7 @@ class KaprodiController extends Controller
 
         $total = max(0, (int) ($backendData['total_indikator'] ?? count($normalizedIndicators)));
         $unreadyCount = count(array_filter($normalizedIndicators, fn (array $indicator): bool => empty($indicator['is_ready'])));
-        if (! empty($backendData['readiness_indicators_are_unready_only'])) {
+        if (! empty($backendData['indicator_list_is_partial'])) {
             $unreadyCount = min($total, $unreadyCount);
             $readyCount = $total - $unreadyCount;
         } else {
@@ -1021,7 +1020,6 @@ class KaprodiController extends Controller
         $backendData['missing_assessment_count'] = $missingAssessmentCount;
         $backendData['is_ready'] = $unreadyCount === 0 && $total > 0;
         $backendData['pic_data_available'] = true;
-        unset($backendData['readiness_indicators_are_unready_only']);
 
         return $backendData;
     }

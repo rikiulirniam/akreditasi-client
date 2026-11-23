@@ -107,7 +107,7 @@
             <div class="flex items-center justify-between border-b border-gray-200 pb-3">
                 <div class="flex items-center gap-2">
                     <button type="button" onclick="filterReadinessTable('all')" id="tabFilterAll" class="readiness-filter-tab px-3 py-1.5 rounded-xl text-xs font-bold transition bg-primary text-white cursor-pointer">
-                        Semua Butir (<span id="badgeFilterAll">0</span>)
+                        <span id="labelFilterAll">Semua Butir</span> (<span id="badgeFilterAll">0</span>)
                     </button>
                     <button type="button" onclick="filterReadinessTable('unready')" id="tabFilterUnready" class="readiness-filter-tab px-3 py-1.5 rounded-xl text-xs font-bold transition bg-gray-100 text-gray-600 hover:bg-gray-200 cursor-pointer">
                         Belum Siap (<span id="badgeFilterUnready">0</span>)
@@ -295,6 +295,7 @@
                 const pic = item.pic && typeof item.pic === 'object' ? item.pic : null;
 
                 return {
+                    id_indikator: item.id_indikator ?? item.id ?? null,
                     kode_indikator: item.kode_indikator || item.kode || item.code || '',
                     deskripsi_indikator: item.deskripsi_indikator || item.nama_indikator || item.nama || item.name || '',
                     has_pic: hasPic,
@@ -323,6 +324,7 @@
             is_ready: isReady,
             pic_data_available: picAvailable,
             scope_label: data.scope_label,
+            indicator_list_is_partial: data.indicator_list_is_partial === true,
             missing_pic_count: data.missing_pic_count ?? indicators.filter(item => !item.has_pic).length,
             missing_evidence_count: data.missing_evidence_count ?? indicators.filter(item => !item.has_evidence).length,
             missing_assessment_count: data.missing_assessment_count ?? indicators.filter(item => !item.has_assessment).length
@@ -373,12 +375,19 @@
         document.getElementById('metricMissingEvidence').textContent = data.missing_evidence_count !== undefined ? data.missing_evidence_count : (data.indicators ? data.indicators.filter(i => !i.has_evidence).length : 0);
         document.getElementById('metricMissingAssessment').textContent = data.missing_assessment_count !== undefined ? data.missing_assessment_count : (data.indicators ? data.indicators.filter(i => !i.has_assessment).length : 0);
         document.getElementById('readinessPicWarning').classList.toggle('hidden', picAvailable);
-        document.getElementById('readinessScopeLabel').textContent = data.scope_label || 'Daftar butir indikator kritis penentu submit';
-
         // Update Filter Badges
-        document.getElementById('badgeFilterAll').textContent = total;
         document.getElementById('badgeFilterUnready').textContent = unreadyCount;
         document.getElementById('badgeFilterReady').textContent = readyCount;
+        const allLabel = document.getElementById('labelFilterAll');
+        const allBadgeCount = data.indicator_list_is_partial ? indicators.length : total;
+        document.getElementById('badgeFilterAll').textContent = allBadgeCount;
+        if (allLabel) {
+            allLabel.textContent = data.indicator_list_is_partial ? 'Rincian Ditampilkan' : 'Semua Butir';
+        }
+        document.getElementById('readinessScopeLabel').textContent = data.indicator_list_is_partial
+            ? `Menampilkan ${indicators.length} rincian dari ${total} indikator kritis (daftar parsial)`
+            : (data.scope_label || 'Daftar butir indikator kritis penentu submit');
+        document.getElementById('tabFilterReady').classList.toggle('hidden', data.indicator_list_is_partial);
 
         // Render Table Rows
         const tbody = document.getElementById('readinessTableBody');
@@ -549,6 +558,10 @@
                 }
             }
         });
+        const readyTab = document.getElementById('tabFilterReady');
+        if (readyTab) {
+            readyTab.classList.toggle('hidden', currentReadinessData?.indicator_list_is_partial === true);
+        }
     }
 
     // Aksi submit pengajuan akhir
