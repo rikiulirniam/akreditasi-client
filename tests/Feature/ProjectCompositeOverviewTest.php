@@ -264,6 +264,7 @@ class ProjectCompositeOverviewTest extends TestCase
             ->assertJsonPath('data.missing_evidence_count', 2)
             ->assertJsonPath('data.missing_assessment_count', 3)
             ->assertJsonPath('data.pic_data_available', true)
+            ->assertJsonPath('data.indicator_list_is_partial', true)
             ->assertJsonPath('data.indicators.0.has_pic', true)
             ->assertJsonPath('data.indicators.0.has_evidence', false)
             ->assertJsonPath('data.indicators.1.has_pic', false)
@@ -330,6 +331,7 @@ class ProjectCompositeOverviewTest extends TestCase
             ->assertJsonPath('data.unready_indikator', 1)
             ->assertJsonPath('data.missing_evidence_count', 1)
             ->assertJsonPath('data.pic_data_available', false)
+            ->assertJsonPath('data.indicator_list_is_partial', true)
             ->assertJsonPath('data.indicators.0.deskripsi_indikator', 'Indikator kritis');
     }
 

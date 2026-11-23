@@ -192,6 +192,12 @@ class AkreditasiIntegrationTest extends TestCase
         $response->assertOk()
             ->assertSee('Dashboard Project Akreditasi')
             ->assertSee('Project Akreditasi RPL 2026')
-            ->assertSee('v2.1');
+            ->assertSee('v2.1')
+            ->assertSee('Kesiapan')
+            ->assertSee('openReadinessModal(1')
+            ->assertSee('modal-readiness-check')
+            ->assertSee('Simulasi SDM')
+            ->assertSee('openScoringSimulationModal(1')
+            ->assertSee('modal-scoring-simulation');
     }
 }
