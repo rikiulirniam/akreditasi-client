@@ -31,7 +31,7 @@
         </div>
 
         <div class="shrink-0 flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
-            @if (Route::has('akreditasi.superadmin.instrumen_aktif'))
+            {{-- @if (Route::has('akreditasi.superadmin.instrumen_aktif'))
                 <a
                     href="{{ route('akreditasi.superadmin.instrumen_aktif') }}"
                     class="inline-flex items-center justify-center gap-2 rounded-2xl bg-secondary px-5 py-3 text-xs sm:text-sm font-extrabold text-primary shadow-xs transition hover:bg-yellow-400"
@@ -42,7 +42,7 @@
                     </svg>
                     Hierarki Instrumen Aktif (TRK)
                 </a>
-            @endif
+            @endif --}}
 
             <div class="rounded-2xl border border-white/15 bg-white/10 px-5 py-3.5 md:min-w-[190px]">
                 <p class="text-xs font-bold uppercase tracking-wider text-white/60">

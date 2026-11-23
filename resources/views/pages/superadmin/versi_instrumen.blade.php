@@ -6,8 +6,6 @@
 @section('content')
 <div class="space-y-6">
 
-    <x-toast />
-
     @if (session('success'))
         <div class="rounded-2xl bg-emerald-50 border border-emerald-200 p-4 text-sm font-semibold text-emerald-800">
             {{ session('success') }}
@@ -124,6 +122,7 @@
                 @php
                     // Relasi jenjang beserta status aktif dari tabel pivot.
                     $jenjangsVersi = $v['jenjangs'] ?? [];
+                    $versiAktif = filter_var($v['status_aktif'] ?? false, FILTER_VALIDATE_BOOLEAN);
                 @endphp
 
                 <div
@@ -137,22 +136,11 @@
                                     Versi {{ $v['nomor_versi'] ?? '-' }}
                                 </h4>
 
-                                {{-- STATUS PER JENJANG --}}
+                                {{-- STATUS VERSI --}}
                                 <div class="flex items-center gap-1.5 flex-wrap mt-1">
-                                    @forelse ($jenjangsVersi as $jenjang)
-                                        @php
-                                            $aktif = !empty($jenjang['pivot']['status_aktif']);
-                                        @endphp
-
-                                        <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider {{ $aktif ? 'bg-emerald-50 text-emerald-700 border border-emerald-200/60' : 'bg-slate-100 text-slate-600' }}">
-                                            {{ $jenjang['nama_jenjang'] ?? 'Jenjang tidak diketahui' }}:
-                                            {{ $aktif ? 'Aktif' : 'Non-Aktif' }}
-                                        </span>
-                                    @empty
-                                        <span class="text-xs text-gray-400">
-                                            Belum terhubung dengan jenjang
-                                        </span>
-                                    @endforelse
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold tracking-wider {{ $versiAktif ? 'bg-emerald-50 text-emerald-700 border border-emerald-200/60' : 'bg-slate-100 text-slate-600 border border-slate-200/60' }}">
+                                        {{ $versiAktif ? 'Aktif' : 'Tidak Aktif' }}
+                                    </span>
 
                                     <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider bg-sky-50 text-sky-700 border border-sky-200/60">
                                         {{ $v['instrumen_count'] ?? 0 }} Instrumen
@@ -165,44 +153,50 @@
 
                                 {{-- TOMBOL AKTIFKAN PER JENJANG --}}
                                 @foreach ($jenjangsVersi as $jenjang)
-                                    @if (empty($jenjang['pivot']['status_aktif']))
+                                    @if (! $versiAktif || empty($jenjang['pivot']['status_aktif']))
                                         @php
                                             $namaJenjang = $jenjang['nama_jenjang'] ?? 'jenjang ini';
+                                            $idJenjang = $jenjang['id']
+                                                ?? $jenjang['id_jenjang']
+                                                ?? $jenjang['pivot']['id_jenjang']
+                                                ?? null;
                                         @endphp
 
-                                        <form
-                                            action="{{ route('akreditasi.superadmin.versi_instrumen.aktifkan', $v['id']) }}"
-                                            method="POST"
-                                            onsubmit="return confirm(@js('Yakin ingin mengaktifkan versi instrumen ini untuk jenjang ' . $namaJenjang . '?'))"
-                                        >
-                                            @csrf
-                                            @method('PATCH')
-
-                                            <input
-                                                type="hidden"
-                                                name="id_jenjang"
-                                                value="{{ $jenjang['id'] }}"
+                                        @if ($idJenjang !== null)
+                                            <form
+                                                action="{{ route('akreditasi.superadmin.versi_instrumen.aktifkan', $v['id']) }}"
+                                                method="POST"
+                                                onsubmit="return confirm(@js('Yakin ingin mengaktifkan versi instrumen ini untuk jenjang ' . $namaJenjang . '?'))"
                                             >
+                                                @csrf
+                                                @method('PATCH')
 
-                                            <button
-                                                type="submit"
-                                                class="text-emerald-600 hover:text-emerald-700 transition p-1.5 rounded-lg hover:bg-emerald-50 cursor-pointer"
-                                                title="Aktifkan untuk {{ $namaJenjang }}"
-                                            >
-                                                <svg
-                                                    xmlns="http://www.w3.org/2000/svg"
-                                                    class="w-5 h-5"
-                                                    viewBox="0 0 24 24"
-                                                    fill="none"
-                                                    stroke="currentColor"
-                                                    stroke-width="2"
-                                                    stroke-linecap="round"
-                                                    stroke-linejoin="round"
+                                                <input
+                                                    type="hidden"
+                                                    name="id_jenjang"
+                                                    value="{{ $idJenjang }}"
                                                 >
-                                                    <path d="m5 12 4 4L19 6" />
-                                                </svg>
-                                            </button>
-                                        </form>
+
+                                                <button
+                                                    type="submit"
+                                                    class="text-emerald-600 hover:text-emerald-700 transition p-1.5 rounded-lg hover:bg-emerald-50 cursor-pointer"
+                                                    title="Aktifkan untuk {{ $namaJenjang }}"
+                                                >
+                                                    <svg
+                                                        xmlns="http://www.w3.org/2000/svg"
+                                                        class="w-5 h-5"
+                                                        viewBox="0 0 24 24"
+                                                        fill="none"
+                                                        stroke="currentColor"
+                                                        stroke-width="2"
+                                                        stroke-linecap="round"
+                                                        stroke-linejoin="round"
+                                                    >
+                                                        <path d="m5 12 4 4L19 6" />
+                                                    </svg>
+                                                </button>
+                                            </form>
+                                        @endif
                                     @endif
                                 @endforeach
 

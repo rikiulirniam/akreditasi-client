@@ -390,7 +390,7 @@ class AkreditasiService
      */
     public function getActiveStaticInstrumen(): Response
     {
-        return $this->get('/master/instrumen/active-static');
+        return $this->get('/instrumen/active-static');
     }
 
     /**
