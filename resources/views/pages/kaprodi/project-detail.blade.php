@@ -37,8 +37,19 @@
     $jenisNama = $displayScalar($profile['jenis_instrumen'] ?? null);
     $tahunTarget = $displayScalar($profile['tahun_target_submit'] ?? $profile['tahun'] ?? $profile['periode'] ?? null);
     $statusRaw = strtolower((string) $displayScalar($profile['status_project'] ?? $project['status_project'] ?? null, ''));
-    $isInProgress = $statusRaw === 'in_progress' || $statusRaw === 'pengisian' || str_contains($statusRaw, 'progress');
-    $statusLabel = $displayScalar($profile['status_project'] ?? $project['status_project'] ?? null, 'Belum tersedia');
+    $statusKey = str_replace(' ', '_', $statusRaw);
+    $statusConfig = [
+        'draft' => ['label' => 'Draft', 'badge' => 'bg-slate-100 text-slate-700 border-slate-300', 'dot' => 'bg-slate-400'],
+        'in_progress' => ['label' => 'On Progress', 'badge' => 'bg-amber-100 text-amber-800 border-amber-300', 'dot' => 'bg-amber-500 animate-pulse'],
+        'on_progress' => ['label' => 'On Progress', 'badge' => 'bg-amber-100 text-amber-800 border-amber-300', 'dot' => 'bg-amber-500 animate-pulse'],
+        'pending' => ['label' => 'Pending', 'badge' => 'bg-orange-100 text-orange-800 border-orange-300', 'dot' => 'bg-orange-500'],
+        'cancel' => ['label' => 'Cancel', 'badge' => 'bg-rose-100 text-rose-800 border-rose-300', 'dot' => 'bg-rose-500'],
+        'selesai' => ['label' => 'Selesai', 'badge' => 'bg-emerald-100 text-emerald-800 border-emerald-300', 'dot' => 'bg-emerald-500'],
+    ];
+    $currentStatusCfg = $statusConfig[$statusKey] ?? $statusConfig['draft'];
+    $statusLabel = $currentStatusCfg['label'];
+    $isInProgress = $statusLabel === 'On Progress';
+    $isSelesai = $statusLabel === 'Selesai';
     $progressSummary = is_array($overviewData['progress'] ?? null) ? $overviewData['progress'] : [];
     $criterionItems = is_array($overviewData['progress_9_kriteria'] ?? null) ? array_values($overviewData['progress_9_kriteria']) : [];
     $evidenceItems = is_array($overviewData['ringkasan_evidence_per_kriteria'] ?? null) ? array_values($overviewData['ringkasan_evidence_per_kriteria']) : [];
