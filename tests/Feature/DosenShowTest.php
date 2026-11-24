@@ -264,10 +264,12 @@ class DosenShowTest extends TestCase
 
         $response->assertOk()
             ->assertSee('Belum ada data dosen')
-            ->assertSee('id="dosen-table" class="w-full min-w-[1050px] table-fixed text-left border-collapse"', false)
+            ->assertSee('id="dosen-table" class="w-full min-w-262.5 table-fixed text-left border-collapse"', false)
             ->assertSee('mt-7 min-w-0 overflow-x-auto', false)
             ->assertSee('openImportModalBtnTable')
             ->assertSee('openCreateModalBtnTable')
+            ->assertSee('name="jurusan"', false)
+            ->assertSee('name="prodi"', false)
             ->assertSee('stroke="currentColor"', false)
             ->assertSee('style="background-color: #0F294A; color: #FFFFFF;"', false)
             ->assertSee('lg:flex-nowrap', false)
@@ -486,6 +488,8 @@ class DosenShowTest extends TestCase
             'nidn' => '0029088401',
             'status_dosen' => 'DTPS',
             'email' => 'hendra@example.com',
+            'jurusan' => 'Teknik Elektro',
+            'prodi' => 'D4 - Teknologi Rekayasa Komputer',
             'id_jabatan' => 4,
             'id_pendidikan' => 3,
         ]);
@@ -500,6 +504,8 @@ class DosenShowTest extends TestCase
 
             return ($data['id_jabatan'] ?? null) === 4
                 && ($data['id_pendidikan'] ?? null) === 3
+                && ($data['jurusan'] ?? null) === 'Teknik Elektro'
+                && ($data['prodi'] ?? null) === 'D4 - Teknologi Rekayasa Komputer'
                 && ! array_key_exists('sertifikasi', $data)
                 && ($data['nama_dosen'] ?? null) === 'Dr. Hendra Gunawan';
         });

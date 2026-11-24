@@ -56,7 +56,7 @@
                             id="searchDosenInput"
                             value="{{ $search }}"
                             placeholder="Cari nama"
-                            class="h-10 w-full rounded-lg border border-transparent bg-gray-100 pl-10 pr-3 text-xs font-medium text-gray-800 placeholder:text-gray-500 focus:border-gray-200 focus:outline-none focus:ring-2 focus:ring-primary/10 transition"
+                            class="h-10 w-full rounded-lg border border-transparent bg-gray-100 pl-10 pr-3 text-xs font-medium text-gray-800 placeholder:text-gray-800 focus:border-gray-200 focus:outline-none focus:ring-2 focus:ring-primary/10 transition"
                         />
                     </div>
 
@@ -155,7 +155,7 @@
                         type="button"
                         id="exportDosenBtn"
                         data-export-url="{{ route('dosen.export') }}"
-                        class="inline-flex h-10 shrink-0 cursor-pointer items-center gap-1.5 whitespace-nowrap rounded-2xl border-0 bg-blue-600 px-2.5 text-xs font-semibold text-white shadow-sm transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
+                        class="inline-flex h-10 shrink-0 cursor-pointer items-center gap-1.5 whitespace-nowrap rounded-lg border-0 bg-blue-600 px-2.5 text-xs font-semibold text-white shadow-sm transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
                     >
                         <svg class="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v12m0 0 4-4m-4 4-4-4m-4 7v1a2 2 0 002 2h12a2 2 0 002-2v-1" />
@@ -165,7 +165,7 @@
                     <button
                         type="button"
                         id="openImportModalBtnTable"
-                        class="open-import-modal-btn inline-flex h-10 shrink-0 cursor-pointer items-center gap-1.5 whitespace-nowrap rounded-2xl border-0 bg-green-700 px-2.5 text-xs font-semibold text-white shadow-sm transition hover:bg-green-800"
+                        class="open-import-modal-btn inline-flex h-10 shrink-0 cursor-pointer items-center gap-1.5 whitespace-nowrap rounded-lg border-0 bg-green-700 px-2.5 text-xs font-semibold text-white shadow-sm transition hover:bg-green-800"
                     >
                         <svg class="w-4 h-4 stroke-[2.2] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m6.75 12l-3-3m0 0l-3 3m3-3v6m-1.5-15H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
@@ -176,7 +176,7 @@
                     <button
                         type="button"
                         id="openCreateModalBtnTable"
-                        class="open-create-modal-btn inline-flex h-10 shrink-0 cursor-pointer items-center gap-1.5 whitespace-nowrap rounded-2xl border-0 bg-primary px-2.5 text-xs font-bold text-white shadow-sm transition hover:bg-additional"
+                        class="open-create-modal-btn inline-flex h-10 shrink-0 cursor-pointer items-center gap-1.5 whitespace-nowrap rounded-lg border-0 bg-primary px-2.5 text-xs font-bold text-white shadow-sm transition hover:bg-additional"
                         style="background-color: #0F294A; color: #FFFFFF;"
                     >
                         <svg class="w-4 h-4 stroke-[2.5] shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor">
@@ -189,7 +189,7 @@
             </div>
 
             <div class="mt-7 min-w-0 overflow-x-auto">
-                <table id="dosen-table" class="w-full min-w-[1050px] table-fixed text-left border-collapse">
+                <table id="dosen-table" class="w-full min-w-262.5 table-fixed text-left border-collapse">
                     <thead>
                         <tr class="border-y border-gray-200 text-gray-900 font-semibold text-sm">
                             <th class="w-16 text-center py-3.5 px-2 sm:px-3">No</th>
@@ -237,13 +237,13 @@
                             @endphp
                             <tr class="dosen-row border-b border-gray-200 hover:bg-gray-50/60 transition-colors duration-150 group">
                                 <td class="w-16 text-center text-gray-900 py-4 px-2 sm:px-3">{{ $rowNumber }}.</td>
-                                <td class="text-sm text-gray-900 py-4 px-2 sm:px-3 break-words">
+                                <td class="text-sm text-gray-900 py-4 px-2 sm:px-3 wrap-break-word">
                                     <span class="block font-semibold">{{ $nama }}</span>
                                     <span class="mt-1 block text-xs text-gray-600">NIDN: {{ $nidn }} · NUPTK: {{ $nuptk }}</span>
                                 </td>
-                                <td class="text-sm text-gray-900 py-4 px-2 sm:px-3 break-words">{{ $statusDosen }}</td>
-                                <td class="text-sm text-gray-900 py-4 px-2 sm:px-3 break-words">{{ $pendidikanJenjang }}</td>
-                                <td class="text-sm text-gray-900 py-4 px-2 sm:px-3 break-words">{{ $jabatanNama !== '' ? $jabatanNama : '-' }}</td>
+                                <td class="text-sm text-gray-900 py-4 px-2 sm:px-3 wrap-break-word">{{ $statusDosen }}</td>
+                                <td class="text-sm text-gray-900 py-4 px-2 sm:px-3 wrap-break-word">{{ $pendidikanJenjang }}</td>
+                                <td class="text-sm text-gray-900 py-4 px-2 sm:px-3 wrap-break-word">{{ $jabatanNama !== '' ? $jabatanNama : '-' }}</td>
                                 <td class="text-sm py-4 px-2 sm:px-3">
                                     <span class="inline-flex rounded-full px-2.5 py-1 text-xs font-semibold {{ $isSertifikasi ? 'bg-emerald-100 text-emerald-800' : 'bg-gray-100 text-gray-600' }}">
                                         {{ $isSertifikasi ? 'Tersertifikasi' : 'Belum Tersertifikasi' }}
@@ -297,7 +297,7 @@
     aria-modal="true"
     aria-labelledby="createDosenModalTitle"
 >
-    <div class="dosen-modal-card relative bg-white rounded-[20px] p-8 max-w-[440px] w-full shadow-2xl text-left transform scale-95 transition-all duration-200 max-h-[90vh] overflow-y-auto">
+    <div class="dosen-modal-card relative bg-white rounded-[20px] p-8 max-w-110 w-full shadow-2xl text-left transform scale-95 transition-all duration-200 max-h-[90vh] overflow-y-auto">
         <!-- Title: Tambahkan Dosen -->
         <h3 id="createDosenModalTitle" class="text-xl font-bold text-gray-900 tracking-tight text-center mb-6">
             Tambahkan Dosen
@@ -364,7 +364,7 @@
                         <option value="DTT">Tidak Tetap</option>
                     </select>
                     <span class="absolute inset-y-0 right-0 flex items-center pr-3.5 pointer-events-none text-primary">
-                        <svg class="w-5 h-5 stroke-[3]" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+                        <svg class="w-5 h-5 stroke-3" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
                             <path d="m6 9 6 6 6-6" />
                         </svg>
                     </span>
@@ -384,6 +384,48 @@
                     required 
                     class="w-full px-4 py-2.5 rounded-[10px] bg-white-form border-none text-sm font-medium text-gray-900 focus:ring-2 focus:ring-primary/20 focus:outline-none placeholder:text-gray-500"
                 >
+            </div>
+
+            <div>
+                <label for="createJurusanInput" class="block text-xs font-bold text-gray-900 mb-1.5">
+                    Jurusan
+                </label>
+                <input
+                    type="text"
+                    name="jurusan"
+                    id="createJurusanInput"
+                    list="createJurusanOptions"
+                    maxlength="255"
+                    placeholder="Isi jurusan homebase"
+                    class="w-full px-4 py-2.5 rounded-[10px] bg-white-form border-none text-sm font-medium text-gray-900 focus:ring-2 focus:ring-primary/20 focus:outline-none placeholder:text-gray-500"
+                >
+                <datalist id="createJurusanOptions">
+                    <option value="Teknik Elektro"></option>
+                    <option value="Teknik Mesin"></option>
+                    <option value="Akuntansi"></option>
+                    <option value="Administrasi Bisnis"></option>
+                    <option value="Teknik Sipil"></option>
+                </datalist>
+            </div>
+
+            <div>
+                <label for="createProdiInput" class="block text-xs font-bold text-gray-900 mb-1.5">
+                    Program Studi
+                </label>
+                <input
+                    type="text"
+                    name="prodi"
+                    id="createProdiInput"
+                    list="createProdiOptions"
+                    maxlength="255"
+                    placeholder="Isi program studi homebase"
+                    class="w-full px-4 py-2.5 rounded-[10px] bg-white-form border-none text-sm font-medium text-gray-900 focus:ring-2 focus:ring-primary/20 focus:outline-none placeholder:text-gray-500"
+                >
+                <datalist id="createProdiOptions">
+                    <option value="D4 - Teknologi Rekayasa Komputer"></option>
+                    <option value="D3 - Teknik Informatika"></option>
+                    <option value="Mata Kuliah Umum"></option>
+                </datalist>
             </div>
 
             <!-- 5. Sertifikasi Dosen -->
@@ -421,7 +463,7 @@
                             @endforeach
                         </select>
                         <span class="absolute inset-y-0 right-0 flex items-center pr-3.5 pointer-events-none text-primary">
-                            <svg class="w-5 h-5 stroke-[3]" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6" /></svg>
+                            <svg class="w-5 h-5 stroke-3" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6" /></svg>
                         </span>
                     </div>
                 </div>
@@ -444,7 +486,7 @@
                         @endforeach
                     </select>
                     <span class="absolute inset-y-0 right-0 flex items-center pr-3.5 pointer-events-none text-primary">
-                        <svg class="w-5 h-5 stroke-[3]" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+                        <svg class="w-5 h-5 stroke-3" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
                             <path d="m6 9 6 6 6-6" />
                         </svg>
                     </span>
@@ -456,13 +498,13 @@
                 <button
                     type="button"
                     id="closeCreateModalBtn"
-                    class="w-full py-2.5 px-6 rounded-[8px] bg-white-form hover:bg-gray-300 text-gray-900 font-bold text-sm transition cursor-pointer text-center"
+                    class="w-full py-2.5 px-6 rounded-lg bg-white-form hover:bg-gray-300 text-gray-900 font-bold text-sm transition cursor-pointer text-center"
                 >
                     Batal
                 </button>
                 <button
                     type="submit"
-                    class="dosen-submit-btn w-full py-2.5 px-6 rounded-[8px] bg-[#01568D] hover:bg-primary text-white font-bold text-sm shadow-xs transition cursor-pointer text-center disabled:opacity-60 disabled:cursor-not-allowed"
+                    class="dosen-submit-btn w-full py-2.5 px-6 rounded-lg bg-additional hover:bg-primary text-white font-bold text-sm shadow-xs transition cursor-pointer text-center disabled:opacity-60 disabled:cursor-not-allowed"
                 >
                     <span class="dosen-submit-label">Simpan</span>
                 </button>
@@ -479,7 +521,7 @@
     aria-modal="true"
     aria-labelledby="editDosenModalTitle"
 >
-    <div class="dosen-modal-card relative bg-white rounded-[20px] p-8 max-w-[440px] w-full shadow-2xl text-left transform scale-95 transition-all duration-200 max-h-[90vh] overflow-y-auto">
+    <div class="dosen-modal-card relative bg-white rounded-[20px] p-8 max-w-110 w-full shadow-2xl text-left transform scale-95 transition-all duration-200 max-h-[90vh] overflow-y-auto">
         <!-- Title: Perbarui Data Dosen -->
         <h3 id="editDosenModalTitle" class="text-xl font-bold text-gray-900 tracking-tight text-center mb-6">
             Perbarui Data Dosen
@@ -547,7 +589,7 @@
                         <option value="DTT">Tidak Tetap</option>
                     </select>
                     <span class="absolute inset-y-0 right-0 flex items-center pr-3.5 pointer-events-none text-primary">
-                        <svg class="w-5 h-5 stroke-[3]" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+                        <svg class="w-5 h-5 stroke-3" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
                             <path d="m6 9 6 6 6-6" />
                         </svg>
                     </span>
@@ -604,7 +646,7 @@
                             @endforeach
                         </select>
                         <span class="absolute inset-y-0 right-0 flex items-center pr-3.5 pointer-events-none text-primary">
-                            <svg class="w-5 h-5 stroke-[3]" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6" /></svg>
+                            <svg class="w-5 h-5 stroke-3" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6" /></svg>
                         </span>
                     </div>
                 </div>
@@ -620,7 +662,7 @@
                         @endforeach
                     </select>
                     <span class="absolute inset-y-0 right-0 flex items-center pr-3.5 pointer-events-none text-primary">
-                        <svg class="w-5 h-5 stroke-[3]" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6" /></svg>
+                        <svg class="w-5 h-5 stroke-3" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6" /></svg>
                     </span>
                 </div>
             </div>
@@ -630,13 +672,13 @@
                 <button
                     type="button"
                     id="closeEditModalBtn"
-                    class="w-full py-2.5 px-6 rounded-[8px] bg-white-form hover:bg-gray-300 text-gray-900 font-bold text-sm transition cursor-pointer text-center"
+                    class="w-full py-2.5 px-6 rounded-lg bg-white-form hover:bg-gray-300 text-gray-900 font-bold text-sm transition cursor-pointer text-center"
                 >
                     Batal
                 </button>
                 <button
                     type="submit"
-                    class="dosen-submit-btn w-full py-2.5 px-6 rounded-[8px] bg-[#01568D] hover:bg-primary text-white font-bold text-sm shadow-xs transition cursor-pointer text-center disabled:opacity-60 disabled:cursor-not-allowed"
+                    class="dosen-submit-btn w-full py-2.5 px-6 rounded-lg bg-additional hover:bg-primary text-white font-bold text-sm shadow-xs transition cursor-pointer text-center disabled:opacity-60 disabled:cursor-not-allowed"
                 >
                     <span class="dosen-submit-label">Simpan</span>
                 </button>
@@ -653,7 +695,7 @@
     aria-modal="true"
     aria-labelledby="importExcelModalTitle"
 >
-    <div class="dosen-modal-card relative bg-white rounded-[20px] p-8 max-w-[440px] w-full shadow-2xl text-left transform scale-95 transition-all duration-200 overflow-hidden">
+    <div class="dosen-modal-card relative bg-white rounded-[20px] p-8 max-w-110 w-full shadow-2xl text-left transform scale-95 transition-all duration-200 overflow-hidden">
         <!-- Title: Import Data Dosen -->
         <h3 id="importExcelModalTitle" class="text-xl font-bold text-gray-900 tracking-tight text-center mb-6">
             Import Data Dosen
@@ -707,7 +749,7 @@
             <!-- Dashed Dropzone / Upload Area -->
             <div 
                 id="dropzoneArea" 
-                class="w-full h-36 rounded-xl border-2 border-dashed border-[#8093A7] hover:border-primary/60 bg-transparent flex flex-col items-center justify-center cursor-pointer transition select-none group"
+                class="w-full h-36 rounded-xl border-2 border-dashed border-gray-form hover:border-primary/60 bg-transparent flex flex-col items-center justify-center cursor-pointer transition select-none group"
             >
                 <div class="flex flex-col items-center justify-center pointer-events-none">
                     <svg class="w-10 h-10 text-gray-800 stroke-[2.2] mb-1.5 transition-transform group-hover:-translate-y-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -725,7 +767,7 @@
                 <button
                     type="button"
                     id="closeImportModalBtnSingle"
-                    class="w-full py-2.5 px-6 rounded-[8px] bg-white-form hover:bg-gray-300 text-gray-900 font-bold text-sm transition cursor-pointer text-center"
+                    class="w-full py-2.5 px-6 rounded-lg bg-white-form hover:bg-gray-300 text-gray-900 font-bold text-sm transition cursor-pointer text-center"
                 >
                     Batal
                 </button>
@@ -736,13 +778,13 @@
                 <button
                     type="button"
                     id="closeImportModalBtnDual"
-                    class="w-full py-2.5 px-6 rounded-[8px] bg-white-form hover:bg-gray-300 text-gray-900 font-bold text-sm transition cursor-pointer text-center"
+                    class="w-full py-2.5 px-6 rounded-lg bg-white-form hover:bg-gray-300 text-gray-900 font-bold text-sm transition cursor-pointer text-center"
                 >
                     Batal
                 </button>
                 <button
                     type="submit"
-                    class="w-full py-2.5 px-6 rounded-[8px] bg-[#01568D] hover:bg-primary text-white font-bold text-sm shadow-xs transition cursor-pointer text-center"
+                    class="w-full py-2.5 px-6 rounded-lg bg-additional hover:bg-primary text-white font-bold text-sm shadow-xs transition cursor-pointer text-center"
                 >
                     Import
                 </button>

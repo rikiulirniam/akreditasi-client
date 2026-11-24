@@ -241,6 +241,8 @@ class DosenController extends Controller
             'status_dosen' => ['required', 'string', 'max:50'],
             'email' => ['required', 'email', 'max:255'],
             'sertifikasi_dosen' => ['nullable', 'string', 'max:255'],
+            'jurusan' => ['nullable', 'string', 'max:255'],
+            'prodi' => ['nullable', 'string', 'max:255'],
             'id_jabatan' => ['nullable', 'integer'],
             'id_pendidikan' => ['nullable', 'integer'],
         ], [
@@ -258,6 +260,8 @@ class DosenController extends Controller
             'status_dosen' => trim($validated['status_dosen']),
             'email' => strtolower(trim($validated['email'])),
             'sertifikasi_dosen' => $validated['sertifikasi_dosen'] ?? null,
+            'jurusan' => isset($validated['jurusan']) ? trim($validated['jurusan']) : null,
+            'prodi' => isset($validated['prodi']) ? trim($validated['prodi']) : null,
             'id_jabatan' => isset($validated['id_jabatan']) && $validated['id_jabatan'] !== null ? (int) $validated['id_jabatan'] : null,
             'id_pendidikan' => isset($validated['id_pendidikan']) && $validated['id_pendidikan'] !== null ? (int) $validated['id_pendidikan'] : null,
         ];
@@ -321,14 +325,12 @@ class DosenController extends Controller
 
         // Normalize lecturer profile
         $rawJabatan = $dosenData['jabatan_akademik'] ?? ($dosenData['jabatan'] ?? ($dosenData['nama_jabatan'] ?? null));
-        $rawJurusan = $dosenData['jurusan'] ?? ($dosenData['bidang_keahlian'] ?? ($dosenData['bidang'] ?? null));
-        $rawProdi = $dosenData['prodi'] ?? ($dosenData['program_studi'] ?? ($dosenData['nama_prodi'] ?? null));
+        $rawJurusan = $dosenData['jurusan'] ?? null;
+        $rawProdi = $dosenData['prodi'] ?? null;
         $rawSertifikasi = $dosenData['sertifikasi_dosen'] ?? ($dosenData['sertifikasi'] ?? null);
         $rawPendidikan = $dosenData['pendidikan_terakhir'] ?? ($dosenData['pendidikan'] ?? null);
         $rawNama = $dosenData['nama_dosen'] ?? ($dosenData['nama'] ?? ($dosenData['name'] ?? null));
 
-        $valJurusan = ! empty($rawJurusan) ? $this->extractString($rawJurusan, '-') : '-';
-        $valProdi = $this->extractString($rawProdi, '-');
         $dosenId = is_scalar($dosenData['id_dosen'] ?? ($dosenData['id'] ?? null))
             ? ($dosenData['id_dosen'] ?? $dosenData['id'])
             : $id;
@@ -339,8 +341,8 @@ class DosenController extends Controller
             'nidn' => $this->extractString($dosenData['nidn'] ?? null, '-'),
             'jabatan' => $this->extractString($rawJabatan, '-'),
             'pendidikan_terakhir' => $this->extractString($rawPendidikan, '-'),
-            'jurusan' => $valJurusan,
-            'prodi' => $valProdi,
+            'jurusan' => $this->extractString($rawJurusan, '-'),
+            'prodi' => $this->extractString($rawProdi, '-'),
             'email' => $this->extractString($dosenData['email'] ?? null, '-'),
             'status_dosen' => $this->extractString($dosenData['status_dosen'] ?? ($dosenData['status'] ?? null), '-'),
             'sertifikasi' => $this->hasActiveSerdos($rawSertifikasi) ? 'Tersertifikasi' : 'Belum Tersertifikasi',

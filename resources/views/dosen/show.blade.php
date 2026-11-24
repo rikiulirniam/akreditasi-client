@@ -31,7 +31,7 @@
                     <svg class="w-4 h-4 sm:w-5 sm:h-5 shrink-0" viewBox="0 0 24 24" fill="currentColor">
                         <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
                     </svg>
-                    <span>{{ is_string($dosen['jurusan'] ?? null) ? $dosen['jurusan'] : '-' }}</span>
+                    <span>{{ $dosen['jurusan'] ?? '-' }}</span>
                 </div>
 
                 {{-- Program Studi --}}
@@ -39,7 +39,7 @@
                     <svg class="w-4 h-4 sm:w-5 sm:h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M9 17.25v1.007a3 3 0 01-.879 2.122L7.5 21h9l-.621-.621A3 3 0 0115 18.257V17.25m6-12V15a2.25 2.25 0 01-2.25 2.25H5.25A2.25 2.25 0 013 15V5.25m18 0A2.25 2.25 0 0018.75 3H5.25A2.25 2.25 0 003 5.25m18 0H3" />
                     </svg>
-                    <span>{{ is_string($dosen['prodi'] ?? null) ? $dosen['prodi'] : '-' }}</span>
+                    <span>{{ $dosen['prodi'] ?? '-' }}</span>
                 </div>
 
                 {{-- Email --}}
