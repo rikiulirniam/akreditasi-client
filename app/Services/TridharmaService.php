@@ -41,14 +41,20 @@ class TridharmaService
             ->asJson()
             ->timeout(30);
 
-        if (! empty($resolvedToken)) {
+        if (! empty($resolvedToken) && $resolvedToken !== 'local-dev-token') {
             $client = $client->withToken($resolvedToken);
+        } else {
+            // In local development or fallback, send Swagger dev header and API key
+            $client = $client->withHeaders([
+                'X-Swagger-Request' => 'true',
+                'X-API-KEY' => config('services.k2.api_key', 'k2-secret-key-akreditasi'),
+            ]);
         }
 
         return $client;
     }
 
-    protected function buildUrl(string $endpoint): string
+    protected function buildUrl(string $endpoint, ?string $baseUrl = null): string
     {
         $trimmed = ltrim($endpoint, '/');
 
@@ -56,7 +62,17 @@ class TridharmaService
             $trimmed = substr($trimmed, 4);
         }
 
-        return "{$this->baseUrl}/{$trimmed}";
+        return rtrim($baseUrl ?? $this->baseUrl, '/')."/{$trimmed}";
+    }
+
+    protected function evidenceUrl(string $endpoint): string
+    {
+        $evidenceBaseUrl = config('services.evidence.base_url');
+        $baseUrl = is_string($evidenceBaseUrl) && trim($evidenceBaseUrl) !== ''
+            ? $evidenceBaseUrl
+            : $this->baseUrl;
+
+        return $this->buildUrl($endpoint, $baseUrl);
     }
 
     protected function url(string $endpoint): string
@@ -1463,28 +1479,45 @@ class TridharmaService
     /** @param array<string, mixed> $query */
     public function getEvidenceList(array $query = [], ?string $token = null): Response
     {
-        return $this->http($token)->get($this->url('evidence'), $query);
+        return $this->http($token)->get($this->evidenceUrl('evidence'), $query);
     }
 
     public function getEvidenceById(int|string $id, ?string $token = null): Response
     {
-        return $this->http($token)->get($this->url("evidence/{$id}"));
+        return $this->http($token)->get($this->evidenceUrl("evidence/{$id}"));
     }
 
-    /** @param array{nama_file: string, jenis_dokumen: string, status_validasi: string} $payload */
+    /** @param array<string, mixed> $payload */
     public function createEvidence(array $payload, ?string $token = null): Response
     {
-        return $this->post('evidence', $payload, $token);
+        return $this->http($token)->post($this->evidenceUrl('evidence'), $payload);
+    }
+
+    /** @param array<string, mixed> $payload */
+    public function updateEvidence(int|string $id, array $payload, ?string $token = null): Response
+    {
+        return $this->http($token)->put($this->evidenceUrl("evidence/{$id}"), $payload);
     }
 
     public function deleteEvidence(int|string $id, ?string $token = null): Response
     {
-        return $this->delete("evidence/{$id}", [], $token);
+        return $this->http($token)->delete($this->evidenceUrl("evidence/{$id}"));
     }
 
     /** @param array{url_drive_baru: string, alasan_perubahan?: string} $payload */
     public function changeEvidenceLink(int|string $id, array $payload, ?string $token = null): Response
     {
-        return $this->post("evidence/{$id}/ganti-link", $payload, $token);
+        return $this->http($token)->post($this->evidenceUrl("evidence/{$id}/ganti-link"), $payload);
+    }
+
+    /** @param array{status_validasi: string, catatan_validasi?: ?string} $payload */
+    public function validateEvidence(int|string $id, array $payload, ?string $token = null): Response
+    {
+        return $this->http($token)->post($this->evidenceUrl("evidence/{$id}/validasi"), $payload);
+    }
+
+    public function downloadEvidence(int|string $id, ?string $token = null): Response
+    {
+        return $this->http($token)->get($this->evidenceUrl("evidence/{$id}/download"));
     }
 }

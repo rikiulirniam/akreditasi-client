@@ -262,7 +262,10 @@ Route::middleware('auth.akademik')->group(function () {
     Route::get('/evidence', [EvidenceController::class, 'index'])->name('evidence.index');
     Route::post('/evidence', [EvidenceController::class, 'store'])->name('evidence.store');
     Route::get('/evidence/{id}', [EvidenceController::class, 'show'])->whereNumber('id')->name('evidence.show');
+    Route::put('/evidence/{id}', [EvidenceController::class, 'update'])->whereNumber('id')->name('evidence.update');
     Route::post('/evidence/{id}/ganti-link', [EvidenceController::class, 'updateLink'])->whereNumber('id')->name('evidence.update-link');
+    Route::post('/evidence/{id}/validasi', [EvidenceController::class, 'validasi'])->whereNumber('id')->name('evidence.validasi');
+    Route::get('/evidence/{id}/download', [EvidenceController::class, 'download'])->whereNumber('id')->name('evidence.download');
     Route::delete('/evidence/{id}', [EvidenceController::class, 'destroy'])->whereNumber('id')->name('evidence.destroy');
 
     // Modul Tenaga Kependidikan

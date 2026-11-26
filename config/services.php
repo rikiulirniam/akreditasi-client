@@ -47,6 +47,10 @@ return [
         'base_url' => env('TRIDHARMA_API_URL', env('API_BASE_URL', env('API_URL', 'https://tridharma.fayra.my.id/api'))),
     ],
 
+    'evidence' => [
+        'base_url' => env('EVIDENCE_API_URL', env('TRIDHARMA_API_URL', env('API_BASE_URL', env('API_URL', 'https://tridharma.fayra.my.id/api')))),
+    ],
+
     'google' => [
         'client_id' => env('GOOGLE_CLIENT_ID'),
         'client_secret' => env('GOOGLE_CLIENT_SECRET'),

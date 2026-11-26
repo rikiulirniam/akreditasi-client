@@ -20,6 +20,30 @@
     <!-- Scripts and Styles -->
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     <style>
+        /* Ensure Sidebar is in normal document flow on desktop and never covers content */
+        @media (min-width: 1024px) {
+            #sidebar {
+                position: static !important;
+                transform: none !important;
+                height: 100% !important;
+                flex-shrink: 0 !important;
+            }
+        }
+
+        /* Ensure Sidebar acts as drawer overlay on mobile & tablet (< 1024px) */
+        @media (max-width: 1023px) {
+            #sidebar {
+                position: fixed !important;
+                top: 0 !important;
+                bottom: 0 !important;
+                left: 0 !important;
+                z-index: 50 !important;
+            }
+            #sidebarBackdrop {
+                z-index: 49 !important;
+            }
+        }
+
         /* Collapsed Sidebar Item Styles */
         #sidebar.is-collapsed .sidebar-link {
             width: 3.25rem !important;
@@ -36,6 +60,12 @@
         #sidebar.is-collapsed .sidebar-link > div {
             justify-content: center !important;
             width: 100% !important;
+        }
+        #sidebar.is-collapsed .sidebar-section-header {
+            padding-left: 0.25rem !important;
+            padding-right: 0.25rem !important;
+            margin-top: 0.5rem !important;
+            margin-bottom: 0.5rem !important;
         }
     </style>
 </head>
@@ -67,7 +97,7 @@
         <div class="flex-1 flex flex-col min-w-0 h-full overflow-hidden">
             
             <!-- Topbar -->
-            <header class="shrink-0 min-h-20 bg-white px-4 sm:px-6 lg:px-[54px] pt-5 sm:pt-7 pb-4 sm:pb-5 flex items-center justify-between z-30">
+            <header class="shrink-0 min-h-20 bg-white px-4 sm:px-6 lg:px-8 xl:px-[54px] pt-5 sm:pt-7 pb-4 sm:pb-5 flex items-center justify-between z-30">
                 
                 <!-- Left: Sidebar Toggle & Page Title -->
                 <div class="flex items-center gap-3 sm:gap-5">
@@ -198,7 +228,7 @@
             </header>
 
             <!-- Main Page Content -->
-            <main class="flex-1 overflow-y-auto px-4 sm:px-6 lg:px-[54px] py-4 pb-12">
+            <main class="flex-1 overflow-y-auto px-4 sm:px-6 lg:px-8 xl:px-[54px] py-4 pb-12">
                 {{ $slot ?? '' }}
                 @yield('content')
             </main>
@@ -224,16 +254,9 @@
             const submenuContainers = document.querySelectorAll('.submenu-container');
             const sidebarExpandedWidth = 'w-[350px]';
 
-            let isCollapsed = localStorage.getItem('sidebar_collapsed') === 'true';
-
-            // Track open submenus so they remain open when expanded
+            let isCollapsed = false;
             const openSubmenus = new Set();
-            submenuContainers.forEach(container => {
-                if (container.getAttribute('data-is-active') === 'true' || !container.classList.contains('hidden')) {
-                    openSubmenus.add(container.id);
-                }
-            });
-
+            localStorage.setItem('sidebar_collapsed', 'false');
             function applySidebarState() {
                 if (isCollapsed) {
                     sidebar.classList.remove('w-[350px]', 'w-64');
@@ -299,6 +322,7 @@
 
             window.addEventListener('resize', function () {
                 if (window.innerWidth >= 1024) {
+                    closeMobileSidebar();
                     applySidebarState();
                 } else {
                     if (sidebar) {

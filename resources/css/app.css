@@ -91,7 +91,30 @@
     }
 }
 
-.flow2-tendik #sidebar:not(.is-collapsed) {
+/* Global Sidebar Flow & Positioning Rules */
+@media (min-width: 1024px) {
+    #sidebar {
+        position: static !important;
+        transform: none !important;
+        height: 100% !important;
+        flex-shrink: 0 !important;
+    }
+}
+
+@media (max-width: 1023px) {
+    #sidebar {
+        position: fixed !important;
+        top: 0 !important;
+        bottom: 0 !important;
+        left: 0 !important;
+        z-index: 50 !important;
+    }
+    #sidebarBackdrop {
+        z-index: 49 !important;
+    }
+}
+
+#sidebar:not(.is-collapsed) {
     width: 350px;
 }
 

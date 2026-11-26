@@ -1,7 +1,6 @@
 @extends('layouts.app')
 
 @section('browser-title', 'Evidence')
-
 @section('title', 'Evidence')
 
 @section('subtitle')
@@ -19,8 +18,41 @@
     $hasActiveFilters = $selectedSearch !== '' || $selectedStatus !== '' || $selectedJenis !== '';
 @endphp
 
-<div class="space-y-5 pb-8">
-    {{-- Notifikasi Error API jika gagal terhubung --}}
+{{-- Scoped CSS Khusus Halaman Evidence --}}
+<style>
+    /* Styling Notifikasi Hapus Evidence: Minimalis, Lembut, Elegan */
+    #toast-container .toast-delete-item {
+        max-width: 340px !important;
+        background-color: #FFF1F2 !important; /* Soft rose-50 */
+        border: 1px solid #FECDD3 !important; /* Thin rose-200 */
+        border-bottom: 1px solid #FECDD3 !important; /* Hilangkan garis tebal 5px */
+        border-radius: 12px !important;
+        box-shadow: 0 4px 12px -2px rgba(225, 29, 72, 0.08) !important;
+    }
+    #toast-container .toast-delete-item svg {
+        width: 18px !important;
+        height: 18px !important;
+        color: #E11D48 !important; /* Rose-600 */
+    }
+    #toast-container .toast-delete-item .toast-message {
+        font-size: 13.5px !important;
+        font-weight: 500 !important;
+        color: #9F1239 !important; /* Rose-800 */
+        letter-spacing: normal !important;
+        line-height: 1.4 !important;
+    }
+    #toast-container .toast-delete-item .toast-close-btn {
+        color: #FB7185 !important;
+        padding: 4px !important;
+    }
+    #toast-container .toast-delete-item .toast-close-btn:hover {
+        color: #E11D48 !important;
+        background-color: rgba(254, 205, 211, 0.5) !important;
+    }
+</style>
+
+<div id="evidencePageWrapper" class="w-full max-w-full overflow-x-hidden min-w-0 space-y-5 pb-8 transition-all duration-200">
+    {{-- Notifikasi Error API jika ada kendala koneksi / backend --}}
     @if($apiError)
         <div class="rounded-xl border border-rose-200 bg-rose-50 px-5 py-4 text-sm font-semibold text-rose-700 shadow-xs" role="alert">
             <div class="flex items-center gap-2">
@@ -32,10 +64,9 @@
         </div>
     @endif
 
-    {{-- KONDISI 1: Belum Ada Evidence (Empty State Murni Sesuai Figma) --}}
+    {{-- KONDISI 1: Belum Ada Evidence (Empty State Sesuai Desain) --}}
     @if(count($evidences) === 0 && !$hasActiveFilters && !$apiError)
         <div class="flex flex-col items-center justify-center min-h-[460px] p-8 text-center bg-white rounded-2xl border border-gray-100 shadow-xs">
-            {{-- Ikon Ilustrasi Dokumen Kosong --}}
             <div class="w-24 h-24 sm:w-28 sm:h-28 rounded-full bg-[#f4f7fb] flex items-center justify-center mb-6 text-primary/70">
                 <svg class="w-12 h-12 sm:w-14 sm:h-14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.6">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
@@ -62,45 +93,73 @@
             </button>
         </div>
 
-    {{-- KONDISI 2: Tabel Evidence (Data Ada atau Sedang Memfilter) --}}
+    {{-- KONDISI 2: Toolbar & Tabel Evidence --}}
     @else
-        {{-- Toolbar Atas: Filter & Tombol Tambah --}}
-        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            {{-- Form Filter yang Didukung API Backend --}}
-            <form method="GET" action="{{ route('evidence.index') }}" class="flex flex-wrap items-center gap-3">
-                <div class="relative min-w-[220px]">
-                    <label for="evidenceSearch" class="sr-only">Cari nama file</label>
-                    <input id="evidenceSearch" name="search" type="search" value="{{ $selectedSearch }}" placeholder="Cari nama file..." class="h-11 w-full rounded-[8px] border-2 border-primary bg-white-form py-2.5 pl-3.5 pr-11 text-sm font-semibold text-gray-900 placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-primary/20">
-                    <svg class="pointer-events-none absolute right-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                        <circle cx="11" cy="11" r="7" />
-                        <path stroke-linecap="round" d="m16 16 4 4" />
-                    </svg>
+        {{-- Toolbar Atas: Search Bar Minimalis, Filter Status, Filter Jenis Dokumen, & Tombol Tambah --}}
+        <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3.5">
+            {{-- Form Filter & Search --}}
+            <form method="GET" action="{{ route('evidence.index') }}" id="evidenceFilterForm" class="flex flex-wrap items-center gap-2.5 flex-1 min-w-0">
+                {{-- Search Bar Minimalis & Modern --}}
+                <div class="relative flex-1 min-w-[240px] sm:min-w-[280px] max-w-md">
+                    <span class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-gray-400">
+                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <circle cx="11" cy="11" r="7" />
+                            <path stroke-linecap="round" d="m16 16 4 4" />
+                        </svg>
+                    </span>
+                    <input
+                        id="evidenceSearch"
+                        name="search"
+                        type="search"
+                        value="{{ $selectedSearch }}"
+                        placeholder="Cari nama file atau jenis dokumen..."
+                        class="h-10 w-full rounded-lg border border-gray-300 bg-white py-2 pl-9 pr-3 text-sm text-gray-900 placeholder:text-gray-400 shadow-2xs transition focus:border-primary/60 focus:outline-none focus:ring-2 focus:ring-primary/20"
+                    >
                 </div>
 
-                {{-- Filter Status Validasi (Sesuai parameter status_validasi di API) --}}
-                <div class="relative min-w-[200px]">
-                    <x-input.select name="status_validasi" onchange="this.form.submit()" class="text-xs sm:text-sm">
+                {{-- Filter Status Validasi (Minimalis, tanpa kotak kuning) --}}
+                <div class="relative w-full sm:w-auto min-w-[175px]">
+                    <select
+                        name="status_validasi"
+                        onchange="this.form.submit()"
+                        class="h-10 w-full appearance-none rounded-lg border border-gray-300 bg-white py-2 pl-3 pr-8 text-sm font-medium text-gray-700 shadow-2xs transition hover:border-gray-400 focus:border-primary/60 focus:outline-none focus:ring-2 focus:ring-primary/20 cursor-pointer"
+                    >
                         <option value="">Semua Status Validasi</option>
-                        <option value="Valid" {{ $selectedStatus === 'Valid' ? 'selected' : '' }}>Valid</option>
                         <option value="Menunggu Validasi" {{ $selectedStatus === 'Menunggu Validasi' ? 'selected' : '' }}>Menunggu Validasi</option>
+                        <option value="Valid" {{ $selectedStatus === 'Valid' ? 'selected' : '' }}>Valid</option>
                         <option value="Ditolak" {{ $selectedStatus === 'Ditolak' ? 'selected' : '' }}>Ditolak</option>
-                    </x-input.select>
+                    </select>
+                    <span class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2.5 text-gray-500">
+                        <svg class="w-4 h-4 stroke-[2.2]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
+                        </svg>
+                    </span>
                 </div>
 
-                {{-- Filter Jenis Dokumen (Sesuai parameter jenis_dokumen di API) --}}
-                <div class="relative min-w-[200px]">
-                    <x-input.select name="jenis_dokumen" onchange="this.form.submit()" class="text-xs sm:text-sm">
+                {{-- Filter Jenis Dokumen (Minimalis, tanpa kotak kuning) --}}
+                <div class="relative w-full sm:w-auto min-w-[185px]">
+                    <select
+                        name="jenis_dokumen"
+                        onchange="this.form.submit()"
+                        class="h-10 w-full appearance-none rounded-lg border border-gray-300 bg-white py-2 pl-3 pr-8 text-sm font-medium text-gray-700 shadow-2xs transition hover:border-gray-400 focus:border-primary/60 focus:outline-none focus:ring-2 focus:ring-primary/20 cursor-pointer"
+                    >
                         <option value="">Semua Jenis Dokumen</option>
                         @foreach($jenisDokumenOptions as $jenisDokumenOption)
                             <option value="{{ $jenisDokumenOption }}" {{ $selectedJenis === $jenisDokumenOption ? 'selected' : '' }}>{{ $jenisDokumenOption }}</option>
                         @endforeach
-                    </x-input.select>
+                    </select>
+                    <span class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2.5 text-gray-500">
+                        <svg class="w-4 h-4 stroke-[2.2]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
+                        </svg>
+                    </span>
                 </div>
 
+                {{-- Tombol Reset Filter --}}
                 @if($hasActiveFilters)
                     <a
                         href="{{ route('evidence.index') }}"
-                        class="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-rose-600 hover:text-rose-800 transition"
+                        class="inline-flex h-10 items-center gap-1.5 px-3 text-xs font-semibold text-rose-600 hover:text-rose-800 transition"
                         title="Reset Filter"
                     >
                         <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -111,12 +170,12 @@
                 @endif
             </form>
 
-            {{-- Tombol Tambah Bukti (Sisi Kanan Atas Sesuai Figma) --}}
+            {{-- Tombol Tambah Bukti --}}
             <button
                 type="button"
                 id="btnTambahBuktiTable"
                 data-open-evidence-modal
-                class="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-primary text-white text-sm font-bold shadow-sm hover:bg-additional transition duration-150 cursor-pointer self-start sm:self-auto shrink-0"
+                class="inline-flex h-10 items-center justify-center gap-2 px-5 rounded-lg bg-primary text-white text-sm font-bold shadow-xs hover:bg-additional transition duration-150 cursor-pointer shrink-0 self-start sm:self-auto"
             >
                 <svg class="w-4 h-4 stroke-[2.5]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
@@ -125,246 +184,438 @@
             </button>
         </div>
 
-        {{-- Tabel Evidence --}}
-        <div class="rounded-2xl border border-gray-200 bg-white shadow-xs overflow-hidden">
-            <x-table class="!min-w-0 w-full">
-                <x-slot:header>
-                    <x-table.th class="w-[5%] !px-2">No</x-table.th>
-                    <x-table.th class="w-[27%] !px-2">Nama File</x-table.th>
-                    <x-table.th class="w-[17%] !px-2">Jenis Dokumen</x-table.th>
-                    <x-table.th class="w-[15%] !px-2">Tanggal Upload</x-table.th>
-                    <x-table.th class="w-[20%] !px-2">Status Validasi</x-table.th>
-                    <x-table.th class="w-[16%] !px-2">Action</x-table.th>
-                </x-slot:header>
+        {{-- Tabel Evidence Responsif (Scroll Horizontal Mandiri, Anti-Terpotong) --}}
+        <div class="w-full max-w-full overflow-x-auto rounded-2xl border border-gray-200 bg-white shadow-xs">
+            <table class="w-full text-left border-collapse table-fixed min-w-[780px]">
+                <thead>
+                    <tr class="border-b border-gray-200 text-gray-900 font-semibold text-sm bg-gray-50/50">
+                        <th scope="col" class="w-14 min-w-[56px] py-3.5 px-3 text-left">No</th>
+                        <th scope="col" class="w-72 min-w-[220px] py-3.5 px-3 text-left">Nama File</th>
+                        <th scope="col" class="w-44 min-w-[140px] py-3.5 px-3 text-left">Jenis Dokumen</th>
+                        <th scope="col" class="w-36 min-w-[125px] py-3.5 px-3 text-left">Tanggal Upload</th>
+                        <th scope="col" class="w-44 min-w-[155px] py-3.5 px-3 text-left">Status Validasi</th>
+                        <th scope="col" class="w-36 min-w-[130px] py-3.5 px-3 text-center">Action</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-200 bg-white text-sm">
+                    @forelse($evidences as $index => $item)
+                        @php
+                            $evidenceId = $item['id_evidence'] ?? $item['id'] ?? null;
+                            $namaFile = $item['_display_file_name'] ?? 'Dokumen Tanpa Judul';
+                            $driveUrl = $item['_drive_url'] ?? '';
+                            $jenisDokumen = $item['jenis_dokumen'] ?? '-';
+                            $tanggalUpload = $item['_formatted_date'] ?? '-';
+                            $rawDateInput = $item['_raw_date_input'] ?? '';
+                            $statusRaw = trim((string) ($item['status_validasi'] ?? 'Menunggu Validasi'));
+                            $statusNormalized = strtolower($statusRaw);
 
-                @forelse($evidences as $index => $item)
-                    @php
-                        $evidenceId = $item['id'] ?? $item['id_evidence'] ?? null;
-                        $namaFile = $item['_display_file_name'] ?? 'Nama file tidak tersedia';
-                        $editNamaFile = $namaFile === 'Nama file tidak tersedia' ? '' : $namaFile;
-                        $driveUrl = $item['_drive_url'] ?? null;
-                        $jenisDokumen = $item['jenis_dokumen'] ?? '';
-                        $rawDate = $item['tanggal_upload'] ?? null;
-                        $tanggalUpload = '-';
-                        $editDate = '';
-                        if ($rawDate) {
-                            try {
-                                $parsedDate = \Carbon\Carbon::parse($rawDate);
-                                $tanggalUpload = $parsedDate->format('d/m/Y');
-                                $editDate = $parsedDate->format('Y-m-d');
-                            } catch (\Throwable) {
-                                $tanggalUpload = (string) $rawDate;
-                            }
-                        }
+                            $badgeClass = match ($statusNormalized) {
+                                'valid' => 'bg-[#DCFCE7] text-[#166534] border border-[#BBF7D0]',
+                                'ditolak' => 'bg-[#FEE2E2] text-[#991B1B] border border-[#FECACA]',
+                                default => 'bg-[#FEF3C7] text-[#92400E] border border-[#FDE68A]',
+                            };
+                        @endphp
+                        <tr class="hover:bg-gray-50/60 transition-colors">
+                            {{-- 1. No --}}
+                            <td class="w-14 min-w-[56px] py-3.5 px-3 text-left font-medium text-gray-500">
+                                {{ $startNumber + $index }}
+                            </td>
 
-                        $statusRaw = trim((string) ($item['status_validasi'] ?? ''));
-                        $statusNormalized = strtolower($statusRaw);
-                        $badgeClass = match ($statusNormalized) {
-                            'valid' => 'bg-[#DCFCE7] text-[#166534] border border-[#BBF7D0]',
-                            'ditolak' => 'bg-[#FEE2E2] text-[#991B1B] border border-[#FECACA]',
-                            'menunggu validasi' => 'bg-[#FEF3C7] text-[#92400E] border border-[#FDE68A]',
-                            default => 'bg-gray-100 text-gray-700 border border-gray-200',
-                        };
-                        $statusLabel = $statusRaw !== '' ? $statusRaw : '-';
-                    @endphp
-                    <x-table.row>
-                        <x-table.cell class="!px-2 font-medium text-gray-500">
-                            {{ $startNumber + $index }}
-                        </x-table.cell>
+                            {{-- 2. Nama File --}}
+                            <td class="w-72 min-w-[220px] py-3.5 px-3 text-left">
+                                <div class="truncate max-w-full" title="{{ $namaFile }}">
+                                    @if($driveUrl)
+                                        <a
+                                            href="{{ $driveUrl }}"
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            class="font-semibold text-gray-900 hover:text-primary transition"
+                                        >
+                                            {{ $namaFile }}
+                                        </a>
+                                    @else
+                                        <span class="font-semibold text-gray-900">
+                                            {{ $namaFile }}
+                                        </span>
+                                    @endif
+                                </div>
+                            </td>
 
-                        <x-table.cell class="!min-w-0 !px-2">
-                            <span class="block truncate font-semibold text-gray-900" title="{{ $namaFile }}">
-                                {{ $namaFile }}
-                            </span>
-                        </x-table.cell>
+                            {{-- 3. Jenis Dokumen --}}
+                            <td class="w-44 min-w-[140px] py-3.5 px-3 text-left">
+                                <span class="inline-flex max-w-full items-center rounded-md bg-gray-100 px-2.5 py-1 text-xs font-semibold text-gray-800 truncate">
+                                    {{ $jenisDokumen !== '' ? $jenisDokumen : '-' }}
+                                </span>
+                            </td>
 
-                        <x-table.cell class="!px-2">
-                            <span class="inline-flex max-w-full items-center break-words rounded-md bg-gray-100 px-2 py-1 text-xs font-semibold text-gray-800">
-                                {{ $jenisDokumen !== '' ? $jenisDokumen : '-' }}
-                            </span>
-                        </x-table.cell>
+                            {{-- 4. Tanggal Upload --}}
+                            <td class="w-36 min-w-[125px] py-3.5 px-3 text-left text-gray-700 whitespace-nowrap">
+                                {{ $tanggalUpload }}
+                            </td>
 
-                        <x-table.cell class="!px-2 text-gray-700 text-sm whitespace-nowrap">
-                            {{ $tanggalUpload }}
-                        </x-table.cell>
+                            {{-- 5. Status Validasi --}}
+                            <td class="w-44 min-w-[155px] py-3.5 px-3 text-left">
+                                <span class="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-bold {{ $badgeClass }}">
+                                    {{ $statusRaw }}
+                                </span>
+                            </td>
 
-                        <x-table.cell class="!px-2">
-                            <span class="inline-flex max-w-full items-center rounded-full px-2 py-1 text-xs font-bold {{ $badgeClass }}">
-                                {{ $statusLabel }}
-                            </span>
-                        </x-table.cell>
+                            {{-- 6. Action: Judul & Kumpulan Tombol Tepat Rata Tengah --}}
+                            <td class="w-36 min-w-[130px] py-3.5 px-3 text-center align-middle">
+                                <div class="inline-flex items-center justify-center gap-2 w-full">
+                                    @if($evidenceId)
+                                        {{-- 1. Lihat Detail --}}
+                                        <a
+                                            href="{{ route('evidence.show', $evidenceId) }}"
+                                            class="p-1.5 text-primary hover:text-additional hover:bg-sky-50 rounded-lg transition"
+                                            title="Lihat Detail Evidence"
+                                            aria-label="Lihat Detail Evidence"
+                                        >
+                                            <x-icon.eye class="w-4 h-4" />
+                                        </a>
 
-                        <x-table.cell class="!px-2">
-                            <div class="inline-flex items-center justify-start gap-2">
-                                @if($evidenceId)
-                                    <button
-                                        type="button"
-                                        data-edit-evidence
-                                        data-evidence-id="{{ $evidenceId }}"
-                                        data-evidence-url="{{ $driveUrl }}"
-                                        data-evidence-name="{{ $editNamaFile }}"
-                                        data-evidence-type="{{ $jenisDokumen }}"
-                                        data-evidence-date="{{ $editDate }}"
-                                        data-evidence-status="{{ $statusRaw }}"
-                                        data-evidence-action="{{ route('evidence.update-link', $evidenceId) }}"
-                                        class="p-1.5 text-amber-600 hover:text-amber-800 hover:bg-amber-50 rounded-lg transition"
-                                        title="Edit Evidence"
-                                        aria-label="Edit Evidence"
-                                    >
-                                        <x-icon.edit class="w-4 h-4" />
-                                    </button>
-
-                                    <form method="POST" action="{{ route('evidence.destroy', $evidenceId) }}" onsubmit="return confirm('Hapus evidence ini?')">
-                                        @csrf
-                                        @method('DELETE')
-                                        <button type="submit" class="p-1.5 text-rose-600 hover:text-rose-800 hover:bg-rose-50 rounded-lg transition" title="Hapus Evidence" aria-label="Hapus Evidence">
-                                            <x-icon.delete class="w-4 h-4" />
+                                        {{-- 2. Satu Tombol Edit Gabungan (Metadata & Tautan) --}}
+                                        <button
+                                            type="button"
+                                            data-open-unified-edit
+                                            data-evidence-id="{{ $evidenceId }}"
+                                            data-evidence-name="{{ $namaFile }}"
+                                            data-evidence-type="{{ $jenisDokumen }}"
+                                            data-evidence-date="{{ $rawDateInput }}"
+                                            data-evidence-status="{{ $statusRaw }}"
+                                            data-evidence-url="{{ $driveUrl }}"
+                                            data-evidence-action="{{ route('evidence.update', $evidenceId) }}"
+                                            class="p-1.5 text-amber-600 hover:text-amber-800 hover:bg-amber-50 rounded-lg transition cursor-pointer"
+                                            title="Edit Evidence (Metadata & Tautan)"
+                                            aria-label="Edit Evidence"
+                                        >
+                                            <x-icon.edit class="w-4 h-4" />
                                         </button>
-                                    </form>
 
-                                    <a href="{{ route('evidence.show', $evidenceId) }}" class="p-1.5 text-primary hover:text-additional hover:bg-sky-50 rounded-lg transition" title="Detail Evidence" aria-label="Detail Evidence">
-                                        <x-icon.eye class="w-4 h-4" />
-                                    </a>
-                                @endif
-                            </div>
-                        </x-table.cell>
-                    </x-table.row>
-                @empty
-                    <x-table.empty colspan="6" message="Tidak ada data evidence ditemukan" submessage="Coba ubah kriteria filter di atas." />
-                @endforelse
-            </x-table>
+                                        {{-- 3. Hapus --}}
+                                        <form method="POST" action="{{ route('evidence.destroy', $evidenceId) }}" onsubmit="return confirm('Apakah Anda yakin ingin menghapus data evidence ini?')">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button
+                                                type="submit"
+                                                class="p-1.5 text-rose-600 hover:text-rose-800 hover:bg-rose-50 rounded-lg transition cursor-pointer"
+                                                title="Hapus Evidence"
+                                                aria-label="Hapus Evidence"
+                                            >
+                                                <x-icon.delete class="w-4 h-4" />
+                                            </button>
+                                        </form>
+                                    @endif
+                                </div>
+                            </td>
+                        </tr>
+                    @empty
+                        <tr>
+                            <td colspan="6" class="p-8 text-center text-gray-500">
+                                <p class="text-base font-semibold text-gray-900">Tidak ada data evidence ditemukan</p>
+                                <p class="mt-1 text-xs text-gray-500">Coba ubah kata kunci atau kriteria filter di atas.</p>
+                            </td>
+                        </tr>
+                    @endforelse
+                </tbody>
+            </table>
         </div>
 
-        {{-- Paginasi Menggunakan Komponen Standar Project --}}
+        {{-- Paginasi --}}
         <x-pagination :paginator="$pagination" />
     @endif
 </div>
 
+{{-- ========================================================================= --}}
+{{-- MODAL 1: FORM TAMBAH EVIDENCE (STATUS DAPAT DIPILIH)                      --}}
+{{-- ========================================================================= --}}
 <div id="evidenceUploadModal" class="fixed inset-0 z-[70] hidden items-center justify-center bg-black/50 p-4" role="dialog" aria-modal="true" aria-hidden="true" aria-labelledby="evidenceUploadTitle">
-    <div class="flex min-h-[631px] w-full max-w-[443px] flex-col rounded-xl border border-gray-200 bg-white p-0 shadow-xl">
-        <div class="flex items-start justify-between gap-4 p-5 pb-0">
-            <div>
-                <h2 id="evidenceUploadTitle" class="text-xl font-bold text-gray-900">Tambahkan Evidence</h2>
-            </div>
-            <button type="button" data-close-evidence-modal class="rounded-lg p-2 text-gray-500 hover:bg-gray-100 hover:text-gray-800" aria-label="Tutup form">
+    <div class="flex max-h-[90vh] w-full max-w-[500px] flex-col overflow-y-auto rounded-2xl border border-gray-200 bg-white p-6 shadow-2xl">
+        <div class="flex items-center justify-between pb-3 border-b border-gray-100 mb-4">
+            <h2 id="evidenceUploadTitle" class="text-xl font-bold text-gray-900">Tambahkan Evidence</h2>
+            <button type="button" data-close-evidence-modal class="rounded-lg p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-700 transition" aria-label="Tutup formulir">
                 <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
                 </svg>
             </button>
         </div>
 
-        <form method="POST" action="{{ route('evidence.store') }}" class="flex flex-1 flex-col gap-[11px] p-5 pt-0">
+        <form id="evidenceCreateForm" method="POST" action="{{ route('evidence.store') }}" class="flex flex-col gap-4">
             @csrf
-            <p class="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs leading-5 text-amber-900">
-                Kontrak API saat ini hanya mendukung tautan, jenis dokumen, status, dan ID kegiatan. Nama File tampilan serta Tanggal Upload dari form belum dapat disimpan.
-            </p>
 
+            {{-- 1. Nama File --}}
             <div>
-                <label for="evidenceNamaFile" class="mb-1.5 block text-sm font-semibold text-gray-900">Nama File</label>
-                <input id="evidenceNamaFile" name="nama_file_display" type="text" value="{{ old('nama_file_display') }}" placeholder="Isi Nama File" required maxlength="255" class="h-[50px] w-full rounded-[10px] border-0 bg-[#d9d9d9] px-4 text-base text-gray-800 placeholder:text-gray-600 focus:outline-none focus:ring-2 focus:ring-primary/30">
-                @error('nama_file_display', 'evidenceUpload')
-                    <p class="mt-1 text-sm text-rose-600" role="alert">{{ $message }}</p>
+                <label for="evidenceNamaFile" class="mb-1.5 block text-sm font-semibold text-gray-900">
+                    Nama File <span class="text-rose-500">*</span>
+                </label>
+                <input
+                    id="evidenceNamaFile"
+                    name="nama_file"
+                    type="text"
+                    value="{{ old('nama_file') }}"
+                    placeholder="Contoh: Proposal Penelitian Dosen 2026"
+                    required
+                    maxlength="255"
+                    class="h-11 w-full rounded-lg border border-gray-300 bg-white px-3.5 text-sm text-gray-800 placeholder:text-gray-400 transition focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                >
+                @error('nama_file', 'evidenceUpload')
+                    <p class="mt-1 text-xs font-semibold text-rose-600" role="alert">{{ $message }}</p>
                 @enderror
             </div>
 
+            {{-- 2. Jenis Dokumen Evidence --}}
             <div>
-                <label for="evidenceJenisDokumen" class="mb-1.5 block text-sm font-semibold text-gray-900">Jenis Dokumen Evidence</label>
-                <select id="evidenceJenisDokumen" name="jenis_dokumen" required class="h-[50px] w-full rounded-[10px] border-0 bg-[#d9d9d9] px-4 text-base text-gray-800 focus:outline-none focus:ring-2 focus:ring-primary/30">
-                    <option value="" disabled {{ old('jenis_dokumen') ? '' : 'selected' }}>Pilih Jenis Evidence</option>
+                <label for="evidenceJenisDokumen" class="mb-1.5 block text-sm font-semibold text-gray-900">
+                    Jenis Dokumen Evidence <span class="text-rose-500">*</span>
+                </label>
+                <select
+                    id="evidenceJenisDokumen"
+                    name="jenis_dokumen"
+                    required
+                    class="h-11 w-full rounded-lg border border-gray-300 bg-white px-3 text-sm text-gray-800 transition focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 cursor-pointer"
+                >
+                    <option value="" disabled {{ old('jenis_dokumen') ? '' : 'selected' }}>Pilih Jenis Dokumen</option>
                     @foreach($jenisDokumenOptions as $jenisDokumenOption)
                         <option value="{{ $jenisDokumenOption }}" {{ old('jenis_dokumen') === $jenisDokumenOption ? 'selected' : '' }}>{{ $jenisDokumenOption }}</option>
                     @endforeach
                 </select>
                 @error('jenis_dokumen', 'evidenceUpload')
-                    <p class="mt-1 text-sm text-rose-600" role="alert">{{ $message }}</p>
+                    <p class="mt-1 text-xs font-semibold text-rose-600" role="alert">{{ $message }}</p>
                 @enderror
             </div>
 
+            {{-- 3. Tanggal Upload --}}
             <div>
-                <label for="evidenceTanggalUpload" class="mb-1.5 block text-sm font-semibold text-gray-900">Tanggal Upload</label>
-                <input id="evidenceTanggalUpload" name="tanggal_upload" type="date" value="{{ old('tanggal_upload') }}" placeholder="Isi Tanggal Upload" required class="h-[50px] w-full rounded-[10px] border-0 bg-[#d9d9d9] px-4 text-base text-gray-800 focus:outline-none focus:ring-2 focus:ring-primary/30">
+                <label for="evidenceTanggalUpload" class="mb-1.5 block text-sm font-semibold text-gray-900">
+                    Tanggal Upload
+                </label>
+                <input
+                    id="evidenceTanggalUpload"
+                    name="tanggal_upload"
+                    type="date"
+                    value="{{ old('tanggal_upload', date('Y-m-d')) }}"
+                    class="h-11 w-full rounded-lg border border-gray-300 bg-white px-3.5 text-sm text-gray-800 transition focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                >
                 @error('tanggal_upload', 'evidenceUpload')
-                    <p class="mt-1 text-sm text-rose-600" role="alert">{{ $message }}</p>
+                    <p class="mt-1 text-xs font-semibold text-rose-600" role="alert">{{ $message }}</p>
                 @enderror
             </div>
 
+            {{-- 4. Status Validasi (Dapat Dipilih Langsung) --}}
             <div>
-                <label for="evidenceStatusValidasi" class="mb-1.5 block text-sm font-semibold text-gray-900">Status Validasi</label>
-                <select id="evidenceStatusValidasi" name="status_validasi" required class="h-[50px] w-full rounded-[10px] border-0 bg-[#d9d9d9] px-4 text-base text-gray-800 focus:outline-none focus:ring-2 focus:ring-primary/30">
-                    <option value="" disabled {{ old('status_validasi') ? '' : 'selected' }}>Pilih Status Validasi</option>
-                    @foreach(['Valid', 'Menunggu Validasi', 'Ditolak'] as $statusValidasiOption)
-                        <option value="{{ $statusValidasiOption }}" {{ old('status_validasi') === $statusValidasiOption ? 'selected' : '' }}>{{ $statusValidasiOption }}</option>
-                    @endforeach
+                <label for="evidenceStatusValidasi" class="mb-1.5 block text-sm font-semibold text-gray-900">
+                    Status Validasi
+                </label>
+                <select
+                    id="evidenceStatusValidasi"
+                    name="status_validasi"
+                    class="h-11 w-full rounded-lg border border-gray-300 bg-white px-3 text-sm text-gray-800 transition focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 cursor-pointer"
+                >
+                    <option value="Menunggu Validasi" {{ old('status_validasi', 'Menunggu Validasi') === 'Menunggu Validasi' ? 'selected' : '' }}>Menunggu Validasi (Pemeriksaan Ulang)</option>
+                    <option value="Valid" {{ old('status_validasi') === 'Valid' ? 'selected' : '' }}>Valid (Telah Memenuhi Syarat)</option>
+                    <option value="Ditolak" {{ old('status_validasi') === 'Ditolak' ? 'selected' : '' }}>Ditolak (Perlu Perbaikan)</option>
                 </select>
                 @error('status_validasi', 'evidenceUpload')
-                    <p class="mt-1 text-sm text-rose-600" role="alert">{{ $message }}</p>
+                    <p class="mt-1 text-xs font-semibold text-rose-600" role="alert">{{ $message }}</p>
                 @enderror
             </div>
 
+            {{-- 5. Tautan Evidence (Universal URL) --}}
             <div>
-                <label for="evidenceLink" class="mb-1.5 block text-sm font-semibold text-gray-700">Tautan Evidence (Unggah Bukti, tautan G.Drive - PDF Maks 10 mb)</label>
-                <input id="evidenceLink" name="nama_file" type="text" value="{{ old('nama_file') }}" placeholder="Tempel tautan Google Drive" required class="h-[50px] w-full rounded-[10px] border-0 bg-[#d9d9d9] px-4 text-base text-gray-800 placeholder:text-gray-600 focus:outline-none focus:ring-2 focus:ring-primary/30">
-                @error('nama_file', 'evidenceUpload')
-                    <p class="mt-1 text-sm text-rose-600" role="alert">{{ $message }}</p>
+                <label for="evidenceLink" class="mb-1.5 block text-sm font-semibold text-gray-900">
+                    Tautan Evidence <span class="text-rose-500">*</span>
+                </label>
+                <input
+                    id="evidenceLink"
+                    name="url_drive"
+                    type="url"
+                    value="{{ old('url_drive') }}"
+                    placeholder="https://contoh.com/dokumen"
+                    required
+                    maxlength="2048"
+                    class="h-11 w-full rounded-lg border border-gray-300 bg-white px-3.5 text-sm text-gray-800 placeholder:text-gray-400 transition focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                >
+                <p class="mt-1 text-[11px] text-gray-500">Mendukung tautan Google Drive, OneDrive, Dropbox, GitHub, dokumen website, dll.</p>
+                @error('url_drive', 'evidenceUpload')
+                    <p class="mt-1 text-xs font-semibold text-rose-600" role="alert">{{ $message }}</p>
                 @enderror
             </div>
 
-            <div class="mt-auto flex justify-end gap-3 pt-2">
-                <button type="button" data-close-evidence-modal class="rounded-lg border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50">Batal</button>
-                <button type="submit" class="rounded-lg bg-primary px-4 py-2 text-sm font-bold text-white hover:bg-additional">Simpan</button>
+            {{-- Peringatan Duplikasi URL jika 409 --}}
+            @if(session('duplicateUrlWarning'))
+                <div class="rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900">
+                    <label class="flex items-start gap-2 cursor-pointer font-medium">
+                        <input type="checkbox" name="konfirmasi_lanjut" value="1" class="mt-0.5 rounded border-amber-400 text-primary focus:ring-primary">
+                        <span>Tautan ini sudah pernah digunakan. Centang kotak ini jika Anda tetap ingin menyimpan salinan baru.</span>
+                    </label>
+                </div>
+            @endif
+
+            {{-- Aksi Batal & Simpan --}}
+            <div class="mt-3 flex justify-end gap-2.5 pt-2 border-t border-gray-100">
+                <button
+                    type="button"
+                    data-close-evidence-modal
+                    class="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50 transition cursor-pointer"
+                >
+                    Batal
+                </button>
+                <button
+                    type="submit"
+                    id="btnSubmitCreateEvidence"
+                    class="inline-flex items-center justify-center gap-2 rounded-lg bg-primary px-5 py-2 text-sm font-bold text-white hover:bg-additional transition cursor-pointer disabled:opacity-50"
+                >
+                    <span id="btnSubmitCreateSpinner" class="hidden">
+                        <svg class="h-4 w-4 animate-spin text-white" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+                        </svg>
+                    </span>
+                    <span id="btnSubmitCreateText">Simpan</span>
+                </button>
             </div>
         </form>
     </div>
 </div>
 
-<div id="evidenceEditModal" class="fixed inset-0 z-[70] hidden items-center justify-center bg-black/50 p-4" role="dialog" aria-modal="true" aria-hidden="true" aria-labelledby="evidenceEditTitle">
-    <div class="max-h-[90vh] w-full max-w-[588px] overflow-y-auto rounded-[20px] border border-gray-200 bg-white p-6 shadow-xl sm:p-8">
-        <div class="mb-5 flex items-center justify-between gap-4">
-            <span class="w-8" aria-hidden="true"></span>
-            <h2 id="evidenceEditTitle" class="text-center text-2xl font-bold text-gray-900">Perbarui Evidence</h2>
-            <button type="button" data-close-evidence-edit class="rounded-lg p-2 text-gray-500 hover:bg-gray-100 hover:text-gray-800" aria-label="Tutup form edit">
+{{-- ========================================================================= --}}
+{{-- MODAL 2: SATU FORM EDIT GABUNGAN (METADATA & TAUTAN)                      --}}
+{{-- ========================================================================= --}}
+<div id="evidenceUnifiedEditModal" class="fixed inset-0 z-[70] hidden items-center justify-center bg-black/50 p-4" role="dialog" aria-modal="true" aria-hidden="true" aria-labelledby="unifiedEditTitle">
+    <div class="flex max-h-[90vh] w-full max-w-[520px] flex-col overflow-y-auto rounded-2xl border border-gray-200 bg-white p-6 shadow-2xl">
+        <div class="flex items-center justify-between pb-3 border-b border-gray-100 mb-4">
+            <div>
+                <h2 id="unifiedEditTitle" class="text-xl font-bold text-gray-900">Edit Data Evidence</h2>
+                <p class="text-xs text-gray-500 mt-0.5">Perbarui metadata dokumen dan tautan bukti dalam satu formulir.</p>
+            </div>
+            <button type="button" data-close-unified-edit class="rounded-lg p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-700 transition" aria-label="Tutup form edit">
                 <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
                 </svg>
             </button>
         </div>
 
-        <form id="evidenceEditForm" method="POST" action="#" class="space-y-4">
+        <form id="evidenceUnifiedEditForm" method="POST" action="#" class="flex flex-col gap-4">
             @csrf
-            <p class="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs leading-5 text-amber-900">
-                API saat ini hanya mendukung penggantian tautan. Metadata lain ditampilkan sebagai data lama dan belum dapat diubah sampai backend menyediakan endpoint update.
-            </p>
+            @method('PUT')
+
+            {{-- Hidden input untuk mendeteksi perubahan tautan --}}
+            <input type="hidden" id="editUrlLama" name="url_drive_lama" value="">
+
+            {{-- 1. Nama File / Judul Dokumen --}}
             <div>
-                <label for="evidenceEditName" class="mb-1.5 block text-sm font-semibold text-gray-900">Nama File</label>
-                <input id="evidenceEditName" type="text" disabled placeholder="Tidak tersedia dari API" class="h-[50px] w-full rounded-[10px] border-0 bg-[#d9d9d9] px-4 text-base text-gray-800 disabled:cursor-not-allowed disabled:opacity-80">
+                <label for="unifiedEditNamaFile" class="mb-1.5 block text-sm font-semibold text-gray-900">
+                    Nama File <span class="text-rose-500">*</span>
+                </label>
+                <input
+                    id="unifiedEditNamaFile"
+                    name="nama_file"
+                    type="text"
+                    required
+                    maxlength="255"
+                    class="h-11 w-full rounded-lg border border-gray-300 bg-white px-3.5 text-sm text-gray-800 transition focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                >
             </div>
+
+            {{-- 2. Jenis Dokumen Evidence --}}
             <div>
-                <label for="evidenceEditType" class="mb-1.5 block text-sm font-semibold text-gray-900">Jenis Dokumen Evidence</label>
-                <select id="evidenceEditType" disabled class="h-[50px] w-full rounded-[10px] border-0 bg-[#d9d9d9] px-4 text-base text-gray-800 disabled:cursor-not-allowed disabled:opacity-80">
-                    <option value="">Tidak tersedia dari API</option>
+                <label for="unifiedEditJenisDokumen" class="mb-1.5 block text-sm font-semibold text-gray-900">
+                    Jenis Dokumen Evidence <span class="text-rose-500">*</span>
+                </label>
+                <select
+                    id="unifiedEditJenisDokumen"
+                    name="jenis_dokumen"
+                    required
+                    class="h-11 w-full rounded-lg border border-gray-300 bg-white px-3 text-sm text-gray-800 transition focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 cursor-pointer"
+                >
                     @foreach($jenisDokumenOptions as $jenisDokumenOption)
                         <option value="{{ $jenisDokumenOption }}">{{ $jenisDokumenOption }}</option>
                     @endforeach
                 </select>
             </div>
+
+            {{-- 3. Tanggal Upload --}}
             <div>
-                <label for="evidenceEditDate" class="mb-1.5 block text-sm font-semibold text-gray-900">Tanggal Upload</label>
-                <input id="evidenceEditDate" type="date" disabled class="h-[50px] w-full rounded-[10px] border-0 bg-[#d9d9d9] px-4 text-base text-gray-800 disabled:cursor-not-allowed disabled:opacity-80">
+                <label for="unifiedEditTanggalUpload" class="mb-1.5 block text-sm font-semibold text-gray-900">
+                    Tanggal Upload
+                </label>
+                <input
+                    id="unifiedEditTanggalUpload"
+                    name="tanggal_upload"
+                    type="date"
+                    class="h-11 w-full rounded-lg border border-gray-300 bg-white px-3.5 text-sm text-gray-800 transition focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                >
             </div>
+
+            {{-- 4. Status Validasi --}}
             <div>
-                <label for="evidenceEditStatus" class="mb-1.5 block text-sm font-semibold text-gray-900">Status Validasi</label>
-                <input id="evidenceEditStatus" type="text" disabled placeholder="Tidak tersedia dari API" class="h-[50px] w-full rounded-[10px] border-0 bg-[#d9d9d9] px-4 text-base text-gray-800 disabled:cursor-not-allowed disabled:opacity-80">
+                <label for="unifiedEditStatusValidasi" class="mb-1.5 block text-sm font-semibold text-gray-900">
+                    Status Validasi
+                </label>
+                <select
+                    id="unifiedEditStatusValidasi"
+                    name="status_validasi"
+                    class="h-11 w-full rounded-lg border border-gray-300 bg-white px-3 text-sm text-gray-800 transition focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 cursor-pointer"
+                >
+                    <option value="Menunggu Validasi">Menunggu Validasi</option>
+                    <option value="Valid">Valid</option>
+                    <option value="Ditolak">Ditolak</option>
+                </select>
             </div>
+
+            {{-- 5. Tautan Evidence --}}
             <div>
-                <label for="evidenceEditUrl" class="mb-1.5 block text-sm font-semibold text-gray-900">Tautan Evidence</label>
-                <input id="evidenceEditUrl" name="url_drive_baru" type="url" value="{{ old('url_drive_baru') }}" placeholder="Tempel tautan Google Drive" required class="h-[50px] w-full rounded-[10px] border-0 bg-[#d9d9d9] px-4 text-base text-gray-800 placeholder:text-gray-600 focus:outline-none focus:ring-2 focus:ring-primary/30">
-                @error('url_drive_baru', 'evidenceEdit')
-                    <p class="mt-1 text-sm text-rose-600" role="alert">{{ $message }}</p>
-                @enderror
+                <label for="unifiedEditUrlDrive" class="mb-1.5 block text-sm font-semibold text-gray-900">
+                    Tautan Evidence <span class="text-rose-500">*</span>
+                </label>
+                <input
+                    id="unifiedEditUrlDrive"
+                    name="url_drive"
+                    type="url"
+                    required
+                    maxlength="2048"
+                    placeholder="https://contoh.com/dokumen"
+                    class="h-11 w-full rounded-lg border border-gray-300 bg-white px-3.5 text-sm text-gray-800 placeholder:text-gray-400 transition focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                >
             </div>
-            <div class="flex gap-4 pt-3">
-                <button type="button" data-close-evidence-edit class="h-[52px] flex-1 rounded-lg bg-[#d9d9d9] px-4 text-base font-semibold text-gray-900 hover:bg-gray-300">Batal</button>
-                <button type="submit" class="h-[52px] flex-1 rounded-lg bg-[#005A91] px-4 text-base font-semibold text-white hover:bg-[#004674]">Simpan</button>
+
+            {{-- 6. Alasan Perubahan Tautan (Tampil jika tautan diedit) --}}
+            <div id="unifiedEditAlasanContainer" class="hidden transition-all duration-200">
+                <label for="unifiedEditAlasan" class="mb-1.5 block text-sm font-semibold text-gray-900">
+                    Alasan Perubahan Tautan <span class="text-rose-500">* (wajib jika tautan diubah)</span>
+                </label>
+                <textarea
+                    id="unifiedEditAlasan"
+                    name="alasan_perubahan"
+                    rows="3"
+                    placeholder="Jelaskan alasan pembaruan tautan dokumen ini..."
+                    class="w-full rounded-lg border border-amber-300 bg-amber-50/50 p-3 text-sm text-gray-800 placeholder:text-gray-400 transition focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                ></textarea>
+                <p class="mt-1 text-[11px] text-gray-500">Tautan lama akan diarsipkan otomatis ke dalam riwayat perubahan dokumen.</p>
+            </div>
+
+            {{-- Tombol Batal & Simpan --}}
+            <div class="mt-3 flex justify-end gap-2.5 pt-2 border-t border-gray-100">
+                <button
+                    type="button"
+                    data-close-unified-edit
+                    class="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50 transition cursor-pointer"
+                >
+                    Batal
+                </button>
+                <button
+                    type="submit"
+                    id="btnSubmitUnifiedEdit"
+                    class="inline-flex items-center justify-center gap-2 rounded-lg bg-primary px-5 py-2 text-sm font-bold text-white hover:bg-additional transition cursor-pointer disabled:opacity-50"
+                >
+                    <span id="btnSubmitUnifiedSpinner" class="hidden">
+                        <svg class="h-4 w-4 animate-spin text-white" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+                        </svg>
+                    </span>
+                    <span id="btnSubmitUnifiedText">Simpan Perubahan</span>
+                </button>
             </div>
         </form>
     </div>
@@ -372,109 +623,169 @@
 
 <script>
     (() => {
-        const modal = document.getElementById('evidenceUploadModal');
-        const editModal = document.getElementById('evidenceEditModal');
-        if (!modal) {
-            return;
+        // Layout Responsif: Pastikan halaman Evidence tidak tertutup sidebar fixed
+        const adjustEvidenceLayout = () => {
+            const sidebar = document.getElementById('sidebar');
+            const wrapper = document.getElementById('evidencePageWrapper');
+            if (!sidebar || !wrapper) return;
+
+            const sidebarStyle = window.getComputedStyle(sidebar);
+            if (sidebarStyle.position === 'fixed' && !sidebar.classList.contains('-translate-x-full')) {
+                const rect = sidebar.getBoundingClientRect();
+                if (rect.right > 0) {
+                    wrapper.style.paddingLeft = (rect.right + 16) + 'px';
+                    return;
+                }
+            }
+            wrapper.style.paddingLeft = '';
+        };
+
+        window.addEventListener('resize', adjustEvidenceLayout);
+        window.addEventListener('load', adjustEvidenceLayout);
+        setTimeout(adjustEvidenceLayout, 150);
+
+        // Modal Upload Elements
+        const uploadModal = document.getElementById('evidenceUploadModal');
+        const uploadForm = document.getElementById('evidenceCreateForm');
+        const submitBtn = document.getElementById('btnSubmitCreateEvidence');
+        const submitSpinner = document.getElementById('btnSubmitCreateSpinner');
+        const submitText = document.getElementById('btnSubmitCreateText');
+
+        // Modal Unified Edit Elements
+        const unifiedEditModal = document.getElementById('evidenceUnifiedEditModal');
+        const unifiedEditForm = document.getElementById('evidenceUnifiedEditForm');
+        const editUrlInput = document.getElementById('unifiedEditUrlDrive');
+        const editUrlLamaInput = document.getElementById('editUrlLama');
+        const alasanContainer = document.getElementById('unifiedEditAlasanContainer');
+        const alasanTextarea = document.getElementById('unifiedEditAlasan');
+        const submitUnifiedBtn = document.getElementById('btnSubmitUnifiedEdit');
+        const submitUnifiedSpinner = document.getElementById('btnSubmitUnifiedSpinner');
+        const submitUnifiedText = document.getElementById('btnSubmitUnifiedText');
+
+        // Handlers: Modal Upload
+        const openUploadModal = () => {
+            if (!uploadModal) return;
+            uploadModal.classList.remove('hidden');
+            uploadModal.classList.add('flex');
+            uploadModal.setAttribute('aria-hidden', 'false');
+            uploadModal.querySelector('input[name="nama_file"]')?.focus();
+        };
+
+        const closeUploadModal = () => {
+            if (!uploadModal) return;
+            uploadModal.classList.add('hidden');
+            uploadModal.classList.remove('flex');
+            uploadModal.setAttribute('aria-hidden', 'true');
+        };
+
+        document.querySelectorAll('[data-open-evidence-modal]').forEach(btn => btn.addEventListener('click', openUploadModal));
+        document.querySelectorAll('[data-close-evidence-modal]').forEach(btn => btn.addEventListener('click', closeUploadModal));
+
+        if (uploadForm) {
+            uploadForm.addEventListener('submit', () => {
+                if (submitBtn) {
+                    submitBtn.disabled = true;
+                    submitSpinner?.classList.remove('hidden');
+                    if (submitText) submitText.textContent = 'Menyimpan...';
+                }
+            });
         }
 
-        const openModal = () => {
-            modal.classList.remove('hidden');
-            modal.classList.add('flex');
-            modal.setAttribute('aria-hidden', 'false');
-            modal.querySelector('input[name="nama_file"]')?.focus();
+        // Handlers: Satu Modal Edit Gabungan
+        const checkUrlChanged = () => {
+            const currentUrl = (editUrlInput?.value || '').trim();
+            const originalUrl = (editUrlLamaInput?.value || '').trim();
+
+            if (currentUrl !== '' && originalUrl !== '' && currentUrl !== originalUrl) {
+                alasanContainer?.classList.remove('hidden');
+                alasanTextarea?.setAttribute('required', 'required');
+            } else {
+                alasanContainer?.classList.add('hidden');
+                alasanTextarea?.removeAttribute('required');
+            }
         };
 
-        const closeModal = () => {
-            modal.classList.add('hidden');
-            modal.classList.remove('flex');
-            modal.setAttribute('aria-hidden', 'true');
+        if (editUrlInput) {
+            editUrlInput.addEventListener('input', checkUrlChanged);
+        }
+
+        const openUnifiedEditModal = (btn) => {
+            if (!unifiedEditModal || !unifiedEditForm) return;
+
+            unifiedEditForm.action = btn.dataset.evidenceAction;
+            document.getElementById('unifiedEditNamaFile').value = btn.dataset.evidenceName || '';
+            document.getElementById('unifiedEditJenisDokumen').value = btn.dataset.evidenceType || 'Proposal';
+            document.getElementById('unifiedEditTanggalUpload').value = btn.dataset.evidenceDate || '';
+            document.getElementById('unifiedEditStatusValidasi').value = btn.dataset.evidenceStatus || 'Menunggu Validasi';
+
+            const activeUrl = btn.dataset.evidenceUrl || '';
+            if (editUrlInput) editUrlInput.value = activeUrl;
+            if (editUrlLamaInput) editUrlLamaInput.value = activeUrl;
+            if (alasanTextarea) alasanTextarea.value = '';
+
+            checkUrlChanged();
+
+            unifiedEditModal.classList.remove('hidden');
+            unifiedEditModal.classList.add('flex');
+            unifiedEditModal.setAttribute('aria-hidden', 'false');
         };
 
-        const openEditModal = (button) => {
-            const form = document.getElementById('evidenceEditForm');
-            form.action = button.dataset.evidenceAction;
-            document.getElementById('evidenceEditName').value = button.dataset.evidenceName || '';
-            document.getElementById('evidenceEditDate').value = button.dataset.evidenceDate || '';
-            document.getElementById('evidenceEditStatus').value = button.dataset.evidenceStatus || '';
-            const typeSelect = document.getElementById('evidenceEditType');
-            const unknownTypeOption = typeSelect.querySelector('[data-api-value]');
-            if (unknownTypeOption) {
-                unknownTypeOption.remove();
-            }
-            const evidenceType = button.dataset.evidenceType || '';
-            if (evidenceType && !Array.from(typeSelect.options).some((option) => option.value === evidenceType)) {
-                const option = document.createElement('option');
-                option.value = evidenceType;
-                option.textContent = evidenceType;
-                option.dataset.apiValue = 'true';
-                typeSelect.append(option);
-            }
-            typeSelect.value = evidenceType;
-            @if(!session('editEvidenceId'))
-                document.getElementById('evidenceEditUrl').value = button.dataset.evidenceUrl || '';
-            @endif
-            editModal.classList.remove('hidden');
-            editModal.classList.add('flex');
-            editModal.setAttribute('aria-hidden', 'false');
-            document.getElementById('evidenceEditUrl').focus();
+        const closeUnifiedEditModal = () => {
+            if (!unifiedEditModal) return;
+            unifiedEditModal.classList.add('hidden');
+            unifiedEditModal.classList.remove('flex');
+            unifiedEditModal.setAttribute('aria-hidden', 'true');
         };
 
-        const closeEditModal = () => {
-            editModal.classList.add('hidden');
-            editModal.classList.remove('flex');
-            editModal.setAttribute('aria-hidden', 'true');
-        };
-
-        document.querySelectorAll('[data-open-evidence-modal]').forEach((button) => {
-            button.addEventListener('click', openModal);
+        document.querySelectorAll('[data-open-unified-edit]').forEach(btn => {
+            btn.addEventListener('click', () => openUnifiedEditModal(btn));
         });
-        modal.querySelectorAll('[data-close-evidence-modal]').forEach((button) => {
-            button.addEventListener('click', closeModal);
-        });
-        document.querySelectorAll('[data-edit-evidence]').forEach((button) => {
-            button.addEventListener('click', () => openEditModal(button));
-        });
-        editModal.querySelectorAll('[data-close-evidence-edit]').forEach((button) => {
-            button.addEventListener('click', closeEditModal);
-        });
-        modal.addEventListener('click', (event) => {
-            if (event.target === modal) {
-                closeModal();
-            }
-        });
-        editModal.addEventListener('click', (event) => {
-            if (event.target === editModal) {
-                closeEditModal();
-            }
-        });
-        document.addEventListener('keydown', (event) => {
-            if (event.key === 'Escape' && !modal.classList.contains('hidden')) {
-                closeModal();
-            }
-            if (event.key === 'Escape' && !editModal.classList.contains('hidden')) {
-                closeEditModal();
-            }
+        document.querySelectorAll('[data-close-unified-edit]').forEach(btn => {
+            btn.addEventListener('click', closeUnifiedEditModal);
         });
 
+        if (unifiedEditForm) {
+            unifiedEditForm.addEventListener('submit', () => {
+                if (submitUnifiedBtn) {
+                    submitUnifiedBtn.disabled = true;
+                    submitUnifiedSpinner?.classList.remove('hidden');
+                    if (submitUnifiedText) submitUnifiedText.textContent = 'Menyimpan...';
+                }
+            });
+        }
+
+        // Close on backdrop click & ESC
+        [uploadModal, unifiedEditModal].forEach(m => {
+            if (!m) return;
+            m.addEventListener('click', (e) => {
+                if (e.target === m) {
+                    m.classList.add('hidden');
+                    m.classList.remove('flex');
+                    m.setAttribute('aria-hidden', 'true');
+                }
+            });
+        });
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                closeUploadModal();
+                closeUnifiedEditModal();
+            }
+        });
+
+        // Search debounce
         const searchInput = document.getElementById('evidenceSearch');
         if (searchInput) {
             let searchTimeout;
             searchInput.addEventListener('input', () => {
                 window.clearTimeout(searchTimeout);
-                searchTimeout = window.setTimeout(() => searchInput.form.requestSubmit(), 350);
+                searchTimeout = window.setTimeout(() => searchInput.form.requestSubmit(), 400);
             });
         }
 
-        @if(session('editEvidenceId'))
-            const failedEditButton = document.querySelector('[data-edit-evidence][data-evidence-id="{{ session('editEvidenceId') }}"]');
-            if (failedEditButton) {
-                openEditModal(failedEditButton);
-            }
-        @endif
-
+        // Auto-reopen modal jika validasi error kembali
         @if(session('openEvidenceModal'))
-            openModal();
+            openUploadModal();
         @endif
     })();
 </script>
