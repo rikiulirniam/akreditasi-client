@@ -86,7 +86,7 @@
 >
     <!-- Template for Delete Notification (Exact Match with Foto 3) -->
     <template id="toast-delete-template">
-        <div class="toast-item pointer-events-auto relative w-full overflow-hidden rounded-2xl bg-[#FEE2E2] border-b-[5px] border-[#C53030] shadow-xl transition-all duration-300 transform translate-x-8 opacity-0 hover:shadow-2xl">
+        <div class="toast-item toast-delete-item pointer-events-auto relative w-full overflow-hidden rounded-2xl bg-[#FEE2E2] border-b-[5px] border-[#C53030] shadow-xl transition-all duration-300 transform translate-x-8 opacity-0 hover:shadow-2xl">
             <div class="flex items-center justify-between gap-4 px-5 py-3.5 sm:py-4">
                 <div class="flex items-center gap-3.5 min-w-0 flex-1">
                     <!-- Red Trash Can Outline Icon (Matching Foto 3) -->
@@ -118,7 +118,7 @@
 
     <!-- Template for Client-side Toasts -->
     <template id="toast-template">
-        <div class="toast-item pointer-events-auto relative w-full overflow-hidden rounded-2xl bg-white/95 backdrop-blur-md border shadow-xl transition-all duration-300 transform translate-x-8 opacity-0 hover:shadow-2xl">
+        <div class="toast-item pointer-events-auto relative w-full overflow-hidden rounded-2xl border shadow-xl transition-all duration-300 transform translate-x-8 opacity-0 hover:shadow-2xl">
             <div class="flex items-start gap-3.5 p-4">
                 <!-- Icon Badge -->
                 <div class="toast-icon-wrapper w-9 h-9 rounded-xl flex items-center justify-center shrink-0 shadow-xs">
@@ -127,12 +127,12 @@
 
                 <!-- Text Content -->
                 <div class="flex-1 min-w-0 pt-0.5">
-                    <h5 class="toast-title text-sm font-bold text-primary tracking-tight leading-snug hidden"></h5>
-                    <p class="toast-message text-xs text-[#5A6E85] leading-relaxed break-words"></p>
+                    <h5 class="toast-title text-sm font-bold tracking-tight leading-snug hidden"></h5>
+                    <p class="toast-message text-xs leading-relaxed break-words"></p>
                 </div>
 
                 <!-- Close Button -->
-                <button type="button" class="toast-close-btn -mr-1 -mt-1 p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100/80 transition cursor-pointer" aria-label="Tutup">
+                <button type="button" class="toast-close-btn -mr-1 -mt-1 p-1.5 rounded-lg transition cursor-pointer" aria-label="Tutup">
                     <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
                     </svg>
@@ -140,7 +140,7 @@
             </div>
 
             <!-- Progress Countdown Bar -->
-            <div class="toast-progress-bar h-1 w-full bg-gray-100 overflow-hidden">
+            <div class="toast-progress-bar h-1 w-full bg-black/5 overflow-hidden">
                 <div class="toast-progress-fill h-full w-full origin-left transition-all ease-linear"></div>
             </div>
         </div>
@@ -155,47 +155,85 @@
 
         // Styles & Icons definition per toast type
         const typeConfigs = {
+            // Tema Hijau Cerah (Berhasil Ditambahkan / Create)
             success: {
-                title: 'Berhasil',
-                borderColor: 'border-emerald-100',
-                badgeBg: 'bg-emerald-50 text-emerald-600',
-                progressBg: 'bg-emerald-500',
-                svg: '<svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>'
+                title: 'Berhasil Ditambahkan',
+                bgClass: 'bg-[#F0FDF4]',
+                borderColor: 'border-[#BBF7D0]',
+                badgeBg: 'bg-[#DCFCE7] text-[#16A34A]',
+                titleColor: 'text-[#14532D]',
+                messageColor: 'text-[#166534]',
+                progressBg: 'bg-[#22C55E]',
+                closeBtnClass: 'text-[#16A34A] hover:bg-[#DCFCE7]/70',
+                svg: '<svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.3"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>'
+            },
+            // Tema Kuning Cerah (Berhasil Diedit / Diperbarui)
+            update: {
+                title: 'Berhasil Diperbarui',
+                bgClass: 'bg-[#FEFCE8]',
+                borderColor: 'border-[#FEF08A]',
+                badgeBg: 'bg-[#FEF9C3] text-[#CA8A04]',
+                titleColor: 'text-[#78350F]',
+                messageColor: 'text-[#854D0E]',
+                progressBg: 'bg-[#EAB308]',
+                closeBtnClass: 'text-[#CA8A04] hover:bg-[#FEF9C3]/70',
+                svg: '<svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.3"><path stroke-linecap="round" stroke-linejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10" /></svg>'
             },
             delete: {
-                title: 'Dihapus',
+                title: 'Data Berhasil Dihapus',
+                bgClass: 'bg-[#FEE2E2]',
                 borderColor: 'border-[#C53030]',
                 badgeBg: 'bg-[#FEE2E2] text-[#C53030]',
+                titleColor: 'text-[#991B1B]',
+                messageColor: 'text-[#C53030]',
                 progressBg: 'bg-[#C53030]',
+                closeBtnClass: 'text-[#C53030] hover:bg-red-200/50',
                 svg: '<svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M3 6h18m-2 0v14c0 1.1-.9 2-2 2H7c-1.1 0-2-.9-2-2V6m3 0V4c0-1.1.9-2 2-2h4c1.1 0 2 .9 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>'
             },
             error: {
                 title: 'Gagal',
-                borderColor: 'border-rose-100',
-                badgeBg: 'bg-rose-50 text-rose-600',
+                bgClass: 'bg-[#FFF1F2]',
+                borderColor: 'border-rose-200',
+                badgeBg: 'bg-rose-100 text-rose-600',
+                titleColor: 'text-rose-900',
+                messageColor: 'text-rose-700',
                 progressBg: 'bg-rose-500',
+                closeBtnClass: 'text-rose-400 hover:text-rose-600 hover:bg-rose-100',
                 svg: '<svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" /></svg>'
             },
             warning: {
                 title: 'Peringatan',
-                borderColor: 'border-amber-100',
-                badgeBg: 'bg-amber-50 text-amber-600',
+                bgClass: 'bg-amber-50/90',
+                borderColor: 'border-amber-200',
+                badgeBg: 'bg-amber-100 text-amber-600',
+                titleColor: 'text-amber-900',
+                messageColor: 'text-amber-700',
                 progressBg: 'bg-amber-500',
+                closeBtnClass: 'text-amber-400 hover:text-amber-600 hover:bg-amber-100',
                 svg: '<svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" /></svg>'
             },
             info: {
                 title: 'Informasi',
-                borderColor: 'border-blue-100',
-                badgeBg: 'bg-blue-50 text-[#01568D]',
+                bgClass: 'bg-blue-50/90',
+                borderColor: 'border-blue-200',
+                badgeBg: 'bg-blue-100 text-[#01568D]',
+                titleColor: 'text-[#012650]',
+                messageColor: 'text-[#01568D]',
                 progressBg: 'bg-[#01568D]',
+                closeBtnClass: 'text-blue-400 hover:text-blue-600 hover:bg-blue-100',
                 svg: '<svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2"><path stroke-linecap="round" stroke-linejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z" /></svg>'
             }
         };
+        typeConfigs.edit = typeConfigs.update;
 
         function createToast({ message, type = 'info', title = null, duration = 4500 }) {
             if (!container) return;
 
-            const isDelete = type === 'delete' || (typeof message === 'string' && message.toLowerCase().includes('dihapus'));
+            let resolvedType = type || 'info';
+            const combinedText = (((title || '') + ' ' + (message || ''))).toLowerCase();
+
+            // Detect delete action
+            const isDelete = resolvedType === 'delete' || combinedText.includes('berhasil dihapus');
             if (isDelete && deleteTemplate) {
                 const clone = deleteTemplate.content.cloneNode(true);
                 const toastEl = clone.querySelector('.toast-item');
@@ -235,8 +273,19 @@
                 return;
             }
 
+            // Distinguish add (green) vs update/edit (yellow)
+            if (resolvedType === 'update' || resolvedType === 'edit') {
+                resolvedType = 'update';
+            } else if (resolvedType === 'success') {
+                if (/(diperbarui|diupdate|diedit|perubahan)/i.test(combinedText)) {
+                    resolvedType = 'update';
+                } else {
+                    resolvedType = 'success';
+                }
+            }
+
             if (!template) return;
-            const config = typeConfigs[type] || typeConfigs.info;
+            const config = typeConfigs[resolvedType] || typeConfigs.info;
             const clone = template.content.cloneNode(true);
             const toastEl = clone.querySelector('.toast-item');
             const iconWrapper = clone.querySelector('.toast-icon-wrapper');
@@ -245,11 +294,15 @@
             const closeBtn = clone.querySelector('.toast-close-btn');
             const progressFill = clone.querySelector('.toast-progress-fill');
 
-            // Apply classes
-            toastEl.classList.add(config.borderColor);
-            iconWrapper.className += ' ' + config.badgeBg;
-            iconWrapper.innerHTML = config.svg;
-            progressFill.className += ' ' + config.progressBg;
+            // Apply style classes
+            if (config.bgClass) toastEl.classList.add(config.bgClass);
+            if (config.borderColor) toastEl.classList.add(config.borderColor);
+            if (config.badgeBg) iconWrapper.className += ' ' + config.badgeBg;
+            if (config.svg) iconWrapper.innerHTML = config.svg;
+            if (config.progressBg) progressFill.className += ' ' + config.progressBg;
+            if (config.titleColor) titleEl.classList.add(config.titleColor);
+            if (config.messageColor) messageEl.classList.add(config.messageColor);
+            if (config.closeBtnClass) closeBtn.className += ' ' + config.closeBtnClass;
 
             // Content
             const displayTitle = title || (title === null ? config.title : '');
@@ -258,6 +311,8 @@
                 titleEl.classList.remove('hidden');
             }
             messageEl.textContent = message || '';
+
+            container.appendChild(toastEl);
 
             container.appendChild(toastEl);
 
