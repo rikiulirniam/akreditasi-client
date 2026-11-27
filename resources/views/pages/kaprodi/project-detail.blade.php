@@ -70,6 +70,7 @@
             {{ session('success') }}
         </div>
     @endif
+    <div class="mt-4 rounded-xl border border-slate-100 bg-slate-50 p-4 text-sm text-slate-600">Ringkasan data belum tersedia.</div>
     @if (session('error'))
         <div class="rounded-2xl bg-rose-50 border border-rose-200 p-4 text-sm font-semibold text-rose-800">
             {{ session('error') }}
@@ -110,6 +111,8 @@
     @endphp
 
     @if (! $apiError)
+        <x-data-summary :url="$dataSummaryUrl" />
+
         <section class="grid gap-4 lg:grid-cols-[minmax(0,1.35fr)_minmax(280px,.65fr)]" aria-label="Ringkasan composite project">
             <article class="rounded-2xl border border-slate-200 bg-white p-5">
                 <div class="flex flex-wrap items-start justify-between gap-3">
@@ -376,15 +379,29 @@
                     </select>
                 </div>
                 <div>
-                    <div id="narrative-facts" class="mb-3 rounded-xl border border-sky-100 bg-sky-50 p-3 text-xs text-sky-900">Pilih subkriteria untuk memuat template.</div>
+                    <div id="narrative-facts" class="mb-3 space-y-2 rounded-xl border border-sky-100 bg-sky-50 p-3 text-xs text-sky-900">
+                        <p id="narrative-data-status">Pilih subkriteria untuk memuat template.</p>
+                        <p><strong>Sumber:</strong> <span id="narrative-source">-</span></p>
+                        <div>
+                            <strong>Variabel pakem (hanya baca)</strong>
+                            <pre id="narrative-variables" class="mt-1 whitespace-pre-wrap font-sans">-</pre>
+                        </div>
+                        <div>
+                            <strong>Data agregasi (hanya baca)</strong>
+                            <pre id="narrative-aggregate" class="mt-1 whitespace-pre-wrap font-sans">-</pre>
+                        </div>
+                        <p id="narrative-pending" class="hidden"></p>
+                    </div>
                     <label for="narrative-text" class="mb-1.5 block text-xs font-bold text-slate-700">Narasi deskriptif</label>
-                    <textarea id="narrative-text" rows="8" class="block w-full resize-y rounded-xl border border-slate-200 px-3 py-3 text-sm leading-relaxed text-slate-700 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary" placeholder="Memuat draft narasi..."></textarea>
+                    <textarea id="narrative-text" rows="8" @disabled(! $canEditNarrative) class="block w-full resize-y rounded-xl border border-slate-200 px-3 py-3 text-sm leading-relaxed text-slate-700 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary disabled:bg-slate-50 disabled:text-slate-500" placeholder="Memuat draft narasi..."></textarea>
                     <div class="mt-2 flex flex-wrap items-center justify-between gap-3">
                         <p id="narrative-status" class="text-xs text-slate-500" aria-live="polite"></p>
-                        <div class="flex items-center gap-2">
-                            <button type="button" id="narrative-cancel" class="rounded-xl border border-slate-200 px-4 py-2 text-xs font-bold text-slate-600 hover:bg-slate-50">Batal</button>
-                            <button type="button" id="narrative-save" class="rounded-xl bg-primary px-4 py-2 text-xs font-bold text-white hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60">Simpan</button>
-                        </div>
+                        @if ($canEditNarrative)
+                            <div class="flex items-center gap-2">
+                                <button type="button" id="narrative-cancel" class="rounded-xl border border-slate-200 px-4 py-2 text-xs font-bold text-slate-600 hover:bg-slate-50">Batal</button>
+                                <button type="button" id="narrative-save" class="rounded-xl bg-primary px-4 py-2 text-xs font-bold text-white hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60">Simpan</button>
+                            </div>
+                        @endif
                     </div>
                 </div>
             </div>
@@ -898,38 +915,67 @@
 
     const narrativeSelect = document.getElementById('narrative-subkriteria');
     const narrativeText = document.getElementById('narrative-text');
-    const narrativeFacts = document.getElementById('narrative-facts');
+    const narrativeDataStatus = document.getElementById('narrative-data-status');
+    const narrativeSource = document.getElementById('narrative-source');
+    const narrativeVariables = document.getElementById('narrative-variables');
+    const narrativeAggregate = document.getElementById('narrative-aggregate');
+    const narrativePending = document.getElementById('narrative-pending');
     const narrativeStatus = document.getElementById('narrative-status');
     const narrativeSave = document.getElementById('narrative-save');
     const narrativeCancel = document.getElementById('narrative-cancel');
+    const canEditNarrative = @json($canEditNarrative);
     let originalNarrative = '';
     let narrativeDirty = false;
+
+    function formatNarrativeValue(value) {
+        return typeof value === 'string' ? value : JSON.stringify(value, null, 2);
+    }
 
     async function loadNarrativeTemplate() {
         if (!narrativeSelect || !narrativeText || !compositeProjectId || !narrativeSelect.value) return;
         const subkriteriaId = narrativeSelect.value;
         narrativeStatus.textContent = 'Memuat template...';
         narrativeText.disabled = true;
+        narrativeDataStatus.textContent = 'Memuat sumber data...';
         try {
             const templateUrl = `{{ url('/kaprodi/project') }}/${encodeURIComponent(compositeProjectId)}/subkriteria/${encodeURIComponent(subkriteriaId)}/narasi-template`;
             const response = await fetch(templateUrl, { headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' } });
             const body = await response.json();
             if (!response.ok) throw new Error(body.message || 'Template tidak dapat dimuat.');
             const data = body.data && typeof body.data === 'object' ? body.data : body;
-            const draft = data.narasi ?? data.narrative ?? data.template_narasi ?? data.draft_narasi ?? data.template ?? '';
-            const facts = data.data ?? data.statistik ?? data.fakta ?? data.quantitative_data ?? null;
-            narrativeFacts.textContent = facts && typeof facts === 'object'
-                ? 'Data kuantitatif berasal dari data akademik terintegrasi dan tidak dapat diubah melalui narasi.'
-                : 'Data kuantitatif berasal dari data akademik terintegrasi dan tidak dapat diubah melalui narasi.';
+            const draft = data.draf_narasi ?? data.narasi ?? data.narrative ?? data.template_narasi ?? data.template ?? '';
+            const aggregate = data.data_agregasi ?? data.data ?? data.statistik ?? data.fakta ?? null;
+            const variables = data.variabel_pakem ?? null;
+            const source = data.sumber_data ?? data.source ?? null;
+            const isSimulation = data.is_simulation === true || body.is_simulation === true || body.meta?.is_simulation === true;
+            const pending = body.meta?.pending ?? data.pending ?? null;
+            const hasAggregate = aggregate !== null && aggregate !== undefined && aggregate !== '';
+            const hasVariables = variables !== null && variables !== undefined && variables !== '';
+            narrativeDataStatus.textContent = isSimulation
+                ? 'Simulasi'
+                : hasAggregate || hasVariables ? 'Data dari API' : 'Data kuantitatif tidak tersedia';
+            narrativeSource.textContent = source === null || source === undefined || source === ''
+                ? '-'
+                : formatNarrativeValue(source);
+            narrativeVariables.textContent = hasVariables ? formatNarrativeValue(variables) : '-';
+            narrativeAggregate.textContent = hasAggregate ? formatNarrativeValue(aggregate) : '-';
+            if (pending) {
+                narrativePending.textContent = `Menunggu integrasi: ${formatNarrativeValue(pending)}`;
+                narrativePending.classList.remove('hidden');
+            } else {
+                narrativePending.textContent = '';
+                narrativePending.classList.add('hidden');
+            }
             narrativeText.value = typeof draft === 'string' ? draft : '';
             originalNarrative = narrativeText.value;
             narrativeDirty = false;
             narrativeStatus.textContent = '';
         } catch (error) {
             narrativeText.value = '';
+            narrativeDataStatus.textContent = 'Sumber data gagal dimuat.';
             narrativeStatus.textContent = error.message || 'Template tidak dapat dimuat.';
         } finally {
-            narrativeText.disabled = false;
+            narrativeText.disabled = !canEditNarrative;
         }
     }
 
@@ -939,41 +985,45 @@
             narrativeDirty = narrativeText.value !== originalNarrative;
             narrativeStatus.textContent = narrativeDirty ? `${narrativeText.value.length} karakter · Perubahan belum disimpan` : '';
         });
-        narrativeCancel.addEventListener('click', () => {
-            if (narrativeDirty && !window.confirm('Batalkan perubahan narasi yang belum disimpan?')) return;
-            narrativeText.value = originalNarrative;
-            narrativeDirty = false;
-            narrativeStatus.textContent = 'Perubahan dibatalkan.';
-        });
-        narrativeSave.addEventListener('click', async () => {
-            if (!compositeProjectId || !narrativeSelect.value) return;
-            narrativeSave.disabled = true;
-            narrativeSave.textContent = 'Menyimpan...';
-            narrativeStatus.textContent = '';
-            try {
-                const saveUrl = `{{ url('/kaprodi/project') }}/${encodeURIComponent(compositeProjectId)}/subkriteria/${encodeURIComponent(narrativeSelect.value)}/narasi`;
-                const response = await fetch(saveUrl, {
-                    method: 'PUT',
-                    headers: {
-                        'Accept': 'application/json',
-                        'Content-Type': 'application/json',
-                        'X-Requested-With': 'XMLHttpRequest',
-                        'X-CSRF-TOKEN': '{{ csrf_token() }}',
-                    },
-                    body: JSON.stringify({ narasi: narrativeText.value }),
-                });
-                const body = await response.json();
-                if (!response.ok) throw new Error(body.message || 'Narasi gagal disimpan.');
-                originalNarrative = narrativeText.value;
+        if (narrativeCancel) {
+            narrativeCancel.addEventListener('click', () => {
+                if (narrativeDirty && !window.confirm('Batalkan perubahan narasi yang belum disimpan?')) return;
+                narrativeText.value = originalNarrative;
                 narrativeDirty = false;
-                narrativeStatus.textContent = body.message || 'Narasi berhasil disimpan.';
-            } catch (error) {
-                narrativeStatus.textContent = error.message || 'Narasi gagal disimpan.';
-            } finally {
-                narrativeSave.disabled = false;
-                narrativeSave.textContent = 'Simpan';
-            }
-        });
+                narrativeStatus.textContent = 'Perubahan dibatalkan.';
+            });
+        }
+        if (narrativeSave) {
+            narrativeSave.addEventListener('click', async () => {
+                if (!compositeProjectId || !narrativeSelect.value) return;
+                narrativeSave.disabled = true;
+                narrativeSave.textContent = 'Menyimpan...';
+                narrativeStatus.textContent = '';
+                try {
+                    const saveUrl = `{{ url('/kaprodi/project') }}/${encodeURIComponent(compositeProjectId)}/subkriteria/${encodeURIComponent(narrativeSelect.value)}/narasi`;
+                    const response = await fetch(saveUrl, {
+                        method: 'PUT',
+                        headers: {
+                            'Accept': 'application/json',
+                            'Content-Type': 'application/json',
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                        },
+                        body: JSON.stringify({ draf_narasi: narrativeText.value }),
+                    });
+                    const body = await response.json();
+                    if (!response.ok) throw new Error(body.message || 'Narasi gagal disimpan.');
+                    originalNarrative = narrativeText.value;
+                    narrativeDirty = false;
+                    narrativeStatus.textContent = body.message || 'Narasi berhasil disimpan.';
+                } catch (error) {
+                    narrativeStatus.textContent = error.message || 'Narasi gagal disimpan.';
+                } finally {
+                    narrativeSave.disabled = false;
+                    narrativeSave.textContent = 'Simpan';
+                }
+            });
+        }
         window.addEventListener('beforeunload', (event) => {
             if (!narrativeDirty) return;
             event.preventDefault();

@@ -93,6 +93,81 @@ class KaprodiController extends Controller
     }
 
     /**
+     * Normalisasi ringkasan project untuk tampilan tanpa mengubah payload API.
+     *
+     * @param  array<string, mixed>|null  $payload
+     * @return array<string, mixed>
+     */
+    protected function normalizeProjectDataSummary(?array $payload): array
+    {
+        $payload = $payload ?? [];
+        $sourceData = array_key_exists('data', $payload)
+            ? $payload['data']
+            : $payload;
+        $sourceData = is_array($sourceData) ? $sourceData : [];
+        $meta = is_array($sourceData['meta'] ?? null) ? $sourceData['meta'] : [];
+        $isSimulation = ($payload['is_simulation'] ?? $meta['is_simulation'] ?? $payload['meta']['is_simulation'] ?? false) === true;
+        $pending = $meta['pending'] ?? $payload['meta']['pending'] ?? $payload['pending'] ?? null;
+
+        if ($sourceData === []) {
+            return [
+                'available' => false,
+                'is_simulation' => $isSimulation,
+                'pending' => $pending,
+            ];
+        }
+
+        return [
+            'available' => true,
+            'project' => $sourceData['project'] ?? null,
+            'prodi' => $sourceData['prodi'] ?? null,
+            'mahasiswa' => $sourceData['mahasiswa'] ?? null,
+            'dosen' => $sourceData['dosen'] ?? null,
+            'tridharma' => $sourceData['tridharma'] ?? null,
+            'meta' => $meta,
+            'is_simulation' => $isSimulation,
+            'pending' => $pending,
+        ];
+    }
+
+    /**
+     * Determines whether the current Kaprodi or project PIC may edit project narrative.
+     *
+     * @param  array{by_id: array<string, array<string, mixed>>, by_code: array<string, array<string, mixed>>}|null  $picAssignments
+     */
+    protected function canEditProjectNarrative(int|string $projectId, ?array $picAssignments = null): bool
+    {
+        $user = session('user', []);
+        $role = strtolower((string) ($user['role'] ?? $user['role_name'] ?? ''));
+        if (str_contains($role, 'kaprodi') || str_contains($role, 'admin')) {
+            return true;
+        }
+
+        if (! str_contains($role, 'dosen')) {
+            return false;
+        }
+
+        $picAssignments ??= $this->loadProjectPicAssignments($projectId);
+        $currentUserId = $user['id'] ?? $user['id_user'] ?? null;
+        $currentUserName = strtolower(trim((string) ($user['nama'] ?? $user['name'] ?? '')));
+
+        foreach (array_merge($picAssignments['by_id'] ?? [], $picAssignments['by_code'] ?? []) as $assignment) {
+            $assignedUserId = $assignment['pic_user_id'] ?? null;
+            $assignedUserName = strtolower(trim((string) ($assignment['pic_name'] ?? '')));
+
+            if ($currentUserId !== null && $assignedUserId !== null && (string) $currentUserId === (string) $assignedUserId) {
+                return true;
+            }
+
+            if ($currentUserName !== '' && $assignedUserName !== '' && $currentUserName === $assignedUserName) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
      * Tampilkan halaman Dashboard Kaprodi.
      */
     public function dashboard(Request $request): View
@@ -100,6 +175,9 @@ class KaprodiController extends Controller
         // 1. Ambil data kriteria dari API
         $rawKriteria = $this->extractData($this->akreditasiService->getKriteria());
         $rawIndikator = $this->extractData($this->akreditasiService->getIndikator());
+
+        $projects = $this->extractData($this->akreditasiService->getProjects());
+        $projectId = is_array($projects) ? ($projects[0]['id'] ?? null) : null;
 
         // Siapkan monitoring pengisian kriteria
         $kriteriaProgress = [];
@@ -174,6 +252,9 @@ class KaprodiController extends Controller
             'spmiAuditList' => $spmiAuditList,
             'selfAssessment' => $selfAssessment,
             'totalIndikator' => count($rawIndikator),
+            'dataSummaryUrl' => $projectId !== null
+                ? route('kaprodi.project.data-summary', $projectId)
+                : null,
         ]);
     }
 
@@ -890,6 +971,7 @@ class KaprodiController extends Controller
                         'id_indikator' => $indicatorId === null ? null : (string) $indicatorId,
                         'kode_indikator' => $indicatorCode,
                         'pic_name' => $mapping['user']['nama'] ?? $mapping['user_name'] ?? null,
+                        'pic_user_id' => $mapping['id_user'] ?? $mapping['user_id'] ?? $mapping['user']['id'] ?? null,
                     ];
                     if ($indicatorId !== null) {
                         $key = (string) $indicatorId;
@@ -921,6 +1003,7 @@ class KaprodiController extends Controller
                 'id_indikator' => $indicatorId === null ? null : (string) $indicatorId,
                 'kode_indikator' => $indicatorCode,
                 'pic_name' => $assignment['pic'],
+                'pic_user_id' => $assignment['pic_user_id'] ?? null,
             ];
             if ($indicatorId !== null) {
                 $byId[(string) $indicatorId] = $picAssignment;
@@ -1309,6 +1392,7 @@ class KaprodiController extends Controller
                 $apiStatus = 0;
                 $apiError = 'Tidak dapat terhubung ke server. Periksa koneksi jaringan lalu coba kembali.';
             }
+
         } else {
             $apiStatus = 404;
             $apiError = 'Project akreditasi belum tersedia.';
@@ -1316,6 +1400,7 @@ class KaprodiController extends Controller
 
         $instrumenList = $apiError === null ? $this->getFormattedInstrumenList(false) : [];
         $picSummary = null;
+        $picAssignments = null;
 
         if ($apiError === null && is_array($compositeOverview['progress'] ?? null)) {
             $picAssignments = $this->loadProjectPicAssignments($id);
@@ -1333,6 +1418,9 @@ class KaprodiController extends Controller
                 ];
             }
         }
+        $canEditNarrative = $id !== null
+            && $apiError === null
+            && $this->canEditProjectNarrative($id, $picAssignments);
 
         return view('pages.kaprodi.project-detail', [
             'project' => $project,
@@ -1341,7 +1429,11 @@ class KaprodiController extends Controller
             'apiError' => $apiError,
             'apiStatus' => $apiStatus,
             'picSummary' => $picSummary,
+            'canEditNarrative' => $canEditNarrative,
             'instrumenList' => $instrumenList,
+            'dataSummaryUrl' => $id !== null
+                ? route('kaprodi.project.data-summary', $id)
+                : null,
         ]);
     }
 
@@ -1382,6 +1474,92 @@ class KaprodiController extends Controller
         }
     }
 
+    public function projectDataSummary(int|string $projectId): JsonResponse
+    {
+        try {
+            $response = $this->akreditasiService->getProjectDataSummary($projectId);
+            $payload = $response->json();
+
+            if (! $response->successful()) {
+                return response()->json([
+                    'message' => is_array($payload)
+                        ? ($payload['message'] ?? 'Ringkasan data project tidak dapat dimuat.')
+                        : 'Ringkasan data project tidak dapat dimuat.',
+                ], $response->status());
+            }
+
+            if (! is_array($payload)) {
+                return response()->json(['message' => 'Server mengirim format ringkasan data yang tidak valid.'], 502);
+            }
+
+            return response()->json([
+                'success' => true,
+                'data' => $this->normalizeProjectDataSummary($payload),
+            ]);
+        } catch (\Throwable $exception) {
+            Log::warning('Project data summary request failed.', [
+                'project_id' => $projectId,
+                'exception' => $exception->getMessage(),
+            ]);
+
+            return response()->json([
+                'message' => 'Tidak dapat terhubung ke server untuk memuat ringkasan data.',
+            ], 503);
+        }
+    }
+
+    public function narasiTemplates(Request $request): JsonResponse
+    {
+        try {
+            $response = $this->akreditasiService->getNarasiTemplates($request->query());
+            $payload = $response->json();
+
+            if (! $response->successful()) {
+                return response()->json(['message' => 'Template narasi tidak dapat dimuat.'], $response->status());
+            }
+
+            return response()->json(is_array($payload) ? $payload : ['data' => []]);
+        } catch (\Throwable) {
+            return response()->json(['message' => 'Tidak dapat terhubung ke server.'], 503);
+        }
+    }
+
+    public function storeNarasiTemplate(Request $request): JsonResponse
+    {
+        try {
+            $response = $this->akreditasiService->createNarasiTemplate($request->except(['_token', '_method']));
+            $payload = $response->json();
+
+            if (! $response->successful()) {
+                return response()->json([
+                    'message' => is_array($payload) ? ($payload['message'] ?? 'Template narasi gagal dibuat.') : 'Template narasi gagal dibuat.',
+                ], $response->status());
+            }
+
+            return response()->json(is_array($payload) ? $payload : ['message' => 'Template narasi berhasil dibuat.']);
+        } catch (\Throwable) {
+            return response()->json(['message' => 'Tidak dapat terhubung ke server.'], 503);
+        }
+    }
+
+    public function updateNarasiTemplate(Request $request, int|string $id): JsonResponse
+    {
+        try {
+            $response = $this->akreditasiService->updateNarasiTemplate($id, $request->except(['_token', '_method']));
+            $payload = $response->json();
+
+            if (! $response->successful()) {
+                return response()->json([
+                    'message' => is_array($payload) ? ($payload['message'] ?? 'Template narasi gagal diperbarui.') : 'Template narasi gagal diperbarui.',
+                ], $response->status());
+            }
+
+            return response()->json(is_array($payload) ? $payload : ['message' => 'Template narasi berhasil diperbarui.']);
+        } catch (\Throwable) {
+            return response()->json(['message' => 'Tidak dapat terhubung ke server.'], 503);
+        }
+    }
+
     public function subkriteriaNarrativeTemplate(int|string $projectId, int|string $subkriteriaId): JsonResponse
     {
         try {
@@ -1402,6 +1580,13 @@ class KaprodiController extends Controller
 
     public function updateSubkriteriaNarrative(Request $request, int|string $projectId, int|string $subkriteriaId): JsonResponse
     {
+        if (! $this->canEditProjectNarrative($projectId)) {
+            return response()->json(['message' => 'Anda tidak memiliki izin untuk mengubah narasi project ini.'], 403);
+        }
+
+        $request->validate([
+            'draf_narasi' => ['required', 'string'],
+        ]);
         $payload = $request->except(['_token', '_method']);
 
         try {

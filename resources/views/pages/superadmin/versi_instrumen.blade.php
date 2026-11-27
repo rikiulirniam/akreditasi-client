@@ -86,6 +86,9 @@
                 <p class="text-xs sm:text-sm text-gray-500">
                     {{ count($versis ?? []) }} versi instrumen terdaftar untuk lembaga ini
                 </p>
+                <p class="mt-1 text-[11px] text-slate-500">
+                    Hanya versi aktif dengan tanggal berlaku terbaru yang ditandai Aktif pada daftar ini.
+                </p>
             </div>
 
             <div class="flex items-center gap-3 flex-wrap">
@@ -123,6 +126,8 @@
                     // Relasi jenjang beserta status aktif dari tabel pivot.
                     $jenjangsVersi = $v['jenjangs'] ?? [];
                     $versiAktif = filter_var($v['status_aktif'] ?? false, FILTER_VALIDATE_BOOLEAN);
+                    $isDisplayActiveVersion = $displayActiveVersionId !== null
+                        && (string) ($v['id'] ?? '') === (string) $displayActiveVersionId;
                 @endphp
 
                 <div
@@ -138,8 +143,8 @@
 
                                 {{-- STATUS VERSI --}}
                                 <div class="flex items-center gap-1.5 flex-wrap mt-1">
-                                    <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold tracking-wider {{ $versiAktif ? 'bg-emerald-50 text-emerald-700 border border-emerald-200/60' : 'bg-slate-100 text-slate-600 border border-slate-200/60' }}">
-                                        {{ $versiAktif ? 'Aktif' : 'Tidak Aktif' }}
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold tracking-wider {{ $isDisplayActiveVersion ? 'bg-emerald-50 text-emerald-700 border border-emerald-200/60' : 'bg-slate-100 text-slate-600 border border-slate-200/60' }}">
+                                        {{ $isDisplayActiveVersion ? 'Aktif' : 'Tidak Aktif' }}
                                     </span>
 
                                     <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider bg-sky-50 text-sky-700 border border-sky-200/60">
@@ -175,6 +180,11 @@
                                                     type="hidden"
                                                     name="id_jenjang"
                                                     value="{{ $idJenjang }}"
+                                                >
+                                                <input
+                                                    type="hidden"
+                                                    name="id_lembaga"
+                                                    value="{{ $lembaga['id'] }}"
                                                 >
 
                                                 <button
