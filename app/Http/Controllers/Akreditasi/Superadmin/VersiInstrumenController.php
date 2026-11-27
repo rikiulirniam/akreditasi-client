@@ -86,13 +86,51 @@ class VersiInstrumenController extends Controller
                 return $itemVersiId === $vId;
             });
             $v['instrumen_count'] = count($matching);
+
+            if (! array_key_exists('status_aktif', $v)) {
+                $v['status_aktif'] = collect($v['jenjangs'] ?? [])->contains(
+                    fn (array $jenjang): bool => filter_var(
+                        $jenjang['pivot']['status_aktif'] ?? false,
+                        FILTER_VALIDATE_BOOLEAN
+                    )
+                );
+            } else {
+                $v['status_aktif'] = filter_var($v['status_aktif'], FILTER_VALIDATE_BOOLEAN);
+            }
         }
         unset($v);
+
+        $displayActiveVersionId = session("display_active_version_{$lembagaId}");
+        $selectedVersionExists = $displayActiveVersionId !== null
+            && collect($versis)->contains(
+                fn (array $versi): bool => (string) ($versi['id'] ?? '') === (string) $displayActiveVersionId
+            );
+
+        if (! $selectedVersionExists) {
+            $displayActiveVersionId = null;
+            $latestActiveEffectiveDate = 0;
+            foreach ($versis as $versi) {
+                if (! is_array($versi) || ! $versi['status_aktif']) {
+                    continue;
+                }
+
+                $effectiveDate = $versi['tanggal_berlaku'] ?? null;
+                $effectiveTimestamp = is_string($effectiveDate) && $effectiveDate !== ''
+                    ? (strtotime($effectiveDate) ?: 0)
+                    : 0;
+
+                if ($displayActiveVersionId === null || $effectiveTimestamp > $latestActiveEffectiveDate) {
+                    $displayActiveVersionId = $versi['id'] ?? null;
+                    $latestActiveEffectiveDate = $effectiveTimestamp;
+                }
+            }
+        }
 
         return view('pages.superadmin.versi_instrumen', [
             'lembagaId' => $lembagaId,
             'lembaga' => $lembaga,
             'versis' => $versis,
+            'displayActiveVersionId' => $displayActiveVersionId,
         ]);
     }
 
@@ -156,7 +194,7 @@ class VersiInstrumenController extends Controller
             'id_lembaga' => 'nullable|integer',
             'nomor_versi' => 'required|string|max:50',
             'tanggal_berlaku' => 'nullable|date',
-            'status_aktif' => 'nullable|boolean',
+            'status_aktif' => 'required|boolean',
         ]);
 
         try {
@@ -178,6 +216,7 @@ class VersiInstrumenController extends Controller
     {
         $validated = $request->validate([
             'id_jenjang' => ['required', 'integer'],
+            'id_lembaga' => ['nullable', 'integer'],
         ]);
 
         try {
@@ -187,6 +226,10 @@ class VersiInstrumenController extends Controller
             );
 
             $message = $response->json('message');
+
+            if ($response->successful() && ! empty($validated['id_lembaga'])) {
+                $request->session()->put("display_active_version_{$validated['id_lembaga']}", (string) $id);
+            }
 
             if ($request->wantsJson() || $request->ajax()) {
                 return response()->json([

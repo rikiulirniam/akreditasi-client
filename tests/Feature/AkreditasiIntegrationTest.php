@@ -192,6 +192,140 @@ class AkreditasiIntegrationTest extends TestCase
         $response->assertOk()
             ->assertSee('Dashboard Project Akreditasi')
             ->assertSee('Project Akreditasi RPL 2026')
-            ->assertSee('v2.1');
+            ->assertSee('v2.1')
+            ->assertSee('Kesiapan')
+            ->assertSee('openReadinessModal(1')
+            ->assertSee('modal-readiness-check')
+            ->assertSee('Simulasi SDM')
+            ->assertSee('openScoringSimulationModal(1')
+            ->assertSee('modal-scoring-simulation');
+    }
+
+    public function test_active_instrument_page_uses_the_static_active_instrument_endpoint(): void
+    {
+        Http::fake([
+            'https://akreditasi.fayra.my.id/api/v1/instrumen/active-static' => Http::response([
+                'success' => true,
+                'data' => [
+                    'versi_instrumen' => ['nomor_versi' => '3.2'],
+                    'kriteria' => [
+                        [
+                            'kode' => 'K1',
+                            'nama' => 'Kriteria Aktif Statis',
+                            'subkriteria' => [
+                                [
+                                    'kode' => 'K1.1',
+                                    'nama' => 'Subkriteria Aktif',
+                                    'indikator' => [
+                                        ['kode' => 'K1.1.1', 'nama' => 'Indikator Aktif'],
+                                    ],
+                                ],
+                            ],
+                        ],
+                    ],
+                ],
+            ]),
+        ]);
+
+        $response = $this->withSession([
+            'access_token' => 'admin-token',
+            'user' => ['nama' => 'Superadmin', 'role' => 'SUPERADMIN'],
+        ])->get(route('akreditasi.superadmin.instrumen_aktif'));
+
+        $response->assertOk()
+            ->assertSee('Hierarki Instrumen LAM-INFOKOM 2.1 TRK')
+            ->assertSee('Aktif')
+            ->assertSee('Kriteria Aktif Statis')
+            ->assertSee('Indikator Aktif');
+
+        Http::assertSentCount(1);
+        Http::assertSent(fn ($request): bool => $request->url() === 'https://akreditasi.fayra.my.id/api/v1/instrumen/active-static');
+    }
+
+    public function test_one_global_active_version_is_highlighted_without_hiding_per_jenjang_api_status(): void
+    {
+        Http::fake([
+            'https://akreditasi.fayra.my.id/api/v1/master/lembaga-akreditasi/1' => Http::response([
+                'success' => true,
+                'data' => ['id' => 1, 'nama_lembaga' => 'LAM-INFOKOM'],
+            ]),
+            'https://akreditasi.fayra.my.id/api/v1/master/versi-instrumen*' => Http::response([
+                'success' => true,
+                'data' => [
+                    ['id' => 11, 'nomor_versi' => '3.2', 'status_aktif' => true, 'tanggal_berlaku' => '2026-01-25'],
+                    ['id' => 10, 'nomor_versi' => '3.1', 'status_aktif' => false, 'tanggal_berlaku' => '2025-01-01'],
+                    ['id' => 9, 'nomor_versi' => '2024.1', 'status_aktif' => true, 'tanggal_berlaku' => '2024-01-01'],
+                ],
+            ]),
+            'https://akreditasi.fayra.my.id/api/v1/master/instrumen*' => Http::response([
+                'success' => true,
+                'data' => [],
+            ]),
+        ]);
+
+        $response = $this->withSession([
+            'access_token' => 'admin-token',
+            'user' => ['nama' => 'Superadmin', 'role' => 'SUPERADMIN'],
+        ])->get(route('akreditasi.superadmin.versi_instrumen', 1));
+
+        $response->assertOk()
+            ->assertSee('Versi 3.2')
+            ->assertSee('Versi 3.1')
+            ->assertSee('Versi 2024.1')
+            ->assertSee('Tidak Aktif')
+            ->assertDontSee('Aktif per jenjang');
+
+        $this->assertSame(1, preg_match_all('/>\s*Aktif\s*<\/span>/', $response->getContent()));
+        $this->assertSame(2, preg_match_all('/>\s*Tidak Aktif\s*<\/span>/', $response->getContent()));
+    }
+
+    public function test_activation_action_updates_the_single_active_version_label(): void
+    {
+        Http::fake([
+            'https://akreditasi.fayra.my.id/api/v1/master/versi-instrumen/10/aktifkan' => Http::response([
+                'success' => true,
+                'message' => 'Versi instrumen berhasil diaktifkan.',
+            ]),
+            'https://akreditasi.fayra.my.id/api/v1/master/lembaga-akreditasi/1' => Http::response([
+                'success' => true,
+                'data' => ['id' => 1, 'nama_lembaga' => 'LAM-INFOKOM'],
+            ]),
+            'https://akreditasi.fayra.my.id/api/v1/master/versi-instrumen*' => Http::response([
+                'success' => true,
+                'data' => [
+                    ['id' => 11, 'nomor_versi' => '3.2', 'status_aktif' => true, 'tanggal_berlaku' => '2026-01-25'],
+                    ['id' => 10, 'nomor_versi' => '3.1', 'status_aktif' => true, 'tanggal_berlaku' => '2025-01-01'],
+                ],
+            ]),
+            'https://akreditasi.fayra.my.id/api/v1/master/instrumen*' => Http::response([
+                'success' => true,
+                'data' => [],
+            ]),
+        ]);
+
+        $session = [
+            'access_token' => 'admin-token',
+            'user' => ['nama' => 'Superadmin', 'role' => 'SUPERADMIN'],
+        ];
+
+        $this->withSession($session)
+            ->patch(route('akreditasi.superadmin.versi_instrumen.aktifkan', 10), [
+                'id_jenjang' => 4,
+                'id_lembaga' => 1,
+            ]);
+
+        $response = $this->get(route('akreditasi.superadmin.versi_instrumen', 1));
+        $response->assertOk()
+            ->assertSee('Versi 3.2')
+            ->assertSee('Versi 3.1');
+
+        $content = $response->getContent();
+        $version32Position = strpos($content, 'Versi 3.2');
+        $version31Position = strpos($content, 'Versi 3.1');
+        $version32Card = substr($content, $version32Position, strpos($content, 'Buka Daftar Instrumen', $version32Position) - $version32Position);
+        $version31Card = substr($content, $version31Position, strpos($content, 'Buka Daftar Instrumen', $version31Position) - $version31Position);
+
+        $this->assertSame(1, preg_match('/>\s*Tidak Aktif\s*<\/span>/', $version32Card));
+        $this->assertSame(1, preg_match('/>\s*Aktif\s*<\/span>/', $version31Card));
     }
 }

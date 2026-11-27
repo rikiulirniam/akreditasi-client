@@ -390,7 +390,7 @@ class AkreditasiService
      */
     public function getActiveStaticInstrumen(): Response
     {
-        return $this->get('/master/instrumen/active-static');
+        return $this->get('/instrumen/active-static');
     }
 
     /**
@@ -645,6 +645,42 @@ class AkreditasiService
     public function getProjectCompositeOverview(int|string $id): Response
     {
         return $this->get("/projects/{$id}/composite-overview");
+    }
+
+    /**
+     * Mengambil ringkasan data akreditasi untuk satu project.
+     */
+    public function getProjectDataSummary(int|string $projectId): Response
+    {
+        return $this->get("/projects/{$projectId}/data-summary");
+    }
+
+    /**
+     * Mengambil daftar template narasi akreditasi.
+     */
+    public function getNarasiTemplates(array $query = []): Response
+    {
+        return $this->get('/narasi-templates', $query);
+    }
+
+    /**
+     * Membuat template narasi akreditasi.
+     *
+     * @param  array<string, mixed>  $data
+     */
+    public function createNarasiTemplate(array $data): Response
+    {
+        return $this->post('/narasi-templates', $data);
+    }
+
+    /**
+     * Memperbarui template narasi akreditasi.
+     *
+     * @param  array<string, mixed>  $data
+     */
+    public function updateNarasiTemplate(int|string $id, array $data): Response
+    {
+        return $this->put("/narasi-templates/{$id}", $data);
     }
 
     /**

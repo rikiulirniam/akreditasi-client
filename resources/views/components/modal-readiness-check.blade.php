@@ -1,7 +1,7 @@
 <!-- MODAL PENGECEKAN KESIAPAN SUBMIT (READINESS CHECK) -->
 <div id="modal-readiness-check" class="hidden fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-3 sm:p-5 backdrop-blur-xs select-none">
     <div class="bg-white rounded-3xl shadow-2xl w-full max-w-4xl max-h-[92vh] flex flex-col overflow-hidden relative">
-        
+
         <!-- Header -->
         <div class="px-6 sm:px-8 py-5 border-b border-gray-100 flex items-center justify-between shrink-0 bg-white">
             <div class="flex items-center gap-3">
@@ -44,7 +44,7 @@
 
         <!-- Content Area (Scrollable) -->
         <div id="readinessContent" class="hidden flex-1 overflow-y-auto px-6 sm:px-8 py-6 space-y-6">
-            
+
             <!-- Overall Status Banner -->
             <div id="readinessBanner" class="p-4 rounded-2xl border flex items-start gap-3">
                 <div id="readinessBannerIcon" class="w-8 h-8 rounded-xl flex items-center justify-center shrink-0 mt-0.5"></div>
@@ -107,7 +107,7 @@
             <div class="flex items-center justify-between border-b border-gray-200 pb-3">
                 <div class="flex items-center gap-2">
                     <button type="button" onclick="filterReadinessTable('all')" id="tabFilterAll" class="readiness-filter-tab px-3 py-1.5 rounded-xl text-xs font-bold transition bg-primary text-white cursor-pointer">
-                        Semua Butir (<span id="badgeFilterAll">0</span>)
+                        <span id="labelFilterAll">Semua Butir</span> (<span id="badgeFilterAll">0</span>)
                     </button>
                     <button type="button" onclick="filterReadinessTable('unready')" id="tabFilterUnready" class="readiness-filter-tab px-3 py-1.5 rounded-xl text-xs font-bold transition bg-gray-100 text-gray-600 hover:bg-gray-200 cursor-pointer">
                         Belum Siap (<span id="badgeFilterUnready">0</span>)
@@ -150,16 +150,16 @@
             </div>
 
             <div class="flex items-center gap-2 w-full sm:w-auto justify-end">
-                <button 
-                    type="button" 
-                    onclick="closeReadinessModal()" 
+                <button
+                    type="button"
+                    onclick="closeReadinessModal()"
                     class="px-5 py-2.5 rounded-xl bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 text-xs font-bold transition cursor-pointer"
                 >
                     Tutup
                 </button>
-                
-                <button 
-                    type="button" 
+
+                <button
+                    type="button"
                     id="btnFinalSubmit"
                     onclick="handleFinalSubmit()"
                     disabled
@@ -233,9 +233,10 @@
             if (data.data_available === false) {
                 throw new Error('Daftar indikator aktual belum tersedia. Tidak ada angka contoh yang ditampilkan.');
             }
-            currentReadinessData = data;
+            const readinessData = mapReadinessPayload(data);
+            currentReadinessData = readinessData;
 
-            renderReadinessData(data);
+            renderReadinessData(readinessData);
             if (content) content.classList.remove('hidden');
         } catch (error) {
             console.error('Gagal mengambil data readiness:', error);
@@ -257,44 +258,44 @@
         const data = payload && !Array.isArray(payload) && payload.data !== undefined && payload.data !== null
             ? payload.data
             : payload;
-        let items = Array.isArray(data) ? data : [];
+        let items = Array.isArray(data) ? data : (Array.isArray(data?.indicators) ? data.indicators : []);
 
         if (!Array.isArray(data) && data && typeof data === 'object') {
             const arrayKeys = ['indikator_belum_siap', 'items', 'checklist', 'indikators', 'butir_kritis', 'details', 'indicators'];
-            for (const key of arrayKeys) {
-                if (Array.isArray(data[key])) {
-                    items = data[key];
-                    break;
+            if (items.length === 0) {
+                for (const key of arrayKeys) {
+                    if (Array.isArray(data[key])) {
+                        items = data[key];
+                        break;
+                    }
                 }
             }
         }
 
         const picAvailable = data.pic_data_available !== false;
-        const isReady = data.is_ready === true && picAvailable;
-        const total = data.total_indikator || (data.indicators ? data.indicators.length : 0);
-        const readyCount = data.ready_indikator !== undefined ? data.ready_indikator : (data.indicators ? data.indicators.filter(i => i.is_ready).length : 0);
-        const unreadyCount = data.unready_indikator !== undefined ? data.unready_indikator : (total - readyCount);
-        const percentage = data.percentage !== undefined ? data.percentage : (total > 0 ? Math.round((readyCount / total) * 100) : 0);
         const indicators = items
             .filter(item => item && typeof item === 'object' && !Array.isArray(item))
             .map(item => {
-                const missingItems = Array.isArray(item.belum_terpenuhi) ? item.belum_terpenuhi : null;
+                const missingItems = Array.isArray(item.missing_items)
+                    ? item.missing_items
+                    : (Array.isArray(item.belum_terpenuhi) ? item.belum_terpenuhi : null);
                 const hasPic = missingItems
-                    ? !missingItems.includes('pic')
-                    : Boolean(item.has_pic ?? item.pic);
+                    ? !missingItems.some(value => ['pic', 'Belum memiliki PIC'].includes(value))
+                    : Boolean(item.has_pic ?? item.pic ?? item.pic_name ?? item.nama_pic);
                 const hasEvidence = missingItems
-                    ? !missingItems.includes('link_evidence')
+                    ? !missingItems.some(value => ['link_evidence', 'Belum ada link bukti'].includes(value))
                     : Boolean(item.has_evidence ?? item.link_bukti);
                 const hasAssessment = missingItems
-                    ? !missingItems.includes('skor_reviewer')
-                    : Boolean(item.has_score ?? (item.penilaian !== null));
+                    ? !missingItems.some(value => ['skor_reviewer', 'Belum dinilai oleh reviewer'].includes(value))
+                    : Boolean(item.has_assessment ?? item.has_score ?? (item.penilaian != null || item.score != null || item.nilai != null));
                 const isReady = missingItems
                     ? missingItems.length === 0
-                    : Boolean(item.is_ready);
+                    : (typeof item.is_ready === 'boolean' ? item.is_ready : hasPic && hasEvidence && hasAssessment);
                 const assessmentValue = item.penilaian ?? item.score ?? item.nilai;
                 const pic = item.pic && typeof item.pic === 'object' ? item.pic : null;
 
                 return {
+                    id_indikator: item.id_indikator ?? item.id ?? null,
                     kode_indikator: item.kode_indikator || item.kode || item.code || '',
                     deskripsi_indikator: item.deskripsi_indikator || item.nama_indikator || item.nama || item.name || '',
                     has_pic: hasPic,
@@ -305,29 +306,28 @@
                     is_ready: isReady
                 };
             });
-        const totalFromPayload = Number(data && data.total_indikator_kritis != null ? data.total_indikator_kritis : items.length);
-        const total = Number.isFinite(totalFromPayload) ? totalFromPayload : items.length;
-        const unreadyFromPayload = Number(data && data.jumlah_indikator_belum_siap != null
-            ? data.jumlah_indikator_belum_siap
-            : indicators.filter(item => !item.is_ready).length);
-        const unreadyCount = Number.isFinite(unreadyFromPayload)
-            ? unreadyFromPayload
-            : indicators.filter(item => !item.is_ready).length;
-        const readyCount = Math.max(0, total - unreadyCount);
-        const isReady = data && data.siap_submit !== undefined
-            ? Boolean(data.siap_submit)
-            : total > 0 && readyCount === total;
+        const totalValue = Number(data.total_indikator ?? data.total_indikator_kritis ?? data.total ?? indicators.length);
+        const total = Number.isFinite(totalValue) ? Math.max(0, totalValue) : indicators.length;
+        const readyCountValue = Number(data.ready_indikator ?? data.readyCount ?? indicators.filter(item => item.is_ready).length);
+        const readyCount = Number.isFinite(readyCountValue) ? Math.max(0, readyCountValue) : 0;
+        const unreadyCountValue = Number(data.unready_indikator ?? data.jumlah_indikator_belum_siap ?? data.unreadyCount ?? (total - readyCount));
+        const unreadyCount = Number.isFinite(unreadyCountValue) ? Math.max(0, unreadyCountValue) : Math.max(0, total - readyCount);
+        const isReady = Boolean(data.is_ready ?? data.siap_submit ?? (total > 0 && readyCount === total)) && picAvailable;
+        const percentageValue = Number(data.percentage ?? (total > 0 ? (readyCount / total) * 100 : 0));
 
         return {
             indicators: indicators,
             total: total,
             readyCount: readyCount,
             unreadyCount: unreadyCount,
-            percentage: total > 0 ? Math.round((readyCount / total) * 100) : (isReady ? 100 : 0),
+            percentage: Number.isFinite(percentageValue) ? Math.round(percentageValue) : 0,
             is_ready: isReady,
-            missingPicCount: indicators.filter(item => !item.has_pic).length,
-            missingEvidenceCount: indicators.filter(item => !item.has_evidence).length,
-            missingAssessmentCount: indicators.filter(item => !item.has_assessment).length
+            pic_data_available: picAvailable,
+            scope_label: data.scope_label,
+            indicator_list_is_partial: data.indicator_list_is_partial === true,
+            missing_pic_count: data.missing_pic_count ?? indicators.filter(item => !item.has_pic).length,
+            missing_evidence_count: data.missing_evidence_count ?? indicators.filter(item => !item.has_evidence).length,
+            missing_assessment_count: data.missing_assessment_count ?? indicators.filter(item => !item.has_assessment).length
         };
     }
 
@@ -339,6 +339,7 @@
         const unreadyCount = data.unreadyCount;
         const percentage = data.percentage;
         const isReady = data.is_ready;
+        const picAvailable = data.pic_data_available !== false;
 
         // Update Banner
         const banner = document.getElementById('readinessBanner');
@@ -374,12 +375,19 @@
         document.getElementById('metricMissingEvidence').textContent = data.missing_evidence_count !== undefined ? data.missing_evidence_count : (data.indicators ? data.indicators.filter(i => !i.has_evidence).length : 0);
         document.getElementById('metricMissingAssessment').textContent = data.missing_assessment_count !== undefined ? data.missing_assessment_count : (data.indicators ? data.indicators.filter(i => !i.has_assessment).length : 0);
         document.getElementById('readinessPicWarning').classList.toggle('hidden', picAvailable);
-        document.getElementById('readinessScopeLabel').textContent = data.scope_label || 'Daftar butir indikator kritis penentu submit';
-
         // Update Filter Badges
-        document.getElementById('badgeFilterAll').textContent = total;
         document.getElementById('badgeFilterUnready').textContent = unreadyCount;
         document.getElementById('badgeFilterReady').textContent = readyCount;
+        const allLabel = document.getElementById('labelFilterAll');
+        const allBadgeCount = data.indicator_list_is_partial ? indicators.length : total;
+        document.getElementById('badgeFilterAll').textContent = allBadgeCount;
+        if (allLabel) {
+            allLabel.textContent = data.indicator_list_is_partial ? 'Rincian Ditampilkan' : 'Semua Butir';
+        }
+        document.getElementById('readinessScopeLabel').textContent = data.indicator_list_is_partial
+            ? `Menampilkan ${indicators.length} rincian dari ${total} indikator kritis (daftar parsial)`
+            : (data.scope_label || 'Daftar butir indikator kritis penentu submit');
+        document.getElementById('tabFilterReady').classList.toggle('hidden', data.indicator_list_is_partial);
 
         // Render Table Rows
         const tbody = document.getElementById('readinessTableBody');
@@ -550,6 +558,10 @@
                 }
             }
         });
+        const readyTab = document.getElementById('tabFilterReady');
+        if (readyTab) {
+            readyTab.classList.toggle('hidden', currentReadinessData?.indicator_list_is_partial === true);
+        }
     }
 
     // Aksi submit pengajuan akhir

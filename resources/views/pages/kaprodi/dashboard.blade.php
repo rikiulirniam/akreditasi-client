@@ -14,6 +14,8 @@
         <p class="text-xs sm:text-sm text-[#5A6E85] mt-1">Monitoring progress pengisian borang prodi, rekap skor sementara, dan status audit SPMI terintegrasi API.</p>
     </div>
 
+    <x-data-summary :url="$dataSummaryUrl" />
+
     <!-- Grid (2 Kolom): Rekap Skor Sementara & Status Audit SPMI -->
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
         

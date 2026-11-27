@@ -76,6 +76,22 @@ class ProjectCompositeOverviewTest extends TestCase
                     ],
                 ],
             ]),
+            'https://akreditasi.fayra.my.id/api/v1/projects/42/data-summary' => Http::response([
+                'success' => true,
+                'data' => [
+                    'mahasiswa_aktif' => 425,
+                    'lulusan' => 180,
+                    'dtps' => 28,
+                    'penelitian' => 48,
+                    'pkm' => 31,
+                    'publikasi_lokal' => 12,
+                    'publikasi_internasional' => 25,
+                    'hki' => 19,
+                ],
+                'meta' => [
+                    'pending' => ['hibah', 'kerja_sama_penelitian'],
+                ],
+            ]),
             'https://akreditasi.fayra.my.id/api/v1/mapping-tim*' => Http::response([
                 'success' => true,
                 'data' => [
@@ -119,6 +135,9 @@ class ProjectCompositeOverviewTest extends TestCase
             ->assertSee('Indikator seluruh project dengan PIC')
             ->assertSee('Indikator seluruh project tanpa PIC')
             ->assertSee('modal Readiness Check menghitung subset indikator kritis')
+            ->assertSee('Ringkasan data project')
+            ->assertSee('Memuat ringkasan data...')
+            ->assertSee('data-summary')
             ->assertDontSee('Kriteria 3');
 
         $this->assertStringContainsString(
@@ -133,6 +152,7 @@ class ProjectCompositeOverviewTest extends TestCase
         Http::assertSent(fn ($request): bool => $request->url() === 'https://akreditasi.fayra.my.id/api/v1/projects/42/composite-overview');
         Http::assertSent(fn ($request): bool => str_contains($request->url(), '/mapping-tim')
             && str_contains($request->url(), 'project_id=42'));
+        Http::assertNotSent(fn ($request): bool => str_contains($request->url(), '/projects/42/data-summary'));
     }
 
     public function test_readiness_pic_count_uses_distinct_project_mapping_for_critical_indicators(): void
@@ -264,6 +284,7 @@ class ProjectCompositeOverviewTest extends TestCase
             ->assertJsonPath('data.missing_evidence_count', 2)
             ->assertJsonPath('data.missing_assessment_count', 3)
             ->assertJsonPath('data.pic_data_available', true)
+            ->assertJsonPath('data.indicator_list_is_partial', true)
             ->assertJsonPath('data.indicators.0.has_pic', true)
             ->assertJsonPath('data.indicators.0.has_evidence', false)
             ->assertJsonPath('data.indicators.1.has_pic', false)
@@ -330,6 +351,7 @@ class ProjectCompositeOverviewTest extends TestCase
             ->assertJsonPath('data.unready_indikator', 1)
             ->assertJsonPath('data.missing_evidence_count', 1)
             ->assertJsonPath('data.pic_data_available', false)
+            ->assertJsonPath('data.indicator_list_is_partial', true)
             ->assertJsonPath('data.indicators.0.deskripsi_indikator', 'Indikator kritis');
     }
 
@@ -373,5 +395,72 @@ class ProjectCompositeOverviewTest extends TestCase
         $response->assertOk()
             ->assertSee('Anda tidak memiliki akses untuk melihat project ini.')
             ->assertDontSee('Progress keseluruhan');
+    }
+
+    public function test_non_pic_dosen_cannot_update_project_narrative(): void
+    {
+        Http::fake([
+            'https://akreditasi.fayra.my.id/api/v1/mapping-tim*' => Http::response([
+                'success' => true,
+                'data' => [
+                    [
+                        'id_project' => 42,
+                        'id_indikator' => 11,
+                        'role' => 'PIC',
+                        'user' => ['id' => 7, 'nama' => 'Dosen PIC'],
+                    ],
+                ],
+            ]),
+            '*' => Http::response(['success' => true, 'data' => []]),
+        ]);
+
+        $response = $this->withSession([
+            'access_token' => 'dosen-token',
+            'user' => ['id' => 8, 'nama' => 'Dosen Lain', 'role' => 'DOSEN'],
+        ])->putJson(route('kaprodi.subkriteria.narrative.update', [42, 11]), [
+            'draf_narasi' => 'Narasi yang tidak boleh disimpan',
+        ]);
+
+        $response->assertForbidden()
+            ->assertJsonPath('message', 'Anda tidak memiliki izin untuk mengubah narasi project ini.');
+
+        Http::assertNotSent(fn ($request): bool => $request->method() === 'PUT'
+            && str_contains($request->url(), '/projects/42/subkriteria/11/narasi'));
+    }
+
+    public function test_project_pic_dosen_can_update_project_narrative(): void
+    {
+        Http::fake([
+            'https://akreditasi.fayra.my.id/api/v1/mapping-tim*' => Http::response([
+                'success' => true,
+                'data' => [
+                    [
+                        'id_project' => 42,
+                        'id_indikator' => 11,
+                        'role' => 'PIC',
+                        'user' => ['id' => 8, 'nama' => 'Dosen PIC'],
+                    ],
+                ],
+            ]),
+            'https://akreditasi.fayra.my.id/api/v1/projects/42/subkriteria/11/narasi' => Http::response([
+                'success' => true,
+                'message' => 'Narasi berhasil disimpan.',
+            ]),
+            '*' => Http::response(['success' => true, 'data' => []]),
+        ]);
+
+        $response = $this->withSession([
+            'access_token' => 'dosen-token',
+            'user' => ['id' => 8, 'nama' => 'Dosen PIC', 'role' => 'DOSEN'],
+        ])->putJson(route('kaprodi.subkriteria.narrative.update', [42, 11]), [
+            'draf_narasi' => 'Narasi dosen PIC',
+        ]);
+
+        $response->assertOk()
+            ->assertJsonPath('message', 'Narasi berhasil disimpan.');
+
+        Http::assertSent(fn ($request): bool => $request->method() === 'PUT'
+            && str_contains($request->url(), '/projects/42/subkriteria/11/narasi')
+            && $request['draf_narasi'] === 'Narasi dosen PIC');
     }
 }
