@@ -46,23 +46,15 @@ Route::get('/', function () {
         $user = session('user', []);
         $role = strtolower((string) ($user['role'] ?? $user['role_name'] ?? ($user['roles'][0]['name'] ?? '')));
 
-        if (str_contains($role, 'kaprodi')) {
+        if (str_contains($role, 'kaprodi') || str_contains($role, 'reviewer')) {
             return redirect()->route('kaprodi.dashboard');
-        }
-
-        if (str_contains($role, 'dosen')) {
-            return redirect()->to('/dosen/my-assignments');
-        }
-
-        if (str_contains($role, 'reviewer')) {
-            return redirect()->route('reviewer.dashboard');
         }
 
         if (str_contains($role, 'admin') || str_contains($role, 'superadmin') || str_contains($role, 'administrator')) {
             return redirect('/superadmin');
         }
 
-        return redirect('/superadmin');
+        return redirect()->route('dashboard');
     }
 
     return redirect()->route('login');
@@ -81,9 +73,9 @@ Route::get('/auth/google/callback', [AuthController::class, 'handleGoogleCallbac
 Route::middleware('auth.akademik')->group(function () {
     Route::post('/auth/refresh-token', [AuthController::class, 'refreshToken'])->name('auth.refresh-token');
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
-    Route::get('/reviewer/dashboard', [ReviewerController::class, 'dashboard'])->name('reviewer.dashboard');
-    Route::get('/reviewer/penilaian', [ReviewerController::class, 'assessments'])->name('reviewer.assessments');
-    Route::get('/reviewer/penilaian/{projectId}', [ReviewerController::class, 'assessmentDetail'])->name('reviewer.assessment-detail');
+    Route::get('/reviewer/dashboard', fn () => redirect()->route('kaprodi.dashboard'))->name('reviewer.dashboard');
+    Route::get('/reviewer/penilaian', fn () => redirect()->route('kaprodi.assessments'))->name('reviewer.assessments');
+    Route::get('/reviewer/penilaian/{projectId}', fn (string $projectId) => redirect()->route('kaprodi.assessment-detail', ['projectId' => $projectId]))->name('reviewer.assessment-detail');
     Route::post('/reviewer/penilaian/{projectId}/indikator/{indicatorId}', [ReviewerController::class, 'saveAssessment'])->name('reviewer.assessment-save');
 
     Route::prefix('kaprodi')->name('kaprodi.')->group(function () {

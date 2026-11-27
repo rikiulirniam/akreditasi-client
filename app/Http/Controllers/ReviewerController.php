@@ -75,7 +75,7 @@ class ReviewerController extends Controller
         $project = $this->findProject($projects, $projectId);
 
         if ($project === null) {
-            return redirect()->route('reviewer.assessments')->with('toast', [
+            return redirect()->route('kaprodi.assessments')->with('toast', [
                 'type' => 'error',
                 'title' => 'Project tidak ditemukan',
                 'message' => $error ?? 'Project penilaian tidak tersedia.',
@@ -153,7 +153,7 @@ class ReviewerController extends Controller
         $project = $this->findProject($projects, $projectId);
 
         if ($project === null) {
-            return redirect()->route('reviewer.assessments')->with('toast', [
+            return redirect()->route('kaprodi.assessments')->with('toast', [
                 'type' => 'error',
                 'title' => 'Project tidak ditemukan',
                 'message' => $error ?? 'Project penilaian tidak tersedia.',
@@ -254,7 +254,7 @@ class ReviewerController extends Controller
             Log::warning('Reviewer save assessment to API: '.$e->getMessage());
         }
 
-        return redirect()->route('reviewer.assessment-detail', [
+        return redirect()->route('kaprodi.assessment-detail', [
             'projectId' => $projectId,
             'indikator' => $indicatorId,
         ])->with('toast', [

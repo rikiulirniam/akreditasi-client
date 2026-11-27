@@ -9,6 +9,15 @@
     <!-- Toast Notification -->
     <x-toast />
 
+    @if(!empty($apiError))
+        <div role="alert" class="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs sm:text-sm text-amber-800 flex items-center gap-2.5">
+            <svg class="w-4 h-4 shrink-0 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+            </svg>
+            <span>{{ $apiError }}</span>
+        </div>
+    @endif
+
     <!-- 1. Header Halaman -->
     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
@@ -234,6 +243,11 @@
                                     </div>
                                 @endif
 
+                                @if(!empty($item['is_readonly']))
+                                    <span class="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-slate-100 text-slate-500 text-xs font-bold border border-slate-200">
+                                        Read-Only (UPPS)
+                                    </span>
+                                @else
                                 <div>
                                     <button 
                                         type="button" 
@@ -253,6 +267,7 @@
                                         <span>{{ $hasBukti ? 'Ubah Link' : 'Unggah Link Drive' }}</span>
                                     </button>
                                 </div>
+                                @endif
                             </td>
                         </tr>
                     @empty

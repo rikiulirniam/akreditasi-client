@@ -5,7 +5,7 @@
     $userRole = strtolower((string) (($sidebarUser['role'] ?? null) ?: ($sidebarUser['role_name'] ?? '')));
     $isKaprodiRole  = str_contains($userRole, 'kaprodi');
     $isDosenRole    = str_contains($userRole, 'dosen');
-    $isAdminRole = ! $isKaprodiRole && ! $isDosenRole;
+    $isAdminRole    = ! $isKaprodiRole && ! $isDosenRole;
 @endphp
 
 {{-- Backdrop untuk sidebar mobile --}}
@@ -39,31 +39,9 @@
 
             <nav class="space-y-2" aria-label="Menu Utama">
 
-                @if ($isDosenRole)
-                    {{-- ============================================================== --}}
-                    {{-- MENU DOSEN TIM AKREDITASI --}}
-                    {{-- ============================================================== --}}
-
-                    <div class="sidebar-section-header pt-1 pb-1 px-3.5">
-                        <p class="sidebar-text text-[11px] font-bold uppercase tracking-wider text-white/50">Portal Dosen Tim</p>
-                    </div>
-
-                    {{-- Tugas Saya --}}
-                    <div>
-                        <a href="{{ route('dosen.my-assignments') }}"
-                            class="sidebar-link w-full flex items-center gap-3.5 px-3.5 py-3 rounded-2xl text-sm font-semibold transition-all duration-150 group {{ request()->routeIs('dosen.my-assignments*') ? 'bg-white/20 text-white shadow-xs font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}"
-                            title="Tugas Saya">
-                            <svg class="w-6 h-6 shrink-0 text-white/90 group-hover:text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                            </svg>
-                            <span class="sidebar-text truncate">Tugas Saya</span>
-                        </a>
-                    </div>
-
-                @else
-                    {{-- ============================================================== --}}
-                    {{-- MENU UTAMA (KAPRODI / SUPERADMIN / UMUM) --}}
-                    {{-- ============================================================== --}}
+                {{-- ============================================================== --}}
+                {{-- MENU UTAMA (KAPRODI / SUPERADMIN / UMUM) --}}
+                {{-- ============================================================== --}}
 
                     <div class="sidebar-section-header pt-1 pb-1 px-3.5">
                         <p class="sidebar-text text-[11px] font-bold uppercase tracking-wider text-white/50">Menu Utama</p>
@@ -175,28 +153,7 @@
                         </div>
                         @endif
 
-                    @elseif ($isDosenRole)
-                    {{-- ============================================================== --}}
-                    {{-- MENU DOSEN TIM AKREDITASI --}}
-                    {{-- ============================================================== --}}
-
-                    <div class="sidebar-section-header pt-1 pb-1 px-3.5">
-                        <p class="sidebar-text text-[11px] font-bold uppercase tracking-wider text-white/50">Portal Dosen Tim</p>
-                    </div>
-
-                    {{-- Tugas Saya --}}
-                    <div>
-                        <a href="{{ route('dosen.my-assignments') }}"
-                            class="sidebar-link w-full flex items-center gap-3.5 px-3.5 py-3 rounded-2xl text-sm font-semibold transition-all duration-150 group {{ request()->routeIs('dosen.my-assignments*') ? 'bg-white/20 text-white shadow-xs font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}"
-                            title="Tugas Saya">
-                            <svg class="w-6 h-6 shrink-0 text-white/90 group-hover:text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                            </svg>
-                            <span class="sidebar-text truncate">Tugas Saya</span>
-                        </a>
-                    </div>
-
-                @else
+                    @else
                         {{-- Urutan Role Kaprodi:
                              1. Project Akreditasi
                              2. Plotting Tim Akreditasi
@@ -204,7 +161,7 @@
                              4. Laporan Akhir
                         --}}
                         {{-- 2. Plotting Tim Akreditasi (Kaprodi) --}}
-                        @if (Route::has('kaprodi.plotting'))
+                        @if ($isKaprodiRole && Route::has('kaprodi.plotting'))
                         <div>
                             <a href="{{ route('kaprodi.plotting') }}"
                                 class="sidebar-link w-full flex items-center gap-3.5 px-3.5 py-3 rounded-2xl text-sm font-semibold transition-all duration-150 group {{ request()->routeIs('kaprodi.plotting*') ? 'bg-white/20 text-white shadow-xs font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}"
@@ -213,6 +170,20 @@
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M18 18.72a9.094 9.094 0 0 0 3.741-.479 3 3 0 0 0-4.682-2.72m.94 3.198l.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0 1 12 21c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 0 1 6 18.719m12 0a5.971 5.971 0 0 0-.941-3.197m0 0A5.995 5.995 0 0 0 12 12.75a5.995 5.995 0 0 0-5.058 2.772m0 0a3 3 0 0 0-4.681 2.72 8.986 8.986 0 0 0 3.74.477m.94-3.197a5.971 5.971 0 0 0-.94 3.197M15 6.75a3 3 0 1 1-6 0 3 3 0 0 1 6 0Zm6 3a2.25 2.25 0 1 1-4.5 0 2.25 2.25 0 0 1 4.5 0Zm-13.5 0a2.25 2.25 0 1 1-4.5 0 2.25 2.25 0 0 1 4.5 0Z" />
                                 </svg>
                                 <span class="sidebar-text truncate">Plotting Tim Akreditasi</span>
+                            </a>
+                        </div>
+                        @endif
+
+                        {{-- Tugas Saya (Penugasan Tim) --}}
+                        @if (Route::has('dosen.my-assignments'))
+                        <div>
+                            <a href="{{ route('dosen.my-assignments') }}"
+                                class="sidebar-link w-full flex items-center gap-3.5 px-3.5 py-3 rounded-2xl text-sm font-semibold transition-all duration-150 group {{ request()->routeIs('dosen.my-assignments*') ? 'bg-white/20 text-white shadow-xs font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}"
+                                title="Tugas Saya">
+                                <svg class="w-6 h-6 shrink-0 text-white/90 group-hover:text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                </svg>
+                                <span class="sidebar-text truncate">Tugas Saya</span>
                             </a>
                         </div>
                         @endif
@@ -537,8 +508,6 @@
                             </a>
                         </div>
                     </div>
-
-                @endif
 
             </nav>
         </div>
