@@ -4,20 +4,13 @@
 
 @section('content')
 @php
-    // Definisi 9 Kriteria Standar LAM-INFOKOM
+    // Definisi Kriteria Standar LAM-INFOKOM yang dapat di-plotting oleh Prodi
+    // Catatan: C.2 (Tata Pamong) & C.5 (Keuangan, Sarana, Prasarana) dikelola oleh Institusi/UPPS (Read-Only Placeholder)
     $kriteriaStructure = [
         'K1' => [
             'nama' => 'K1 · Visi, Misi, Tujuan dan Strategi',
             'indikator' => [
                 ['id' => 1, 'code' => 'K1.1', 'desc' => 'Kejelasan visi, misi, tujuan, dan ketercapaian strategi pengembangan program studi TRK.', 'bobot' => 3.5],
-            ],
-        ],
-        'K2' => [
-            'nama' => 'K2 · Tata Pamong, Tata Kelola dan Kerjasama',
-            'indikator' => [
-                ['id' => 2, 'code' => 'K2.1', 'desc' => 'Sistem tata pamong, kepemimpinan publik, dan efektivitas pengelolaan operasional prodi.', 'bobot' => 4.0],
-                ['id' => 3, 'code' => 'K2.2', 'desc' => 'Sistem penjaminan mutu internal (SPMI) dan siklus PPEPP secara berkelanjutan.', 'bobot' => 4.0],
-                ['id' => 4, 'code' => 'K2.3', 'desc' => 'Efektivitas kerjasama strategis tridharma tingkat nasional maupun internasional.', 'bobot' => 3.0],
             ],
         ],
         'K3' => [
@@ -35,13 +28,6 @@
                 ['id' => 9, 'code' => 'K4.1', 'desc' => 'Kualifikasi akademik dan kecukupan Dosen Tetap Program Studi (DTPS).', 'bobot' => 4.0],
                 ['id' => 10, 'code' => 'K4.2', 'desc' => 'Beban kerja dosen (EWMP), rasio dosen terhadap mahasiswa, dan produktivitas tridharma.', 'bobot' => 3.5],
                 ['id' => 11, 'code' => 'K4.3', 'desc' => 'Kualifikasi dan kecukupan tenaga kependidikan (laboran, teknisi, dan pustakawan).', 'bobot' => 3.0],
-            ],
-        ],
-        'K5' => [
-            'nama' => 'K5 · Keuangan, Sarana dan Prasarana',
-            'indikator' => [
-                ['id' => 12, 'code' => 'K5.1', 'desc' => 'Kecukupan alokasi dana operasional, penelitian, pkm, dan investasi sarana prodi.', 'bobot' => 3.5],
-                ['id' => 13, 'code' => 'K5.2', 'desc' => 'Kelayakan dan kecukupan laboratorium komputer, perangkat keras, dan sistem informasi.', 'bobot' => 4.0],
             ],
         ],
         'K6' => [

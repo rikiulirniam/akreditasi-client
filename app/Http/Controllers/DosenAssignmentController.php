@@ -49,12 +49,10 @@ class DosenAssignmentController extends Controller
         $userRole = strtolower((string) ($currentUser['role'] ?? ($currentUser['role_name'] ?? '')));
         $isKaprodi = str_contains($userRole, 'kaprodi') || str_contains($userRole, 'admin');
 
-        // Peta butir indikator LAM-INFOKOM 2.1 TRK
+        // Peta butir indikator LAM-INFOKOM 2.1 TRK yang dapat diisi oleh Prodi/Dosen
+        // Kriteria C.2 (K2.*) dan C.5 (K5.*) dikelola Institusi/UPPS (Read-Only) dan tidak masuk ke Tugas Saya
         $kriteriaMap = [
             'K1.1' => ['id' => 1, 'desc' => 'Kejelasan visi, misi, tujuan, dan ketercapaian strategi prodi TRK.', 'bobot' => 3.5],
-            'K2.1' => ['id' => 2, 'desc' => 'Sistem tata pamong, kepemimpinan publik, dan efektivitas pengelolaan operasional prodi.', 'bobot' => 4.0],
-            'K2.2' => ['id' => 3, 'desc' => 'Sistem penjaminan mutu internal (SPMI) dan siklus PPEPP secara berkelanjutan.', 'bobot' => 4.0],
-            'K2.3' => ['id' => 4, 'desc' => 'Efektivitas kerjasama strategis tridharma tingkat nasional maupun internasional.', 'bobot' => 3.0],
             'K3.1' => ['id' => 5, 'desc' => 'Kualitas input mahasiswa baru, rasio pendaftar, dan daya tampung prodi.', 'bobot' => 3.0],
             'K3.2' => ['id' => 6, 'desc' => 'Layanan kemahasiswaan (bimbingan, konseling, kewirausahaan, dan penalaran).', 'bobot' => 3.0],
             'K3.3' => ['id' => 7, 'desc' => 'Prestasi mahasiswa di bidang akademik dan non-akademik tingkat nasional/internasional.', 'bobot' => 3.5],
@@ -62,8 +60,6 @@ class DosenAssignmentController extends Controller
             'K4.1' => ['id' => 9, 'desc' => 'Kualifikasi akademik dan kecukupan Dosen Tetap Program Studi (DTPS).', 'bobot' => 4.0],
             'K4.2' => ['id' => 10, 'desc' => 'Beban kerja dosen (EWMP), rasio dosen terhadap mahasiswa, dan produktivitas tridharma.', 'bobot' => 3.5],
             'K4.3' => ['id' => 11, 'desc' => 'Kualifikasi dan kecukupan tenaga kependidikan (laboran, teknisi, dan pustakawan).', 'bobot' => 3.0],
-            'K5.1' => ['id' => 12, 'desc' => 'Kecukupan alokasi dana operasional, penelitian, pkm, dan investasi sarana prodi.', 'bobot' => 3.5],
-            'K5.2' => ['id' => 13, 'desc' => 'Kelayakan dan kecukupan laboratorium komputer, perangkat keras, dan sistem informasi.', 'bobot' => 4.0],
             'K6.1' => ['id' => 14, 'desc' => 'Kesesuaian kurikulum berbasis OBE (Outcome-Based Education) dan Standar KKNI.', 'bobot' => 4.0],
             'K6.2' => ['id' => 15, 'desc' => 'Rencana pembelajaran semester (RPS), metode pembelajaran partisipatif dan proyek.', 'bobot' => 3.5],
             'K6.3' => ['id' => 16, 'desc' => 'Sistem monitoring dan evaluasi proses pembelajaran serta penilaian mahasiswa.', 'bobot' => 3.5],
@@ -79,23 +75,34 @@ class DosenAssignmentController extends Controller
 
         // 1. Ambil data penugasan langsung dari endpoint REST API backend jika tersedia
         $rawAssignments = [];
+        $apiError = null;
         try {
             $res = $this->akreditasiService->getMyAssignments();
             if ($res->successful()) {
                 $rawAssignments = $res->json('data') ?? [];
+            } else {
+                $apiError = $res->json('message') ?? 'Gagal memuat daftar penugasan dari server akreditasi.';
             }
         } catch (\Throwable $e) {
             $rawAssignments = [];
+            $apiError = 'Tidak dapat terhubung ke server akreditasi saat memuat penugasan.';
         }
 
-        // Format data dari API jika ada
+        // Format data dari API jika ada dan filter indikator read-only / C.2 & C.5
         if (! empty($rawAssignments) && is_array($rawAssignments)) {
-            $rawAssignments = array_map(function ($item) {
+            $rawAssignments = array_values(array_filter(array_map(function ($item) {
+                $code = (string) ($item['kode_indikator'] ?? ($item['indikator']['kode_indikator'] ?? 'Indikator'));
+                $isReadOnly = (bool) ($item['is_readonly'] ?? $item['readonly'] ?? (isset($item['editable']) && ! $item['editable']));
+
+                if ($this->isPlaceholderCriteriaCode($code) || $isReadOnly) {
+                    return null;
+                }
+
                 return [
                     'id_mapping' => $item['id_mapping'] ?? ($item['id'] ?? null),
                     'role' => strtoupper($item['role'] ?? 'PIC'),
                     'id_indikator' => $item['id_indikator'] ?? ($item['indikator']['id'] ?? 1),
-                    'kode_indikator' => $item['kode_indikator'] ?? ($item['indikator']['kode_indikator'] ?? 'Indikator'),
+                    'kode_indikator' => $code,
                     'deskripsi' => $item['deskripsi'] ?? ($item['indikator']['nama_indikator'] ?? ($item['indikator']['deskripsi'] ?? '')),
                     'bobot' => $item['bobot'] ?? ($item['indikator']['bobot'] ?? 1.0),
                     'id_project' => $item['id_project'] ?? 1,
@@ -103,8 +110,9 @@ class DosenAssignmentController extends Controller
                     'has_bukti' => ! empty($item['has_bukti']) || ! empty($item['evidence_url']),
                     'evidence_url' => $item['evidence_url'] ?? null,
                     'evidence_notes' => $item['evidence_notes'] ?? null,
+                    'is_readonly' => false,
                 ];
-            }, $rawAssignments);
+            }, $rawAssignments)));
         }
 
         // 2. Hubungkan dengan Plotting Tim Akreditasi (baseline & session Kaprodi)
@@ -115,16 +123,12 @@ class DosenAssignmentController extends Controller
 
         $defaultBaseline = [
             'K1.1' => ['pj' => 'Prof. Dr. Ir. KURNIANINGSIH S.T., M.T.', 'pic' => 'KUWAT SANTOSO M.Kom.'],
-            'K2.1' => ['pj' => 'Prof. Dr. Ir. KURNIANINGSIH S.T., M.T.', 'pic' => 'Dr. LILIEK TRIYONO S.T., M.Kom.'],
-            'K2.2' => ['pj' => 'Prof. Dr. Ir. KURNIANINGSIH S.T., M.T.', 'pic' => null],
-            'K2.3' => ['pj' => null, 'pic' => 'MARDIYONO S.Kom., M.Sc.'],
             'K3.1' => ['pj' => 'KUWAT SANTOSO M.Kom.', 'pic' => 'SARNO S.T., M.T.'],
             'K3.2' => ['pj' => 'KUWAT SANTOSO M.Kom.', 'pic' => 'KUWAT SANTOSO M.Kom.'],
             'K3.3' => ['pj' => null, 'pic' => null],
             'K3.4' => ['pj' => 'Prof. Dr. Ir. KURNIANINGSIH S.T., M.T.', 'pic' => 'Prof. Dr. Ir. KURNIANINGSIH S.T., M.T.'],
             'K4.1' => ['pj' => 'Dr. LILIEK TRIYONO S.T., M.Kom.', 'pic' => 'MARDIYONO S.Kom., M.Sc.'],
             'K4.2' => ['pj' => 'Dr. LILIEK TRIYONO S.T., M.Kom.', 'pic' => 'SLAMET HANDOKO S.T., M.Kom.'],
-            'K5.1' => ['pj' => 'Prof. Dr. Ir. KURNIANINGSIH S.T., M.T.', 'pic' => 'TRISNO CAHYO S.Pd., M.Cs.'],
             'K6.1' => ['pj' => 'MARDIYONO S.Kom., M.Sc.', 'pic' => 'SARNO S.T., M.T.'],
             'K7.1' => ['pj' => 'Dr. LILIEK TRIYONO S.T., M.Kom.', 'pic' => 'SLAMET HANDOKO S.T., M.Kom.'],
             'K8.1' => ['pj' => 'KUWAT SANTOSO M.Kom.', 'pic' => 'TRISNO CAHYO S.Pd., M.Cs.'],
@@ -133,7 +137,7 @@ class DosenAssignmentController extends Controller
 
         $existingKeys = [];
         foreach ($rawAssignments as $ra) {
-            $existingKeys[($ra['id_project'] ?? 1) . '_' . ($ra['kode_indikator'] ?? '') . '_' . ($ra['role'] ?? '')] = true;
+            $existingKeys[($ra['id_project'] ?? 1).'_'.($ra['kode_indikator'] ?? '').'_'.($ra['role'] ?? '')] = true;
         }
 
         foreach ($projects as $projId => $projName) {
@@ -245,7 +249,24 @@ class DosenAssignmentController extends Controller
                 'persen' => $totalTugas > 0 ? round(($totalBuktiTerisi / $totalTugas) * 100) : 0,
             ],
             'userName' => $userName,
+            'apiError' => count($rawAssignments) === 0 ? $apiError : null,
         ]);
+    }
+
+    /**
+     * Memeriksa apakah kode indikator termasuk Kriteria C.2 (Tata Pamong) atau C.5 (Keuangan, Sarana, Prasarana)
+     * yang dikelola Institusi/UPPS (read-only) dan tidak boleh masuk My Assignment.
+     */
+    protected function isPlaceholderCriteriaCode(string $code): bool
+    {
+        $normalized = strtoupper(trim($code));
+
+        return str_starts_with($normalized, 'K2.')
+            || str_starts_with($normalized, 'K5.')
+            || str_starts_with($normalized, 'C.2')
+            || str_starts_with($normalized, 'C.5')
+            || str_starts_with($normalized, 'C2.')
+            || str_starts_with($normalized, 'C5.');
     }
 
     /**
@@ -321,6 +342,13 @@ class DosenAssignmentController extends Controller
         $projectId = (string) ($validated['project_id'] ?? '1');
         $indicatorId = (string) ($validated['indicator_id'] ?? '1');
         $code = (string) $validated['code'];
+
+        if ($this->isPlaceholderCriteriaCode($code)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Indikator C.2 dan C.5 bersifat read-only (dikelola Institusi/UPPS) dan tidak dapat diisi melalui Tugas Saya.',
+            ], 422);
+        }
         $url = (string) $validated['evidence_url'];
         $notes = (string) ($validated['evidence_notes'] ?? '');
 

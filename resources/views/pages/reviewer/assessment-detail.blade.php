@@ -20,7 +20,7 @@
     <div class="reviewer-page space-y-5" id="reviewer-assessment">
         <div class="flex flex-wrap items-center justify-between gap-3">
             <div class="min-w-0">
-                <a href="{{ route('reviewer.assessments') }}" class="text-sm font-semibold text-additional hover:text-primary">
+                <a href="{{ route('kaprodi.assessments') }}" class="text-sm font-semibold text-additional hover:text-primary">
                     &larr; Kembali ke daftar penilaian
                 </a>
                 <h2 class="mt-1 truncate text-xl font-extrabold tracking-tight text-primary sm:text-2xl">{{ $projectName }}</h2>
@@ -55,7 +55,7 @@
                                         $isCurrentIndicator = (string) $item['id'] === (string) $indicator['id'];
                                         $isIndicatorSaved = isset($savedAssessments[(string) $item['id']]['score']);
                                     @endphp
-                                    <a href="{{ route('reviewer.assessment-detail', ['projectId' => $projectId, 'indikator' => $item['id']]) }}"
+                                    <a href="{{ route('kaprodi.assessment-detail', ['projectId' => $projectId, 'indikator' => $item['id']]) }}"
                                         @class([
                                             'mb-1 flex items-start gap-2 rounded-lg px-2 py-2 text-xs transition',
                                             'bg-blue-50 font-bold text-primary ring-1 ring-inset ring-blue-200' => $isCurrentIndicator,
@@ -162,7 +162,7 @@
                 </main>
 
                 <aside class="space-y-3 xl:sticky xl:top-4">
-                    <form id="assessment-form" method="POST" action="{{ route('reviewer.assessment-save', ['projectId' => $projectId, 'indicatorId' => $indicator['id']]) }}"
+                    <form id="assessment-form" method="POST" action="{{ route('kaprodi.assessment-save', ['projectId' => $projectId, 'indicatorId' => $indicator['id']]) }}"
                         class="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
                         @csrf
                         <div class="border-b border-slate-100 px-4 py-3">
@@ -223,7 +223,7 @@
                         </fieldset>
 
                         <div class="px-3 pb-3">
-                            <label for="reviewer-notes" class="mb-1.5 block text-sm font-bold text-slate-800">Catatan reviewer</label>
+                            <label for="reviewer-notes" class="mb-1.5 block text-sm font-bold text-slate-800">Catatan Penilai (Kaprodi)</label>
                             <textarea id="reviewer-notes" name="notes" rows="3" maxlength="1000" placeholder="Tuliskan alasan pemberian skor atau catatan perbaikan..."
                                 class="w-full resize-y rounded-lg border border-slate-200 bg-white px-2.5 py-2 text-sm leading-relaxed text-slate-700 placeholder:text-slate-400 focus:border-additional focus:ring-2 focus:ring-blue-100">{{ old('notes', $savedAssessment['notes'] ?? '') }}</textarea>
                             @error('score')
@@ -269,7 +269,7 @@
 
                     <div class="grid grid-cols-2 gap-2">
                         @if ($indicatorIndex > 0)
-                            <a href="{{ route('reviewer.assessment-detail', ['projectId' => $projectId, 'indikator' => $indicators[$indicatorIndex - 1]['id']]) }}"
+                            <a href="{{ route('kaprodi.assessment-detail', ['projectId' => $projectId, 'indikator' => $indicators[$indicatorIndex - 1]['id']]) }}"
                                 class="rounded-lg border border-slate-200 bg-white px-2 py-2 text-center text-xs font-semibold text-slate-600 hover:bg-slate-50">
                                 &larr; Indikator sebelumnya
                             </a>
@@ -277,7 +277,7 @@
                             <span class="rounded-lg border border-slate-100 bg-slate-50 px-2 py-2 text-center text-xs text-slate-300">&larr; Sebelumnya</span>
                         @endif
                         @if ($indicatorIndex < $totalIndicators - 1)
-                            <a href="{{ route('reviewer.assessment-detail', ['projectId' => $projectId, 'indikator' => $indicators[$indicatorIndex + 1]['id']]) }}"
+                            <a href="{{ route('kaprodi.assessment-detail', ['projectId' => $projectId, 'indikator' => $indicators[$indicatorIndex + 1]['id']]) }}"
                                 class="rounded-lg border border-slate-200 bg-white px-2 py-2 text-center text-xs font-semibold text-slate-600 hover:bg-slate-50">
                                 Indikator berikutnya &rarr;
                             </a>
@@ -291,7 +291,7 @@
             <div class="rounded-2xl border border-slate-200 bg-white px-6 py-14 text-center shadow-sm">
                 <p class="text-lg font-semibold text-slate-700">Detail indikator belum tersedia</p>
                 <p class="mt-1 text-base text-slate-500">Tambahkan data indikator ke data project untuk mencoba halaman penilaian.</p>
-                <a href="{{ route('reviewer.assessments') }}" class="mt-4 inline-flex rounded-lg bg-additional px-4 py-2 text-base font-bold text-white">Kembali ke daftar penilaian</a>
+                <a href="{{ route('kaprodi.assessments') }}" class="mt-4 inline-flex rounded-lg bg-additional px-4 py-2 text-base font-bold text-white">Kembali ke daftar penilaian</a>
             </div>
         @endif
     </div>

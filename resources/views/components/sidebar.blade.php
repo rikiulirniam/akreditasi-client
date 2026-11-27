@@ -3,10 +3,9 @@
 @php
     $sidebarUser = session('user', []);
     $userRole = strtolower((string) (($sidebarUser['role'] ?? null) ?: ($sidebarUser['role_name'] ?? '')));
-    $isReviewerRole = str_contains($userRole, 'reviewer');
     $isKaprodiRole  = str_contains($userRole, 'kaprodi');
     $isDosenRole    = str_contains($userRole, 'dosen');
-    $isAdminRole    = ! $isKaprodiRole && ! $isReviewerRole && ! $isDosenRole;
+    $isAdminRole    = ! $isKaprodiRole && ! $isDosenRole;
 @endphp
 
 {{-- Backdrop untuk sidebar mobile --}}

@@ -6,11 +6,11 @@
     <div class="reviewer-page space-y-5">
         <section class="flex flex-wrap items-end justify-between gap-4">
             <div>
-                <p class="text-base font-medium text-slate-500">Ruang kerja reviewer</p>
+                <p class="text-base font-medium text-slate-500">Penilaian Mandiri Kaprodi</p>
                 <h2 class="mt-1 text-3xl font-extrabold tracking-tight text-primary">Project akreditasi</h2>
-                <p class="mt-2 text-base text-slate-500">Project yang perlu direview dan progres penilaian indikator.</p>
+                <p class="mt-2 text-base text-slate-500">Project akreditasi yang perlu dinilai dan diverifikasi progres indikatornya.</p>
             </div>
-            <a href="{{ route('reviewer.dashboard') }}"
+            <a href="{{ route('kaprodi.dashboard') }}"
                 class="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-base font-semibold text-slate-700 shadow-sm transition hover:border-additional hover:text-additional">
                 <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
                     <path stroke-linecap="round" stroke-linejoin="round" d="m15 18-6-6 6-6M9 12h12" />
@@ -34,7 +34,7 @@
                     <h3 class="text-lg font-bold text-slate-800">Daftar project penilaian</h3>
                     <p class="mt-1 text-sm text-slate-500">{{ count($projects) }} dari {{ $totalProjects }} project perlu direview</p>
                 </div>
-                <form method="GET" action="{{ route('reviewer.assessments') }}" class="flex flex-wrap items-center gap-2">
+                <form method="GET" action="{{ route('kaprodi.assessments') }}" class="flex flex-wrap items-center gap-2">
                     <label class="sr-only" for="status-filter">Filter status</label>
                     <select id="status-filter" name="status" class="reviewer-filter-select">
                         <option value="">Semua status</option>
@@ -59,7 +59,7 @@
                     </select>
                     <button type="submit" class="rounded-lg bg-additional px-3 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-primary">Filter</button>
                     @if ($statusFilter !== '' || $yearFilter !== '')
-                        <a href="{{ route('reviewer.assessments') }}" class="rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm font-semibold text-slate-600 transition hover:bg-slate-100">Reset</a>
+                        <a href="{{ route('kaprodi.assessments') }}" class="rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm font-semibold text-slate-600 transition hover:bg-slate-100">Reset</a>
                     @endif
                 </form>
             </div>
@@ -142,7 +142,7 @@
                                 </td>
                                 <td class="px-2 py-4">
                                     @if (isset($project['id']) || isset($project['project_id']))
-                                        <a href="{{ route('reviewer.assessment-detail', ['projectId' => $project['id'] ?? $project['project_id']]) }}"
+                                        <a href="{{ route('kaprodi.assessment-detail', ['projectId' => $project['id'] ?? $project['project_id']]) }}"
                                             class="inline-flex whitespace-nowrap items-center justify-center rounded-lg border border-slate-200 bg-white px-2 py-2 text-xs font-bold text-additional transition hover:border-additional hover:bg-blue-50">
                                             {{ $progress > 0 ? 'Lanjut' : 'Mulai' }}
                                         </a>

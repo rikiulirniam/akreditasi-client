@@ -1632,43 +1632,25 @@ class KaprodiController extends Controller
                     || (string) ($mapping['id_project'] ?? $mapping['project_id'] ?? $mapping['project']['id']) === $projectId),
         )) : [];
 
-        // Ambil data dosen dari API Kelompok 2 Tridharma atau fallback ke GET /external/dosen
+        // Ambil data dosen dari API Kelompok 2 Tridharma, fallback ke GET /external/dosen, lalu API Akademik
         $dosenList = [];
-        try {
-            $resDosen = $this->tridharmaService->getDosenList(['per_page' => 100]);
-            if ($resDosen->successful()) {
-                $rawDosen = $resDosen->json('data') ?? [];
-                $dosenList = isset($rawDosen['data']) && is_array($rawDosen['data']) ? $rawDosen['data'] : (is_array($rawDosen) ? $rawDosen : []);
-            }
-        } catch (\Throwable $e) {
-            $dosenList = [];
-        }
+        $dosenSources = [
+            fn () => $this->tridharmaService->getDosenList(['per_page' => 100]),
+            fn () => $this->akreditasiService->getExternalDosen(['per_page' => 100]),
+            fn () => $this->akademikService->getDosenList(['per_page' => 100]),
+        ];
 
-        // Fallback ke GET /api/v1/external/dosen jika Tridharma kosong
-        if (empty($dosenList)) {
+        foreach ($dosenSources as $fetchDosen) {
             try {
-                $resExternal = $this->akreditasiService->getExternalDosen(['per_page' => 100]);
-                if ($resExternal->successful()) {
-                    $rawExternal = $resExternal->json('data') ?? [];
-                    $dosenList = isset($rawExternal['data']) && is_array($rawExternal['data'])
-                        ? $rawExternal['data']
-                        : (is_array($rawExternal) ? $rawExternal : []);
+                $res = $fetchDosen();
+                $records = $this->extractDosenRecordsFromResponse($res);
+                $normalized = $this->normalizePlottingDosenList($records);
+                if (! empty($normalized)) {
+                    $dosenList = $normalized;
+                    break;
                 }
             } catch (\Throwable $e) {
-                $dosenList = [];
-            }
-        }
-
-        // Fallback ke API Akademik jika Tridharma belum mengembalikan data
-        if (empty($dosenList)) {
-            try {
-                $resAkademik = $this->akademikService->getDosenList(['per_page' => 100]);
-                if ($resAkademik->successful()) {
-                    $rawDosen = $resAkademik->json('data') ?? [];
-                    $dosenList = isset($rawDosen['data']) && is_array($rawDosen['data']) ? $rawDosen['data'] : (is_array($rawDosen) ? $rawDosen : []);
-                }
-            } catch (\Throwable $e) {
-                $dosenList = [];
+                continue;
             }
         }
 
@@ -1683,16 +1665,6 @@ class KaprodiController extends Controller
                 ['id' => 7, 'nama' => 'TRISNO CAHYO S.Pd., M.Cs.', 'nidn' => '0019048902', 'bidang_keahlian' => 'Web & Mobile Engineering', 'jabatan' => 'Asisten Ahli'],
                 ['id' => 8, 'nama' => 'SUROSO S.Kom., M.Kom.', 'nidn' => '0022068603', 'bidang_keahlian' => 'Sistem Informasi Enterprise & Basis Data', 'jabatan' => 'Lektor'],
             ];
-        } else {
-            $dosenList = array_map(function ($d) {
-                return [
-                    'id' => $d['id_dosen'] ?? ($d['id'] ?? null),
-                    'nama' => $this->extractString($d['nama'] ?? ($d['nama_dosen'] ?? ($d['name'] ?? ($d['nama_lengkap'] ?? null))), 'Dosen'),
-                    'nidn' => $this->extractString($d['nidn'] ?? ($d['nip'] ?? ($d['nip_nidn'] ?? null)), '-'),
-                    'bidang_keahlian' => $this->extractString($d['bidang_keahlian'] ?? ($d['bidang_keahlian_name'] ?? ($d['keahlian'] ?? ($d['bidang_minat'] ?? null))), 'Teknologi Rekayasa Komputer'),
-                    'jabatan' => $this->extractString($d['jabatan_akademik'] ?? ($d['jabatan_fungsional'] ?? ($d['jabatan'] ?? null)), 'Dosen Tetap'),
-                ];
-            }, $dosenList);
         }
 
         $apiAssignments = [];
@@ -1750,19 +1722,15 @@ class KaprodiController extends Controller
         $d6 = $dosenNames[6] ?? ($dosenNames[0] ?? 'TRISNO CAHYO S.Pd., M.Cs.');
         $d7 = $dosenNames[7] ?? ($dosenNames[1] ?? 'SUROSO S.Kom., M.Kom.');
 
-        // Mapping default awal menggunakan dosen aktual Tridharma
+        // Mapping default awal menggunakan dosen aktual Tridharma (tanpa C.2/K2 & C.5/K5 karena dikelola Institusi/UPPS)
         $defaultAssignments = [
             'K1.1' => ['pj' => $d0, 'pic' => $d1],
-            'K2.1' => ['pj' => $d0, 'pic' => $d2],
-            'K2.2' => ['pj' => $d0, 'pic' => null],
-            'K2.3' => ['pj' => null, 'pic' => $d3],
             'K3.1' => ['pj' => $d1, 'pic' => $d4],
             'K3.2' => ['pj' => $d1, 'pic' => $d1],
             'K3.3' => ['pj' => null, 'pic' => null],
             'K3.4' => ['pj' => $d0, 'pic' => $d0],
             'K4.1' => ['pj' => $d2, 'pic' => $d3],
             'K4.2' => ['pj' => $d2, 'pic' => $d5],
-            'K5.1' => ['pj' => $d0, 'pic' => $d6],
             'K6.1' => ['pj' => $d3, 'pic' => $d4],
             'K7.1' => ['pj' => $d2, 'pic' => $d5],
             'K8.1' => ['pj' => $d1, 'pic' => $d6],
@@ -1838,6 +1806,100 @@ class KaprodiController extends Controller
             'assignments' => $assignments,
             'placeholderModules' => $placeholderModules,
         ]);
+    }
+
+    /**
+     * Mengekstrak daftar record dosen dari berbagai bentuk wrapper respons API.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    protected function extractDosenRecordsFromResponse(Response $response): array
+    {
+        if (! $response->successful()) {
+            return [];
+        }
+
+        $payload = $response->json('data') ?? $response->json();
+        for ($depth = 0; $depth < 3 && is_array($payload); $depth++) {
+            if (array_is_list($payload)) {
+                return array_values(array_filter($payload, 'is_array'));
+            }
+
+            $unwrapped = null;
+            foreach (['data', 'items', 'dosen', 'records', 'results'] as $wrapperKey) {
+                if (isset($payload[$wrapperKey]) && is_array($payload[$wrapperKey])) {
+                    $unwrapped = $payload[$wrapperKey];
+                    break;
+                }
+            }
+
+            if ($unwrapped === null) {
+                break;
+            }
+
+            $payload = $unwrapped;
+        }
+
+        return is_array($payload) && array_is_list($payload)
+            ? array_values(array_filter($payload, 'is_array'))
+            : [];
+    }
+
+    /**
+     * Menormalisasi daftar dosen untuk halaman plotting dan membuang item tidak valid.
+     *
+     * @param  array<int, array<string, mixed>>  $records
+     * @return array<int, array<string, mixed>>
+     */
+    protected function normalizePlottingDosenList(array $records): array
+    {
+        $normalized = [];
+
+        foreach ($records as $d) {
+            if (! is_array($d)) {
+                continue;
+            }
+
+            $rawName = $d['nama_dosen']
+                ?? $d['nama']
+                ?? $d['name']
+                ?? $d['nama_lengkap']
+                ?? $d['nama_gelar']
+                ?? $d['full_name']
+                ?? ($d['user']['nama'] ?? $d['user']['name'] ?? null)
+                ?? ($d['dosen']['nama_dosen'] ?? $d['dosen']['nama'] ?? null)
+                ?? ($d['pegawai']['nama'] ?? null);
+
+            $rawNidn = $d['nidn']
+                ?? $d['nip']
+                ?? $d['nip_nidn']
+                ?? ($d['user']['nidn'] ?? $d['user']['nip'] ?? null)
+                ?? ($d['dosen']['nidn'] ?? null)
+                ?? ($d['pegawai']['nip'] ?? null);
+
+            $nama = $this->extractString($rawName, '');
+            $nidn = $this->extractString($rawNidn, '-');
+
+            if ($nama === '' || strtolower($nama) === 'dosen') {
+                continue;
+            }
+
+            $normalized[] = [
+                'id' => $d['id_dosen'] ?? ($d['id'] ?? ($d['user_id'] ?? ($d['user']['id'] ?? null))),
+                'nama' => $nama,
+                'nidn' => $nidn,
+                'bidang_keahlian' => $this->extractString(
+                    $d['bidang_keahlian'] ?? ($d['bidang_keahlian_name'] ?? ($d['keahlian'] ?? ($d['bidang_minat'] ?? ($d['prodi'] ?? ($d['program_studi'] ?? null))))),
+                    'Teknologi Rekayasa Komputer'
+                ),
+                'jabatan' => $this->extractString(
+                    $d['jabatan_akademik'] ?? ($d['jabatan_fungsional'] ?? ($d['jabatan'] ?? ($d['status_dosen'] ?? null))),
+                    'Dosen Tetap'
+                ),
+            ];
+        }
+
+        return $normalized;
     }
 
     /**
