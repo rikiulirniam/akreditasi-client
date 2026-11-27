@@ -47,7 +47,7 @@ Route::get('/', function () {
         $role = strtolower((string) ($user['role'] ?? $user['role_name'] ?? ($user['roles'][0]['name'] ?? '')));
 
         if (str_contains($role, 'kaprodi')) {
-            return redirect()->to('/kaprodi/project');
+            return redirect()->route('kaprodi.dashboard');
         }
 
         if (str_contains($role, 'dosen')) {
@@ -93,11 +93,15 @@ Route::middleware('auth.akademik')->group(function () {
         Route::post('/project/quick-create', [KaprodiController::class, 'quickCreateProject'])->name('project.quick-create');
         Route::get('/project/{id}/readiness', [KaprodiController::class, 'projectReadiness'])->name('project.readiness');
         Route::get('/project/{id}/scoring-simulation', [KaprodiController::class, 'scoringSimulation'])->name('project.scoring-simulation');
+        Route::get('/project/{id}/data-summary', [KaprodiController::class, 'projectDataSummary'])->name('project.data-summary');
         Route::put('/project/{id}', [KaprodiController::class, 'updateProject'])->name('project.update');
         Route::match(['patch', 'post'], '/project/{id}/status', [KaprodiController::class, 'updateStatusProject'])->name('project.update-status');
         Route::delete('/project/{id}', [KaprodiController::class, 'destroyProject'])->name('project.destroy');
         Route::get('/project/detail/{id?}', [KaprodiController::class, 'projectDetail'])->name('project.detail');
         Route::get('/project/{id}/composite-overview', [KaprodiController::class, 'compositeOverview'])->name('project.composite-overview');
+        Route::get('/narasi-templates', [KaprodiController::class, 'narasiTemplates'])->name('narasi-template.index');
+        Route::post('/narasi-templates', [KaprodiController::class, 'storeNarasiTemplate'])->name('narasi-template.store');
+        Route::put('/narasi-templates/{id}', [KaprodiController::class, 'updateNarasiTemplate'])->name('narasi-template.update');
         Route::get('/project/{projectId}/subkriteria/{subkriteriaId}/narasi-template', [KaprodiController::class, 'subkriteriaNarrativeTemplate'])->name('subkriteria.narrative-template');
         Route::put('/project/{projectId}/subkriteria/{subkriteriaId}/narasi', [KaprodiController::class, 'updateSubkriteriaNarrative'])->name('subkriteria.narrative.update');
         Route::get('/penilaian', [ReviewerController::class, 'assessments'])->name('assessments');

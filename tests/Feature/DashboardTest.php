@@ -77,8 +77,16 @@ class DashboardTest extends TestCase
         $response->assertRedirect(route('kaprodi.dashboard'));
     }
 
-    public function test_kaprodi_dashboard_renders_successfully(): void
+    public function test_kaprodi_dashboard_renders_async_data_summary(): void
     {
+        Http::fake([
+            'https://akreditasi.fayra.my.id/api/v1/projects*' => Http::response([
+                'success' => true,
+                'data' => [['id' => 42, 'nama_project' => 'Akreditasi Informatika']],
+            ]),
+            '*' => Http::response(['success' => true, 'data' => []]),
+        ]);
+
         $response = $this->withSession([
             'access_token' => $this->getFakeToken(),
             'user' => [
@@ -92,6 +100,14 @@ class DashboardTest extends TestCase
         $response->assertSee('Rekap skor sementara');
         $response->assertSee('Status audit SPMI');
         $response->assertSee('Monitoring progres pengisian borang prodi');
+        $response->assertSee('Ringkasan data project');
+        $response->assertSee('Mahasiswa Aktif');
+        $response->assertSee('Jabatan Fungsional Dosen');
+        $response->assertSee('Pengabdian kepada Masyarakat');
+        $response->assertSee('Selengkapnya');
+        $response->assertSee('Memuat ringkasan data...');
+        $response->assertSee('data-summary');
+        Http::assertNotSent(fn ($request): bool => str_contains($request->url(), '/data-summary'));
 
         // Memastikan urutan posisi: Rekap skor sementara muncul sebelum Monitoring progres
         $content = $response->getContent();
@@ -104,6 +120,143 @@ class DashboardTest extends TestCase
         $this->assertNotFalse($monitoringPos);
         $this->assertTrue($rekapPos < $monitoringPos, 'Rekap skor harus berada di atas Monitoring progres');
         $this->assertTrue($auditPos < $monitoringPos, 'Status audit SPMI harus berada di atas Monitoring progres');
+    }
+
+    public function test_project_data_summary_proxy_preserves_backend_groups_without_invented_fields(): void
+    {
+        Http::fake([
+            'https://akreditasi.fayra.my.id/api/v1/projects/42/data-summary' => Http::sequence()
+                ->push([
+                    'success' => true,
+                    'data' => [
+                        'project' => ['id' => 1, 'id_prodi' => 101, 'tahun' => 2026],
+                        'prodi' => null,
+                        'mahasiswa' => ['total_aktif' => 675, 'source' => 'akademik:/api/mahasiswa'],
+                        'dosen' => [
+                            'total_dosen' => 10,
+                            'total_s3_doktor' => 3,
+                            'persentase_s3' => '30.00%',
+                            'jabatan_fungsional' => [
+                                'guru_besar' => 0,
+                                'lektor_kepala' => 0,
+                                'lektor' => 0,
+                                'asisten_ahli' => 10,
+                            ],
+                            'dosen_tersertifikasi' => 10,
+                            'daftar_dosen' => [
+                                [
+                                    'nidn' => '0026047903',
+                                    'nama' => '-',
+                                    'pendidikan_terakhir' => 'S3',
+                                    'jabatan_akademik' => 'Asisten Ahli',
+                                    'status_dosen' => 'DTPS',
+                                ],
+                            ],
+                        ],
+                        'tridharma' => [
+                            'penelitian' => [
+                                'total_kegiatan' => 4,
+                                'melibatkan_mahasiswa' => 3,
+                                'hibah_nasional_bima' => 0,
+                                'hibah_internal_polines' => 0,
+                                'hibah_internasional' => 0,
+                                'mandiri' => 0,
+                            ],
+                            'pkm' => [
+                                'total_kegiatan' => 2,
+                                'melibatkan_mahasiswa' => 1,
+                                'hibah_pkm_nasional' => 0,
+                                'hibah_internal' => 0,
+                                'hibah_internasional' => 0,
+                            ],
+                            'publikasi' => [
+                                'jurnal_internasional_scopus' => 6,
+                                'jurnal_nasional_sinta' => 10,
+                                'prosiding_seminar_ieee' => 0,
+                                'buku_isbn' => 0,
+                            ],
+                            'hki' => [
+                                'paten_terdaftar' => 0,
+                                'hak_cipta_program_komputer' => 0,
+                            ],
+                            'kerjasama_dudika_aktif' => 2,
+                            '_meta' => [
+                                'source' => 'api',
+                                'available' => true,
+                                'endpoints' => ['/kegiatan', '/luaran', '/kerja-sama'],
+                            ],
+                        ],
+                        'meta' => [
+                            'is_simulation' => false,
+                            'pending' => [
+                                'akademik:/api/tracer-study',
+                                'tridharma:pendanaan kegiatan',
+                            ],
+                        ],
+                    ],
+                ])
+                ->push([
+                    'success' => true,
+                    'data' => null,
+                    'is_simulation' => false,
+                ]),
+            '*' => Http::response([
+                'success' => true,
+                'data' => [],
+            ]),
+        ]);
+
+        $response = $this->withSession([
+            'access_token' => $this->getFakeToken(),
+            'user' => [
+                'nama' => 'Kaprodi TRPL',
+                'role' => 'KAPRODI',
+                'email' => 'kaprodi@example.com',
+            ],
+        ])->getJson(route('kaprodi.project.data-summary', 42));
+
+        $response->assertOk()
+            ->assertJsonPath('data.available', true)
+            ->assertJsonPath('data.project.id', 1)
+            ->assertJsonPath('data.project.id_prodi', 101)
+            ->assertJsonPath('data.prodi', null)
+            ->assertJsonPath('data.mahasiswa.total_aktif', 675)
+            ->assertJsonPath('data.mahasiswa.source', 'akademik:/api/mahasiswa')
+            ->assertJsonPath('data.dosen.total_s3_doktor', 3)
+            ->assertJsonPath('data.dosen.jabatan_fungsional.asisten_ahli', 10)
+            ->assertJsonPath('data.dosen.daftar_dosen.0.nidn', '0026047903')
+            ->assertJsonPath('data.tridharma.penelitian.total_kegiatan', 4)
+            ->assertJsonPath('data.tridharma.publikasi.jurnal_internasional_scopus', 6)
+            ->assertJsonPath('data.tridharma._meta.endpoints.2', '/kerja-sama')
+            ->assertJsonPath('data.meta.is_simulation', false)
+            ->assertJsonPath('data.pending.1', 'tridharma:pendanaan kegiatan');
+
+        $summaryData = $response->json('data');
+        $this->assertArrayNotHasKey('mahasiswa_aktif', $summaryData);
+        $this->assertArrayNotHasKey('lulusan', $summaryData);
+
+        $emptyResponse = $this->getJson(route('kaprodi.project.data-summary', 42));
+        $emptyResponse->assertOk()
+            ->assertJsonPath('data.available', false)
+            ->assertJsonPath('data.is_simulation', false);
+    }
+
+    public function test_project_data_summary_proxy_surfaces_upstream_errors(): void
+    {
+        Http::fake([
+            'https://akreditasi.fayra.my.id/api/v1/projects/42/data-summary' => Http::response([
+                'success' => false,
+                'message' => 'Upstream unavailable',
+            ], 503),
+        ]);
+
+        $response = $this->withSession([
+            'access_token' => $this->getFakeToken(),
+            'user' => ['nama' => 'Kaprodi', 'role' => 'KAPRODI'],
+        ])->getJson(route('kaprodi.project.data-summary', 42));
+
+        $response->assertStatus(503)
+            ->assertJsonPath('message', 'Upstream unavailable');
     }
 
     public function test_dashboard_renders_successfully_with_figma_layout_and_data(): void

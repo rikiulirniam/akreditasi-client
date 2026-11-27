@@ -100,10 +100,37 @@ class VersiInstrumenController extends Controller
         }
         unset($v);
 
+        $displayActiveVersionId = session("display_active_version_{$lembagaId}");
+        $selectedVersionExists = $displayActiveVersionId !== null
+            && collect($versis)->contains(
+                fn (array $versi): bool => (string) ($versi['id'] ?? '') === (string) $displayActiveVersionId
+            );
+
+        if (! $selectedVersionExists) {
+            $displayActiveVersionId = null;
+            $latestActiveEffectiveDate = 0;
+            foreach ($versis as $versi) {
+                if (! is_array($versi) || ! $versi['status_aktif']) {
+                    continue;
+                }
+
+                $effectiveDate = $versi['tanggal_berlaku'] ?? null;
+                $effectiveTimestamp = is_string($effectiveDate) && $effectiveDate !== ''
+                    ? (strtotime($effectiveDate) ?: 0)
+                    : 0;
+
+                if ($displayActiveVersionId === null || $effectiveTimestamp > $latestActiveEffectiveDate) {
+                    $displayActiveVersionId = $versi['id'] ?? null;
+                    $latestActiveEffectiveDate = $effectiveTimestamp;
+                }
+            }
+        }
+
         return view('pages.superadmin.versi_instrumen', [
             'lembagaId' => $lembagaId,
             'lembaga' => $lembaga,
             'versis' => $versis,
+            'displayActiveVersionId' => $displayActiveVersionId,
         ]);
     }
 
@@ -189,6 +216,7 @@ class VersiInstrumenController extends Controller
     {
         $validated = $request->validate([
             'id_jenjang' => ['required', 'integer'],
+            'id_lembaga' => ['nullable', 'integer'],
         ]);
 
         try {
@@ -198,6 +226,10 @@ class VersiInstrumenController extends Controller
             );
 
             $message = $response->json('message');
+
+            if ($response->successful() && ! empty($validated['id_lembaga'])) {
+                $request->session()->put("display_active_version_{$validated['id_lembaga']}", (string) $id);
+            }
 
             if ($request->wantsJson() || $request->ajax()) {
                 return response()->json([
