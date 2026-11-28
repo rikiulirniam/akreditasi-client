@@ -177,6 +177,13 @@ class EvidenceSpmiTest extends TestCase
         $response->assertStatus(200);
         $response->assertSee('Rekapitulasi Dokumen Evidence');
         $response->assertSee('Dokumen Mutu Institusi (4 Pilar Evidence SPMI)');
+        $response->assertSee('Daftar Indikator &amp; Status Bukti Dukung', false);
+        $response->assertSee('Sudah Memiliki Evidence');
+        $response->assertSee('Belum Memiliki Evidence');
+        $response->assertSee('Data tidak tersedia');
+        $response->assertSee('Simulasi');
+        $response->assertSee('target="_blank"', false);
+        $response->assertSee('rel="noopener noreferrer"', false);
         $response->assertDontSee('Kesiapan Bukti Indikator Dosen PIC');
         $response->assertSee('Salin Token Akses Asesor Eksternal');
     }
@@ -196,5 +203,53 @@ class EvidenceSpmiTest extends TestCase
         // Mode publik read-only tidak boleh menampilkan tombol kelola atau salin token
         $response->assertDontSee('Kelola Dokumen');
         $response->assertDontSee('Salin Token Akses Asesor Eksternal');
+    }
+
+    public function test_evidence_overview_integrates_api_and_shows_error_state_on_failure(): void
+    {
+        Http::fake([
+            '*/projects/*/evidence-overview*' => Http::response(['message' => 'Server Error'], 500),
+            '*/evidence-spmi*' => Http::response(['message' => 'Server Error'], 500),
+            '*/spmi-evidence*' => Http::response(['message' => 'Server Error'], 500),
+        ]);
+
+        $response = $this->withSession($this->authSession())
+            ->get(route('spmi.overview', 1));
+
+        $response->assertStatus(200);
+        $response->assertSee('Gagal memuat rekapitulasi evidence dari server');
+        $response->assertSee('Simulasi');
+    }
+
+    public function test_sidebar_menus_are_grouped_for_admin_kaprodi_and_dosen_without_reviewer(): void
+    {
+        // 1. Administrator
+        $adminSession = [
+            'access_token' => $this->getFakeToken(),
+            'user' => ['nama' => 'Admin Sistem', 'role' => 'Administrator', 'email' => 'admin@example.com'],
+        ];
+        $adminRes = $this->withSession($adminSession)->get(route('spmi.evidence'));
+        $adminRes->assertStatus(200);
+        $adminRes->assertSee('Instrumen Akreditasi');
+        $adminRes->assertSee('Evidence SPMI');
+        $adminRes->assertDontSee('Menu Reviewer');
+
+        // 2. Kaprodi
+        $kaprodiRes = $this->withSession($this->authSession())->get(route('spmi.evidence'));
+        $kaprodiRes->assertStatus(200);
+        $kaprodiRes->assertSee('Plotting Tim Akreditasi');
+        $kaprodiRes->assertSee('Evidence SPMI');
+        $kaprodiRes->assertSee('Overview Dokumen');
+
+        // 3. Dosen
+        $dosenSession = [
+            'access_token' => $this->getFakeToken(),
+            'user' => ['nama' => 'Dosen Biasa', 'role' => 'Dosen', 'email' => 'dosen@example.com'],
+        ];
+        $dosenRes = $this->withSession($dosenSession)->get(route('spmi.overview', 1));
+        $dosenRes->assertStatus(200);
+        $dosenRes->assertSee('Tugas Saya');
+        $dosenRes->assertSee('Overview Dokumen');
+        $dosenRes->assertDontSee('Plotting Tim Akreditasi');
     }
 }

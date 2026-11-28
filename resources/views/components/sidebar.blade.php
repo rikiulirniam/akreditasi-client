@@ -76,7 +76,7 @@
                     </div>
 
                     {{-- 1. Project Akreditasi (Admin & Kaprodi) --}}
-                    @if (Route::has('kaprodi.project'))
+                    @if (($isAdminRole || $isKaprodiRole) && Route::has('kaprodi.project'))
                     <div>
                         <a href="{{ route('kaprodi.project') }}"
                             class="sidebar-link w-full flex items-center gap-3.5 px-3.5 py-3 rounded-2xl text-sm font-semibold transition-all duration-150 group {{ request()->routeIs('kaprodi.project*') ? 'bg-white/20 text-white shadow-xs font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}"
@@ -153,15 +153,18 @@
                         </div>
                         @endif
 
-                    @else
+                    @elseif ($isKaprodiRole)
                         {{-- Urutan Role Kaprodi:
                              1. Project Akreditasi
-                             2. Plotting Tim Akreditasi
-                             3. Evidence SPMI
-                             4. Laporan Akhir
+                             2. Penilaian Indikator
+                             3. Plotting Tim Akreditasi
+                             4. Tugas Saya
+                             5. Evidence SPMI
+                             6. Overview Dokumen
+                             7. Laporan Akhir
                         --}}
                         {{-- 2. Plotting Tim Akreditasi (Kaprodi) --}}
-                        @if ($isKaprodiRole && Route::has('kaprodi.plotting'))
+                        @if (Route::has('kaprodi.plotting'))
                         <div>
                             <a href="{{ route('kaprodi.plotting') }}"
                                 class="sidebar-link w-full flex items-center gap-3.5 px-3.5 py-3 rounded-2xl text-sm font-semibold transition-all duration-150 group {{ request()->routeIs('kaprodi.plotting*') ? 'bg-white/20 text-white shadow-xs font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}"
@@ -225,6 +228,36 @@
                                 <span class="sidebar-text truncate">Laporan Akhir</span>
                             </a>
                         </div>
+                    @else
+                        {{-- Urutan Role Dosen / Tim Akreditasi:
+                             1. Tugas Saya
+                             2. Overview Dokumen
+                        --}}
+                        @if (Route::has('dosen.my-assignments'))
+                        <div>
+                            <a href="{{ route('dosen.my-assignments') }}"
+                                class="sidebar-link w-full flex items-center gap-3.5 px-3.5 py-3 rounded-2xl text-sm font-semibold transition-all duration-150 group {{ request()->routeIs('dosen.my-assignments*') ? 'bg-white/20 text-white shadow-xs font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}"
+                                title="Tugas Saya">
+                                <svg class="w-6 h-6 shrink-0 text-white/90 group-hover:text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                </svg>
+                                <span class="sidebar-text truncate">Tugas Saya</span>
+                            </a>
+                        </div>
+                        @endif
+
+                        @if (Route::has('spmi.overview'))
+                        <div>
+                            <a href="{{ route('spmi.overview') }}"
+                                class="sidebar-link w-full flex items-center gap-3.5 px-3.5 py-3 rounded-2xl text-sm font-semibold transition-all duration-150 group {{ request()->routeIs('spmi.overview*') ? 'bg-white/20 text-white shadow-xs font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}"
+                                title="Overview Dokumen">
+                                <svg class="w-6 h-6 shrink-0 text-white/90 group-hover:text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" />
+                                </svg>
+                                <span class="sidebar-text truncate">Overview Dokumen</span>
+                            </a>
+                        </div>
+                        @endif
                     @endif
 
                     {{-- ============================================================== --}}

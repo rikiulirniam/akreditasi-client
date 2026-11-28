@@ -11,6 +11,10 @@ use Illuminate\View\View;
 
 class SpmiController extends Controller
 {
+    protected ?string $lastApiError = null;
+
+    protected bool $lastIsSimulation = false;
+
     public function __construct(
         protected AkreditasiService $akreditasiService,
     ) {}
@@ -57,6 +61,8 @@ class SpmiController extends Controller
             'evidenceData' => $evidenceData,
             'summary' => $summary,
             'kategoriEvidence' => $kategoriEvidence,
+            'apiError' => $this->lastApiError,
+            'isSimulation' => $this->lastIsSimulation,
         ]);
     }
 
@@ -395,17 +401,25 @@ class SpmiController extends Controller
                     ];
 
                     Cache::forever("spmi_evidence_project_{$projectId}", $synced);
+                    $this->lastApiError = null;
+                    $this->lastIsSimulation = (bool) ($data['is_simulation'] ?? false);
 
                     return $synced;
                 }
+            } else {
+                $this->lastApiError = 'Endpoint Evidence SPMI mengembalikan status '.$response->status().'. Menampilkan data tersimpan.';
+                $this->lastIsSimulation = true;
             }
         } catch (\Throwable $e) {
             Log::info('Koneksi API getEvidenceSpmi gagal, gunakan cache: '.$e->getMessage());
+            $this->lastApiError = 'Gagal terhubung ke server API Evidence SPMI. Menampilkan data lokal/simulasi.';
+            $this->lastIsSimulation = true;
         }
 
         if ($cached === null) {
             $cached = $this->getDefaultEvidenceStructure($projectId);
             Cache::forever("spmi_evidence_project_{$projectId}", $cached);
+            $this->lastIsSimulation = true;
         }
 
         return $cached;
@@ -668,7 +682,11 @@ class SpmiController extends Controller
             'activeProject' => $activeProject,
             'evidenceData' => $overviewData['evidenceData'],
             'assignedIndicators' => $overviewData['assignedIndicators'],
+            'indicatorsWithEvidence' => $overviewData['indicatorsWithEvidence'],
+            'indicatorsWithoutEvidence' => $overviewData['indicatorsWithoutEvidence'],
             'indicatorStats' => $overviewData['indicatorStats'],
+            'apiError' => $overviewData['apiError'],
+            'isSimulation' => $overviewData['isSimulation'],
             'publicToken' => $publicToken,
             'publicUrl' => $publicUrl,
             'isReadOnly' => false,
@@ -682,6 +700,19 @@ class SpmiController extends Controller
     {
         $projectId = $this->resolveProjectIdFromToken($token);
         $projects = $this->loadProjectsFromApi();
+
+        try {
+            $publicRes = $this->akreditasiService->getPublicEvidence($token);
+            if ($publicRes->successful()) {
+                $publicPayload = $publicRes->json('data') ?? [];
+                if (! empty($publicPayload['project']['id'])) {
+                    $projectId = (int) $publicPayload['project']['id'];
+                } elseif (! empty($publicPayload['project_id'])) {
+                    $projectId = (int) $publicPayload['project_id'];
+                }
+            }
+        } catch (\Throwable) {
+        }
 
         $activeProject = null;
         foreach ($projects as $p) {
@@ -703,7 +734,11 @@ class SpmiController extends Controller
             'activeProject' => $activeProject,
             'evidenceData' => $overviewData['evidenceData'],
             'assignedIndicators' => $overviewData['assignedIndicators'],
+            'indicatorsWithEvidence' => $overviewData['indicatorsWithEvidence'],
+            'indicatorsWithoutEvidence' => $overviewData['indicatorsWithoutEvidence'],
             'indicatorStats' => $overviewData['indicatorStats'],
+            'apiError' => $overviewData['apiError'],
+            'isSimulation' => $overviewData['isSimulation'],
             'publicToken' => $token,
             'publicUrl' => route('spmi.public-overview', ['token' => $token]),
             'isReadOnly' => true,
@@ -748,25 +783,39 @@ class SpmiController extends Controller
     {
         $evidenceData = $this->loadEvidenceForProject($projectId);
         $assignedIndicators = [];
+        $overviewApiError = $this->lastApiError;
+        $isSimulation = $this->lastIsSimulation;
 
         try {
             $res = $this->akreditasiService->getEvidenceOverview($projectId);
             if ($res->successful()) {
                 $data = $res->json('data') ?? [];
+                $overviewApiError = null;
+                $isSimulation = (bool) ($data['is_simulation'] ?? false);
                 if (! empty($data['assigned_indicators']) && is_array($data['assigned_indicators'])) {
                     $assignedIndicators = $data['assigned_indicators'];
+                } elseif (! empty($data['indicators']) && is_array($data['indicators'])) {
+                    $assignedIndicators = $data['indicators'];
                 }
+            } else {
+                $overviewApiError = 'Gagal memuat rekapitulasi evidence dari server (HTTP '.$res->status().'). Menampilkan data simulasi/cadangan.';
+                $isSimulation = true;
             }
-        } catch (\Throwable) {
+        } catch (\Throwable $e) {
+            $overviewApiError = 'Koneksi ke endpoint evidence-overview gagal. Menampilkan data simulasi/cadangan.';
+            $isSimulation = true;
         }
 
         if (empty($assignedIndicators)) {
+            $isSimulation = true;
             $assignedIndicators = [
                 [
                     'id_indikator' => 1,
                     'role' => 'PIC',
                     'nama_dosen' => 'Dr. Budi Raharjo, M.Kom.',
                     'link_evidence' => 'https://drive.google.com/drive/folders/cpl-trk-bukti',
+                    'is_simulation' => true,
+                    'data_available' => true,
                     'indikator' => [
                         'id' => 1,
                         'kode_indikator' => 'IND-C.1.1',
@@ -778,6 +827,8 @@ class SpmiController extends Controller
                     'role' => 'PIC',
                     'nama_dosen' => 'Siti Aminah, M.T.',
                     'link_evidence' => 'https://drive.google.com/drive/folders/dosen-tri-dharma',
+                    'is_simulation' => true,
+                    'data_available' => true,
                     'indikator' => [
                         'id' => 2,
                         'kode_indikator' => 'IND-C.3.2',
@@ -789,22 +840,87 @@ class SpmiController extends Controller
                     'role' => 'PJ',
                     'nama_dosen' => 'Agus Priyono, Ph.D.',
                     'link_evidence' => '',
+                    'is_simulation' => true,
+                    'data_available' => true,
                     'indikator' => [
                         'id' => 3,
                         'kode_indikator' => 'IND-C.4.1',
                         'deskripsi_indikator' => 'Kecukupan fasilitas laboratorium komputasi dan workstation',
                     ],
                 ],
+                [
+                    'id_indikator' => 4,
+                    'role' => 'Institusi / UPPS',
+                    'nama_dosen' => 'UPPS / Institusi',
+                    'link_evidence' => '',
+                    'is_readonly' => true,
+                    'is_simulation' => true,
+                    'data_available' => false,
+                    'indikator' => [
+                        'id' => 4,
+                        'kode_indikator' => 'C.2.1',
+                        'deskripsi_indikator' => 'Tata Pamong, Tata Kelola, dan Kerjasama (Read-Only UPPS)',
+                    ],
+                ],
             ];
         }
 
-        $totalIndikator = count($assignedIndicators);
-        $terisiIndikator = count(array_filter($assignedIndicators, fn ($i) => ! empty($i['link_evidence']) || ! empty($i['link'])));
+        $indicatorsWithEvidence = [];
+        $indicatorsWithoutEvidence = [];
+
+        foreach ($assignedIndicators as $item) {
+            if (! is_array($item)) {
+                continue;
+            }
+            $indikator = is_array($item['indikator'] ?? null) ? $item['indikator'] : $item;
+            $code = (string) ($indikator['kode_indikator'] ?? $indikator['code'] ?? $item['kode_indikator'] ?? 'IND');
+            $normalizedCode = strtoupper(trim($code));
+            $isPlaceholderCriteria = str_starts_with($normalizedCode, 'C.2')
+                || str_starts_with($normalizedCode, 'C2')
+                || str_starts_with($normalizedCode, 'K2')
+                || str_starts_with($normalizedCode, 'IND-C.2')
+                || str_starts_with($normalizedCode, 'C.5')
+                || str_starts_with($normalizedCode, 'C5')
+                || str_starts_with($normalizedCode, 'K5')
+                || str_starts_with($normalizedCode, 'IND-C.5');
+
+            $link = trim((string) ($item['link_evidence'] ?? $item['link'] ?? $item['evidence_url'] ?? ''));
+            $hasEvidence = $link !== '';
+            $dataAvailable = array_key_exists('data_available', $item)
+                ? (bool) $item['data_available']
+                : (! array_key_exists('has_api_data', $item) || (bool) $item['has_api_data']);
+
+            $normalizedItem = [
+                'id_indikator' => $item['id_indikator'] ?? $indikator['id'] ?? null,
+                'kode_indikator' => $code,
+                'deskripsi_indikator' => $indikator['deskripsi_indikator'] ?? $indikator['nama_indikator'] ?? $indikator['deskripsi'] ?? 'Deskripsi indikator',
+                'nama_dosen' => $item['nama_dosen'] ?? $item['pic_name'] ?? 'Belum ditugaskan',
+                'role' => $item['role'] ?? 'PIC',
+                'link_evidence' => $link,
+                'has_evidence' => $hasEvidence,
+                'data_available' => $dataAvailable,
+                'is_simulation' => (bool) ($item['is_simulation'] ?? $isSimulation),
+                'is_readonly' => (bool) ($item['is_readonly'] ?? $isPlaceholderCriteria),
+            ];
+
+            if ($hasEvidence) {
+                $indicatorsWithEvidence[] = $normalizedItem;
+            } else {
+                $indicatorsWithoutEvidence[] = $normalizedItem;
+            }
+        }
+
+        $totalIndikator = count($indicatorsWithEvidence) + count($indicatorsWithoutEvidence);
+        $terisiIndikator = count($indicatorsWithEvidence);
         $persenIndikator = $totalIndikator > 0 ? (int) round(($terisiIndikator / $totalIndikator) * 100) : 0;
 
         return [
             'evidenceData' => $evidenceData,
-            'assignedIndicators' => $assignedIndicators,
+            'assignedIndicators' => array_merge($indicatorsWithEvidence, $indicatorsWithoutEvidence),
+            'indicatorsWithEvidence' => $indicatorsWithEvidence,
+            'indicatorsWithoutEvidence' => $indicatorsWithoutEvidence,
+            'apiError' => $overviewApiError,
+            'isSimulation' => $isSimulation,
             'indicatorStats' => [
                 'total' => $totalIndikator,
                 'terisi' => $terisiIndikator,

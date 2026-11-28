@@ -90,6 +90,22 @@
         </div>
     @endif
 
+    @if (!empty($apiError))
+        <div role="alert" class="p-4 rounded-xl bg-amber-50 border border-amber-200 text-amber-800 text-xs sm:text-sm font-semibold flex items-center gap-2.5 shadow-2xs">
+            <svg class="size-5 text-amber-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+            </svg>
+            <span>{{ $apiError }}</span>
+        </div>
+    @endif
+
+    @if (empty($projects))
+        <div class="bg-white rounded-2xl border border-dashed border-zinc-300 p-10 text-center space-y-2">
+            <p class="text-base font-bold text-slate-700">Data tidak tersedia</p>
+            <p class="text-xs sm:text-sm text-slate-500">Belum ada project akreditasi yang tersedia untuk diisi bukti dokumen SPMI.</p>
+        </div>
+    @endif
+
     {{-- 2. Project Akreditasi Selector Card --}}
     <div class="bg-white rounded-2xl border border-[#EAEAEA] p-5 sm:p-6 shadow-xs flex flex-wrap items-center justify-between gap-4">
         <div class="w-full sm:w-auto flex-1 min-w-0 max-w-3xl space-y-1.5">
@@ -201,6 +217,11 @@
                 </h3>
             </div>
             <div class="flex items-center gap-2">
+                @if (!empty($isSimulation))
+                    <span class="h-7 px-3 rounded-full flex items-center text-xs font-bold shrink-0 bg-amber-50 text-amber-700 border border-amber-200">
+                        Simulasi
+                    </span>
+                @endif
                 <span class="h-7 px-3 rounded-full flex items-center text-xs font-bold shrink-0
                     {{ $summary['terisi'] === 4 ? 'bg-green-700/10 text-green-700' : ($summary['terisi'] > 0 ? 'bg-yellow-400/25 text-yellow-700' : 'bg-red-100 text-red-600') }}">
                     {{ $summary['terisi'] === 4 ? 'Lengkap (4/4)' : ($summary['terisi'] > 0 ? $summary['terisi'] . ' dari 4 Terisi' : 'Belum Ada (0/4)') }}

@@ -137,14 +137,32 @@
                                     <div class="min-w-0 flex-1">
                                         <div class="flex flex-wrap items-center justify-between gap-2">
                                             <p class="text-xs font-bold uppercase tracking-wide text-slate-400">{{ $item['type'] ?? 'Dokumen' }}</p>
-                                            <span class="rounded px-2 py-0.5 text-xs font-bold {{ $statusClasses }}">{{ $evidenceStatus }}</span>
+                                            <div class="flex items-center gap-1.5">
+                                                @if(!empty($item['is_simulation']))
+                                                    <span class="rounded bg-amber-50 px-2 py-0.5 text-[11px] font-bold text-amber-700 border border-amber-200">Simulasi</span>
+                                                @endif
+                                                <span class="rounded px-2 py-0.5 text-xs font-bold {{ $statusClasses }}">{{ $evidenceStatus }}</span>
+                                            </div>
                                         </div>
                                         <p class="mt-1 text-sm font-bold leading-snug text-slate-800">{{ $item['name'] }}</p>
                                         <p class="mt-1 text-xs text-slate-400">Bukti pendukung · {{ $item['date'] ?? 'Tanggal tidak tersedia' }}</p>
                                     </div>
                                 </div>
                                 <div class="mt-2 flex flex-wrap items-center justify-end gap-2">
-                                    <span class="mr-auto text-xs text-slate-400">Dokumen contoh</span>
+                                    @php
+                                        $driveUrl = $item['url'] ?? $item['link_evidence'] ?? $item['link_dokumen'] ?? $item['evidence_url'] ?? $item['link'] ?? null;
+                                    @endphp
+                                    @if(!empty($driveUrl))
+                                        <a href="{{ $driveUrl }}" target="_blank" rel="noopener noreferrer"
+                                            class="mr-auto inline-flex items-center gap-1.5 rounded-md border border-sky-200 bg-sky-50 px-2.5 py-1.5 text-xs font-bold text-additional transition hover:bg-sky-100">
+                                            <span>Buka Google Drive</span>
+                                            <span>↗</span>
+                                        </a>
+                                    @elseif(isset($item['data_available']) && ! $item['data_available'])
+                                        <span class="mr-auto rounded bg-rose-50 px-2 py-0.5 text-xs font-semibold text-rose-700 border border-rose-200">Data tidak tersedia</span>
+                                    @else
+                                        <span class="mr-auto text-xs text-slate-400">Belum ada tautan Google Drive</span>
+                                    @endif
                                     <button type="submit" form="assessment-form" name="evidence_action" value="{{ $evidenceIndex }}:Disetujui"
                                         class="rounded-md border border-slate-200 px-2 py-1.5 text-xs font-semibold text-slate-600 transition hover:border-emerald-300 hover:bg-emerald-50 hover:text-emerald-700">
                                         &#10003; Setujui
