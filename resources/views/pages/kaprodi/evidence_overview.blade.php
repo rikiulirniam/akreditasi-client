@@ -8,10 +8,15 @@
     {{-- 1. Header Section --}}
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div class="space-y-1">
-            <div class="flex items-center gap-2.5">
+            <div class="flex flex-wrap items-center gap-2.5">
                 <h2 class="text-2xl sm:text-3xl font-bold text-black tracking-tight">
                     Rekapitulasi Dokumen Evidence
                 </h2>
+                @if(!empty($isSimulation))
+                    <span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-50 text-amber-700 border border-amber-200">
+                        Simulasi
+                    </span>
+                @endif
                 @if($isReadOnly)
                     <span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-purple-50 text-purple-700 border border-purple-200">
                         Mode Asesor Eksternal (Read-Only)
@@ -33,6 +38,16 @@
             </button>
         @endif
     </div>
+
+    {{-- Error State Banner --}}
+    @if(!empty($apiError))
+        <div role="alert" class="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs sm:text-sm text-amber-800 flex items-center gap-2.5">
+            <svg class="size-4 shrink-0 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+            </svg>
+            <span>{{ $apiError }}</span>
+        </div>
+    @endif
 
     {{-- Toast Notification --}}
     <div id="copyToast" class="fixed bottom-6 right-6 z-50 bg-slate-900 text-white px-4 py-3 rounded-xl shadow-lg flex items-center gap-2.5 text-xs sm:text-sm font-semibold transition-opacity opacity-0 pointer-events-none">
@@ -243,6 +258,121 @@
             </div>
 
         </div>
+    </div>
+
+    {{-- 4. Daftar Indikator: Sudah & Belum Memiliki Evidence --}}
+    @php
+        $withEv = $indicatorsWithEvidence ?? [];
+        $withoutEv = $indicatorsWithoutEvidence ?? [];
+        $stats = $indicatorStats ?? ['total' => 0, 'terisi' => 0, 'persen' => 0];
+    @endphp
+    <div class="space-y-4">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <div>
+                <h3 class="text-lg font-bold text-slate-900">
+                    Daftar Indikator &amp; Status Bukti Dukung
+                </h3>
+                <p class="text-xs sm:text-sm text-slate-500">
+                    Pemisahan indikator yang sudah memiliki tautan Google Drive, belum diisi, dan yang berstatus Data tidak tersedia.
+                </p>
+            </div>
+            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-slate-100 text-slate-700 border border-slate-200 self-start sm:self-auto">
+                {{ $stats['terisi'] }} / {{ $stats['total'] }} Indikator Terisi ({{ $stats['persen'] }}%)
+            </span>
+        </div>
+
+        @if(empty($withEv) && empty($withoutEv))
+            <div class="bg-white rounded-2xl border border-dashed border-zinc-300 p-8 text-center">
+                <p class="text-sm font-bold text-slate-600">Belum ada data indikator pada project ini.</p>
+                <p class="text-xs text-slate-400 mt-1">Data indikator akan muncul setelah plotting tim atau sinkronisasi API selesai.</p>
+            </div>
+        @else
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                {{-- Kolom 1: Indikator Sudah Memiliki Evidence --}}
+                <div class="bg-white rounded-2xl border border-zinc-200 p-5 shadow-xs space-y-3">
+                    <div class="flex items-center justify-between border-b border-zinc-100 pb-3">
+                        <h4 class="text-sm font-bold text-emerald-800 flex items-center gap-2">
+                            <span class="size-2.5 rounded-full bg-emerald-500"></span>
+                            <span>Sudah Memiliki Evidence ({{ count($withEv) }})</span>
+                        </h4>
+                    </div>
+                    <div class="space-y-3">
+                        @forelse($withEv as $ind)
+                            <div class="p-3.5 rounded-xl bg-slate-50 border border-zinc-200/80 space-y-2">
+                                <div class="flex flex-wrap items-center justify-between gap-2">
+                                    <span class="px-2 py-0.5 rounded-md text-[11px] font-extrabold bg-sky-100 text-sky-800">
+                                        {{ $ind['kode_indikator'] }}
+                                    </span>
+                                    <div class="flex flex-wrap items-center gap-1.5">
+                                        @if(!empty($ind['is_simulation']))
+                                            <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-200">Simulasi</span>
+                                        @endif
+                                        @if(!empty($ind['is_readonly']))
+                                            <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-200 text-slate-700">Read-Only (UPPS)</span>
+                                        @endif
+                                        <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">Tersedia</span>
+                                    </div>
+                                </div>
+                                <p class="text-xs font-semibold text-slate-800 leading-snug">{{ $ind['deskripsi_indikator'] }}</p>
+                                <div class="flex flex-wrap items-center justify-between gap-2 pt-1">
+                                    <span class="text-[11px] text-slate-500">PIC: <strong>{{ $ind['nama_dosen'] }}</strong></span>
+                                    <a href="{{ $ind['link_evidence'] }}" target="_blank" rel="noopener noreferrer"
+                                        class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-white hover:bg-sky-50 text-sky-800 border border-zinc-200 text-xs font-bold transition-colors">
+                                        <span>Buka Drive</span>
+                                        <span>↗</span>
+                                    </a>
+                                </div>
+                            </div>
+                        @empty
+                            <p class="py-6 text-center text-xs text-slate-400">Belum ada indikator yang memiliki tautan evidence.</p>
+                        @endforelse
+                    </div>
+                </div>
+
+                {{-- Kolom 2: Indikator Belum Memiliki Evidence --}}
+                <div class="bg-white rounded-2xl border border-zinc-200 p-5 shadow-xs space-y-3">
+                    <div class="flex items-center justify-between border-b border-zinc-100 pb-3">
+                        <h4 class="text-sm font-bold text-amber-800 flex items-center gap-2">
+                            <span class="size-2.5 rounded-full bg-amber-500"></span>
+                            <span>Belum Memiliki Evidence ({{ count($withoutEv) }})</span>
+                        </h4>
+                    </div>
+                    <div class="space-y-3">
+                        @forelse($withoutEv as $ind)
+                            <div class="p-3.5 rounded-xl bg-slate-50 border border-zinc-200/80 space-y-2">
+                                <div class="flex flex-wrap items-center justify-between gap-2">
+                                    <span class="px-2 py-0.5 rounded-md text-[11px] font-extrabold bg-slate-200 text-slate-700">
+                                        {{ $ind['kode_indikator'] }}
+                                    </span>
+                                    <div class="flex flex-wrap items-center gap-1.5">
+                                        @if(!empty($ind['is_simulation']))
+                                            <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-200">Simulasi</span>
+                                        @endif
+                                        @if(empty($ind['data_available']))
+                                            <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-50 text-rose-700 border border-rose-200">Data tidak tersedia</span>
+                                        @else
+                                            <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-200">Belum diisi</span>
+                                        @endif
+                                        @if(!empty($ind['is_readonly']))
+                                            <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-200 text-slate-700">Read-Only</span>
+                                        @endif
+                                    </div>
+                                </div>
+                                <p class="text-xs font-semibold text-slate-800 leading-snug">{{ $ind['deskripsi_indikator'] }}</p>
+                                <div class="flex flex-wrap items-center justify-between gap-2 pt-1">
+                                    <span class="text-[11px] text-slate-500">PIC: <strong>{{ $ind['nama_dosen'] }}</strong></span>
+                                    <span class="text-[11px] text-slate-400 italic">
+                                        {{ empty($ind['data_available']) ? 'Data tidak tersedia' : 'Menunggu tautan Google Drive' }}
+                                    </span>
+                                </div>
+                            </div>
+                        @empty
+                            <p class="py-6 text-center text-xs text-emerald-600 font-semibold">Seluruh indikator sudah memiliki tautan evidence.</p>
+                        @endforelse
+                    </div>
+                </div>
+            </div>
+        @endif
     </div>
 
 </div>

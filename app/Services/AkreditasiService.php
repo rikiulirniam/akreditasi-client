@@ -986,6 +986,14 @@ class AkreditasiService
     }
 
     /**
+     * Mengambil rekapitulasi evidence publik (read-only) berdasarkan token akses asesor.
+     */
+    public function getPublicEvidence(string $token): Response
+    {
+        return $this->get("/public/evidence/{$token}");
+    }
+
+    /**
      * Menyimpan atau memperbarui data evidence SPMI project (One-to-One updateOrCreate).
      *
      * @param  array<string, mixed>  $data

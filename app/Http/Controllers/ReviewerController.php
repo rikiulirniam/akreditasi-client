@@ -689,6 +689,9 @@ class ReviewerController extends Controller
                 $item['name'] = $item['nama_bukti'] ?? $item['name'] ?? $item['nama'] ?? 'Dokumen bukti';
                 $item['date'] = $item['tanggal'] ?? $item['date'] ?? '—';
                 $item['status'] = $item['status_review'] ?? $item['status'] ?? 'Pending';
+                $item['url'] = $item['link_evidence'] ?? $item['link_dokumen'] ?? $item['evidence_url'] ?? $item['url'] ?? $item['link'] ?? $item['file_url'] ?? null;
+                $item['is_simulation'] = (bool) ($item['is_simulation'] ?? false);
+                $item['data_available'] = array_key_exists('data_available', $item) ? (bool) $item['data_available'] : true;
 
                 return $item;
             }, array_filter($evidence, 'is_array')))
